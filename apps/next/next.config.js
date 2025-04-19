@@ -51,6 +51,21 @@ module.exports = () => {
     experimental: {
       scrollRestoration: true,
     },
+    webpack: (config, { isServer }) => {
+      // Add a rule to handle .js files that contain TypeScript
+      config.module.rules.push({
+        test: /\.js$/,
+        include: [/node_modules\/@react-native/, /node_modules\/react-native/],
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-typescript'],
+            plugins: ['@babel/plugin-transform-flow-strip-types'],
+          },
+        },
+      })
+      return config
+    },
   }
 
   for (const plugin of plugins) {
