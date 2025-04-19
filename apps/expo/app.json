@@ -18,7 +18,10 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.river-journal.app"
+      "bundleIdentifier": "com.river-journal.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +36,14 @@
     "plugins": ["expo-router", "expo-font"],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "67d505a1-7f11-4db3-bffd-0a58015f5fcd"
+      }
     }
   }
 }
