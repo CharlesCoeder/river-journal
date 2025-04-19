@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.river-journal.app"
+      "package": "com.river_journal.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
