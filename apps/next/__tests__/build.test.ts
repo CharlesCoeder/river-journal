@@ -46,7 +46,7 @@ test('Next.js build completes', async () => {
     expect(result).toContain('built @my/ui')
 
     // Check for Next.js version and build process
-    expect(result).toContain('Next.js 14')
+    expect(result).toContain('Next.js 15')
     expect(result).toContain('Creating an optimized production build')
 
     // Check for route information
