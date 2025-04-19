@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd ../.. && NEXT_IGNORE_WARNINGS=1 CI=true yarn web:prod",
+  "outputDirectory": ".next",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
+}
