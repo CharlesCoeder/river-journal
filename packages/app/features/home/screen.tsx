@@ -5,7 +5,6 @@ import {
   Paragraph,
   Separator,
   Sheet,
-  SwitchRouterButton,
   SwitchThemeButton,
   useToastController,
   XStack,
@@ -16,10 +15,9 @@ import { useState } from 'react'
 import { Platform } from 'react-native'
 import { useLink } from 'solito/navigation'
 
-export function HomeScreen({ pagesMode = false }: { pagesMode?: boolean }) {
-  const linkTarget = pagesMode ? '/pages-example-user' : '/user'
+export function HomeScreen() {
   const linkProps = useLink({
-    href: `${linkTarget}/nate`,
+    href: `/user/nate`,
   })
 
   return (
@@ -35,7 +33,6 @@ export function HomeScreen({ pagesMode = false }: { pagesMode?: boolean }) {
       >
         {Platform.OS === 'web' && (
           <>
-            <SwitchRouterButton pagesMode={pagesMode} />
             <SwitchThemeButton />
           </>
         )}
