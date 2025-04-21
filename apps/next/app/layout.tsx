@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
 
 export const metadata: Metadata = {
-  title: 'Tamagui • App Router',
-  description: 'Tamagui, Solito, Expo & Next.js',
+  title: 'River Journal',
+  description: 'Let your thoughts flow',
+  // Icon attribution: <a href="https://www.flaticon.com/free-icons/river" title="river icons">River icons created by Freepik - Flaticon</a>
   icons: '/favicon.ico',
 }
 
