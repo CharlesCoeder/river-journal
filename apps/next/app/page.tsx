@@ -1,5 +1,19 @@
 'use client'
 
-import { HomeScreen } from 'app/features/home/screen'
+import { JournalScreen } from 'app/features/journal/screen'
+import { YStack } from 'tamagui'
 
-export default HomeScreen
+export default function Page() {
+  return (
+    <YStack
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        paddingTop: 32,
+      }}
+    >
+      <JournalScreen />
+    </YStack>
+  )
+}
