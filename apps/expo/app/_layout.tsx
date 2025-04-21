@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font'
 import { SplashScreen, Stack } from 'expo-router'
 import { Provider } from 'app/provider'
 import { NativeToast } from '@my/ui/src/NativeToast'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
 export const unstable_settings = {
   // Ensure that reloading on `/user` keeps a back button present.
@@ -38,11 +39,15 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme()
 
   return (
-    <Provider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack />
-        <NativeToast />
-      </ThemeProvider>
-    </Provider>
+    <SafeAreaProvider>
+      <Provider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <Stack />
+            <NativeToast />
+          </SafeAreaView>
+        </ThemeProvider>
+      </Provider>
+    </SafeAreaProvider>
   )
 }
