@@ -2837,6 +2837,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@legendapp/state@npm:^3.0.0-beta.30":
+  version: 3.0.0-beta.30
+  resolution: "@legendapp/state@npm:3.0.0-beta.30"
+  dependencies:
+    use-sync-external-store: "npm:^1.2.2"
+  peerDependencies:
+    expo-sqlite: ^15.0.0
+  peerDependenciesMeta:
+    expo-sqlite:
+      optional: true
+  checksum: 10/6e433a3a8bc5d56d92f42b9f60e27c09d671b1be44e3d3dc804b5ce8bdb54eedd6719a9fb427470603f2505bf63f1c484a132c2e11eab232aefbfbc8eee712f5
+  languageName: node
+  linkType: hard
+
 "@mapbox/node-pre-gyp@npm:^2.0.0-rc.0":
   version: 2.0.0
   resolution: "@mapbox/node-pre-gyp@npm:2.0.0"
@@ -7031,6 +7045,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "app@workspace:packages/app"
   dependencies:
+    "@legendapp/state": "npm:^3.0.0-beta.30"
     "@my/ui": "npm:0.0.1"
     "@react-navigation/native": "npm:^6.1.17"
     "@tamagui/animations-react-native": "npm:^1.126.0"

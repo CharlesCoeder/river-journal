@@ -7,6 +7,7 @@
     "*.css"
   ],
   "dependencies": {
+    "@legendapp/state": "^3.0.0-beta.30",
     "@my/ui": "0.0.1",
     "@react-navigation/native": "^6.1.17",
     "@tamagui/animations-react-native": "^1.126.0",
