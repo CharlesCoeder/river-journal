@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Calendar, MoreHorizontal } from '@tamagui/lucide-icons'
 import { XStack, YStack, TextArea, Button, Card, H4, Paragraph } from '@my/ui'
+import { useRouter } from 'solito/navigation'
 
 export function JournalScreen() {
   const [content, setContent] = useState('')
   const [wordCount, setWordCount] = useState(0)
   const [charCount, setCharCount] = useState(0)
   const today = new Date()
+  const router = useRouter()
 
   // Update word and character counts reactively
   useEffect(() => {
@@ -69,6 +71,10 @@ export function JournalScreen() {
           <Paragraph style={{ marginRight: 16 }}>{wordCount} words</Paragraph>
           <Paragraph>{charCount} characters</Paragraph>
         </XStack>
+
+        <Button size="$3" variant="outlined" onPress={() => router.push('/demo')}>
+          Try Persistence Demo
+        </Button>
       </XStack>
     </YStack>
   )
