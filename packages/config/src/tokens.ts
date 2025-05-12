@@ -139,6 +139,177 @@ export const colorTokens = {
   greenDark,
 }
 
+// Define size tokens - used for width, height, padding, margins, etc.
+const size = {
+  0: 0,
+  0.25: 2,
+  0.5: 4,
+  0.75: 6,
+  1: 8,
+  1.5: 12,
+  2: 16,
+  2.5: 20,
+  3: 24,
+  3.5: 28,
+  4: 32,
+  true: 32,
+  4.5: 36,
+  5: 40,
+  6: 48,
+  7: 56,
+  8: 64,
+  9: 72,
+  10: 80,
+  11: 88,
+  12: 96,
+  14: 112,
+  16: 128,
+  18: 144,
+  20: 160,
+  24: 192,
+  28: 224,
+  32: 256,
+  36: 288,
+  40: 320,
+  44: 352,
+  48: 384,
+  52: 416,
+  56: 448,
+  60: 480,
+  64: 512,
+  72: 576,
+  80: 640,
+  96: 768,
+}
+
+// Define space tokens - specific for margins and padding
+const space = {
+  ...size,
+  '-0.25': -2,
+  '-0.5': -4,
+  '-0.75': -6,
+  '-1': -8,
+  '-1.5': -12,
+  '-2': -16,
+  '-2.5': -20,
+  '-3': -24,
+  '-3.5': -28,
+  '-4': -32,
+  '-4.5': -36,
+  '-5': -40,
+  '-6': -48,
+  '-7': -56,
+  '-8': -64,
+  '-9': -72,
+  '-10': -80,
+  '-11': -88,
+  '-12': -96,
+  '-14': -112,
+  '-16': -128,
+  '-18': -144,
+  '-20': -160,
+  '-24': -192,
+  '-28': -224,
+  '-32': -256,
+  '-36': -288,
+  '-40': -320,
+  '-44': -352,
+  '-48': -384,
+  '-52': -416,
+  '-56': -448,
+  '-60': -480,
+  '-64': -512,
+  '-72': -576,
+  '-80': -640,
+  '-96': -768,
+}
+
+// Define radius tokens
+const radius = {
+  0: 0,
+  1: 4,
+  2: 8,
+  3: 12,
+  4: 16,
+  true: 16,
+  5: 20,
+  6: 24,
+  7: 28,
+  8: 32,
+  9: 36,
+  10: 40,
+  11: 44,
+  12: 48,
+  full: 9999,
+}
+
+// Define zIndex tokens
+const zIndex = {
+  0: 0,
+  1: 100,
+  2: 200,
+  3: 300,
+  4: 400,
+  5: 500,
+  6: 600,
+  7: 700,
+  8: 800,
+  9: 900,
+  10: 1000,
+}
+
+// Typography tokens
+const fontSize = {
+  1: 10,
+  2: 12,
+  3: 14,
+  4: 16,
+  5: 18,
+  6: 20,
+  7: 22,
+  8: 24,
+  9: 28,
+  10: 32,
+  11: 36,
+  12: 40,
+  13: 48,
+  14: 56,
+  15: 64,
+  16: 72,
+}
+
+const lineHeight = {
+  1: 1.1,
+  2: 1.2,
+  3: 1.3,
+  4: 1.4,
+  5: 1.5,
+  6: 1.6,
+  7: 1.7,
+  8: 1.8,
+  9: 1.9,
+  10: 2.0,
+}
+
+const fontWeight = {
+  light: '300',
+  normal: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+  extrabold: '800',
+}
+
+// Letter spacing
+const letterSpacing = {
+  tighter: '-0.05em',
+  tight: '-0.025em',
+  normal: '0',
+  wide: '0.025em',
+  wider: '0.05em',
+  widest: '0.1em',
+}
+
 // We'll expand this with other token types (space, size, etc.) later
 export const tokens = createTokens({
   color: {
@@ -158,4 +329,16 @@ export const tokens = createTokens({
     ...green,
     ...greenDark,
   },
+
+  // Add required token categories
+  size,
+  space,
+  radius,
+  zIndex,
+
+  // Typography tokens
+  fontSize,
+  lineHeight,
+  fontWeight,
+  letterSpacing,
 })
