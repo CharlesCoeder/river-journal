@@ -1,9 +1,12 @@
 'use client'
 
 import { JournalScreen } from 'app/features/journal/screen'
-import { YStack } from 'tamagui'
+import { Button, XStack, YStack } from 'tamagui'
+import { useRouter } from 'solito/navigation'
 
 export default function Page() {
+  const router = useRouter()
+
   return (
     <YStack
       style={{
@@ -13,6 +16,12 @@ export default function Page() {
         paddingTop: 32,
       }}
     >
+      <XStack style={{ marginBottom: 16 }} space={8}>
+        <Button onPress={() => router.push('/theme-demo')} theme="blue">
+          Theme Demo
+        </Button>
+      </XStack>
+
       <JournalScreen />
     </YStack>
   )
