@@ -1,3 +1,7 @@
+if (process.env.NODE_ENV === 'production') {
+  require('../public/tamagui.css')
+}
+
 import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
 
