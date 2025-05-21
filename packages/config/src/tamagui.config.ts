@@ -5,6 +5,7 @@ import { animations } from './animations'
 
 export const config = createTamagui({
   ...defaultConfig,
+  settings: { ...defaultConfig.settings, onlyAllowShorthands: false },
   animations,
   fonts: {
     body: bodyFont,
