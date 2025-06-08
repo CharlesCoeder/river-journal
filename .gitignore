@@ -46,3 +46,7 @@ thumbs.db
 
 # turbo build log
 **/.turbo/*
+
+# bmad-agent
+bmad-agent
+docs
