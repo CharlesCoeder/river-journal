@@ -1,0 +1,17 @@
+{
+  "name": "tauri-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dev:next": "cd ../next && BUILD_TARGET=tauri yarn dev",
+    "build:next": "cd ../next && BUILD_TARGET=tauri yarn build",
+    "prebuild": "yarn build:next"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
