@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:tauri": "BUILD_TARGET=tauri next dev --turbopack",
     "build": "cd ../.. && yarn build && cd apps/next && next build",
+    "build:web": "cd ../.. && yarn build && cd apps/next && BUILD_TARGET=web next build",
+    "build:tauri": "cd ../.. && yarn build && cd apps/next && BUILD_TARGET=tauri next build",
     "start": "next start",
     "serve": "NODE_ENV=production next start --port 8151",
     "lint": "next lint",

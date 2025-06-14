@@ -1,0 +1,73 @@
+/** @type {import('next').NextConfig} */
+const { withTamagui } = require('@tamagui/next-plugin')
+const { join } = require('node:path')
+
+const boolVals = {
+  true: true,
+  false: false,
+}
+
+const disableExtraction =
+  boolVals[process.env.DISABLE_EXTRACTION] ?? process.env.NODE_ENV === 'development'
+
+const plugins = [
+  withTamagui({
+    config: '../../packages/config/src/tamagui.config.ts',
+    components: ['tamagui', '@my/ui'],
+    appDir: true,
+    importsWhitelist: ['constants.js', 'colors.js'],
+    outputCSS: process.env.NODE_ENV === 'production' ? './public/tamagui.css' : null,
+    logTimings: true,
+    disableExtraction,
+    shouldExtract: (path) => {
+      if (path.includes(join('packages', 'app'))) {
+        return true
+      }
+    },
+    disableThemesBundleOptimize: true,
+    excludeReactNativeWebExports: ['Switch', 'ProgressBar', 'Picker', 'CheckBox', 'Touchable'],
+  }),
+]
+
+// Base configuration shared between web and tauri builds
+const baseConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  modularizeImports: {
+    '@tamagui/lucide-icons': {
+      transform: `@tamagui/lucide-icons/dist/esm/icons/{{kebabCase member}}`,
+      skipDefaultConversion: true,
+    },
+  },
+  transpilePackages: [
+    'solito',
+    'react-native-web',
+    'expo-linking',
+    'expo-constants',
+    'expo-modules-core',
+  ],
+  experimental: {
+    scrollRestoration: true,
+  },
+  webpack: (config, { isServer }) => {
+    // Add a rule to handle .js files that contain TypeScript
+    config.module.rules.push({
+      test: /\.js$/,
+      include: [/node_modules\/@react-native/, /node_modules\/react-native/],
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: ['@babel/preset-typescript'],
+          plugins: ['@babel/plugin-transform-flow-strip-types'],
+        },
+      },
+    })
+    return config
+  },
+  env: {
+    BUILD_TARGET: process.env.BUILD_TARGET || 'web',
+  },
+}
+
+module.exports = { baseConfig, plugins }
