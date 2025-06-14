@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
 import {
   YStack,
   XStack,
@@ -13,10 +15,30 @@ import {
   Paragraph,
 } from '@my/ui'
 import { observer } from '@legendapp/state/react'
-import { demo$, resetDemo, forceSave } from '../../state/demo/store'
+import { demo$, resetDemo, forceSave, waitForDemoLoaded } from '../../state/demo/store'
 
 // Wrap the component with observer to make it reactive
 export const DemoScreen = observer(function DemoScreen() {
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  useEffect(() => {
+    const loadPersistence = async () => {
+      await waitForDemoLoaded()
+      setIsLoaded(true)
+    }
+
+    loadPersistence()
+  }, [])
+
+  // Show loading state while persistence is loading. Usually only shows happens if refreshing the page directly (versus having navigated there).
+  if (!isLoaded) {
+    return (
+      <YStack gap="$4" p="$4" alignItems="center" justifyContent="center" minHeight={400}>
+        <Text>Loading persisted data...</Text>
+      </YStack>
+    )
+  }
+
   // Debug functions
   const handleCounterDecrement = () => {
     demo$.counter.set((c) => Math.max(0, c - 1))
