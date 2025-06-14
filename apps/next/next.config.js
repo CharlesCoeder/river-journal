@@ -35,6 +35,12 @@ module.exports = () => {
     typescript: {
       ignoreBuildErrors: true,
     },
+    // Enable static export for Tauri
+    output: 'export',
+    trailingSlash: true,
+    images: {
+      unoptimized: true,
+    },
     modularizeImports: {
       '@tamagui/lucide-icons': {
         transform: `@tamagui/lucide-icons/dist/esm/icons/{{kebabCase member}}`,
