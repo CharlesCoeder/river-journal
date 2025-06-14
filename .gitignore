@@ -50,3 +50,6 @@ thumbs.db
 # bmad-agent
 bmad-agent
 docs
+
+# tauri build
+apps/next/out
