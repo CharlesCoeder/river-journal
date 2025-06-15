@@ -10,7 +10,7 @@
     "mobile:prebuild": "cd apps/mobile && yarn prebuild",
     "ios": "cd apps/mobile && yarn ios",
     "android": "cd apps/mobile && yarn android",
-    "desktop": "yarn workspace desktop-app dev",
+    "desktop": "cd apps/desktop && yarn tauri dev",
     "desktop:build": "yarn workspace desktop-app build",
     "desktop:prebuild": "yarn workspace desktop-app prebuild",
     "watch": "ultra -r --no-pretty --concurrency 400 watch",
