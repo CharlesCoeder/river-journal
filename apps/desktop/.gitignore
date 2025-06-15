@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Tauri
+/src-tauri/target/
+/src-tauri/gen/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

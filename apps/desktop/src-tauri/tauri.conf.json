@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.river-journal.app",
   "build": {
-    "frontendDist": "../../web/out",
-    "beforeBuildCommand": "",
-    "beforeDevCommand": ""
+    "frontendDist": "../out",
+    "beforeBuildCommand": "yarn prebuild",
+    "beforeDevCommand": "yarn next:dev"
   },
   "app": {
     "withGlobalTauri": true,
