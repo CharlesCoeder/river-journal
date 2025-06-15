@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "com.river-journal.app",
   "build": {
-    "frontendDist": "../../next/out",
-    "beforeBuildCommand": "cd ../next && yarn build:tauri",
+    "frontendDist": "../../web/out",
+    "beforeBuildCommand": "",
     "beforeDevCommand": ""
   },
   "app": {

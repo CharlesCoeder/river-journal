@@ -52,4 +52,4 @@ bmad-agent
 docs
 
 # tauri build
-apps/next/out
+apps/web/out

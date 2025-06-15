@@ -13,8 +13,8 @@
     "**/node_modules",
     "**/dist",
     "**/types",
-    "apps/next/out",
-    "apps/next/.next",
-    "apps/next/.tamagui"
+    "apps/web/out",
+    "apps/web/.next",
+    "apps/web/.tamagui"
   ]
 }

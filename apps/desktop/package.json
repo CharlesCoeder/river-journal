@@ -1,5 +1,5 @@
 {
-  "name": "tauri-app",
+  "name": "desktop-app",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,7 +7,7 @@
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
-    "prebuild": "cd ../next && yarn build"
+    "prebuild": "cd ../web && yarn build"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
