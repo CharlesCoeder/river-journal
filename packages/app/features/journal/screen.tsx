@@ -46,7 +46,6 @@ export function JournalScreen() {
           icon={MoreHorizontal}
           onPress={() => {
             // Dummy menu
-            console.log('Menu options')
           }}
         />
       </XStack>

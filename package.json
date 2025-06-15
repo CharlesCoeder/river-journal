@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.24.6",
-    "@tamagui/cli": "^1.126.0",
+    "@tamagui/cli": "^1.126.18",
     "check-dependency-version-consistency": "^4.1.0",
     "date-fns": "^4.1.0",
     "eslint": "^9.3.0",
@@ -59,6 +59,7 @@
     "npm": "10.8"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.3"
+    "@biomejs/biome": "^1.9.3",
+    "@tauri-apps/cli": "^2.5.0"
   }
 }
