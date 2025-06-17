@@ -47,9 +47,10 @@ thumbs.db
 # turbo build log
 **/.turbo/*
 
-# bmad-agent
-bmad-agent
+# bmad
 docs
+.bmad-core
+.cursor
 
 # tauri build
 apps/web/out
