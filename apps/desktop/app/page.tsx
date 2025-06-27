@@ -1,6 +1,7 @@
 'use client'
 
 import { JournalScreen } from 'app/features/journal/screen'
+import { HelloComponent } from '@my/ui'
 import { YStack } from 'tamagui'
 
 export default function Page() {
@@ -13,6 +14,7 @@ export default function Page() {
         paddingTop: 32,
       }}
     >
+      <HelloComponent />
       <JournalScreen />
     </YStack>
   )

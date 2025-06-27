@@ -1,5 +1,7 @@
 import { JournalScreen } from 'app/features/journal/screen'
+import { HelloComponent } from '@my/ui'
 import { Stack } from 'expo-router'
+import { YStack } from '@my/ui'
 
 export default function Screen() {
   return (
@@ -10,7 +12,10 @@ export default function Screen() {
           headerShown: false,
         }}
       />
-      <JournalScreen />
+      <YStack>
+        <HelloComponent />
+        <JournalScreen />
+      </YStack>
     </>
   )
 }
