@@ -4,6 +4,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font'
 import { SplashScreen, Stack } from 'expo-router'
 import { Provider } from 'app/provider'
+import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
@@ -40,14 +41,16 @@ function RootLayoutNav() {
 
   return (
     <SafeAreaProvider>
-      <Provider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <SafeAreaView style={{ flex: 1 }}>
-            <Stack />
-            <NativeToast />
-          </SafeAreaView>
-        </ThemeProvider>
-      </Provider>
+      <MobileKeyboardProvider>
+        <Provider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <SafeAreaView style={{ flex: 1 }}>
+              <Stack />
+              <NativeToast />
+            </SafeAreaView>
+          </ThemeProvider>
+        </Provider>
+      </MobileKeyboardProvider>
     </SafeAreaProvider>
   )
 }
