@@ -1,21 +1,12 @@
 'use client'
 
-import { JournalScreen } from 'app/features/journal/screen'
-import { HelloComponent } from '@my/ui'
+import { JournalingScreen } from 'app/features/journal'
 import { YStack } from 'tamagui'
 
 export default function Page() {
   return (
-    <YStack
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        paddingTop: 32,
-      }}
-    >
-      <HelloComponent />
-      <JournalScreen />
+    <YStack flex={1} width="100%" minHeight="100vh">
+      <JournalingScreen />
     </YStack>
   )
 }
