@@ -22,127 +22,248 @@ export function JournalTextArea({
   const isMobile = Platform.OS === 'ios' || Platform.OS === 'android'
   const { height: screenHeight } = useWindowDimensions()
 
-  // Simple state for scroll-focus interaction
-  const [isScrolling, setIsScrolling] = useState(false)
-  const [isTextAreaEditable, setIsTextAreaEditable] = useState(true)
+  // State for tracking cursor and scroll behavior
   const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
-
-  // Auto-scroll state
-  const [cursorY, setCursorY] = useState(0)
-  const [textAreaHeight, setTextAreaHeight] = useState(0)
-  const [lastContentLength, setLastContentLength] = useState(0)
   const [currentScrollY, setCurrentScrollY] = useState(0)
+  const [lastCursorPosition, setLastCursorPosition] = useState({ line: 0, y: 0 })
+  const [textAreaLayout, setTextAreaLayout] = useState({ x: 0, y: 0, width: 0, height: 0 })
+  const [isUserScrolling, setIsUserScrolling] = useState(false)
 
   const textAreaRef = useRef<any>(null)
   const scrollViewRef = useRef<any>(null)
+  const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Keyboard appears around bottom 350px of screen, so start auto-scroll when cursor gets within 400px of bottom
+  // Configuration
+  const lineHeight = 24 // Adjust based on your font size
+  const autoScrollThreshold = lineHeight * 2 // Start auto-scroll after just 2 lines (48px from top)
   const keyboardHeight = 350 // Approximate keyboard height
-  const dangerZoneFromBottom = 400 // Start auto-scroll when cursor gets this close to bottom
-  const dangerZoneY = screenHeight - dangerZoneFromBottom // Actual Y position from top
+
+  // biome-ignore lint/suspicious/noConsoleLog: debugging threshold configuration
+  console.log('🎯 Auto-scroll configuration:', {
+    screenHeight,
+    autoScrollThreshold,
+    thresholdInLines: 2,
+    message: 'Super aggressive - starts after 2 lines!',
+  })
 
   const handleFocus = (event: any) => {
+    // biome-ignore lint/suspicious/noConsoleLog: debugging focus state
+    console.log('🎯 TextArea focused')
     setIsTextAreaFocused(true)
     textAreaProps.onFocus?.(event)
   }
 
   const handleBlur = (event: any) => {
+    // biome-ignore lint/suspicious/noConsoleLog: debugging focus state
+    console.log('😴 TextArea blurred')
     setIsTextAreaFocused(false)
     textAreaProps.onBlur?.(event)
   }
 
-  const handleContentSizeChange = (event: any) => {
-    const { height } = event.nativeEvent.contentSize
-    setTextAreaHeight(height)
+  const handleLayout = (event: any) => {
+    const { x, y, width, height } = event.nativeEvent.layout
+    setTextAreaLayout({ x, y, width, height })
+    // biome-ignore lint/suspicious/noConsoleLog: debugging layout
+    console.log('📐 TextArea layout:', { x, y, width, height })
+  }
+
+  const calculateCursorLine = (text: string, cursorPosition: number): number => {
+    if (!text || cursorPosition === 0) {
+      // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
+      console.log('📊 calculateCursorLine: early return (no text or cursor at 0)')
+      return 0
+    }
+
+    // Get text up to cursor position
+    const textUpToCursor = text.slice(0, cursorPosition)
+
+    // For text wrapping calculation
+    const averageCharWidth = 8 // Approximate character width in pixels
+    const textAreaWidth = textAreaLayout.width - 32 // Account for padding
+    const charsPerLine = Math.floor(textAreaWidth / averageCharWidth)
+
+    // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
+    console.log('📊 calculateCursorLine:', {
+      cursorPosition,
+      textLength: text.length,
+      textUpToCursorLength: textUpToCursor.length,
+      textAreaWidth,
+      charsPerLine,
+    })
+
+    if (charsPerLine <= 0) {
+      // Fallback to counting explicit newlines only
+      const explicitNewlines = (textUpToCursor.match(/\n/g) || []).length
+      // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
+      console.log('📊 calculateCursorLine: using explicit newlines only (charsPerLine <= 0)', {
+        explicitNewlines,
+      })
+      return explicitNewlines
+    }
+
+    // Calculate total visual lines by simulating text wrapping
+    let totalLines = 0
+    let currentLineLength = 0
+
+    for (let i = 0; i < textUpToCursor.length; i++) {
+      const char = textUpToCursor[i]
+
+      if (char === '\n') {
+        // Explicit newline - start a new line
+        totalLines++
+        currentLineLength = 0
+        // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
+        console.log(`📊 Explicit newline at pos ${i}, totalLines: ${totalLines}`)
+      } else {
+        // Regular character
+        currentLineLength++
+
+        // Check if we've reached the wrap point
+        if (currentLineLength >= charsPerLine) {
+          totalLines++
+          currentLineLength = 0
+          // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
+          console.log(`📊 Text wrap at pos ${i}, totalLines: ${totalLines}`)
+        }
+      }
+    }
+
+    // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
+    console.log('📊 calculateCursorLine result:', {
+      totalLines,
+      currentLineLength,
+      finalResult: totalLines,
+    })
+
+    return totalLines
   }
 
   const handleSelectionChange = (event: any) => {
-    if (!isTextAreaFocused || !isMobile) return
+    // biome-ignore lint/suspicious/noConsoleLog: debugging selection change trigger
+    console.log('🔄 handleSelectionChange triggered', {
+      isTextAreaFocused,
+      isMobile,
+      isUserScrolling,
+    })
+
+    if (!isTextAreaFocused || !isMobile || isUserScrolling) {
+      // biome-ignore lint/suspicious/noConsoleLog: debugging early return
+      console.log('❌ Early return from handleSelectionChange')
+      return
+    }
 
     const { selection } = event.nativeEvent
     const { start } = selection
+    const text = textAreaProps.value || ''
 
-    // Estimate cursor Y position based on content and line height
-    const approximateLineHeight = 24 // Adjust based on your font size
-    const linesBeforeCursor = (textAreaProps.value || '').slice(0, start).split('\n').length - 1
-    const estimatedCursorY = linesBeforeCursor * approximateLineHeight
+    // biome-ignore lint/suspicious/noConsoleLog: debugging selection data
+    console.log('📝 Selection data:', { start, textLength: text.length, textAreaLayout })
 
-    setCursorY(estimatedCursorY)
+    const currentLine = calculateCursorLine(text, start)
+    const currentCursorY = currentLine * lineHeight
+
+    // Calculate cursor position relative to screen (accounting for scroll and textarea position)
+    const cursorScreenY = textAreaLayout.y + currentCursorY - currentScrollY
 
     // biome-ignore lint/suspicious/noConsoleLog: debugging cursor position
-    console.log(
-      `📍 Cursor - Y: ${estimatedCursorY}, Lines: ${linesBeforeCursor}, ScrollY: ${currentScrollY}`
-    )
+    console.log(`📍 Cursor - Line: ${currentLine}, Y: ${currentCursorY}, ScreenY: ${cursorScreenY}`)
+
+    // biome-ignore lint/suspicious/noConsoleLog: debugging line comparison
+    console.log('🔍 Line comparison:', {
+      currentLine,
+      lastLine: lastCursorPosition.line,
+      lineIncrease: currentLine > lastCursorPosition.line,
+      cursorScreenY,
+      autoScrollThreshold,
+      shouldAutoScroll: cursorScreenY > autoScrollThreshold,
+    })
+
+    // Check if we moved to a new line and cursor is in the auto-scroll zone
+    if (currentLine > lastCursorPosition.line && cursorScreenY > autoScrollThreshold) {
+      const linesDifference = currentLine - lastCursorPosition.line
+      const scrollAmount = linesDifference * lineHeight
+      const targetScrollY = currentScrollY + scrollAmount
+
+      // biome-ignore lint/suspicious/noConsoleLog: debugging auto-scroll behavior
+      console.log(`🚀 Auto-scrolling ${scrollAmount}px for ${linesDifference} new line(s)`, {
+        currentScrollY,
+        targetScrollY,
+        scrollViewRef: !!scrollViewRef.current,
+      })
+
+      // Scroll to keep the new line at the same visual position as the previous line
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({
+          y: Math.max(0, targetScrollY),
+          animated: true,
+        })
+        // biome-ignore lint/suspicious/noConsoleLog: debugging scroll execution
+        console.log('✅ ScrollTo executed')
+      } else {
+        // biome-ignore lint/suspicious/noConsoleLog: debugging scroll ref issue
+        console.log('❌ ScrollView ref is null')
+      }
+    } else {
+      // biome-ignore lint/suspicious/noConsoleLog: debugging no scroll reason
+      console.log('⏸️ No auto-scroll needed:', {
+        lineIncreased: currentLine > lastCursorPosition.line,
+        inScrollZone: cursorScreenY > autoScrollThreshold,
+      })
+    }
+
+    setLastCursorPosition({ line: currentLine, y: currentCursorY })
   }
 
   const handleTextChange = (newText: string) => {
-    const previousLength = lastContentLength
-    const newLength = newText.length
-    const isTypingNewContent = newLength > previousLength
-    const isNewLine = isTypingNewContent && newText.endsWith('\n')
-
-    setLastContentLength(newLength)
+    // biome-ignore lint/suspicious/noConsoleLog: debugging text change
+    console.log('✏️ Text changed:', { newLength: newText.length, preview: newText.slice(-20) })
     textAreaProps.onChangeText?.(newText)
-
-    // Auto-scroll if typing new content and cursor is in danger zone
-    if (isTypingNewContent && isTextAreaFocused && isMobile && scrollViewRef.current) {
-      setTimeout(() => {
-        const cursorScreenY = cursorY - currentScrollY // Where cursor appears on screen
-
-        // biome-ignore lint/suspicious/noConsoleLog: debugging scroll behavior
-        console.log(
-          `🐛 Debug - CursorScreenY: ${cursorScreenY}, DangerZoneY: ${dangerZoneY}, ScrollY: ${currentScrollY}, CursorY: ${cursorY}`
-        )
-
-        if (cursorScreenY > dangerZoneY) {
-          // Calculate scroll to keep current line at same visual position
-          const lineHeight = 24
-          const targetScrollY = isNewLine
-            ? currentScrollY + lineHeight // New line: scroll up by one line height
-            : currentScrollY + (cursorScreenY - dangerZoneY) // Regular typing: adjust to keep in safe zone
-
-          // biome-ignore lint/suspicious/noConsoleLog: debugging scroll behavior
-          console.log(`🐛 ScrollTo: ${targetScrollY} (current: ${currentScrollY})`)
-
-          scrollViewRef.current.scrollTo({
-            y: Math.max(0, targetScrollY),
-            animated: true,
-          })
-        } else {
-          // biome-ignore lint/suspicious/noConsoleLog: debugging scroll behavior
-          console.log(
-            `✅ No scroll needed - cursor at ${cursorScreenY}px, danger zone at ${dangerZoneY}px`
-          )
-        }
-      }, 50) // Small delay to ensure TextArea has updated
-    }
   }
 
   const handleScrollBeginDrag = () => {
-    setIsScrolling(true)
-    // Only disable editing if TextArea is not currently focused
-    if (!isTextAreaFocused) {
-      setIsTextAreaEditable(false)
+    // biome-ignore lint/suspicious/noConsoleLog: debugging scroll state
+    console.log('👆 User started scrolling')
+    setIsUserScrolling(true)
+
+    // Clear any existing timeout
+    if (userScrollTimeoutRef.current) {
+      clearTimeout(userScrollTimeoutRef.current)
     }
   }
 
   const handleScrollEndDrag = () => {
-    setIsScrolling(false)
-    // Re-enable editing after scroll ends
-    if (!isTextAreaFocused) {
-      setTimeout(() => setIsTextAreaEditable(true), 100)
-    }
+    // biome-ignore lint/suspicious/noConsoleLog: debugging scroll state
+    console.log('👆 User stopped scrolling, will re-enable auto-scroll in 1s')
+    // Set a timeout to re-enable auto-scroll after user stops scrolling
+    userScrollTimeoutRef.current = setTimeout(() => {
+      // biome-ignore lint/suspicious/noConsoleLog: debugging scroll state
+      console.log('✅ Auto-scroll re-enabled')
+      setIsUserScrolling(false)
+    }, 1000) // Wait 1 second after user stops scrolling
   }
 
   const handleScroll = (event: any) => {
     const scrollY = event.nativeEvent.contentOffset.y
     setCurrentScrollY(scrollY)
+    // biome-ignore lint/suspicious/noConsoleLog: debugging scroll position
+    console.log('📜 Scroll position:', scrollY)
   }
 
-  // Initialize content length tracking
+  // Clean up timeout on unmount
   useEffect(() => {
-    setLastContentLength((textAreaProps.value || '').length)
-  }, [textAreaProps.value])
+    return () => {
+      if (userScrollTimeoutRef.current) {
+        clearTimeout(userScrollTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Reset cursor tracking when text area loses focus
+  useEffect(() => {
+    if (!isTextAreaFocused) {
+      setLastCursorPosition({ line: 0, y: 0 })
+    }
+  }, [isTextAreaFocused])
 
   return (
     <ScrollView
@@ -157,7 +278,7 @@ export function JournalTextArea({
       scrollEventThrottle={16}
       contentContainerStyle={{
         flexGrow: 1,
-        paddingBottom: 350, // Extra space to scroll content above keyboard
+        paddingBottom: keyboardHeight + keyboardPadding,
       }}
       automaticallyAdjustKeyboardInsets={false}
       automaticallyAdjustContentInsets={false}
@@ -167,12 +288,11 @@ export function JournalTextArea({
         ref={textAreaRef}
         flex={1}
         minHeight={minHeight}
-        editable={isTextAreaEditable}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onChangeText={handleTextChange}
         onSelectionChange={handleSelectionChange}
-        onContentSizeChange={handleContentSizeChange}
+        onLayout={handleLayout}
       />
     </ScrollView>
   )

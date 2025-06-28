@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { YStack, XStack, Button, H4, WordCountDisplay, ResizeableTextArea } from '@my/ui'
+import { YStack, XStack, Button, H4, WordCountDisplay, JournalTextArea } from '@my/ui'
 
 export function JournalingScreen() {
   const [content, setContent] = useState('')
@@ -48,7 +48,7 @@ export function JournalingScreen() {
       <WordCountDisplay currentCount={wordCount} dailyTarget={dailyTarget} />
 
       {/* Primary text input area - ResizeableTextArea handles keyboard behavior */}
-      <ResizeableTextArea
+      <JournalTextArea
         placeholder="Begin your stream-of-consciousness writing here..."
         value={content}
         onChangeText={setContent}
