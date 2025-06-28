@@ -1,7 +1,7 @@
 import { TextArea } from '@my/ui'
 import type { TextAreaProps } from '@my/ui'
 
-export interface ResizeableTextAreaProps extends TextAreaProps {
+export interface JournalTextAreaProps extends TextAreaProps {
   /**
    * Extra padding to maintain above keyboard when it appears
    * (ignored on web)
@@ -13,10 +13,10 @@ export interface ResizeableTextAreaProps extends TextAreaProps {
   minHeight?: number
 }
 
-export function ResizeableTextArea({
+export function JournalTextArea({
   keyboardPadding, // ignored on web
   minHeight = 150,
   ...textAreaProps
-}: ResizeableTextAreaProps) {
+}: JournalTextAreaProps) {
   return <TextArea {...textAreaProps} minHeight={minHeight} />
 }

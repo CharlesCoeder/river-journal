@@ -52,8 +52,8 @@ export function JournalingScreen() {
         placeholder="Begin your stream-of-consciousness writing here..."
         value={content}
         onChangeText={setContent}
-        height={550}
-        minHeight={120}
+        flex={1}
+        minHeight={150}
         fontSize="$5"
         lineHeight="$6"
         padding="$3"
@@ -63,14 +63,12 @@ export function JournalingScreen() {
         backgroundColor="$background"
         keyboardPadding={40}
         $gtSm={{
-          height: 220,
-          minHeight: 100,
+          minHeight: 120,
           fontSize: '$4',
           padding: '$4',
         }}
         $gtMd={{
-          height: 250,
-          minHeight: 120,
+          minHeight: 150,
           fontSize: '$5',
           padding: '$4',
         }}
