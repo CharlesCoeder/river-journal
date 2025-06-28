@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Animated, Platform, useWindowDimensions, Easing } from 'react-native'
-import { TextArea } from 'tamagui'
-import type { TextAreaProps } from 'tamagui'
+import { TextArea, ScrollView } from '@my/ui'
+import type { TextAreaProps } from '@my/ui'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Keyboard controller and reanimated imports - only available on mobile
@@ -50,6 +50,14 @@ export function ResizeableTextArea({
   const animatedHeight = useRef(new Animated.Value(0)).current
   const keyboardHeight = useSharedValue ? useSharedValue(0) : { value: 0 }
   const [currentKeyboardHeight, setCurrentKeyboardHeight] = useState(0)
+  const [isScrolling, setIsScrolling] = useState(false)
+  const [isTextAreaEditable, setIsTextAreaEditable] = useState(true)
+  const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
+
+  // Component refs for interactive behavior
+  const scrollViewRef = useRef<any>(null)
+  const textAreaRef = useRef<any>(null)
+  const [scrollPosition, setScrollPosition] = useState(0)
 
   // Set up keyboard handler
   if (isMobile && useKeyboardHandler) {
@@ -130,16 +138,66 @@ export function ResizeableTextArea({
   ])
 
   const handleFocus = (event: any) => {
+    setIsTextAreaFocused(true)
     textAreaProps.onFocus?.(event)
   }
 
   const handleBlur = (event: any) => {
+    setIsTextAreaFocused(false)
     textAreaProps.onBlur?.(event)
   }
 
-  // For web/desktop, use standard TextArea
+  const handleScrollBeginDrag = (event: any) => {
+    setIsScrolling(true)
+
+    // Only disable editing if TextArea is not currently focused
+    // This prevents accidental focus during scroll, but allows scrolling within focused TextArea
+    if (!isTextAreaFocused) {
+      setIsTextAreaEditable(false)
+    }
+  }
+
+  const handleScroll = (event: any) => {
+    const currentScrollY = event.nativeEvent.contentOffset.y
+    setScrollPosition(currentScrollY)
+  }
+
+  const handleScrollEndDrag = () => {
+    setIsScrolling(false)
+
+    // Only re-enable editing if we disabled it (when TextArea wasn't focused)
+    if (!isTextAreaFocused) {
+      // Small delay to ensure scroll gesture is complete before re-enabling editing
+      setTimeout(() => {
+        setIsTextAreaEditable(true)
+      }, 100)
+    }
+  }
+
+  // For web/desktop, use standard TextArea with ScrollView
   if (!isMobile) {
-    return <TextArea {...textAreaProps} minHeight={minHeight} />
+    return (
+      <ScrollView
+        ref={scrollViewRef}
+        minHeight={minHeight}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={true}
+        alwaysBounceVertical={true}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <TextArea
+          {...textAreaProps}
+          ref={textAreaRef}
+          minHeight={minHeight}
+          editable={isTextAreaEditable}
+        />
+      </ScrollView>
+    )
   }
 
   // Initialize animated value
@@ -157,14 +215,31 @@ export function ResizeableTextArea({
 
   return (
     <Animated.View style={animatedStyle} onLayout={handleLayout}>
-      <TextArea
-        {...restTextAreaProps}
+      <ScrollView
+        ref={scrollViewRef}
         flex={1}
-        height={undefined}
-        minHeight={undefined}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-      />
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={true}
+        alwaysBounceVertical={true}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <TextArea
+          {...restTextAreaProps}
+          ref={textAreaRef}
+          flex={1}
+          height={undefined}
+          minHeight={undefined}
+          editable={isTextAreaEditable}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+      </ScrollView>
     </Animated.View>
   )
 }
