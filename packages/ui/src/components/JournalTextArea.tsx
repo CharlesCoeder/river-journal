@@ -25,6 +25,7 @@ export function JournalTextArea({
   // State for tracking cursor and scroll behavior
   const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
   const [currentScrollY, setCurrentScrollY] = useState(0)
+  const [intendedScrollY, setIntendedScrollY] = useState(0) // Track where we intend to scroll to
   const [lastCursorPosition, setLastCursorPosition] = useState({ line: 0, y: 0 })
   const [textAreaLayout, setTextAreaLayout] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const [isUserScrolling, setIsUserScrolling] = useState(false)
@@ -69,9 +70,9 @@ export function JournalTextArea({
     // Get text up to cursor position
     const textUpToCursor = text.slice(0, cursorPosition)
 
-    // For text wrapping calculation
-    const averageCharWidth = 8 // Approximate character width in pixels
-    const textAreaWidth = textAreaLayout.width - 32 // Account for padding
+    // For text wrapping calculation - use more conservative estimates
+    const averageCharWidth = 10 // More conservative character width (was 8)
+    const textAreaWidth = textAreaLayout.width - 40 // More conservative padding (was 32)
     const charsPerLine = Math.floor(textAreaWidth / averageCharWidth)
 
     // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
@@ -93,11 +94,12 @@ export function JournalTextArea({
       return explicitNewlines
     }
 
-    // Calculate total visual lines by simulating text wrapping
+    // Calculate total visual lines by simulating text wrapping with word boundaries
     let totalLines = 0
     let currentLineLength = 0
+    let i = 0
 
-    for (let i = 0; i < textUpToCursor.length; i++) {
+    while (i < textUpToCursor.length) {
       const char = textUpToCursor[i]
 
       if (char === '\n') {
@@ -106,16 +108,46 @@ export function JournalTextArea({
         currentLineLength = 0
         // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
         console.log(`📊 Explicit newline at pos ${i}, totalLines: ${totalLines}`)
-      } else {
-        // Regular character
-        currentLineLength++
-
-        // Check if we've reached the wrap point
-        if (currentLineLength >= charsPerLine) {
+        i++
+      } else if (char === ' ') {
+        // Space - check if we can fit it
+        if (currentLineLength + 1 > charsPerLine) {
+          // Wrap before the space
           totalLines++
           currentLineLength = 0
           // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
-          console.log(`📊 Text wrap at pos ${i}, totalLines: ${totalLines}`)
+          console.log(`📊 Word wrap at space pos ${i}, totalLines: ${totalLines}`)
+        } else {
+          currentLineLength++
+        }
+        i++
+      } else {
+        // Regular character - look ahead for word boundaries
+        let wordStart = i
+        let wordLength = 0
+
+        // Find the end of the current word
+        while (
+          i < textUpToCursor.length &&
+          textUpToCursor[i] !== ' ' &&
+          textUpToCursor[i] !== '\n'
+        ) {
+          wordLength++
+          i++
+        }
+
+        // Check if the word fits on current line
+        if (currentLineLength + wordLength > charsPerLine && currentLineLength > 0) {
+          // Word doesn't fit, wrap to new line
+          totalLines++
+          currentLineLength = wordLength
+          // biome-ignore lint/suspicious/noConsoleLog: debugging cursor line calculation
+          console.log(
+            `📊 Word wrap before word at pos ${wordStart}, totalLines: ${totalLines}, wordLength: ${wordLength}`
+          )
+        } else {
+          // Word fits on current line
+          currentLineLength += wordLength
         }
       }
     }
@@ -183,11 +215,18 @@ export function JournalTextArea({
     if (shouldAutoScroll) {
       const linesDifference = currentLine - lastCursorPosition.line
       const scrollAmount = linesDifference * lineHeight + 12
-      const targetScrollY = currentScrollY + scrollAmount
+      // Use intendedScrollY instead of currentScrollY to avoid race conditions
+      const baseScrollY = Math.max(intendedScrollY, currentScrollY)
+      const targetScrollY = baseScrollY + scrollAmount
+
+      // Update intended scroll position
+      setIntendedScrollY(targetScrollY)
 
       // biome-ignore lint/suspicious/noConsoleLog: debugging auto-scroll behavior
       console.log(`🚀 Auto-scrolling ${scrollAmount}px for ${linesDifference} new line(s)`, {
         currentScrollY,
+        intendedScrollY,
+        baseScrollY,
         targetScrollY,
         scrollViewRef: !!scrollViewRef.current,
       })
@@ -240,13 +279,20 @@ export function JournalTextArea({
 
       if (currentLine >= 2) {
         const scrollAmount = lineHeight + 12 // Same as before
-        const targetScrollY = currentScrollY + scrollAmount
+        // Use intendedScrollY instead of currentScrollY to avoid race conditions
+        const baseScrollY = Math.max(intendedScrollY, currentScrollY)
+        const targetScrollY = baseScrollY + scrollAmount
+
+        // Update intended scroll position
+        setIntendedScrollY(targetScrollY)
 
         // biome-ignore lint/suspicious/noConsoleLog: debugging immediate auto-scroll
         console.log('🚀 Immediate auto-scroll on newline:', {
           currentLine,
           scrollAmount,
           currentScrollY,
+          intendedScrollY,
+          baseScrollY,
           targetScrollY,
         })
 
@@ -289,6 +335,11 @@ export function JournalTextArea({
   const handleScroll = (event: any) => {
     const scrollY = event.nativeEvent.contentOffset.y
     setCurrentScrollY(scrollY)
+
+    // If user is manually scrolling, sync intended position
+    if (isUserScrolling) {
+      setIntendedScrollY(scrollY)
+    }
   }
 
   // Clean up timeout on unmount
