@@ -38,14 +38,6 @@ export function JournalTextArea({
   const autoScrollThreshold = lineHeight * 2 // Start auto-scroll after just 2 lines (48px from top)
   const keyboardHeight = 350 // Approximate keyboard height
 
-  // biome-ignore lint/suspicious/noConsoleLog: debugging threshold configuration
-  console.log('🎯 Auto-scroll configuration:', {
-    screenHeight,
-    autoScrollThreshold,
-    thresholdInLines: 2,
-    message: 'Super aggressive - starts after 2 lines!',
-  })
-
   const handleFocus = (event: any) => {
     // biome-ignore lint/suspicious/noConsoleLog: debugging focus state
     console.log('🎯 TextArea focused')
@@ -175,13 +167,22 @@ export function JournalTextArea({
       lineIncrease: currentLine > lastCursorPosition.line,
       cursorScreenY,
       autoScrollThreshold,
-      shouldAutoScroll: cursorScreenY > autoScrollThreshold,
+      aboveThreshold: cursorScreenY > autoScrollThreshold,
+      pastLine2: currentLine >= 2,
+      shouldAutoScroll:
+        currentLine > lastCursorPosition.line &&
+        (cursorScreenY > autoScrollThreshold || currentLine >= 2),
     })
 
     // Check if we moved to a new line and cursor is in the auto-scroll zone
-    if (currentLine > lastCursorPosition.line && cursorScreenY > autoScrollThreshold) {
+    // OR if we're past line 2 (always auto-scroll after the first couple lines)
+    const shouldAutoScroll =
+      currentLine > lastCursorPosition.line &&
+      (cursorScreenY > autoScrollThreshold || currentLine >= 2)
+
+    if (shouldAutoScroll) {
       const linesDifference = currentLine - lastCursorPosition.line
-      const scrollAmount = linesDifference * lineHeight
+      const scrollAmount = linesDifference * lineHeight + 12
       const targetScrollY = currentScrollY + scrollAmount
 
       // biome-ignore lint/suspicious/noConsoleLog: debugging auto-scroll behavior
@@ -217,6 +218,49 @@ export function JournalTextArea({
   const handleTextChange = (newText: string) => {
     // biome-ignore lint/suspicious/noConsoleLog: debugging text change
     console.log('✏️ Text changed:', { newLength: newText.length, preview: newText.slice(-20) })
+
+    const oldText = textAreaProps.value || ''
+    const textWasAdded = newText.length > oldText.length
+    const addedText = textWasAdded ? newText.slice(oldText.length) : ''
+    const newlineWasAdded = addedText.includes('\n')
+
+    // biome-ignore lint/suspicious/noConsoleLog: debugging newline detection
+    console.log('🔍 Text change analysis:', {
+      textWasAdded,
+      addedText: JSON.stringify(addedText),
+      newlineWasAdded,
+      oldLength: oldText.length,
+      newLength: newText.length,
+    })
+
+    // If a newline was just added and we're past line 2, auto-scroll immediately
+    if (newlineWasAdded && textWasAdded && isTextAreaFocused && isMobile && !isUserScrolling) {
+      // Calculate current line after the new text
+      const currentLine = calculateCursorLine(newText, newText.length)
+
+      if (currentLine >= 2) {
+        const scrollAmount = lineHeight + 12 // Same as before
+        const targetScrollY = currentScrollY + scrollAmount
+
+        // biome-ignore lint/suspicious/noConsoleLog: debugging immediate auto-scroll
+        console.log('🚀 Immediate auto-scroll on newline:', {
+          currentLine,
+          scrollAmount,
+          currentScrollY,
+          targetScrollY,
+        })
+
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({
+            y: Math.max(0, targetScrollY),
+            animated: true,
+          })
+          // biome-ignore lint/suspicious/noConsoleLog: debugging scroll execution
+          console.log('✅ Immediate ScrollTo executed')
+        }
+      }
+    }
+
     textAreaProps.onChangeText?.(newText)
   }
 
@@ -245,8 +289,6 @@ export function JournalTextArea({
   const handleScroll = (event: any) => {
     const scrollY = event.nativeEvent.contentOffset.y
     setCurrentScrollY(scrollY)
-    // biome-ignore lint/suspicious/noConsoleLog: debugging scroll position
-    console.log('📜 Scroll position:', scrollY)
   }
 
   // Clean up timeout on unmount
