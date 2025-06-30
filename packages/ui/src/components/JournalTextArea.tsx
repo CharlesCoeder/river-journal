@@ -1,5 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useWindowDimensions } from 'react-native'
+import { useKeyboardHandler } from 'react-native-keyboard-controller'
+import { runOnJS } from 'react-native-reanimated'
 import { TextArea, ScrollView } from '@my/ui'
 import type { TextAreaProps } from '@my/ui'
 
@@ -28,13 +30,25 @@ export function JournalTextArea({
   const [previousContentHeight, setPreviousContentHeight] = useState(0)
   const [textAreaLayout, setTextAreaLayout] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const [isUserScrolling, setIsUserScrolling] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+
+  // Use keyboard controller to get real-time keyboard height
+  useKeyboardHandler(
+    {
+      onMove: (event) => {
+        'worklet'
+        // Update state on the JS thread
+        runOnJS(setKeyboardHeight)(Math.max(event.height, 0))
+      },
+    },
+    []
+  )
 
   const textAreaRef = useRef<any>(null)
   const scrollViewRef = useRef<any>(null)
   const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Configuration
-  const keyboardHeight = 350 // Approximate keyboard height
   const autoScrollThreshold = screenHeight * 0.33 // Auto-scroll when cursor is in lower third of screen
 
   const handleFocus = (event: any) => {
