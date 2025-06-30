@@ -1,13 +1,45 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { YStack, XStack, Button, H4, Theme } from '@my/ui'
 import { WordCountDisplay, JournalTextArea } from '@my/ui'
+import { observer } from '@legendapp/state/react'
+import {
+  journal$,
+  updateCurrentFlowContent,
+  startNewFlowSession,
+  saveCurrentFlowSession,
+  waitForJournalLoaded,
+} from '../../state/journal'
 
-export function JournalingScreen() {
-  const [content, setContent] = useState('')
+export const JournalingScreen = observer(function JournalingScreen() {
+  const [isLoaded, setIsLoaded] = useState(false)
 
-  // Calculate word count
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0
+  // Get reactive values from Legend-State (using direct properties for better persistence)
+  const currentContent = journal$.currentFlowContent.get()
+  const wordCount = journal$.currentFlowWordCount.get()
   const dailyTarget = 750 // Default daily target words
+
+  // Wait for persistence to load, but don't auto-initialize flow session
+  useEffect(() => {
+    const loadPersistence = async () => {
+      // Wait for journal state to be loaded from persistence
+      await waitForJournalLoaded()
+      setIsLoaded(true)
+      // Don't auto-initialize - let first keystroke trigger flow creation
+    }
+
+    loadPersistence()
+  }, [])
+
+  // Show loading state while persistence is loading
+  if (!isLoaded) {
+    return (
+      <Theme name="blue">
+        <YStack flex={1} padding="$4" alignItems="center" justifyContent="center" minHeight={400}>
+          <H4>Loading...</H4>
+        </YStack>
+      </Theme>
+    )
+  }
 
   return (
     <Theme name="blue">
@@ -37,10 +69,10 @@ export function JournalingScreen() {
               variant="outlined"
               size="$3"
               onPress={() => {
-                // Exit Flow functionality
+                saveCurrentFlowSession()
               }}
             >
-              Exit Flow
+              Save Flow
             </Button>
             <Button variant="outlined" size="$3" disabled>
               Settings
@@ -52,11 +84,11 @@ export function JournalingScreen() {
 
         <JournalTextArea
           placeholder="Begin your stream-of-consciousness writing here..."
-          value={content}
-          onChangeText={setContent}
+          value={currentContent}
+          onChangeText={updateCurrentFlowContent}
           keyboardPadding={40}
         />
       </YStack>
     </Theme>
   )
-}
+})

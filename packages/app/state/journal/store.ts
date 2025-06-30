@@ -5,34 +5,19 @@
 import { syncObservable } from '@legendapp/state/sync'
 import { observable, syncState, batch, when } from '@legendapp/state'
 import { configurePersistence } from '../persistConfig'
+import type { FlowSession, DailyJournalEntry, JournalState } from './types'
 
-// Data models from story requirements
-export interface FlowSession {
-  id: string
-  timestamp: string
-  content: string
-  wordCount: number
-}
-
-export interface DailyJournalEntry {
-  id: string
-  date: string
-  flows: FlowSession[]
-  finalWordCount: number
-  lastModified: string
-}
-
-export interface JournalState {
-  currentEntry: DailyJournalEntry | null
-  entries: DailyJournalEntry[]
-  lastUpdated: string | null
-}
+// Re-export types for convenience
+export type { FlowSession, DailyJournalEntry, JournalState } from './types'
 
 // Create the journal store with initial values
 export const journal$ = observable<JournalState>({
   currentEntry: null,
   entries: [],
   lastUpdated: null,
+  currentFlowSession: null,
+  currentFlowContent: '',
+  currentFlowWordCount: 0,
 })
 
 // Only setup persistence on the client side
@@ -129,11 +114,6 @@ export const testBasicPersistence = () => {
   // Create test data
   const testContent = 'This is a test flow session for Legend-State persistence validation.'
   addFlowSession(testContent)
-
-  console.log('Test data added to journal store:', {
-    currentEntry: journal$.currentEntry.get(),
-    entriesCount: journal$.entries.get().length,
-  })
 }
 
 export const clearJournalData = () => {
@@ -141,5 +121,148 @@ export const clearJournalData = () => {
     currentEntry: null,
     entries: [],
     lastUpdated: new Date().toISOString(),
+    currentFlowSession: null,
+    currentFlowContent: '',
+    currentFlowWordCount: 0,
   })
+}
+
+// Current Flow Session Management Functions
+
+/**
+ * Creates a new flow session for real-time editing
+ */
+export const startNewFlowSession = (): void => {
+  const newFlowSession = createFlowSession('')
+  batch(() => {
+    journal$.currentFlowSession.set(newFlowSession)
+    journal$.currentFlowContent.set('')
+    journal$.currentFlowWordCount.set(0)
+    journal$.lastUpdated.set(new Date().toISOString())
+  })
+}
+
+/**
+ * Updates the content of the current flow session and recalculates word count
+ * Auto-initializes flow session on first keystroke if none exists
+ */
+export const updateCurrentFlowContent = (content: string): void => {
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0
+
+  batch(() => {
+    // Update direct properties for better persistence tracking
+    journal$.currentFlowContent.set(content)
+    journal$.currentFlowWordCount.set(wordCount)
+    journal$.lastUpdated.set(new Date().toISOString())
+
+    // Auto-initialize flow session on first keystroke if none exists
+    const currentFlow = journal$.currentFlowSession.get()
+    if (!currentFlow && content.length > 0) {
+      // Create new flow session when user starts typing
+      const newFlowSession = createFlowSession(content)
+      journal$.currentFlowSession.set(newFlowSession)
+
+      // Debug log for flow creation tracking
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('🌊 Flow session created on first keystroke:', {
+          flowId: newFlowSession.id,
+          timestamp: newFlowSession.timestamp,
+          firstCharacter: content.charAt(0),
+          contentLength: content.length,
+        })
+      }
+    } else if (currentFlow) {
+      // Update existing flow session
+      journal$.currentFlowSession.content.set(content)
+      journal$.currentFlowSession.wordCount.set(wordCount)
+    }
+  })
+}
+
+/**
+ * Gets the current flow session content
+ */
+export const getCurrentFlowContent = (): string => {
+  return journal$.currentFlowContent.get()
+}
+
+/**
+ * Gets the current flow session word count
+ */
+export const getCurrentFlowWordCount = (): number => {
+  return journal$.currentFlowWordCount.get()
+}
+
+/**
+ * Saves the current flow session to the daily journal entry
+ */
+export const saveCurrentFlowSession = (): void => {
+  const content = journal$.currentFlowContent.get()
+  if (!content.trim()) {
+    return // Don't save empty flow sessions
+  }
+
+  // Create a flow session from the current content
+  const currentFlow = createFlowSession(content)
+
+  const today = new Date().toISOString().split('T')[0]
+
+  batch(() => {
+    let currentEntry = journal$.currentEntry.get()
+
+    if (!currentEntry || currentEntry.date !== today) {
+      // Create new entry for today
+      currentEntry = createDailyJournalEntry(today, [currentFlow])
+      journal$.currentEntry.set(currentEntry)
+      journal$.entries.set((prev) => [...prev, currentEntry!])
+    } else {
+      // Add to existing entry
+      const updatedFlows = [...currentEntry.flows, currentFlow]
+      const updatedEntry = {
+        ...currentEntry,
+        flows: updatedFlows,
+        finalWordCount: updatedFlows.reduce((total, flow) => total + flow.wordCount, 0),
+        lastModified: new Date().toISOString(),
+      }
+
+      journal$.currentEntry.set(updatedEntry)
+      journal$.entries.set((prev) =>
+        prev.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
+      )
+    }
+
+    // Clear the current flow session after saving
+    journal$.currentFlowSession.set(null)
+    journal$.currentFlowContent.set('')
+    journal$.currentFlowWordCount.set(0)
+  })
+}
+
+/**
+ * Discards the current flow session without saving
+ */
+export const discardCurrentFlowSession = (): void => {
+  batch(() => {
+    journal$.currentFlowSession.set(null)
+    journal$.currentFlowContent.set('')
+    journal$.currentFlowWordCount.set(0)
+    journal$.lastUpdated.set(new Date().toISOString())
+  })
+}
+
+/**
+ * Debug function to test real-time content persistence
+ */
+export const debugCurrentFlow = () => {
+  const content = journal$.currentFlowContent.get()
+  const wordCount = journal$.currentFlowWordCount.get()
+  const lastUpdated = journal$.lastUpdated.get()
+
+  return {
+    content,
+    wordCount,
+    lastUpdated,
+    hasContent: !!content.trim(),
+  }
 }
