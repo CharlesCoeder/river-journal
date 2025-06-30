@@ -13,12 +13,18 @@ const StyledJournalArea = styled(TextArea, {
   lineHeight: '$6',
   padding: '$3',
   borderRadius: '$4',
-  borderWidth: 1,
+  borderWidth: 0,
 
   // Default theme-aware styles. These will automatically update with the theme.
-  borderColor: '$borderColor',
   backgroundColor: '$backgroundHover',
   placeholderTextColor: '$color',
+
+  // Focus state - remove borders and outline
+  focusStyle: {
+    borderWidth: 0,
+    outlineWidth: 0,
+    outlineStyle: 'none',
+  },
 
   // Example of adding a responsive style directly to the definition.
   $gtSm: {
