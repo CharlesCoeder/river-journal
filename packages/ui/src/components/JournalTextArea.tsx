@@ -1,190 +1,203 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, forwardRef } from 'react'
 import { useWindowDimensions } from 'react-native'
 import { useKeyboardHandler } from 'react-native-keyboard-controller'
 import { runOnJS } from 'react-native-reanimated'
-import { TextArea, ScrollView } from '@my/ui'
-import type { TextAreaProps } from '@my/ui'
+import { ScrollView, TextArea, styled } from '@my/ui'
+import type { GetProps } from '@my/ui'
 
-export interface JournalTextAreaProps extends TextAreaProps {
-  /**
-   * Extra padding to maintain above keyboard when it appears
-   */
+// 1. Create a base styled component for the text area.
+// This is where you define the core, reusable styles and variants.
+const StyledJournalArea = styled(TextArea, {
+  name: 'JournalTextArea', // Giving it a name allows for component-specific sub-themes.
+  flex: 1,
+
+  // Default styles are defined here.
+  fontSize: '$5',
+  lineHeight: '$6',
+  padding: '$3',
+  borderRadius: '$4',
+  borderWidth: 1,
+
+  // Default theme-aware styles. These will automatically update with the theme.
+  borderColor: '$borderColor',
+  backgroundColor: '$backgroundHover',
+  placeholderTextColor: '$color',
+
+  // Example of adding a responsive style directly to the definition.
+  $gtSm: {
+    minHeight: 120,
+    fontSize: '$4',
+    padding: '$4',
+  },
+  $gtMd: {
+    minHeight: 150,
+    fontSize: '$5',
+    padding: '$4',
+  },
+})
+
+// 2. Define the props for the final component.
+// GetProps extracts all props from the styled component, including its variants. [cite: 1789]
+type JournalTextAreaProps = GetProps<typeof StyledJournalArea> & {
   keyboardPadding?: number
-  /**
-   * Minimum height constraint for the text area
-   */
   minHeight?: number
 }
 
-export function JournalTextArea({
-  keyboardPadding = 20,
-  minHeight = 150,
-  ...textAreaProps
-}: JournalTextAreaProps) {
-  const { height: screenHeight } = useWindowDimensions()
+// 3. Create the final component, which handles complex logic.
+// We use forwardRef to allow passing a ref to the underlying ScrollView.
+export const JournalTextArea = forwardRef(
+  (
+    { keyboardPadding = 20, minHeight = 150, ...textAreaProps }: JournalTextAreaProps,
+    ref: React.ForwardedRef<ScrollView>
+  ) => {
+    // --- All of your existing hooks and logic for keyboard handling remain the same ---
+    const { height: screenHeight } = useWindowDimensions()
+    const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
+    const [currentScrollY, setCurrentScrollY] = useState(0)
+    const [intendedScrollY, setIntendedScrollY] = useState(0)
+    const [previousContentHeight, setPreviousContentHeight] = useState(0)
+    const [textAreaLayout, setTextAreaLayout] = useState({ x: 0, y: 0, width: 0, height: 0 })
+    const [isUserScrolling, setIsUserScrolling] = useState(false)
+    const [keyboardHeight, setKeyboardHeight] = useState(0)
 
-  // State for tracking focus, scroll behavior, and content size
-  const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
-  const [currentScrollY, setCurrentScrollY] = useState(0)
-  const [intendedScrollY, setIntendedScrollY] = useState(0) // Track where we intend to scroll to
-  const [previousContentHeight, setPreviousContentHeight] = useState(0)
-  const [textAreaLayout, setTextAreaLayout] = useState({ x: 0, y: 0, width: 0, height: 0 })
-  const [isUserScrolling, setIsUserScrolling] = useState(false)
-  const [keyboardHeight, setKeyboardHeight] = useState(0)
+    const textAreaRef = useRef<any>(null)
+    const scrollViewRef = useRef<any>(null)
+    const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Use keyboard controller to get real-time keyboard height
-  useKeyboardHandler(
-    {
-      onMove: (event) => {
-        'worklet'
-        // Update state on the JS thread
-        runOnJS(setKeyboardHeight)(Math.max(event.height, 0))
+    // Configuration
+    const autoScrollThreshold = screenHeight * 0.33
+
+    useKeyboardHandler(
+      {
+        onMove: (event) => {
+          'worklet'
+          runOnJS(setKeyboardHeight)(Math.max(event.height, 0))
+        },
       },
-    },
-    []
-  )
+      []
+    )
 
-  const textAreaRef = useRef<any>(null)
-  const scrollViewRef = useRef<any>(null)
-  const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const handleFocus = (event: any) => {
+      setIsTextAreaFocused(true)
+      textAreaProps.onFocus?.(event)
+    }
 
-  // Configuration
-  const autoScrollThreshold = screenHeight * 0.33 // Auto-scroll when cursor is in lower third of screen
+    const handleBlur = (event: any) => {
+      setIsTextAreaFocused(false)
+      textAreaProps.onBlur?.(event)
+    }
 
-  const handleFocus = (event: any) => {
-    setIsTextAreaFocused(true)
-    textAreaProps.onFocus?.(event)
-  }
+    const handleLayout = (event: any) => {
+      const { x, y, width, height } = event.nativeEvent.layout
+      setTextAreaLayout({ x, y, width, height })
+    }
 
-  const handleBlur = (event: any) => {
-    setIsTextAreaFocused(false)
-    textAreaProps.onBlur?.(event)
-  }
+    const handleContentSizeChange = (event: any) => {
+      const { height: newContentHeight } = event.nativeEvent.contentSize
+      if (
+        newContentHeight > previousContentHeight &&
+        isTextAreaFocused &&
+        !isUserScrolling &&
+        previousContentHeight > 0
+      ) {
+        const heightIncrease = newContentHeight - previousContentHeight
+        const baseScrollY = Math.max(intendedScrollY, currentScrollY)
+        const textAreaBottom = textAreaLayout.y + newContentHeight - baseScrollY
+        const shouldAutoScroll = textAreaBottom > autoScrollThreshold
 
-  const handleLayout = (event: any) => {
-    const { x, y, width, height } = event.nativeEvent.layout
-    setTextAreaLayout({ x, y, width, height })
-  }
-
-  const handleContentSizeChange = (event: any) => {
-    const { height: newContentHeight } = event.nativeEvent.contentSize
-
-    // Only auto-scroll if:
-    // 1. Content height increased (new lines added)
-    // 2. TextArea is focused
-    // 3. User is not manually scrolling
-    // 4. Cursor is in the auto-scroll zone (lower third of visible area)
-    if (
-      newContentHeight > previousContentHeight &&
-      isTextAreaFocused &&
-      !isUserScrolling &&
-      previousContentHeight > 0 // Avoid initial render scroll
-    ) {
-      const heightIncrease = newContentHeight - previousContentHeight
-
-      // Use the intended scroll position instead of current to handle rapid changes
-      // This prevents compounding errors when multiple scroll animations are in progress
-      const baseScrollY = Math.max(intendedScrollY, currentScrollY)
-
-      // Calculate if we should auto-scroll based on current cursor position
-      // If the textarea extends beyond the auto-scroll threshold, scroll to maintain position
-      const textAreaBottom = textAreaLayout.y + newContentHeight - baseScrollY
-      const shouldAutoScroll = textAreaBottom > autoScrollThreshold
-
-      if (shouldAutoScroll) {
-        const targetScrollY = baseScrollY + heightIncrease
-
-        // Update intended scroll position immediately to avoid race conditions
-        setIntendedScrollY(targetScrollY)
-
-        if (scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({
-            y: Math.max(0, targetScrollY),
-            animated: true,
-          })
+        if (shouldAutoScroll) {
+          const targetScrollY = baseScrollY + heightIncrease
+          setIntendedScrollY(targetScrollY)
+          if (scrollViewRef.current) {
+            scrollViewRef.current.scrollTo({
+              y: Math.max(0, targetScrollY),
+              animated: true,
+            })
+          }
         }
       }
+      setPreviousContentHeight(newContentHeight)
     }
 
-    setPreviousContentHeight(newContentHeight)
-  }
-
-  const handleTextChange = (newText: string) => {
-    textAreaProps.onChangeText?.(newText)
-  }
-
-  const handleScrollBeginDrag = () => {
-    setIsUserScrolling(true)
-
-    // Clear any existing timeout
-    if (userScrollTimeoutRef.current) {
-      clearTimeout(userScrollTimeoutRef.current)
+    const handleTextChange = (newText: string) => {
+      textAreaProps.onChangeText?.(newText)
     }
-  }
 
-  const handleScrollEndDrag = () => {
-    // Set a timeout to re-enable auto-scroll after user stops scrolling
-    userScrollTimeoutRef.current = setTimeout(() => {
-      setIsUserScrolling(false)
-    }, 1000) // Wait 1 second after user stops scrolling
-  }
-
-  const handleScroll = (event: any) => {
-    const scrollY = event.nativeEvent.contentOffset.y
-    setCurrentScrollY(scrollY)
-
-    // If user is manually scrolling, sync intended position to current position
-    if (isUserScrolling) {
-      setIntendedScrollY(scrollY)
-    }
-  }
-
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
+    const handleScrollBeginDrag = () => {
+      setIsUserScrolling(true)
       if (userScrollTimeoutRef.current) {
         clearTimeout(userScrollTimeoutRef.current)
       }
     }
-  }, [])
 
-  // Reset content height tracking when text area loses focus
-  useEffect(() => {
-    if (!isTextAreaFocused) {
-      setPreviousContentHeight(0)
-      setIntendedScrollY(0)
+    const handleScrollEndDrag = () => {
+      userScrollTimeoutRef.current = setTimeout(() => {
+        setIsUserScrolling(false)
+      }, 1000)
     }
-  }, [isTextAreaFocused])
 
-  return (
-    <ScrollView
-      ref={scrollViewRef}
-      showsVerticalScrollIndicator={false}
-      alwaysBounceVertical={true}
-      keyboardDismissMode="interactive"
-      keyboardShouldPersistTaps="handled"
-      onScrollBeginDrag={handleScrollBeginDrag}
-      onScrollEndDrag={handleScrollEndDrag}
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
-      contentContainerStyle={{
-        flexGrow: 1,
-        paddingBottom: keyboardHeight + keyboardPadding,
-      }}
-      automaticallyAdjustKeyboardInsets={false}
-      automaticallyAdjustContentInsets={false}
-    >
-      <TextArea
-        {...textAreaProps}
-        ref={textAreaRef}
-        flex={1}
-        minHeight={minHeight}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onChangeText={handleTextChange}
-        onContentSizeChange={handleContentSizeChange}
-        onLayout={handleLayout}
-      />
-    </ScrollView>
-  )
-}
+    const handleScroll = (event: any) => {
+      const scrollY = event.nativeEvent.contentOffset.y
+      setCurrentScrollY(scrollY)
+      if (isUserScrolling) {
+        setIntendedScrollY(scrollY)
+      }
+    }
+
+    useEffect(() => {
+      return () => {
+        if (userScrollTimeoutRef.current) {
+          clearTimeout(userScrollTimeoutRef.current)
+        }
+      }
+    }, [])
+
+    useEffect(() => {
+      if (!isTextAreaFocused) {
+        setPreviousContentHeight(0)
+        setIntendedScrollY(0)
+      }
+    }, [isTextAreaFocused])
+    // --- End of logic section ---
+
+    return (
+      <ScrollView
+        ref={(scrollView) => {
+          scrollViewRef.current = scrollView
+          if (ref) {
+            if (typeof ref === 'function') {
+              ref(scrollView)
+            } else {
+              ref.current = scrollView
+            }
+          }
+        }}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={true}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: keyboardHeight + keyboardPadding,
+        }}
+        automaticallyAdjustKeyboardInsets={false}
+        automaticallyAdjustContentInsets={false}
+      >
+        <StyledJournalArea
+          {...textAreaProps}
+          ref={textAreaRef}
+          minHeight={minHeight}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onChangeText={handleTextChange}
+          onContentSizeChange={handleContentSizeChange}
+          onLayout={handleLayout}
+        />
+      </ScrollView>
+    )
+  }
+)

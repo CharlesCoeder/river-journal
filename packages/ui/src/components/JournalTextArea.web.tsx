@@ -1,7 +1,41 @@
-import { TextArea } from '@my/ui'
-import type { TextAreaProps } from '@my/ui'
+import { forwardRef } from 'react'
+import { TextArea, styled } from '@my/ui'
+import type { GetProps } from '@my/ui'
 
-export interface JournalTextAreaProps extends TextAreaProps {
+// 1. Create a base styled component for the text area.
+// This is where you define the core, reusable styles and variants.
+const StyledJournalArea = styled(TextArea, {
+  name: 'JournalTextArea', // Giving it a name allows for component-specific sub-themes.
+  flex: 1,
+
+  // Default styles are defined here.
+  fontSize: '$5',
+  lineHeight: '$6',
+  padding: '$3',
+  borderRadius: '$4',
+  borderWidth: 1,
+
+  // Default theme-aware styles. These will automatically update with the theme.
+  borderColor: '$borderColor',
+  backgroundColor: '$backgroundHover',
+  placeholderTextColor: '$color',
+
+  // Example of adding a responsive style directly to the definition.
+  $gtSm: {
+    minHeight: 120,
+    fontSize: '$4',
+    padding: '$4',
+  },
+  $gtMd: {
+    minHeight: 150,
+    fontSize: '$5',
+    padding: '$4',
+  },
+})
+
+// 2. Define the props for the final component.
+// GetProps extracts all props from the styled component, including its variants.
+type JournalTextAreaProps = GetProps<typeof StyledJournalArea> & {
   /**
    * Extra padding to maintain above keyboard when it appears
    * (ignored on web)
@@ -13,10 +47,10 @@ export interface JournalTextAreaProps extends TextAreaProps {
   minHeight?: number
 }
 
-export function JournalTextArea({
-  keyboardPadding, // ignored on web
-  minHeight = 150,
-  ...textAreaProps
-}: JournalTextAreaProps) {
-  return <TextArea {...textAreaProps} minHeight={minHeight} />
-}
+// 3. Create the final component for web - much simpler than mobile version
+// We use forwardRef to allow passing a ref to the underlying TextArea.
+export const JournalTextArea = forwardRef<any, JournalTextAreaProps>(
+  ({ keyboardPadding, minHeight = 150, ...textAreaProps }, ref) => {
+    return <StyledJournalArea {...textAreaProps} ref={ref} minHeight={minHeight} />
+  }
+)

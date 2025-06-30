@@ -54,27 +54,7 @@ export function JournalingScreen() {
           placeholder="Begin your stream-of-consciousness writing here..."
           value={content}
           onChangeText={setContent}
-          flex={1}
-          minHeight={150}
-          fontSize="$5"
-          lineHeight="$6"
-          padding="$3"
-          borderRadius="$4"
-          borderWidth={1}
-          borderColor="$borderColor"
-          backgroundColor="$backgroundHover"
-          placeholderTextColor="$color"
           keyboardPadding={40}
-          $gtSm={{
-            minHeight: 120,
-            fontSize: '$4',
-            padding: '$4',
-          }}
-          $gtMd={{
-            minHeight: 150,
-            fontSize: '$5',
-            padding: '$4',
-          }}
         />
       </YStack>
     </Theme>
