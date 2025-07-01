@@ -5,7 +5,11 @@ import { animations } from './animations'
 
 export const config = createTamagui({
   ...defaultConfig,
-  settings: { ...defaultConfig.settings, onlyAllowShorthands: false },
+  settings: {
+    ...defaultConfig.settings,
+    onlyAllowShorthands: false,
+    styleCompat: 'react-native',
+  },
   animations,
   fonts: {
     body: bodyFont,
