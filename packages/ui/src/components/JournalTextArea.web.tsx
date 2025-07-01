@@ -27,12 +27,12 @@ const StyledJournalArea = styled(TextArea, {
   },
 
   // Example of adding a responsive style directly to the definition.
-  $gtSm: {
+  $sm: {
     minHeight: 120,
     fontSize: '$4',
     padding: '$4',
   },
-  $gtMd: {
+  $md: {
     minHeight: 150,
     fontSize: '$5',
     padding: '$4',

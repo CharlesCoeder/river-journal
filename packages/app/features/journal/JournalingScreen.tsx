@@ -51,11 +51,11 @@ export const JournalingScreen = observer(function JournalingScreen() {
         width="100%"
         alignSelf="center"
         backgroundColor="$background"
-        $gtSm={{
+        $sm={{
           padding: '$3',
           gap: '$3',
         }}
-        $gtMd={{
+        $md={{
           padding: '$4',
           gap: '$4',
         }}
