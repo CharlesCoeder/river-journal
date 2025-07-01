@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { YStack, XStack, Button, H4, Theme } from '@my/ui'
 import { WordCountDisplay, JournalTextArea } from '@my/ui'
-import { observer } from '@legendapp/state/react'
+import { observer, use$ } from '@legendapp/state/react'
 import {
   journal$,
   updateCurrentFlowContent,
@@ -13,9 +13,9 @@ import {
 export const JournalingScreen = observer(function JournalingScreen() {
   const [isLoaded, setIsLoaded] = useState(false)
 
-  // Get reactive values from Legend-State (using direct properties for better persistence)
-  const currentContent = journal$.currentFlowContent.get()
-  const wordCount = journal$.currentFlowWordCount.get()
+  const currentContent = use$(journal$.currentFlowContent)
+  const wordCount = use$(journal$.currentFlowWordCount)
+
   const dailyTarget = 750 // Default daily target words
 
   // Wait for persistence to load, but don't auto-initialize flow session
