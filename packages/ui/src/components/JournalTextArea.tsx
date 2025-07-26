@@ -18,6 +18,9 @@ const StyledJournalArea = styled(TextArea, {
   borderRadius: '$4',
   borderWidth: 0,
 
+  // Ensure text starts at the top on both iOS and Android
+  textAlignVertical: 'top',
+
   // Default theme-aware styles. These will automatically update with the theme.
   backgroundColor: '$backgroundHover',
   placeholderTextColor: '$color',
