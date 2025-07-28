@@ -48,7 +48,6 @@ thumbs.db
 **/.turbo/*
 
 # bmad
-docs
 .bmad-core
 .cursor
 
