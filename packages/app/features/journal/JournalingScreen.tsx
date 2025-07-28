@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { YStack, XStack, Button, H4, Theme } from '@my/ui'
+import { YStack, XStack, Button, H4, Theme, ThemeSwitcher } from '@my/ui'
 import { WordCountDisplay, JournalTextArea } from '@my/ui'
 import { observer, use$ } from '@legendapp/state/react'
 import {
@@ -9,12 +9,14 @@ import {
   saveCurrentFlowSession,
   waitForJournalLoaded,
 } from '../../state/journal'
+import { theme$, setTheme } from '../../state/theme'
 
 export const JournalingScreen = observer(function JournalingScreen() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   const currentContent = use$(journal$.currentFlowContent)
   const wordCount = use$(journal$.currentFlowWordCount)
+  const currentTheme = use$(theme$.currentTheme)
 
   const dailyTarget = 750 // Default daily target words
 
@@ -33,7 +35,7 @@ export const JournalingScreen = observer(function JournalingScreen() {
   // Show loading state while persistence is loading
   if (!isLoaded) {
     return (
-      <Theme name="blue">
+      <Theme name={currentTheme}>
         <YStack flex={1} padding="$4" alignItems="center" justifyContent="center" minHeight={400}>
           <H4>Loading...</H4>
         </YStack>
@@ -42,7 +44,7 @@ export const JournalingScreen = observer(function JournalingScreen() {
   }
 
   return (
-    <Theme name="blue">
+    <Theme name={currentTheme}>
       <YStack
         flex={1}
         padding="$4"
@@ -70,9 +72,10 @@ export const JournalingScreen = observer(function JournalingScreen() {
               size="$3"
               onPress={() => {
                 saveCurrentFlowSession()
+                // TODO: Implement actual exit flow logic
               }}
             >
-              Save Flow
+              Exit Flow
             </Button>
             <Button variant="outlined" size="$3" disabled>
               Settings
@@ -81,6 +84,9 @@ export const JournalingScreen = observer(function JournalingScreen() {
         </XStack>
 
         <WordCountDisplay currentCount={wordCount} dailyTarget={dailyTarget} />
+
+        {/* Theme Switcher */}
+        <ThemeSwitcher currentTheme={currentTheme} onThemeChange={setTheme} />
 
         <JournalTextArea
           placeholder="Begin your stream-of-consciousness writing here..."
