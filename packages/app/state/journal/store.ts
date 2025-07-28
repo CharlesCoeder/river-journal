@@ -36,9 +36,6 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Status observable for tracking when persistence is loaded
-export const journalStatus$ = syncState(journal$)
-
 // Helper function to wait for journal state to be loaded from persistence
 export const waitForJournalLoaded = async () => {
   // If we're on the server, return immediately
@@ -47,7 +44,7 @@ export const waitForJournalLoaded = async () => {
   }
 
   try {
-    await when(journalStatus$.isPersistLoaded)
+    await when(syncState(journal$).isPersistLoaded)
     return true
   } catch (error) {
     console.error('Error in waitForJournalLoaded:', error)
