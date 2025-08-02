@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
-import { YStack, XStack, Button, H4, Theme, ThemeSwitcher } from '@my/ui'
-import { WordCountDisplay, JournalTextArea } from '@my/ui'
+import { YStack, H4, Theme, WordCountDisplay } from '@my/ui'
 import { observer, use$ } from '@legendapp/state/react'
 import {
   journal$,
   updateCurrentFlowContent,
-  startNewFlowSession,
   saveCurrentFlowSession,
   waitForJournalLoaded,
 } from '../../state/journal'
 import { theme$, setTheme } from '../../state/theme'
+import { JournalingContainer } from './components/JournalingContainer'
+import { JournalingControls } from './components/JournalingControls'
+import { JournalingEditor } from './components/JournalingEditor'
 
 export const JournalingScreen = observer(function JournalingScreen() {
   const [isLoaded, setIsLoaded] = useState(false)
@@ -36,65 +37,37 @@ export const JournalingScreen = observer(function JournalingScreen() {
   if (!isLoaded) {
     return (
       <Theme name={currentTheme}>
-        <YStack flex={1} padding="$4" alignItems="center" justifyContent="center" minHeight={400}>
-          <H4>Loading...</H4>
+        <YStack flex={1} alignItems="center" justifyContent="center" backgroundColor="$background">
+          <H4 color="$color">Loading...</H4>
         </YStack>
       </Theme>
     )
   }
 
+  const handleExitFlow = () => {
+    saveCurrentFlowSession()
+    // TODO: Implement actual exit flow logic
+  }
+
   return (
     <Theme name={currentTheme}>
-      <YStack
-        flex={1}
-        padding="$4"
-        gap="$2"
-        maxWidth={800}
-        width="100%"
-        alignSelf="center"
-        backgroundColor="$background"
-        $sm={{
-          padding: '$3',
-          gap: '$3',
-        }}
-        $md={{
-          padding: '$4',
-          gap: '$4',
-        }}
-      >
-        {/* Header area with controls */}
-        <XStack justifyContent="space-between" alignItems="center">
-          <H4>River Journal</H4>
-          <XStack gap="$2" alignItems="center">
-            {/* Let's make this button have a different, more active theme */}
-            <Button
-              variant="outlined"
-              size="$3"
-              onPress={() => {
-                saveCurrentFlowSession()
-                // TODO: Implement actual exit flow logic
-              }}
-            >
-              Exit Flow
-            </Button>
-            <Button variant="outlined" size="$3" disabled>
-              Settings
-            </Button>
-          </XStack>
-        </XStack>
-
-        <WordCountDisplay currentCount={wordCount} dailyTarget={dailyTarget} />
-
-        {/* Theme Switcher */}
-        <ThemeSwitcher currentTheme={currentTheme} onThemeChange={setTheme} />
-
-        <JournalTextArea
-          placeholder="Begin your stream-of-consciousness writing here..."
-          value={currentContent}
-          onChangeText={updateCurrentFlowContent}
-          keyboardPadding={40}
+      <JournalingContainer>
+        {/* Header area with essential controls */}
+        <JournalingControls onExitFlow={handleExitFlow} />
+        
+        {/* Word count display area */}
+        <WordCountDisplay 
+          currentCount={wordCount} 
+          dailyTarget={dailyTarget} 
         />
-      </YStack>
+        
+        {/* Main writing area - center-aligned and focused */}
+        <JournalingEditor
+          content={currentContent}
+          onContentChange={updateCurrentFlowContent}
+          placeholder="Begin your stream-of-consciousness writing here..."
+        />
+      </JournalingContainer>
     </Theme>
   )
 })
