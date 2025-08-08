@@ -43,7 +43,6 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
                 position: 'absolute',
                 top: '12px',
                 left: '12px',
-                color: '#999',
                 fontSize: '16px',
                 pointerEvents: 'none',
                 userSelect: 'none',

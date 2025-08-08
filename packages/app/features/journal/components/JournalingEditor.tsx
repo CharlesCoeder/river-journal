@@ -1,5 +1,6 @@
 import type React from 'react'
-import { YStack } from '@my/ui'
+import { YStack, useTheme } from '@my/ui'
+import { Platform } from 'react-native'
 import LexicalEditor from './LexicalEditor'
 
 interface JournalingEditorProps {
@@ -18,6 +19,18 @@ export const JournalingEditor: React.FC<JournalingEditorProps> = ({
   onContentChange,
   placeholder = 'Begin your stream-of-consciousness writing here...',
 }) => {
+  const theme = useTheme()
+
+  // Extract theme values for mobile Lexical editor
+  const themeValues = {
+    textColor: theme.color.val,
+    // Use placeholderColor if available, otherwise create a translucent version of the text color
+    placeholderColor:
+      theme.placeholderColor?.val ||
+      (theme.color.val.startsWith('#')
+        ? `${theme.color.val}80` // Add alpha to hex colors
+        : `rgba(${theme.color.val}, 0.5)`), // Convert others to rgba with 50% opacity
+  }
   return (
     <YStack
       flex={1}
@@ -51,7 +64,12 @@ export const JournalingEditor: React.FC<JournalingEditorProps> = ({
           padding: '$6',
         }}
       >
-        <LexicalEditor className="lex-root" placeholder={placeholder} onChange={onContentChange} />
+        <LexicalEditor
+          className="lex-root"
+          placeholder={placeholder}
+          onChange={onContentChange}
+          {...(Platform.OS !== 'web' ? { themeValues } : {})}
+        />
       </YStack>
     </YStack>
   )

@@ -16,6 +16,7 @@ const customThemes = {
     colorHover: '#7c2d12',
     colorPress: '#ea580c',
     colorFocus: '#c2410c',
+    placeholderColor: '#9a341280', // 50% opacity version of color
   },
   indigo: {
     ...defaultConfig.themes.light,
@@ -27,6 +28,7 @@ const customThemes = {
     colorHover: '#312e81',
     colorPress: '#4338ca',
     colorFocus: '#4f46e5',
+    placeholderColor: '#3730a380', // 50% opacity version of color
   },
   violet: {
     ...defaultConfig.themes.light,
@@ -38,6 +40,7 @@ const customThemes = {
     colorHover: '#581c87',
     colorPress: '#7c3aed',
     colorFocus: '#8b5cf6',
+    placeholderColor: '#6b21a880', // 50% opacity version of color
   },
 }
 
