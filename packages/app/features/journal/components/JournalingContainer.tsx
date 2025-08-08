@@ -1,4 +1,4 @@
-import React from 'react'
+import type React from 'react'
 import { YStack } from '@my/ui'
 
 interface JournalingContainerProps {
@@ -18,9 +18,7 @@ export const JournalingContainer: React.FC<JournalingContainerProps> = ({ childr
       paddingVertical="$3"
       gap="$4"
       width="100%"
-      maxWidth={800}
-      alignSelf="center"
-      minHeight="100vh"
+      alignSelf="stretch"
       $sm={{
         paddingHorizontal: '$3',
         paddingVertical: '$2',
@@ -40,4 +38,4 @@ export const JournalingContainer: React.FC<JournalingContainerProps> = ({ childr
       {children}
     </YStack>
   )
-} 
+}

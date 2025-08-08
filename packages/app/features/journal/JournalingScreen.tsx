@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { YStack, H4, Theme, WordCountDisplay } from '@my/ui'
+import { YStack, H4, Theme, WordCountDisplay, ThemeSwitcher } from '@my/ui'
 import { observer, use$ } from '@legendapp/state/react'
 import {
   journal$,
@@ -52,15 +52,13 @@ export const JournalingScreen = observer(function JournalingScreen() {
   return (
     <Theme name={currentTheme}>
       <JournalingContainer>
+        <ThemeSwitcher currentTheme={currentTheme} onThemeChange={setTheme} />
         {/* Header area with essential controls */}
         <JournalingControls onExitFlow={handleExitFlow} />
-        
+
         {/* Word count display area */}
-        <WordCountDisplay 
-          currentCount={wordCount} 
-          dailyTarget={dailyTarget} 
-        />
-        
+        <WordCountDisplay currentCount={wordCount} dailyTarget={dailyTarget} />
+
         {/* Main writing area - center-aligned and focused */}
         <JournalingEditor
           content={currentContent}

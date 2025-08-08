@@ -1,50 +1,51 @@
-import React from 'react'
+'use dom'
+import type React from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
-import { createBaseLexicalConfig } from './lexical-config'
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
+import { $getRoot } from 'lexical'
+import { createBaseLexicalConfig } from '../lexical-config'
 
-interface LexicalEditorProps {
+interface LexicalEditorNativeProps {
   placeholder?: string
   className?: string
+  onChange?: (text: string) => void
 }
 
-/**
- * Basic Lexical editor wrapper with minimal plugins for MVP
- * Designed for cross-platform compatibility
- */
-export const LexicalEditor: React.FC<LexicalEditorProps> = ({ 
-  placeholder = "Begin your stream-of-consciousness writing here...",
-  className 
+const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
+  placeholder = 'Begin your stream-of-consciousness writing here...',
+  className,
+  onChange,
 }) => {
   const initialConfig = createBaseLexicalConfig()
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <div className={className} style={{ position: 'relative', minHeight: '200px' }}>
+      <div className={className} style={{ position: 'relative', minHeight: 200 }}>
         <RichTextPlugin
           contentEditable={
-            <ContentEditable 
+            <ContentEditable
               style={{
                 outline: 'none',
-                padding: '12px',
-                minHeight: '200px',
-                fontSize: '16px',
-                lineHeight: '1.5',
+                padding: 12,
+                minHeight: 200,
+                fontSize: 16,
+                lineHeight: 1.5,
                 fontFamily: 'inherit',
               }}
             />
           }
           placeholder={
-            <div 
+            <div
               style={{
                 position: 'absolute',
-                top: '12px',
-                left: '12px',
+                top: 12,
+                left: 12,
                 color: '#999',
-                fontSize: '16px',
+                fontSize: 16,
                 pointerEvents: 'none',
                 userSelect: 'none',
               }}
@@ -55,7 +56,17 @@ export const LexicalEditor: React.FC<LexicalEditorProps> = ({
           ErrorBoundary={LexicalErrorBoundary}
         />
         <HistoryPlugin />
+        {onChange ? (
+          <OnChangePlugin
+            onChange={(editorState) => {
+              const text = editorState.read(() => $getRoot().getTextContent())
+              onChange(text)
+            }}
+          />
+        ) : null}
       </div>
     </LexicalComposer>
   )
-} 
+}
+
+export default LexicalEditor

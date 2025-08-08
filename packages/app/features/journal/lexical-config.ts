@@ -1,4 +1,4 @@
-import { InitialConfigType } from '@lexical/react/LexicalComposer'
+import type { InitialConfigType } from '@lexical/react/LexicalComposer'
 
 /**
  * Base Lexical editor configuration with minimal setup for MVP
@@ -8,9 +8,16 @@ export const createBaseLexicalConfig = (): InitialConfigType => {
   return {
     namespace: 'RiverJournalEditor',
     theme: {
-      // Basic theme configuration - will be enhanced with Tamagui integration
-      root: 'lexical-root',
-      paragraph: 'lexical-paragraph',
+      // Lexical class mappings; styled via Tamagui CSS variables in lexical-theme.css
+      root: 'lex-root',
+      paragraph: 'lex-paragraph',
+      text: {
+        bold: 'lex-text-bold',
+        italic: 'lex-text-italic',
+        underline: 'lex-text-underline',
+        strikethrough: 'lex-text-strikethrough',
+        code: 'lex-text-code',
+      },
     },
     onError: (error: Error) => {
       console.error('Lexical Editor Error:', error)
@@ -18,4 +25,4 @@ export const createBaseLexicalConfig = (): InitialConfigType => {
     // Start with empty editor state
     editorState: null,
   }
-} 
+}

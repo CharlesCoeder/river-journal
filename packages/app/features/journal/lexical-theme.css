@@ -1,0 +1,41 @@
+.lex-root {
+  color: var(--color);
+  background: transparent;
+}
+
+.lex-root p,
+.lex-paragraph {
+  /* Revert Tamagui reset for paragraph-level elements used by Lexical */
+  all: revert;
+  display: block;
+  white-space: pre-wrap;
+  margin: 0;
+  color: var(--color);
+  background: transparent;
+}
+
+.lex-paragraph {
+  margin: 0;
+}
+
+.lex-text-bold {
+  font-weight: 600;
+}
+
+.lex-text-italic {
+  font-style: italic;
+}
+
+.lex-text-underline {
+  text-decoration: underline;
+}
+
+.lex-text-strikethrough {
+  text-decoration: line-through;
+}
+
+.lex-text-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.95em;
+}

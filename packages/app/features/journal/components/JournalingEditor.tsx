@@ -1,6 +1,6 @@
-import React from 'react'
+import type React from 'react'
 import { YStack } from '@my/ui'
-import { JournalTextArea } from '@my/ui'
+import LexicalEditor from './LexicalEditor'
 
 interface JournalingEditorProps {
   content: string
@@ -16,7 +16,7 @@ interface JournalingEditorProps {
 export const JournalingEditor: React.FC<JournalingEditorProps> = ({
   content,
   onContentChange,
-  placeholder = "Begin your stream-of-consciousness writing here..."
+  placeholder = 'Begin your stream-of-consciousness writing here...',
 }) => {
   return (
     <YStack
@@ -32,43 +32,27 @@ export const JournalingEditor: React.FC<JournalingEditorProps> = ({
       {/* Center-aligned writing area with ample whitespace on sides */}
       <YStack
         width="100%"
-        maxWidth={700}
+        maxWidth={800}
         flex={1}
         backgroundColor="$background"
         borderRadius="$4"
         padding="$4"
         $sm={{
-          maxWidth: "100%",
+          maxWidth: '100%',
           padding: '$3',
           borderRadius: '$3',
         }}
         $md={{
-          maxWidth: 600,
+          maxWidth: 700,
           padding: '$5',
         }}
         $lg={{
-          maxWidth: 700,
+          maxWidth: 800,
           padding: '$6',
         }}
       >
-        <JournalTextArea
-          placeholder={placeholder}
-          value={content}
-          onChangeText={onContentChange}
-          keyboardPadding={40}
-          flex={1}
-          minHeight={400}
-          backgroundColor="transparent"
-          borderWidth={0}
-          focusStyle={{
-            borderWidth: 0,
-            backgroundColor: "transparent",
-          }}
-          $sm={{
-            minHeight: 300,
-          }}
-        />
+        <LexicalEditor className="lex-root" placeholder={placeholder} onChange={onContentChange} />
       </YStack>
     </YStack>
   )
-} 
+}
