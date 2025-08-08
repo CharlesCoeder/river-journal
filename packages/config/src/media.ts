@@ -9,29 +9,30 @@ export const breakpoints = {
 }
 
 export const media = {
+  // Max-width queries (largest to smallest is fine for max-width)
+  max2Xl: { maxWidth: breakpoints['2xl'] },
+  maxXl: { maxWidth: breakpoints.xl },
+  maxLg: { maxWidth: breakpoints.lg },
+  maxMd: { maxWidth: breakpoints.md },
+  maxSm: { maxWidth: breakpoints.sm },
   maxXs: { maxWidth: breakpoints.xs },
   max2xs: { maxWidth: breakpoints['2xs'] },
-  maxSm: { maxWidth: breakpoints.sm },
-  maxMd: { maxWidth: breakpoints.md },
-  maxLg: { maxWidth: breakpoints.lg },
-  maxXl: { maxWidth: breakpoints.xl },
-  max2Xl: { maxWidth: breakpoints['2xl'] },
-  // for site
-  '2xl': { minWidth: breakpoints['2xl'] },
-  xl: { minWidth: breakpoints.xl },
-  lg: { minWidth: breakpoints.lg },
-  md: { minWidth: breakpoints.md },
-  sm: { minWidth: breakpoints.sm },
-  xs: { minWidth: breakpoints.xs },
+  // Min-width queries (SMALLEST TO LARGEST for proper cascade)
   '2xs': { minWidth: breakpoints['2xs'] },
+  xs: { minWidth: breakpoints.xs },
+  sm: { minWidth: breakpoints.sm },
+  md: { minWidth: breakpoints.md },
+  lg: { minWidth: breakpoints.lg },
+  xl: { minWidth: breakpoints.xl },
+  '2xl': { minWidth: breakpoints['2xl'] },
 } as const
 
 export const mediaQueryDefaultActive = {
-  '2xl': false,
-  xl: false,
-  lg: false,
-  md: false,
-  sm: false,
-  xs: true,
   '2xs': true,
+  xs: true,
+  sm: false,
+  md: false,
+  lg: false,
+  xl: false,
+  '2xl': false,
 }
