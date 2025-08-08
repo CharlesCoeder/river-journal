@@ -1,5 +1,5 @@
 import type React from 'react'
-import { YStack } from '@my/ui'
+import { YStack, H1 } from '@my/ui'
 
 interface JournalingContainerProps {
   children: React.ReactNode
@@ -14,27 +14,28 @@ export const JournalingContainer: React.FC<JournalingContainerProps> = ({ childr
     <YStack
       flex={1}
       backgroundColor="$background"
-      paddingHorizontal="$4"
-      paddingVertical="$3"
+      paddingHorizontal="$6"
+      paddingVertical="$4"
       gap="$4"
       width="100%"
       alignSelf="stretch"
       $sm={{
-        paddingHorizontal: '$3',
-        paddingVertical: '$2',
+        paddingHorizontal: '$4',
+        paddingVertical: '$3',
         gap: '$3',
       }}
       $md={{
         paddingHorizontal: '$6',
-        paddingVertical: '$4',
+        paddingVertical: '$5',
         gap: '$5',
       }}
       $lg={{
-        paddingHorizontal: '$8',
-        paddingVertical: '$5',
+        paddingHorizontal: '$12',
+        paddingVertical: '$6',
         gap: '$6',
       }}
     >
+      <H1>Journaling</H1>
       {children}
     </YStack>
   )
