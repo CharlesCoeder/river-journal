@@ -11,7 +11,6 @@ interface JournalingEditorProps {
 
 /**
  * Main editor component for the journaling screen
- * Currently uses JournalTextArea - will be replaced with Lexical editor in Task 5
  * Designed for center-aligned, focused writing experience
  */
 export const JournalingEditor: React.FC<JournalingEditorProps> = ({
@@ -32,16 +31,7 @@ export const JournalingEditor: React.FC<JournalingEditorProps> = ({
         : `rgba(${theme.color.val}, 0.5)`), // Convert others to rgba with 50% opacity
   }
   return (
-    <YStack
-      flex={1}
-      width="100%"
-      alignItems="center"
-      justifyContent="flex-start"
-      paddingTop="$4"
-      $sm={{
-        paddingTop: '$3',
-      }}
-    >
+    <YStack flex={1} width="100%" alignItems="center" justifyContent="flex-start">
       {/* Center-aligned writing area with ample whitespace on sides */}
       <YStack
         width="100%"
@@ -49,19 +39,15 @@ export const JournalingEditor: React.FC<JournalingEditorProps> = ({
         flex={1}
         backgroundColor="$background"
         borderRadius="$4"
-        padding="$4"
         $sm={{
           maxWidth: '100%',
-          padding: '$3',
           borderRadius: '$3',
         }}
         $md={{
           maxWidth: 700,
-          padding: '$5',
         }}
         $lg={{
           maxWidth: 800,
-          padding: '$6',
         }}
       >
         <LexicalEditor

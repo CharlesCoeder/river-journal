@@ -1,5 +1,5 @@
 import type React from 'react'
-import { YStack, H1 } from '@my/ui'
+import { YStack } from '@my/ui'
 
 interface JournalingContainerProps {
   children: React.ReactNode
@@ -35,7 +35,6 @@ export const JournalingContainer: React.FC<JournalingContainerProps> = ({ childr
         gap: '$6',
       }}
     >
-      <H1>Journaling</H1>
       {children}
     </YStack>
   )
