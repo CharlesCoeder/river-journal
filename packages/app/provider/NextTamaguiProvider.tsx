@@ -11,9 +11,11 @@ import { NextThemeProvider, useRootTheme } from '@tamagui/next-theme'
 import { config } from '@my/ui'
 import { Provider } from 'app/provider'
 import { StyleSheet } from 'react-native'
+import { theme$, setBaseTheme } from 'app/state/theme'
+import { use$ } from '@legendapp/state/react'
 
 export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useRootTheme()
+  const baseTheme = use$(theme$.baseTheme)
 
   useServerInsertedHTML(() => {
     // @ts-ignore
@@ -51,14 +53,14 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
   return (
     <NextThemeProvider
       skipNextHead
+      // investigate: using forceTheme={baseTheme} and onChangeTheme={setBaseTheme}
+      // curious on if legend state persistence will negatively affect any SSR benefits of NextThemeProvider
       defaultTheme="light"
       onChangeTheme={(next) => {
-        setTheme(next as any)
+        setBaseTheme(next as any)
       }}
     >
-      <Provider disableRootThemeClass defaultTheme={theme || 'light'}>
-        {children}
-      </Provider>
+      <Provider defaultTheme={baseTheme || 'light'}>{children}</Provider>
     </NextThemeProvider>
   )
 }

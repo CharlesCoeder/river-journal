@@ -7,6 +7,8 @@ import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { use$ } from '@legendapp/state/react'
+import { theme$ } from 'app/state/theme'
 
 export const unstable_settings = {
   // Ensure that reloading on `/user` keeps a back button present.
@@ -37,13 +39,14 @@ export default function App() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme()
+  const currentBaseTheme = use$(theme$.baseTheme)
+  const navigationTheme = currentBaseTheme === 'dark' ? DarkTheme : DefaultTheme
 
   return (
     <SafeAreaProvider>
       <MobileKeyboardProvider>
-        <Provider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Provider defaultTheme={currentBaseTheme}>
+          <ThemeProvider value={navigationTheme}>
             <SafeAreaView style={{ flex: 1 }}>
               <Stack />
               <NativeToast />

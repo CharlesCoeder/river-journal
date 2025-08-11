@@ -7,7 +7,7 @@ import {
   saveCurrentFlowSession,
   waitForJournalLoaded,
 } from '../../state/journal'
-import { theme$, setTheme } from '../../state/theme'
+import { theme$ } from '../../state/theme'
 import { JournalingContainer } from './components/JournalingContainer'
 import { JournalingControls } from './components/JournalingControls'
 import { JournalingEditor } from './components/JournalingEditor'
@@ -17,7 +17,7 @@ export const JournalingScreen = observer(function JournalingScreen() {
 
   const currentContent = use$(journal$.currentFlowContent)
   const wordCount = use$(journal$.currentFlowWordCount)
-  const currentTheme = use$(theme$.currentTheme)
+  const colorTheme = use$(theme$.colorTheme)
 
   const dailyTarget = 750 // Default daily target words
 
@@ -36,7 +36,7 @@ export const JournalingScreen = observer(function JournalingScreen() {
   // Show loading state while persistence is loading
   if (!isLoaded) {
     return (
-      <Theme name={currentTheme}>
+      <Theme name={colorTheme}>
         <YStack flex={1} alignItems="center" justifyContent="center" backgroundColor="$background">
           <H4 color="$color">Loading...</H4>
         </YStack>
@@ -50,7 +50,7 @@ export const JournalingScreen = observer(function JournalingScreen() {
   }
 
   return (
-    <Theme name={currentTheme}>
+    <Theme name={colorTheme}>
       <JournalingContainer>
         {/* Top row with word count */}
         <XStack justifyContent="flex-end" alignItems="center" paddingBottom="$2">
@@ -61,7 +61,7 @@ export const JournalingScreen = observer(function JournalingScreen() {
         <XStack justifyContent="center" alignItems="center" paddingBottom="$3">
           <YStack gap="$4">
             <H1>River Journal</H1>
-            <ThemeSwitcher currentTheme={currentTheme} onThemeChange={setTheme} />
+            <ThemeSwitcher />
           </YStack>
         </XStack>
 
