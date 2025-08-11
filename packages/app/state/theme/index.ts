@@ -1,4 +1,6 @@
 import { observable } from '@legendapp/state'
+import { syncObservable } from '@legendapp/state/sync'
+import { configurePersistence } from '../persistConfig'
 
 export type BaseThemeName = 'light' | 'dark'
 
@@ -26,6 +28,21 @@ export const theme$ = observable<ThemeState>({
   colorTheme: 'blue', // Default color
 })
 
+// Only setup persistence on the client side
+if (typeof window !== 'undefined') {
+  try {
+    syncObservable(
+      theme$,
+      configurePersistence({
+        persist: {
+          name: 'theme',
+        },
+      })
+    )
+  } catch (error) {
+    console.error('Error setting up journal store persistence:', error)
+  }
+}
 // Actions
 export const setBaseTheme = (baseTheme: BaseThemeName) => {
   theme$.baseTheme.set(baseTheme)
