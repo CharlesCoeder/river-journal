@@ -1,7 +1,20 @@
 import { observable } from '@legendapp/state'
 
 export type BaseThemeName = 'light' | 'dark'
-export type ColorThemeName = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'indigo' | 'violet'
+
+// Single source of truth for color theme names
+export const DEFAULT_COLOR_THEMES = [
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'blue',
+  'purple',
+  'pink',
+  'gray',
+] as const
+
+export type ColorThemeName = (typeof DEFAULT_COLOR_THEMES)[number]
 
 interface ThemeState {
   baseTheme: BaseThemeName
