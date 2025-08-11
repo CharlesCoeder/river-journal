@@ -1,18 +1,26 @@
 import { observable } from '@legendapp/state'
 
+export type BaseThemeName = 'light' | 'dark'
 export type ColorThemeName = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'indigo' | 'violet'
 
 interface ThemeState {
-  currentTheme: ColorThemeName
+  baseTheme: BaseThemeName
+  colorTheme: ColorThemeName
 }
 
 export const theme$ = observable<ThemeState>({
-  currentTheme: 'blue', // Default theme
+  baseTheme: 'light', // Default base
+  colorTheme: 'blue', // Default color
 })
 
 // Actions
-export const setTheme = (themeName: ColorThemeName) => {
-  theme$.currentTheme.set(themeName)
+export const setBaseTheme = (baseTheme: BaseThemeName) => {
+  theme$.baseTheme.set(baseTheme)
 }
 
-export const getCurrentTheme = () => theme$.currentTheme.get()
+export const setColorTheme = (themeName: ColorThemeName) => {
+  theme$.colorTheme.set(themeName)
+}
+
+export const getCurrentBaseTheme = () => theme$.baseTheme.get()
+export const getCurrentColorTheme = () => theme$.colorTheme.get()

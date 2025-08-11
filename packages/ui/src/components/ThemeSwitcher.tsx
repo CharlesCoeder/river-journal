@@ -1,5 +1,6 @@
-import { XStack, Circle, Theme } from '@my/ui'
-import { observer, useObservable } from '@legendapp/state/react'
+import { XStack, Circle, Button } from '@my/ui'
+import { use$ } from '@legendapp/state/react'
+import { theme$, setColorTheme, setBaseTheme } from 'app/state/theme'
 
 const themes = [
   { name: 'red', color: 'red' },
@@ -14,23 +15,32 @@ const themes = [
 type ColorThemeName = (typeof themes)[number]['name']
 
 interface ThemeSwitcherProps {
-  currentTheme: ColorThemeName
-  onThemeChange: (theme: ColorThemeName) => void
 }
 
-export const ThemeSwitcher = observer(function ThemeSwitcher({
-  currentTheme,
-  onThemeChange,
+export const ThemeSwitcher = function ThemeSwitcher({
 }: ThemeSwitcherProps) {
+  const currentColorTheme = use$(theme$.colorTheme)
+  const currentBaseTheme = use$(theme$.baseTheme)
+
+  const handleThemeChange = (theme: ColorThemeName) => {
+    setColorTheme(theme)
+  }
+
   return (
-    <XStack gap="$2" alignItems="center">
-      {themes.map((theme) => (
+    <XStack gap="$5">
+      <Button
+        onPress={() => setBaseTheme(currentBaseTheme === 'light' ? 'dark' : 'light')}
+      >
+        {currentBaseTheme === 'light' ? '☀️' : '🌙'} {currentBaseTheme}
+      </Button>
+      <XStack gap="$2" alignItems="center">  
+              {themes.map((theme) => (
         <Circle
           key={theme.name}
           size={32}
           backgroundColor={theme.color}
-          borderWidth={currentTheme === theme.name ? 3 : 1}
-          borderColor={currentTheme === theme.name ? '$borderColor' : 'gray'}
+          borderWidth={currentColorTheme === theme.name ? 3 : 1}
+          borderColor={currentColorTheme === theme.name ? '$borderColor' : 'gray'}
           pressStyle={{
             scale: 0.9,
             borderColor: '$borderColor',
@@ -40,11 +50,12 @@ export const ThemeSwitcher = observer(function ThemeSwitcher({
             borderColor: '$borderColor',
           }}
           cursor="pointer"
-          onPress={() => onThemeChange(theme.name)}
+          onPress={() => handleThemeChange(theme.name)}
         />
-      ))}
+      ))}</XStack>
+
     </XStack>
   )
-})
+}
 
 export type { ColorThemeName }
