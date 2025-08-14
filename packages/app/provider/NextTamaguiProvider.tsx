@@ -8,18 +8,17 @@ import '@tamagui/polyfill-dev'
 import type { ReactNode } from 'react'
 import { useServerInsertedHTML } from 'next/navigation'
 import { NextThemeProvider, useRootTheme } from '@tamagui/next-theme'
-import { config } from '@my/ui'
+import { config, useTheme } from '@my/ui'
 import { Provider } from 'app/provider'
 import { StyleSheet } from 'react-native'
 import { theme$, setBaseTheme } from 'app/state/theme'
 import { use$ } from '@legendapp/state/react'
-import { syncState, when } from '@legendapp/state'
+import { syncState } from '@legendapp/state'
 import { useEffect, useState } from 'react'
 
 const status$ = syncState(theme$)
 
 export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
-  const baseTheme = use$(theme$.baseTheme)
   const isPersistLoaded = use$(status$.isPersistLoaded)
   const [isMounted, setIsMounted] = useState(false)
 
@@ -89,7 +88,28 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
         setBaseTheme(next as any)
       }}
     >
-      <Provider defaultTheme={baseTheme || 'light'}>{children}</Provider>
+      <Provider>
+        <SetHTMLBackgroundColor />
+        {children}
+      </Provider>
     </NextThemeProvider>
   )
+}
+
+// Component to sync HTML background color with Tamagui theme
+function SetHTMLBackgroundColor() {
+  const theme = useTheme()
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      // Get the actual background color from the current Tamagui theme
+      const backgroundColor = theme.background.val
+
+      // Update the HTML element's background color
+      document.documentElement.style.backgroundColor = backgroundColor
+      document.body.style.backgroundColor = backgroundColor
+    }
+  }, [theme.background.val])
+
+  return null
 }
