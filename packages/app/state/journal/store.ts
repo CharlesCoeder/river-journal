@@ -20,22 +20,6 @@ export const journal$ = observable<JournalState>({
   currentFlowWordCount: 0,
 })
 
-// Only setup persistence on the client side
-if (typeof window !== 'undefined') {
-  try {
-    syncObservable(
-      journal$,
-      configurePersistence({
-        persist: {
-          name: 'journal',
-        },
-      })
-    )
-  } catch (error) {
-    console.error('Error setting up journal store persistence:', error)
-  }
-}
-
 // Helper function to wait for journal state to be loaded from persistence
 export const waitForJournalLoaded = async () => {
   // If we're on the server, return immediately

@@ -9,6 +9,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
 import { theme$ } from 'app/state/theme'
 import { useTheme } from '@my/ui'
+import { PersistenceGate } from 'app/provider/PersistenceGate'
 
 export const unstable_settings = {
   // Ensure that reloading on `/user` keeps a back button present.
@@ -40,18 +41,20 @@ export default function App() {
 
 function RootLayoutNav() {
   return (
-    <SafeAreaProvider>
-      <MobileKeyboardProvider>
-        <Provider>
-          <TamaguifiedReactNavigationThemeProvider>
-            <TamaguifiedSafeAreaView>
-              <Stack />
-              <NativeToast />
-            </TamaguifiedSafeAreaView>
-          </TamaguifiedReactNavigationThemeProvider>
-        </Provider>
-      </MobileKeyboardProvider>
-    </SafeAreaProvider>
+    <PersistenceGate>
+      <SafeAreaProvider>
+        <MobileKeyboardProvider>
+          <Provider>
+            <TamaguifiedReactNavigationThemeProvider>
+              <TamaguifiedSafeAreaView>
+                <Stack />
+                <NativeToast />
+              </TamaguifiedSafeAreaView>
+            </TamaguifiedReactNavigationThemeProvider>
+          </Provider>
+        </MobileKeyboardProvider>
+      </SafeAreaProvider>
+    </PersistenceGate>
   )
 }
 
