@@ -19,13 +19,6 @@ import { useEffect, useState } from 'react'
 const status$ = syncState(theme$)
 
 export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
-  const isPersistLoaded = use$(status$.isPersistLoaded)
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
   useServerInsertedHTML(() => {
     // @ts-ignore
     const rnwStyle = StyleSheet.getSheet()
@@ -58,25 +51,6 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
       </>
     )
   })
-
-  // Show loading state until client has mounted and persistence has loaded
-  if (!isMounted || !isPersistLoaded) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          fontFamily: 'Inter, sans-serif',
-          fontSize: '16px',
-          color: '#666',
-        }}
-      >
-        Loading...
-      </div>
-    )
-  }
 
   return (
     <NextThemeProvider
