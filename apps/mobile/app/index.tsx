@@ -1,4 +1,4 @@
-import { JournalingScreen } from 'app/features/journal'
+import { JournalScreen } from 'app/features/journal'
 import { Stack } from 'expo-router'
 import { YStack } from '@my/ui'
 
@@ -12,7 +12,7 @@ export default function Screen() {
         }}
       />
       <YStack flex={1}>
-        <JournalingScreen />
+        <JournalScreen />
       </YStack>
     </>
   )

@@ -1,1 +1,1 @@
-export * from './JournalingScreen'
+export * from './JournalScreen'

@@ -1,12 +1,12 @@
 'use client'
 
-import { JournalingScreen } from 'app/features/journal'
+import { JournalScreen } from 'app/features/journal'
 import { YStack } from 'tamagui'
 
 export default function JournalPage() {
   return (
     <YStack flex={1} width="100%" minHeight="100vh">
-      <JournalingScreen />
+      <JournalScreen />
     </YStack>
   )
 }
