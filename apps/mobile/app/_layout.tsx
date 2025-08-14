@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
-import { useColorScheme } from 'react-native'
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
 import { SplashScreen, Stack } from 'expo-router'
 import { Provider } from 'app/provider'
@@ -9,6 +8,7 @@ import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
 import { theme$ } from 'app/state/theme'
+import { useTheme } from '@my/ui'
 
 export const unstable_settings = {
   // Ensure that reloading on `/user` keeps a back button present.
@@ -39,21 +39,48 @@ export default function App() {
 }
 
 function RootLayoutNav() {
-  const currentBaseTheme = use$(theme$.baseTheme)
-  const navigationTheme = currentBaseTheme === 'dark' ? DarkTheme : DefaultTheme
-
   return (
     <SafeAreaProvider>
       <MobileKeyboardProvider>
-        <Provider defaultTheme={currentBaseTheme}>
-          <ThemeProvider value={navigationTheme}>
-            <SafeAreaView style={{ flex: 1 }}>
+        <Provider>
+          <TamaguifiedReactNavigationThemeProvider>
+            <TamaguifiedSafeAreaView>
               <Stack />
               <NativeToast />
-            </SafeAreaView>
-          </ThemeProvider>
+            </TamaguifiedSafeAreaView>
+          </TamaguifiedReactNavigationThemeProvider>
         </Provider>
       </MobileKeyboardProvider>
     </SafeAreaProvider>
   )
+}
+
+// React Navigation comes with DefaultTheme (white) and DarkTheme (black).
+// But, we tamaguified it (has this been coined yet??) so that we get all of Tamagui's themes and subthemes!
+function TamaguifiedReactNavigationThemeProvider({ children }: { children: React.ReactNode }) {
+  const theme = useTheme()
+  const baseTheme = use$(theme$.baseTheme)
+
+  const navigationTheme = {
+    ...DefaultTheme,
+    dark: baseTheme === 'dark',
+    colors: {
+      ...DefaultTheme.colors,
+      primary: theme.color.val,
+      background: theme.background.val,
+      card: theme.backgroundStrong?.val || theme.background.val,
+      text: theme.color.val,
+      border: theme.borderColor.val,
+      notification: theme.red10.val,
+    },
+  }
+
+  return <ThemeProvider value={navigationTheme}>{children}</ThemeProvider>
+}
+
+// Similarly, we tamaguify the SafeAreaView
+function TamaguifiedSafeAreaView({ children }: { children: React.ReactNode }) {
+  const theme = useTheme()
+  const backgroundColor = theme.background.val
+  return <SafeAreaView style={{ flex: 1, backgroundColor }}>{children}</SafeAreaView>
 }

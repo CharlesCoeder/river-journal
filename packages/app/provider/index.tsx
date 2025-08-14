@@ -1,4 +1,3 @@
-import { useColorScheme } from 'react-native'
 import {
   CustomToast,
   TamaguiProvider,
@@ -6,21 +5,20 @@ import {
   ToastProvider,
   config,
   isWeb,
+  Theme,
 } from '@my/ui'
 import { ToastViewport } from './ToastViewport'
+import { use$ } from '@legendapp/state/react'
+import { theme$ } from 'app/state/theme'
 
-export function Provider({
-  children,
-  defaultTheme = 'light',
-  ...rest
-}: Omit<TamaguiProviderProps, 'config'> & { defaultTheme?: string }) {
-  const colorScheme = useColorScheme()
-  const theme = defaultTheme || (colorScheme === 'dark' ? 'dark' : 'light')
+export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
+  const baseTheme = use$(theme$.baseTheme)
+  const colorTheme = use$(theme$.colorTheme)
 
   return (
-    <TamaguiProvider config={config} defaultTheme={theme} {...rest}>
+    <TamaguiProvider config={config} defaultTheme={baseTheme} {...rest}>
       <ToastProvider swipeDirection="horizontal" duration={6000} native={isWeb ? [] : ['mobile']}>
-        {children}
+        <Theme name={colorTheme}>{children}</Theme>
         <CustomToast />
         <ToastViewport />
       </ToastProvider>
