@@ -1,4 +1,4 @@
-import { XStack, Circle, Button } from '@my/ui'
+import { XStack, YStack, Circle, Button } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import {
   theme$,
@@ -27,15 +27,13 @@ export const ThemeSwitcher = function ThemeSwitcher(_props: ThemeSwitcherProps) 
   }
 
   return (
-    <XStack gap="$5">
-      <Button onPress={() => setBaseTheme(currentBaseTheme === 'light' ? 'dark' : 'light')}>
-        {currentBaseTheme === 'light' ? '☀️' : '🌙'} {currentBaseTheme}
-      </Button>
-      <XStack gap="$2" alignItems="center">
+    <YStack gap="$3" alignItems="flex-start" maxWidth="100%">
+      <XStack gap="$2" alignItems="center" flexWrap="wrap">
         {themes.map((theme) => (
           <Circle
             key={theme.name}
-            size={32}
+            size="$2"
+            $md={{ size: '$3' }}
             backgroundColor={theme.color}
             borderWidth={currentColorTheme === theme.name ? 3 : 1}
             borderColor={currentColorTheme === theme.name ? '$borderColor' : 'gray'}
@@ -52,7 +50,10 @@ export const ThemeSwitcher = function ThemeSwitcher(_props: ThemeSwitcherProps) 
           />
         ))}
       </XStack>
-    </XStack>
+      <Button onPress={() => setBaseTheme(currentBaseTheme === 'light' ? 'dark' : 'light')}>
+        {currentBaseTheme === 'light' ? '☀️' : '🌙'} {currentBaseTheme}
+      </Button>
+    </YStack>
   )
 }
 
