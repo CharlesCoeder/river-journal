@@ -6,6 +6,7 @@ import 'app/features/journal/lexical-theme.css'
 import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
+import '../public/fonts/fonts.css'
 
 export const metadata: Metadata = {
   title: 'River Journal',

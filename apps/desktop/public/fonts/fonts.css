@@ -1,0 +1,34 @@
+@font-face {
+  font-family: "SourceSans3";
+  src: url("/fonts/SourceSans3-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "SourceSans3Bold ";
+  src: url("/fonts/SourceSans3-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "SourceSans3Italic";
+  src: url("/fonts/SourceSans3-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "SourceSans3BoldItalic";
+  src: url("/fonts/SourceSans3-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "PatrickHand";
+  src: url("/fonts/PatrickHand.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
