@@ -2,6 +2,7 @@ import { ThemeSwitcher, YStack, XStack, H1 } from '@my/ui'
 import { Text } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { theme$ } from 'app/state/theme'
+import { Editor } from './components/Editor'
 
 export function JournalScreen() {
   const theme = use$(theme$)
@@ -29,7 +30,7 @@ export function JournalScreen() {
       </YStack>
 
       <ThemeSwitcher />
-      <Text color="$color">{theme.colorTheme}</Text>
+      <Editor />
     </YStack>
   )
 }

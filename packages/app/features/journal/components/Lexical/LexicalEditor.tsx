@@ -6,18 +6,28 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { $getRoot } from 'lexical'
-import { createBaseLexicalConfig } from '../lexical-config'
+import { createBaseLexicalConfig } from './lexical-config'
 
 interface LexicalEditorProps {
   placeholder?: string
   className?: string
   onChange?: (htmlOrText: string) => void
+  themeValues?: {
+    textColor: string
+    placeholderColor: string
+  }
+  fontFamilies?: {
+    content: string
+    placeholder: string
+  }
 }
 
 const LexicalEditor: React.FC<LexicalEditorProps> = ({
   placeholder = 'Begin your stream-of-consciousness writing here...',
   className,
   onChange,
+  themeValues, // Accepted but unused on web
+  fontFamilies, // Accepted but unused on web
 }) => {
   const initialConfig = createBaseLexicalConfig()
 
@@ -29,11 +39,10 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <ContentEditable
               style={{
                 outline: 'none',
-                padding: '12px',
                 minHeight: '200px',
                 fontSize: '16px',
                 lineHeight: '1.5',
-                fontFamily: 'inherit',
+                fontFamily: 'sourceSans3',
               }}
             />
           }
@@ -41,11 +50,12 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <div
               style={{
                 position: 'absolute',
-                top: '12px',
-                left: '12px',
+                top: '0px',
+                left: '0px',
                 fontSize: '16px',
                 pointerEvents: 'none',
                 userSelect: 'none',
+                fontFamily: 'sourceSans3',
               }}
             >
               {placeholder}
