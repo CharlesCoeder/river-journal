@@ -23,11 +23,11 @@ export default function App() {
   const [fontsLoaded, fontsError] = useFonts({
     Inter: require('@tamagui/font-inter/otf/Inter-Medium.otf'),
     InterBold: require('@tamagui/font-inter/otf/Inter-Bold.otf'),
-    SourceSans3: require('../assets/fonts/SourceSans3/SourceSans3-Regular.ttf'),
-    SourceSans3Italic: require('../assets/fonts/SourceSans3/SourceSans3-Italic.ttf'),
-    SourceSans3Bold: require('../assets/fonts/SourceSans3/SourceSans3-Bold.ttf'),
-    SourceSans3BoldItalic: require('../assets/fonts/SourceSans3/SourceSans3-BoldItalic.ttf'),
-    PatrickHand: require('../assets/fonts/PatrickHand.ttf'),
+    SourceSans3: require('../public/fonts/SourceSans3/SourceSans3-Regular.ttf'),
+    SourceSans3Italic: require('../public/fonts/SourceSans3/SourceSans3-Italic.ttf'),
+    SourceSans3Bold: require('../public/fonts/SourceSans3/SourceSans3-Bold.ttf'),
+    SourceSans3BoldItalic: require('../public/fonts/SourceSans3/SourceSans3-BoldItalic.ttf'),
+    PatrickHand: require('../public/fonts/PatrickHand.ttf'),
   })
 
   useEffect(() => {
