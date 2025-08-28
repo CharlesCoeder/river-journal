@@ -1,11 +1,15 @@
-import { ThemeSwitcher, YStack, XStack, H1 } from '@my/ui'
+import { ThemeSwitcher, YStack, XStack, H1, Button } from '@my/ui'
 import { Text } from '@my/ui'
-import { use$ } from '@legendapp/state/react'
-import { theme$ } from 'app/state/theme'
+import { ArrowLeft } from '@tamagui/lucide-icons'
+import { useRouter } from 'solito/navigation'
 import { Editor } from './components/Editor'
 
 export function JournalScreen() {
-  const theme = use$(theme$)
+  const router = useRouter()
+
+  const handleBackToHome = () => {
+    router.push('/')
+  }
 
   return (
     <YStack
@@ -20,14 +24,24 @@ export function JournalScreen() {
       marginLeft="12.5%"
       paddingTop="$8"
     >
-      <YStack>
-        <H1 size="$11" fontFamily="$patrickHand">
-          River Journal
-        </H1>
-        <Text fontSize="$6" fontFamily="$sourceSans3" fontWeight="700" fontStyle="italic">
-          Custom body font
-        </Text>
-      </YStack>
+      <XStack gap="$4" alignItems="center">
+        <Button
+          size="$3"
+          circular
+          onPress={handleBackToHome}
+          icon={ArrowLeft}
+          backgroundColor="$background"
+          borderColor="$borderColor"
+        />
+        <YStack>
+          <H1 size="$11" fontFamily="$patrickHand">
+            River Journal
+          </H1>
+          <Text fontSize="$6" fontFamily="$sourceSans3" fontWeight="700" fontStyle="italic">
+            Custom body font
+          </Text>
+        </YStack>
+      </XStack>
 
       <ThemeSwitcher />
       <Editor />

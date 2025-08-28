@@ -1,8 +1,8 @@
-import { HomeScreen } from 'app/features/home/HomeScreen'
+import { JournalScreen } from 'app/features/journal/JournalScreen'
 import { Stack } from 'expo-router'
 import { YStack } from '@my/ui'
 
-export default function Screen() {
+export default function JournalScreenPage() {
   return (
     <>
       <Stack.Screen
@@ -12,7 +12,7 @@ export default function Screen() {
         }}
       />
       <YStack flex={1}>
-        <HomeScreen />
+        <JournalScreen />
       </YStack>
     </>
   )
