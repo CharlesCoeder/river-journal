@@ -21,7 +21,6 @@
     "expo-constants": "~17.1.6",
     "expo-linking": "~7.1.4",
     "lexical": "^0.33.1",
-    "react-native-keyboard-controller": "^1.17.5",
     "react-native-safe-area-context": "5.4.0",
     "solito": "^4.2.2"
   },
