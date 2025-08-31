@@ -36,8 +36,7 @@
     },
     "plugins": ["expo-router", "expo-font"],
     "experiments": {
-      "typedRoutes": true,
-      "reactCanary": true
+      "typedRoutes": true
     },
     "extra": {
       "router": {
