@@ -1,23 +1,20 @@
 /**
- * Journal state store for testing Legend-State persistence with FlowSession and DailyJournalEntry
+ * Journal state store using normalized, relational data structure optimized for Legend State
  */
 
-import { syncObservable } from '@legendapp/state/sync'
 import { observable, syncState, batch, when } from '@legendapp/state'
-import { configurePersistence } from '../persistConfig'
-import type { FlowSession, DailyJournalEntry, JournalState } from './types'
+import type { Flow, Entry, JournalState, DailyEntryView, DailyStatsView } from './types'
 
 // Re-export types for convenience
-export type { FlowSession, DailyJournalEntry, JournalState } from './types'
+export type { Flow, Entry, JournalState, DailyEntryView, DailyStatsView } from './types'
 
-// Create the journal store with initial values
+// Create the journal store with normalized initial state
 export const journal$ = observable<JournalState>({
-  currentEntry: null,
-  entries: [],
+  entries: {},
+  flows: {},
+  activeFlow: null,
+  currentUser: null,
   lastUpdated: null,
-  currentFlowSession: null,
-  currentFlowContent: '',
-  currentFlowWordCount: 0,
 })
 
 // Helper function to wait for journal state to be loaded from persistence
@@ -36,214 +33,253 @@ export const waitForJournalLoaded = async () => {
   }
 }
 
-// Helper functions for journal operations
-export const createFlowSession = (content: string): FlowSession => {
-  return {
-    id: `flow_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-    timestamp: new Date().toISOString(),
-    content,
-    wordCount: content.trim() ? content.trim().split(/\s+/).length : 0,
-  }
+// Helper functions for creating IDs and calculating word counts
+export const generateFlowId = (): string => {
+  return `flow_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 }
 
-export const createDailyJournalEntry = (
-  date: string,
-  flows: FlowSession[] = []
-): DailyJournalEntry => {
-  const finalWordCount = flows.reduce((total, flow) => total + flow.wordCount, 0)
-
-  return {
-    id: `entry_${date}_${Math.random().toString(36).substring(2, 11)}`,
-    date,
-    flows,
-    finalWordCount,
-    lastModified: new Date().toISOString(),
-  }
+export const generateEntryId = (date: string): string => {
+  return `entry_${date}_${Math.random().toString(36).substring(2, 9)}`
 }
 
-export const addFlowSession = (content: string) => {
-  const newFlow = createFlowSession(content)
-  const today = new Date().toISOString().split('T')[0]
-
-  batch(() => {
-    let currentEntry = journal$.currentEntry.get()
-
-    if (!currentEntry || currentEntry.date !== today) {
-      // Create new entry for today
-      currentEntry = createDailyJournalEntry(today, [newFlow])
-      journal$.currentEntry.set(currentEntry)
-      journal$.entries.set((prev) => [...prev, currentEntry!])
-    } else {
-      // Add to existing entry
-      const updatedFlows = [...currentEntry.flows, newFlow]
-      const updatedEntry = {
-        ...currentEntry,
-        flows: updatedFlows,
-        finalWordCount: updatedFlows.reduce((total, flow) => total + flow.wordCount, 0),
-        lastModified: new Date().toISOString(),
-      }
-
-      journal$.currentEntry.set(updatedEntry)
-      journal$.entries.set((prev) =>
-        prev.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
-      )
-    }
-  })
+export const calculateWordCount = (content: string): number => {
+  return content.trim() ? content.trim().split(/\s+/).length : 0
 }
 
-export const testBasicPersistence = () => {
-  // Create test data
-  const testContent = 'This is a test flow session for Legend-State persistence validation.'
-  addFlowSession(testContent)
+// Helper function to find today's entry ID efficiently
+const findTodayEntryId = (date: string): string | null => {
+  const entries = journal$.entries.get()
+  const entry = Object.values(entries).find((entry) => entry.date === date)
+  return entry?.id || null
 }
 
 export const clearJournalData = () => {
   journal$.set({
-    currentEntry: null,
-    entries: [],
+    entries: {},
+    flows: {},
+    activeFlow: null,
+    currentUser: null,
     lastUpdated: new Date().toISOString(),
-    currentFlowSession: null,
-    currentFlowContent: '',
-    currentFlowWordCount: 0,
   })
 }
 
-// Current Flow Session Management Functions
+// Active Flow Session Management Functions
 
 /**
- * Creates a new flow session for real-time editing
+ * Starts a new active flow session for real-time editing
  */
-export const startNewFlowSession = (): void => {
-  const newFlowSession = createFlowSession('')
+export const startNewActiveFlow = (): void => {
   batch(() => {
-    journal$.currentFlowSession.set(newFlowSession)
-    journal$.currentFlowContent.set('')
-    journal$.currentFlowWordCount.set(0)
+    journal$.activeFlow.set({
+      content: '',
+      wordCount: 0,
+    })
     journal$.lastUpdated.set(new Date().toISOString())
   })
 }
 
 /**
- * Updates the content of the current flow session and recalculates word count
- * Auto-initializes flow session on first keystroke if none exists
+ * Updates the content of the active flow session and recalculates word count
+ * Auto-initializes active flow on first keystroke if none exists
  */
-export const updateCurrentFlowContent = (content: string): void => {
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0
+export const updateActiveFlowContent = (content: string): void => {
+  const wordCount = calculateWordCount(content)
 
   batch(() => {
-    // Update direct properties for better persistence tracking
-    journal$.currentFlowContent.set(content)
-    journal$.currentFlowWordCount.set(wordCount)
-    journal$.lastUpdated.set(new Date().toISOString())
-
-    // Auto-initialize flow session on first keystroke if none exists
-    const currentFlow = journal$.currentFlowSession.get()
-    if (!currentFlow && content.length > 0) {
-      // Create new flow session when user starts typing
-      const newFlowSession = createFlowSession(content)
-      journal$.currentFlowSession.set(newFlowSession)
+    // Auto-initialize active flow on first keystroke if none exists
+    if (!journal$.activeFlow.get() && content.length > 0) {
+      journal$.activeFlow.set({
+        content,
+        wordCount,
+      })
 
       // Debug log for flow creation tracking
       if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
-        console.log('🌊 Flow session created on first keystroke:', {
-          flowId: newFlowSession.id,
-          timestamp: newFlowSession.timestamp,
+        console.log('🌊 Active flow started on first keystroke:', {
           firstCharacter: content.charAt(0),
           contentLength: content.length,
+          wordCount,
         })
       }
-    } else if (currentFlow) {
-      // Update existing flow session
-      journal$.currentFlowSession.content.set(content)
-      journal$.currentFlowSession.wordCount.set(wordCount)
-    }
-  })
-}
-
-/**
- * Gets the current flow session content
- */
-export const getCurrentFlowContent = (): string => {
-  return journal$.currentFlowContent.get()
-}
-
-/**
- * Gets the current flow session word count
- */
-export const getCurrentFlowWordCount = (): number => {
-  return journal$.currentFlowWordCount.get()
-}
-
-/**
- * Saves the current flow session to the daily journal entry
- */
-export const saveCurrentFlowSession = (): void => {
-  const content = journal$.currentFlowContent.get()
-  if (!content.trim()) {
-    return // Don't save empty flow sessions
-  }
-
-  // Create a flow session from the current content
-  const currentFlow = createFlowSession(content)
-
-  const today = new Date().toISOString().split('T')[0]
-
-  batch(() => {
-    let currentEntry = journal$.currentEntry.get()
-
-    if (!currentEntry || currentEntry.date !== today) {
-      // Create new entry for today
-      currentEntry = createDailyJournalEntry(today, [currentFlow])
-      journal$.currentEntry.set(currentEntry)
-      journal$.entries.set((prev) => [...prev, currentEntry!])
-    } else {
-      // Add to existing entry
-      const updatedFlows = [...currentEntry.flows, currentFlow]
-      const updatedEntry = {
-        ...currentEntry,
-        flows: updatedFlows,
-        finalWordCount: updatedFlows.reduce((total, flow) => total + flow.wordCount, 0),
-        lastModified: new Date().toISOString(),
-      }
-
-      journal$.currentEntry.set(updatedEntry)
-      journal$.entries.set((prev) =>
-        prev.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
-      )
+    } else if (journal$.activeFlow.get()) {
+      // Direct mutable updates to the active flow
+      journal$.activeFlow.content.set(content)
+      journal$.activeFlow.wordCount.set(wordCount)
     }
 
-    // Clear the current flow session after saving
-    journal$.currentFlowSession.set(null)
-    journal$.currentFlowContent.set('')
-    journal$.currentFlowWordCount.set(0)
-  })
-}
-
-/**
- * Discards the current flow session without saving
- */
-export const discardCurrentFlowSession = (): void => {
-  batch(() => {
-    journal$.currentFlowSession.set(null)
-    journal$.currentFlowContent.set('')
-    journal$.currentFlowWordCount.set(0)
     journal$.lastUpdated.set(new Date().toISOString())
   })
 }
 
 /**
- * Debug function to test real-time content persistence
+ * Gets the current active flow content
  */
-export const debugCurrentFlow = () => {
-  const content = journal$.currentFlowContent.get()
-  const wordCount = journal$.currentFlowWordCount.get()
+export const getActiveFlowContent = (): string => {
+  return journal$.activeFlow.content.get() || ''
+}
+
+/**
+ * Gets the current active flow word count
+ */
+export const getActiveFlowWordCount = (): number => {
+  return journal$.activeFlow.wordCount.get() || 0
+}
+
+/**
+ * Saves the active flow session to the daily journal entry using mutable updates
+ */
+export const saveActiveFlowSession = (): void => {
+  const activeFlow = journal$.activeFlow.get()
+
+  // Don't save if there's no active flow or it's empty
+  if (!activeFlow || !activeFlow.content.trim()) {
+    return
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+
+  batch(() => {
+    // Find today's entry ID
+    let todayEntryId = findTodayEntryId(today)
+
+    // If today's entry doesn't exist, create it
+    if (!todayEntryId) {
+      todayEntryId = generateEntryId(today)
+      const newEntry: Entry = {
+        id: todayEntryId,
+        date: today,
+        lastModified: new Date().toISOString(),
+      }
+      // Directly set the new entry in the entries map
+      journal$.entries[todayEntryId].set(newEntry)
+    }
+
+    // Create the new flow session
+    const newFlowId = generateFlowId()
+    const newFlow: Flow = {
+      id: newFlowId,
+      entry_id: todayEntryId,
+      timestamp: new Date().toISOString(),
+      content: activeFlow.content,
+      wordCount: activeFlow.wordCount,
+    }
+
+    // Directly add the new flow to the flows map
+    journal$.flows[newFlowId].set(newFlow)
+
+    // Update the entry's lastModified timestamp
+    journal$.entries[todayEntryId].lastModified.set(new Date().toISOString())
+
+    // Clear the active flow session
+    journal$.activeFlow.set(null)
+    journal$.lastUpdated.set(new Date().toISOString())
+  })
+}
+
+/**
+ * Discards the active flow session without saving
+ */
+export const discardActiveFlowSession = (): void => {
+  batch(() => {
+    journal$.activeFlow.set(null)
+    journal$.lastUpdated.set(new Date().toISOString())
+  })
+}
+
+/**
+ * Debug function to test active flow persistence
+ */
+export const debugActiveFlow = () => {
+  const activeFlow = journal$.activeFlow.get()
   const lastUpdated = journal$.lastUpdated.get()
 
   return {
-    content,
-    wordCount,
+    content: activeFlow?.content || '',
+    wordCount: activeFlow?.wordCount || 0,
     lastUpdated,
-    hasContent: !!content.trim(),
+    hasContent: !!(activeFlow?.content?.trim()),
+    isActive: !!activeFlow,
   }
+}
+
+// Computed Selectors - Functions that derive UI-friendly data from the normalized store
+
+/**
+ * Gets a fully populated daily entry, including its flows
+ */
+export function selectDailyEntry(date: string): DailyEntryView | null {
+  const allEntries = Object.values(journal$.entries.get())
+  const entryData = allEntries.find(entry => entry.date === date)
+
+  if (!entryData) return null
+
+  const allFlows = Object.values(journal$.flows.get())
+  const flows = allFlows.filter(flow => flow.entry_id === entryData.id)
+  
+  const totalWords = flows.reduce((sum, flow) => sum + flow.wordCount, 0)
+
+  return { 
+    ...entryData, 
+    flows,
+    totalWords
+  }
+}
+
+/**
+ * Computes stats for a given day
+ */
+export function selectDailyStats(date: string): DailyStatsView {
+  const entry = selectDailyEntry(date)
+  const wordGoal = journal$.currentUser.word_goal.get() ?? 750
+
+  if (!entry) {
+    return { 
+      totalWords: 0, 
+      goalReached: false, 
+      flows: [],
+      progress: 0
+    }
+  }
+
+  const progress = Math.min(entry.totalWords / wordGoal, 1)
+  
+  return {
+    totalWords: entry.totalWords,
+    goalReached: entry.totalWords >= wordGoal,
+    flows: entry.flows,
+    progress
+  }
+}
+
+/**
+ * Gets all entries sorted by date (newest first)
+ */
+export function selectAllEntries(): DailyEntryView[] {
+  const allEntries = Object.values(journal$.entries.get())
+  const allFlows = Object.values(journal$.flows.get())
+  
+  return allEntries
+    .map(entry => {
+      const flows = allFlows.filter(flow => flow.entry_id === entry.id)
+      const totalWords = flows.reduce((sum, flow) => sum + flow.wordCount, 0)
+      
+      return {
+        ...entry,
+        flows,
+        totalWords
+      }
+    })
+    .sort((a, b) => b.date.localeCompare(a.date))
+}
+
+/**
+ * Gets recent entries (last 7 days by default)
+ */
+export function selectRecentEntries(days = 7): DailyEntryView[] {
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - days)
+  const cutoffString = cutoffDate.toISOString().split('T')[0]
+  
+  return selectAllEntries().filter(entry => entry.date >= cutoffString)
 }
