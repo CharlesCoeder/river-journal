@@ -1,4 +1,4 @@
-import { XStack, YStack, Circle, Button } from '@my/ui'
+import { XStack, YStack, Circle, Button } from 'tamagui'
 import { use$ } from '@legendapp/state/react'
 import {
   theme$,
