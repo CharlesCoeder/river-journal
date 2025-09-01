@@ -1,40 +1,66 @@
 /**
  * TypeScript types for journal state management
+ * Normalized, relational data structure optimized for Legend State
  */
 
 import type { Observable } from '@legendapp/state'
 
-// Base data models (re-exported from store for consistency)
-export interface FlowSession {
+// Base data models - normalized structure that mirrors Supabase schema
+export interface Flow {
   id: string
+  entry_id: string // Link back to the parent entry
   timestamp: string
   content: string
   wordCount: number
 }
 
-export interface DailyJournalEntry {
+export interface Entry {
   id: string
-  date: string
-  flows: FlowSession[]
-  finalWordCount: number
+  date: string // "YYYY-MM-DD"
   lastModified: string
+  // We no longer store flows directly inside. We'll derive this in memory.
 }
 
 export interface JournalState {
-  currentEntry: DailyJournalEntry | null
-  entries: DailyJournalEntry[]
+  // Use Records (maps) for efficient O(1) lookups
+  entries: Record<string, Entry> // Keyed by Entry ID
+  flows: Record<string, Flow>     // Keyed by Flow ID
+
+  // A single, clean object for the active session
+  activeFlow: {
+    content: string
+    wordCount: number
+  } | null
+
+  currentUser: {
+    id: string
+    word_goal: number
+  } | null
+
   lastUpdated: string | null
-  currentFlowSession: FlowSession | null
-  // Direct properties for better persistence tracking
-  currentFlowContent: string
-  currentFlowWordCount: number
+}
+
+// UI-friendly computed data structures (returned by selectors)
+export interface DailyEntryView {
+  id: string
+  date: string
+  lastModified: string
+  flows: Flow[]
+  totalWords: number
+}
+
+export interface DailyStatsView {
+  totalWords: number
+  goalReached: boolean
+  flows: Flow[]
+  progress: number // 0-1 representing progress toward goal
 }
 
 // Observable types for Legend-State
 export type JournalObservable = Observable<JournalState>
-export type FlowSessionObservable = Observable<FlowSession>
-export type CurrentFlowContentObservable = Observable<string>
-export type CurrentFlowWordCountObservable = Observable<number>
+export type FlowObservable = Observable<Flow>
+export type EntryObservable = Observable<Entry>
+export type ActiveFlowObservable = Observable<{ content: string; wordCount: number } | null>
 
 // Text input change handler type
 export type TextChangeHandler = (text: string) => void

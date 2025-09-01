@@ -1,39 +1,56 @@
 /**
- * Journal state management exports
+ * Journal state management exports - Normalized, relational data structure
  */
 
 // Main store and status
-export { journal$, journalStatus$, waitForJournalLoaded } from './store'
+export { journal$, waitForJournalLoaded } from './store'
 
-// Current flow session management
+// Active flow session management (new API)
 export {
-  startNewFlowSession,
-  updateCurrentFlowContent,
-  getCurrentFlowContent,
-  getCurrentFlowWordCount,
-  saveCurrentFlowSession,
-  discardCurrentFlowSession,
+  startNewActiveFlow,
+  updateActiveFlowContent,
+  getActiveFlowContent,
+  getActiveFlowWordCount,
+  saveActiveFlowSession,
+  discardActiveFlowSession,
+  debugActiveFlow,
 } from './store'
 
-// Legacy functions (maintained for backward compatibility)
+// Computed selectors for UI data views
 export {
-  createFlowSession,
-  createDailyJournalEntry,
-  addFlowSession,
-  testBasicPersistence,
+  selectDailyEntry,
+  selectDailyStats,
+  selectAllEntries,
+  selectRecentEntries,
+} from './store'
+
+// Utility functions
+export {
+  generateFlowId,
+  generateEntryId,
+  calculateWordCount,
   clearJournalData,
-  debugCurrentFlow,
 } from './store'
 
-// Types
+// Core types (new normalized structure)
 export type {
-  FlowSession,
-  DailyJournalEntry,
+  Flow,
+  Entry,
   JournalState,
+  DailyEntryView,
+  DailyStatsView,
+} from './types'
+
+// Observable types
+export type {
   JournalObservable,
-  FlowSessionObservable,
-  CurrentFlowContentObservable,
-  CurrentFlowWordCountObservable,
+  FlowObservable,
+  EntryObservable,
+  ActiveFlowObservable,
+} from './types'
+
+// Utility types
+export type {
   TextChangeHandler,
   FlowSessionAction,
   ContentValidationResult,
