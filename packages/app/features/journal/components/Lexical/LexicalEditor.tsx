@@ -36,15 +36,17 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
       <div className={className} style={{ position: 'relative', minHeight: '200px' }}>
         <RichTextPlugin
           contentEditable={
-            <ContentEditable
-              style={{
-                outline: 'none',
-                minHeight: '200px',
-                fontSize: '16px',
-                lineHeight: '1.5',
-                fontFamily: 'sourceSans3',
-              }}
-            />
+            <div style={{ minHeight: '200px' }}>
+              <ContentEditable
+                style={{
+                  outline: 'none',
+                  minHeight: '200px',
+                  fontSize: '16px',
+                  lineHeight: '1.5',
+                  fontFamily: 'sourceSans3',
+                }}
+              />
+            </div>
           }
           placeholder={
             <div

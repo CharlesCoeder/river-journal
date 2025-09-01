@@ -50,7 +50,11 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         }}
       >
         <RichTextPlugin
-          contentEditable={<ContentEditable style={styles.contentEditable} />}
+          contentEditable={
+            <div style={{ minHeight: '100%', height: '100%' }}>
+              <ContentEditable style={styles.contentEditable} />
+            </div>
+          }
           placeholder={<div style={styles.placeholder}>{placeholder}</div>}
           ErrorBoundary={LexicalErrorBoundary}
         />
@@ -84,13 +88,11 @@ const createMobileLexicalStyling = (themeValues?: {
       color: textColor,
       background: 'transparent',
       height: '100%',
-      display: 'flex',
       fontFamily: 'sourceSans3',
     },
     contentEditable: {
       outline: 'none',
       minHeight: '100%',
-      flex: 1,
       fontSize: 18,
       lineHeight: 1.6,
       color: textColor,
