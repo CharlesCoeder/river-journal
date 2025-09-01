@@ -1,6 +1,8 @@
 import { createInterFont } from '@tamagui/font-inter'
-import { isWeb } from '@my/ui'
 import { createGenericFont } from '@tamagui/config'
+
+// Use platform detection without importing from @my/ui to avoid circular dependency
+const isWeb = typeof window !== 'undefined'
 
 const letterSpacing = {
   1: 0,
@@ -16,7 +18,7 @@ const weight = {
   7: '700',
 }
 
-// NOTE: createGenericFont is a Tamagui helper used to help with line height on mobile. 
+// NOTE: createGenericFont is a Tamagui helper used to help with line height on mobile.
 // They ought to put it in their docs, instead of recommending createFont().
 
 const sourceSans3Font = createGenericFont(

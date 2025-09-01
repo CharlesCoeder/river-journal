@@ -2,8 +2,8 @@ import { useRef, useState, useEffect, forwardRef } from 'react'
 import { useWindowDimensions } from 'react-native'
 import { useKeyboardHandler } from 'react-native-keyboard-controller'
 import { runOnJS } from 'react-native-reanimated'
-import { TextArea, styled, YStack } from '@my/ui'
-import type { GetProps } from '@my/ui'
+import { TextArea, styled, YStack } from 'tamagui'
+import type { GetProps } from 'tamagui'
 
 // 1. Create a base styled component for the text area.
 // This is where you define the core, reusable styles and variants.
