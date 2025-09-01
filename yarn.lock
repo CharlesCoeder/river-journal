@@ -8187,6 +8187,7 @@ __metadata:
     lexical: "npm:^0.33.1"
     react-native-safe-area-context: "npm:5.4.0"
     solito: "npm:^4.2.2"
+    use-debounce: "npm:^10.0.5"
   languageName: unknown
   linkType: soft
 
@@ -19311,6 +19312,15 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10/adf06a7b6a27d3651c325ac9b66d2b82ccacaed7450b85b211d123e91d9a23cb5a587fcc6db5b4fd07ac7233e5abf024d30cf02ddc2ec46bca712151c0836151
+  languageName: node
+  linkType: hard
+
+"use-debounce@npm:^10.0.5":
+  version: 10.0.5
+  resolution: "use-debounce@npm:10.0.5"
+  peerDependencies:
+    react: "*"
+  checksum: 10/329e71d3c53baa3e1bc3d1cd8cba8f358d06e3594c606b8f26fc391be6ce0010704026056909d3975314900562dc963c54b1889c875e62d7971a82260cad62d4
   languageName: node
   linkType: hard
 
