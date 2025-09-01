@@ -3,6 +3,7 @@ import { Text } from '@my/ui'
 import { ArrowLeft } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { Editor } from './components/Editor'
+import { useTheme } from '@my/ui'
 
 export function JournalScreen() {
   const router = useRouter()
@@ -10,6 +11,8 @@ export function JournalScreen() {
   const handleBackToHome = () => {
     router.push('/')
   }
+  const theme = useTheme()
+  const _ensureThemeSubscription = theme.background.val
 
   return (
     <YStack
