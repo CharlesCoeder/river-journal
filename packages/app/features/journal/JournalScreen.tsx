@@ -1,9 +1,7 @@
-import { ThemeSwitcher, YStack, XStack, H1, Button } from '@my/ui'
-import { Text } from '@my/ui'
+import { YStack, XStack, H1, Button, useTheme } from '@my/ui'
 import { ArrowLeft } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { Editor } from './components/Editor'
-import { useTheme } from '@my/ui'
 
 export function JournalScreen() {
   const router = useRouter()
@@ -40,13 +38,8 @@ export function JournalScreen() {
           <H1 size="$11" fontFamily="$patrickHand">
             River Journal
           </H1>
-          <Text fontSize="$6" fontFamily="$sourceSans3" fontWeight="700" fontStyle="italic">
-            Custom body font
-          </Text>
         </YStack>
       </XStack>
-
-      <ThemeSwitcher />
       <Editor />
     </YStack>
   )

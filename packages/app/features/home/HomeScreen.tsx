@@ -1,6 +1,5 @@
-import { YStack, H1, Button } from '@my/ui'
+import { YStack, H1, Button, Text, ThemeSwitcher } from '@my/ui'
 import { useRouter } from 'solito/navigation'
-import { Text } from '@my/ui'
 
 export function HomeScreen() {
   const router = useRouter()
@@ -34,6 +33,7 @@ export function HomeScreen() {
             Journal Screen
           </Text>
         </Button>
+        <ThemeSwitcher />
       </YStack>
     </YStack>
   )

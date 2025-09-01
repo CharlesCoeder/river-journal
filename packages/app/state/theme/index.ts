@@ -1,6 +1,4 @@
 import { observable } from '@legendapp/state'
-import { syncObservable } from '@legendapp/state/sync'
-import { configurePersistence } from '../persistConfig'
 
 export type BaseThemeName = 'light' | 'dark'
 
