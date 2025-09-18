@@ -1,4 +1,4 @@
-import { YStack, XStack, H1, Button, useTheme } from '@my/ui'
+import { YStack, XStack, H1, Button } from '@my/ui'
 import { ArrowLeft } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { Editor } from './components/Editor'
@@ -9,8 +9,6 @@ export function JournalScreen() {
   const handleBackToHome = () => {
     router.push('/')
   }
-  const theme = useTheme()
-  const _ensureThemeSubscription = theme.background.val
 
   return (
     <YStack
