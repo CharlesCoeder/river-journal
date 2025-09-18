@@ -13,6 +13,7 @@ export const config = createTamagui({
     onlyAllowShorthands: false,
     styleCompat: 'react-native',
     mediaQueryDefaultActive,
+    fastSchemeChange : false,
   },
   animations,
   fonts,
