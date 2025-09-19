@@ -1,6 +1,6 @@
 'use dom'
 import type React from 'react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -8,23 +8,47 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { $getRoot } from 'lexical'
+import {
+  $convertFromMarkdownString,
+  $convertToMarkdownString,
+  TRANSFORMERS,
+} from '@lexical/markdown'
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { injectFontCSS, createMobileLexicalConfig } from './utils'
+import type { LexicalEditorNativeProps } from './LexicalEditor.types'
 
-interface LexicalEditorNativeProps {
-  placeholder?: string
-  className?: string
-  onChange?: (text: string) => void
-  /** Theme values passed from parent component to avoid useTheme hook issues in DOM context */
-  themeValues?: {
-    textColor: string
-    placeholderColor: string
-  }
+// Helper component to load and sync content
+const ContentSyncer: React.FC<{ content: string }> = ({ content }) => {
+  const [editor] = useLexicalComposerContext()
+  const lastContent = useRef('')
+
+  useEffect(() => {
+    // Only update if content actually changed to avoid unnecessary updates
+    if (content !== lastContent.current) {
+      lastContent.current = content
+
+      editor.update(
+        () => {
+          $getRoot().clear()
+          if (content) {
+            $convertFromMarkdownString(content, TRANSFORMERS)
+          }
+        },
+        {
+          tag: 'history-merge', // Prevents this from being part of undo stack
+        }
+      )
+    }
+  }, [editor, content])
+
+  return null
 }
 
 const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   placeholder = 'Begin your stream-of-consciousness writing here...',
   className,
-  onChange,
+  onContentChange,
+  initialContent,
   themeValues,
 }) => {
   const initialConfig = createMobileLexicalConfig()
@@ -59,14 +83,17 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
           ErrorBoundary={LexicalErrorBoundary}
         />
         <HistoryPlugin />
-        {onChange ? (
+        {onContentChange ? (
           <OnChangePlugin
             onChange={(editorState) => {
-              const text = editorState.read(() => $getRoot().getTextContent())
-              onChange(text)
+              const markdown = editorState.read(() => $convertToMarkdownString(TRANSFORMERS))
+              onContentChange(markdown)
             }}
           />
         ) : null}
+
+        {/* Sync content with Legend State */}
+        <ContentSyncer content={initialContent || ''} />
       </div>
     </LexicalComposer>
   )
