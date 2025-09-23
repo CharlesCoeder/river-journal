@@ -4,6 +4,7 @@
 
 import { observable, syncState, batch, when } from '@legendapp/state'
 import type { Flow, Entry, JournalState, DailyEntryView, DailyStatsView } from './types'
+import { getTodayJournalDayString } from './date-utils';
 
 // Re-export types for convenience
 export type { Flow, Entry, JournalState, DailyEntryView, DailyStatsView } from './types'
@@ -62,6 +63,13 @@ export const clearJournalData = () => {
     lastUpdated: new Date().toISOString(),
   })
 }
+
+// Find an entry ID by its "Journal Day" string
+const findEntryIdByDateString = (dateString: string): string | null => {
+  const entries = journal$.entries.get();
+  const entry = Object.values(entries).find((entry) => entry.date === dateString);
+  return entry?.id || null;
+};
 
 // Active Flow Session Management Functions
 
@@ -137,45 +145,50 @@ export const saveActiveFlowSession = (): void => {
     return
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const todayJournalDay = getTodayJournalDayString();
 
   batch(() => {
-    // Find today's entry ID
-    let todayEntryId = findTodayEntryId(today)
+    // Find today's entry ID using the timezone-agnostic date string
+    let todayEntryId = findEntryIdByDateString(todayJournalDay);
 
     // If today's entry doesn't exist, create it
     if (!todayEntryId) {
-      todayEntryId = generateEntryId(today)
+      todayEntryId = generateEntryId(todayJournalDay);
       const newEntry: Entry = {
         id: todayEntryId,
-        date: today,
+        // The `date` property is the 'YYYY-MM-DD' string, not a full timestamp.
+        date: todayJournalDay,
         lastModified: new Date().toISOString(),
-      }
+      };
       // Directly set the new entry in the entries map
-      journal$.entries[todayEntryId].set(newEntry)
+      journal$.entries[todayEntryId].set(newEntry);
     }
 
     // Create the new flow session
-    const newFlowId = generateFlowId()
+    const newFlowId = generateFlowId();
     const newFlow: Flow = {
       id: newFlowId,
       entry_id: todayEntryId,
+      // 2. The flow's timestamp is stored as a full, precise UTC string.
+      // This is the absolute, immutable truth of *when* the flow was written.
+      // This separates the concept of a 'day' (for grouping) from the exact 
+      // moment of writing (for record-keeping).
       timestamp: new Date().toISOString(),
       content: activeFlow.content,
       wordCount: activeFlow.wordCount,
-    }
+    };
 
     // Directly add the new flow to the flows map
-    journal$.flows[newFlowId].set(newFlow)
+    journal$.flows[newFlowId].set(newFlow);
 
     // Update the entry's lastModified timestamp
-    journal$.entries[todayEntryId].lastModified.set(new Date().toISOString())
+    journal$.entries[todayEntryId].lastModified.set(new Date().toISOString());
 
     // Clear the active flow session
-    journal$.activeFlow.set(null)
-    journal$.lastUpdated.set(new Date().toISOString())
-  })
-}
+    journal$.activeFlow.set(null);
+    journal$.lastUpdated.set(new Date().toISOString());
+  });
+};
 
 /**
  * Discards the active flow session without saving
