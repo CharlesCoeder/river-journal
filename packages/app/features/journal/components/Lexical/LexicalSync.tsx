@@ -10,8 +10,8 @@ import { $getRoot } from 'lexical';
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
-  TRANSFORMERS,
 } from '@lexical/markdown';
+import { ALL_TRANSFORMERS } from './transformers';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 
 // Import Legend State store and actions
@@ -48,7 +48,7 @@ export function LexicalSync(): React.ReactElement {
 
     const editorState = editor.getEditorState();
     const editorContent = editorState.read(() =>
-      $convertToMarkdownString(TRANSFORMERS)
+      $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true)
     );
 
     // Only update the editor if its content is actually different from the state.
@@ -56,7 +56,7 @@ export function LexicalSync(): React.ReactElement {
       editor.update(() => {
         // Programmatically update the editor's content from the store's markdown.
         $getRoot().clear();
-        $convertFromMarkdownString(contentFromState ?? '', TRANSFORMERS);
+        $convertFromMarkdownString(contentFromState ?? '', ALL_TRANSFORMERS, undefined, true);
       });
     }
   });
@@ -68,7 +68,6 @@ export function LexicalSync(): React.ReactElement {
   const debouncedUpdateStore = useDebouncedCallback((markdown: string) => {
     // Set the ref to true BEFORE updating the store. This signals to our
     // `useObserve` hook that this change is internal and should be ignored.
-    console.log('2. Debounced update firing to store with markdown:', markdown);
     isSyncingFromState.current = true;
     
     updateActiveFlowContent(markdown); // This function internally uses batch()
@@ -87,7 +86,7 @@ export function LexicalSync(): React.ReactElement {
     if (initialContent) {
       editor.update(() => {
         $getRoot().clear();
-        $convertFromMarkdownString(initialContent, TRANSFORMERS);
+        $convertFromMarkdownString(initialContent, ALL_TRANSFORMERS, undefined, true);
       }, {
         tag: 'history-merge' // Prevents this initial state from being part of the undo stack.
       });
@@ -99,9 +98,8 @@ export function LexicalSync(): React.ReactElement {
   return (
     <OnChangePlugin
       onChange={(editorState) => {
-        console.log('1. Lexical raw change detected');
         const markdown = editorState.read(() =>
-          $convertToMarkdownString(TRANSFORMERS)
+          $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true)
         );
         debouncedUpdateStore(markdown);
       }}

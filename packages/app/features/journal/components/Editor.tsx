@@ -22,7 +22,6 @@ export const Editor = () => {
 
   // Debounced function to update Legend State from editor changes
   const debouncedUpdateStore = useDebouncedCallback((markdown: string) => {
-    console.log('2. Debounced update firing to store with markdown:', markdown)
     isSyncingFromState.current = true
 
     updateActiveFlowContent(markdown)
@@ -35,14 +34,11 @@ export const Editor = () => {
 
   // Handle content changes from the editor (native only)
   const handleContentChange = (markdown: string) => {
-    console.log('1. Lexical content change detected (native):', markdown)
     debouncedUpdateStore(markdown)
   }
 
   // For native: sync from Legend State to local state (which triggers editor update)
   useObserve(journal$.activeFlow.content, ({ value }) => {
-    console.log('3. ✅ Legend State Updated! New content:', value)
-
     // For native, update local state to trigger editor re-render with new content
     if (Platform.OS !== 'web' && !isSyncingFromState.current) {
       setNativeContent(value || '')
