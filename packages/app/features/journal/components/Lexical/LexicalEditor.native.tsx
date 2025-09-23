@@ -11,8 +11,8 @@ import { $getRoot } from 'lexical'
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
-  TRANSFORMERS,
 } from '@lexical/markdown'
+import { ALL_TRANSFORMERS } from './transformers'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { injectFontCSS, createMobileLexicalConfig } from './utils'
 import type { LexicalEditorNativeProps } from './LexicalEditor.types'
@@ -31,7 +31,7 @@ const ContentSyncer: React.FC<{ content: string }> = ({ content }) => {
         () => {
           $getRoot().clear()
           if (content) {
-            $convertFromMarkdownString(content, TRANSFORMERS)
+            $convertFromMarkdownString(content, ALL_TRANSFORMERS, undefined, true)
           }
         },
         {
@@ -86,7 +86,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         {onContentChange ? (
           <OnChangePlugin
             onChange={(editorState) => {
-              const markdown = editorState.read(() => $convertToMarkdownString(TRANSFORMERS))
+              const markdown = editorState.read(() => $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true))
               onContentChange(markdown)
             }}
           />

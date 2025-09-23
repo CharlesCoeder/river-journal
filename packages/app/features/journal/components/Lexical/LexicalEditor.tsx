@@ -7,7 +7,7 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
-import { TRANSFORMERS } from '@lexical/markdown'
+import { ALL_TRANSFORMERS } from './transformers'
 
 import { createBaseLexicalConfig } from './lexical-config'
 import type { LexicalEditorProps } from './LexicalEditor.types'
@@ -56,7 +56,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
           ErrorBoundary={LexicalErrorBoundary}
         />
         <HistoryPlugin />
-        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+        <MarkdownShortcutPlugin transformers={ALL_TRANSFORMERS} />
 
         {/* Render children (our LexicalSync component) inside the provider */}
         {children}
