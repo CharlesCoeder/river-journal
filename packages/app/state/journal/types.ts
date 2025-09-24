@@ -21,6 +21,10 @@ export interface Entry {
   // We no longer store flows directly inside. We'll derive this in memory.
 }
 
+// In your types file (e.g., types.ts)
+
+// ... (other interfaces like Flow, Entry, etc.)
+
 export interface JournalState {
   // Use Records (maps) for efficient O(1) lookups
   entries: Record<string, Entry> // Keyed by Entry ID
@@ -38,6 +42,17 @@ export interface JournalState {
   } | null
 
   lastUpdated: string | null
+
+  // Define the shape of the computed observables
+views?: {
+  entryIdsByDate: () => Record<string, string>
+  entryByDate: (date: string) => DailyEntryView | null
+  statsByDate: (date: string) => DailyStatsView
+  allEntriesSorted: () => DailyEntryView[]
+  flowsByEntryId: (entryId: string) => Flow[]
+  entriesByMonth: (month: string) => DailyEntryView[]
+  entriesByYear: (year: string) => DailyEntryView[]
+}
 }
 
 // UI-friendly computed data structures (returned by selectors)
