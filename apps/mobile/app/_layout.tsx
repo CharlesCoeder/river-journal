@@ -7,7 +7,7 @@ import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
-import { theme$ } from 'app/state/theme'
+import { store$ } from 'app/state/store'
 import { useTheme } from '@my/ui'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
 
@@ -67,7 +67,7 @@ function RootLayoutNav() {
 // But, we tamaguified it (has this been coined yet??) so that we get all of Tamagui's themes and subthemes!
 function TamaguifiedReactNavigationThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useTheme()
-  const baseTheme = use$(theme$.baseTheme)
+  const baseTheme = use$(store$.profile.baseTheme) ?? 'light'
 
   const navigationTheme = {
     ...DefaultTheme,

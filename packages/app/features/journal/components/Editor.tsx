@@ -4,11 +4,7 @@ import { useRef, useState } from 'react'
 import type React from 'react'
 import { useDebouncedCallback } from 'use-debounce'
 import { Platform } from 'react-native'
-import {
-  journal$,
-  updateActiveFlowContent,
-  getActiveFlowContent,
-} from '../../../state/journal/store'
+import { store$, updateActiveFlowContent } from '../../../state/store'
 import LexicalEditor from './Lexical/LexicalEditor'
 import { LexicalSync } from './Lexical/LexicalSync'
 import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
@@ -18,7 +14,7 @@ export const Editor = () => {
   const isSyncingFromState = useRef(false)
 
   // Track current content for native sync
-  const [nativeContent, setNativeContent] = useState(getActiveFlowContent())
+  const [nativeContent, setNativeContent] = useState(store$.journal.activeFlow.content.get())
 
   // Debounced function to update Legend State from editor changes
   const debouncedUpdateStore = useDebouncedCallback((markdown: string) => {
@@ -38,7 +34,7 @@ export const Editor = () => {
   }
 
   // For native: sync from Legend State to local state (which triggers editor update)
-  useObserve(journal$.activeFlow.content, ({ value }) => {
+  useObserve(store$.journal.activeFlow.content, ({ value }) => {
     // For native, update local state to trigger editor re-render with new content
     if (Platform.OS !== 'web' && !isSyncingFromState.current) {
       setNativeContent(value || '')

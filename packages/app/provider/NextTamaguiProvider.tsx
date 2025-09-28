@@ -11,12 +11,10 @@ import { NextThemeProvider, useRootTheme } from '@tamagui/next-theme'
 import { config, useTheme } from '@my/ui'
 import { Provider } from 'app/provider'
 import { StyleSheet } from 'react-native'
-import { theme$, setBaseTheme } from 'app/state/theme'
+import { setBaseTheme } from 'app/state/store'
 import { use$ } from '@legendapp/state/react'
 import { syncState } from '@legendapp/state'
 import { useEffect, useState } from 'react'
-
-const status$ = syncState(theme$)
 
 export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
   useServerInsertedHTML(() => {
