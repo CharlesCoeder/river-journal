@@ -5,6 +5,12 @@
 
 import type { Observable } from '@legendapp/state'
 
+// Interface to describe the user's session state
+export interface SessionState {
+  localSessionId: string // Persistent UUID for the local device/browser session
+  userId: string | null // Supabase user ID, populated on login
+}
+
 // Base data models - normalized structure that mirrors Supabase schema
 export interface Flow {
   id: string
@@ -12,29 +18,29 @@ export interface Flow {
   timestamp: string
   content: string
   wordCount: number
+  user_id?: string | null
+  local_session_id: string
 }
 
 export interface Entry {
   id: string
   date: string // "YYYY-MM-DD"
   lastModified: string
-  // We no longer store flows directly inside. We'll derive this in memory.
+
+  user_id?: string | null
+  local_session_id: string
 }
 
-// In your types file (e.g., types.ts)
-
-// ... (other interfaces like Flow, Entry, etc.)
-
+// The main state interface, now with the session object
 export interface JournalState {
-  // Use Records (maps) for efficient O(1) lookups
-  entries: Record<string, Entry> // Keyed by Entry ID
-  flows: Record<string, Flow>     // Keyed by Flow ID
-
-  // A single, clean object for the active session
+  entries: Record<string, Entry>
+  flows: Record<string, Flow>
   activeFlow: {
     content: string
     wordCount: number
   } | null
+
+  session: SessionState
 
   currentUser: {
     id: string
@@ -44,15 +50,15 @@ export interface JournalState {
   lastUpdated: string | null
 
   // Define the shape of the computed observables
-views?: {
-  entryIdsByDate: () => Record<string, string>
-  entryByDate: (date: string) => DailyEntryView | null
-  statsByDate: (date: string) => DailyStatsView
-  allEntriesSorted: () => DailyEntryView[]
-  flowsByEntryId: (entryId: string) => Flow[]
-  entriesByMonth: (month: string) => DailyEntryView[]
-  entriesByYear: (year: string) => DailyEntryView[]
-}
+  views?: {
+    entryIdsByDate: () => Record<string, string>
+    entryByDate: (date: string) => DailyEntryView | null
+    statsByDate: (date: string) => DailyStatsView
+    allEntriesSorted: () => DailyEntryView[]
+    flowsByEntryId: (entryId: string) => Flow[]
+    entriesByMonth: (month: string) => DailyEntryView[]
+    entriesByYear: (year: string) => DailyEntryView[]
+  }
 }
 
 // UI-friendly computed data structures (returned by selectors)
