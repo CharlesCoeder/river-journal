@@ -9,11 +9,11 @@ import {
 } from '@my/ui'
 import { ToastViewport } from './ToastViewport'
 import { use$ } from '@legendapp/state/react'
-import { theme$ } from 'app/state/theme'
+import { store$ } from 'app/state/store'
 
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
-  const baseTheme = use$(theme$.baseTheme)
-  const colorTheme = use$(theme$.colorTheme)
+  const baseTheme = use$(store$.profile.baseTheme) ?? 'light'
+  const colorTheme = use$(store$.profile.colorTheme) ?? 'blue'
 
   return (
     <TamaguiProvider config={config} defaultTheme={baseTheme} {...rest}>

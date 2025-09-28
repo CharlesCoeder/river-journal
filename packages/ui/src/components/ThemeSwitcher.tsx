@@ -1,12 +1,18 @@
 import { XStack, YStack, Circle, Button } from 'tamagui'
 import { use$ } from '@legendapp/state/react'
-import {
-  theme$,
-  setColorTheme,
-  setBaseTheme,
-  DEFAULT_COLOR_THEMES,
-  type ColorThemeName,
-} from 'app/state/theme'
+import { store$, setColorTheme, setBaseTheme } from 'app/state/store'
+import type { ColorThemeName } from 'app/state/types'
+
+const DEFAULT_COLOR_THEMES: ColorThemeName[] = [
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'blue',
+  'purple',
+  'pink',
+  'gray',
+]
 
 const themes = DEFAULT_COLOR_THEMES.map(
   (themeName) =>
@@ -19,8 +25,8 @@ const themes = DEFAULT_COLOR_THEMES.map(
 interface ThemeSwitcherProps {}
 
 export const ThemeSwitcher = function ThemeSwitcher(_props: ThemeSwitcherProps) {
-  const currentColorTheme = use$(theme$.colorTheme)
-  const currentBaseTheme = use$(theme$.baseTheme)
+  const currentColorTheme = use$(store$.profile.colorTheme) ?? 'blue'
+  const currentBaseTheme = use$(store$.profile.baseTheme) ?? 'light'
 
   const handleThemeChange = (theme: ColorThemeName) => {
     setColorTheme(theme)

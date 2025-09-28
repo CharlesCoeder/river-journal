@@ -9,7 +9,7 @@ import { ObservablePersistMMKV } from '@legendapp/state/persist-plugins/mmkv'
 // Configure MMKV persistence
 export const configurePersistence = configureSynced({
   persist: {
-    name: 'demo',
+    name: 'app-state',
     plugin: ObservablePersistMMKV,
   },
 })

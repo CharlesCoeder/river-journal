@@ -3,10 +3,7 @@ import { syncState, when } from '@legendapp/state'
 import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
 import { configurePersistence } from './persistConfig'
-
-// Import all persisted observables
-import { theme$ } from './theme'
-import { journal$ } from './journal'
+import { store$ } from './store'
 
 export const appStatus$ = observable({
   isPersistenceLoaded: false,
@@ -15,18 +12,10 @@ export const appStatus$ = observable({
 
 function setupPersistence() {
   syncObservable(
-    journal$,
+    store$,
     configurePersistence({
       persist: {
-        name: 'journal',
-      },
-    })
-  )
-  syncObservable(
-    theme$,
-    configurePersistence({
-      persist: {
-        name: 'theme',
+        name: 'app-state',
       },
     })
   )
@@ -39,10 +28,7 @@ export async function initializePersistence() {
 
     // Create an array of promises that resolve when each persisted observable is loaded.
     // The syncState helper returns an observable with load statuses.
-    const persistencePromises = [
-      when(syncState(journal$).isPersistLoaded),
-      when(syncState(theme$).isPersistLoaded),
-    ]
+    const persistencePromises = [when(syncState(store$).isPersistLoaded)]
 
     // If no persisted stores yet, create a resolved promise to prevent errors.
     if (persistencePromises.length === 0) {
