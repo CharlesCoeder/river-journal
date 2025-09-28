@@ -31,6 +31,3 @@ next-env.d.ts
 *.njsproj
 *.sln
 *.sw?
-
-# for tauri build
-public/tamagui.css
