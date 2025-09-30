@@ -55,162 +55,257 @@ export function DayViewScreen() {
   }
 
   return (
-    <YStack
-      width="75%"
-      maxWidth="75%"
-      backgroundColor="$background"
-      gap="$8"
+    <ScrollView
       flex={1}
-      alignItems="flex-start"
-      justifyContent="flex-start"
-      alignSelf="flex-start"
-      marginLeft="12.5%"
-      paddingTop="$8"
+      backgroundColor="$background"
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        flexGrow: 1,
+      }}
     >
-      {/* Header with back button */}
-      <XStack gap="$4" alignItems="center" justifyContent="space-between" width="100%">
-        <XStack gap="$4" alignItems="center" flex={1} minWidth={0}>
-          <Button
-            size="$3"
-            circular
-            onPress={handleBackToHome}
-            icon={ArrowLeft}
-            backgroundColor="$background"
-            borderColor="$borderColor"
-          />
-          <YStack flex={1} minWidth={0}>
-            <H1 size="$11" $xs={{ size: '$9' }} fontFamily="$patrickHand" numberOfLines={1}>
-              Day View
-            </H1>
-          </YStack>
-        </XStack>
-      </XStack>
-
-      {/* Date Navigation */}
-      <XStack
-        gap="$4"
-        alignItems="center"
-        justifyContent="space-between"
+      <YStack
         width="100%"
-        flexWrap="wrap"
+        maxWidth="100%"
+        marginLeft={0}
+        backgroundColor="$background"
+        gap="$4"
+        paddingHorizontal="$4"
+        paddingTop="$4"
+        paddingBottom="$8"
+        $sm={{
+          width: '75%',
+          maxWidth: '75%',
+          marginLeft: '12.5%',
+          gap: '$8',
+          paddingHorizontal: 0,
+          paddingTop: '$8',
+        }}
       >
-        <XStack gap="$2" alignItems="center" flex={1}>
-          <Button
-            size="$3"
-            circular
-            onPress={handlePreviousDay}
-            icon={ChevronLeft}
-            backgroundColor="$background"
-            borderColor="$borderColor"
-          />
-          <Text
-            fontSize="$6"
-            fontFamily="$sourceSans3"
-            fontWeight="600"
-            flex={1}
-            textAlign="center"
-            $xs={{ fontSize: '$5' }}
-          >
-            {formatDate(selectedDate)}
-          </Text>
-          <Button
-            size="$3"
-            circular
-            onPress={handleNextDay}
-            icon={ChevronRight}
-            backgroundColor="$background"
-            borderColor="$borderColor"
-          />
+        {/* Header with back button - Hidden on mobile */}
+        <XStack
+          gap="$4"
+          alignItems="center"
+          justifyContent="space-between"
+          width="100%"
+          display="none"
+          $sm={{ display: 'flex' }}
+        >
+          <XStack gap="$4" alignItems="center" flex={1} minWidth={0}>
+            <Button
+              size="$3"
+              circular
+              onPress={handleBackToHome}
+              icon={ArrowLeft}
+              backgroundColor="$background"
+              borderColor="$borderColor"
+            />
+            <YStack flex={1} minWidth={0}>
+              <H1 size="$11" fontFamily="$patrickHand" numberOfLines={1}>
+                Day View
+              </H1>
+            </YStack>
+          </XStack>
         </XStack>
-        <Button
-          size="$3"
-          onPress={handleToday}
-          icon={Calendar}
+
+        {/* Date Navigation */}
+        <XStack
+          gap="$4"
+          alignItems="center"
+          justifyContent="space-between"
+          width="100%"
+          flexWrap="wrap"
+        >
+          <XStack gap="$2" alignItems="center" flex={1}>
+            {/* Back button on mobile only - placed before date navigation */}
+            <Button
+              size="$3"
+              circular
+              onPress={handleBackToHome}
+              icon={ArrowLeft}
+              backgroundColor="$background"
+              borderColor="$borderColor"
+              display="flex"
+              $sm={{ display: 'none' }}
+            />
+            <Button
+              size="$3"
+              circular
+              onPress={handlePreviousDay}
+              icon={ChevronLeft}
+              backgroundColor="$background"
+              borderColor="$borderColor"
+            />
+            <Text
+              fontSize="$5"
+              $sm={{ fontSize: '$6' }}
+              fontFamily="$sourceSans3"
+              fontWeight="600"
+              flex={1}
+              textAlign="center"
+            >
+              {formatDate(selectedDate)}
+            </Text>
+            <Button
+              size="$3"
+              circular
+              onPress={handleNextDay}
+              icon={ChevronRight}
+              backgroundColor="$background"
+              borderColor="$borderColor"
+            />
+          </XStack>
+          <Button
+            size="$3"
+            onPress={handleToday}
+            icon={Calendar}
+            backgroundColor="$background"
+            borderColor="$borderColor"
+          >
+            <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
+              Today
+            </Text>
+          </Button>
+        </XStack>
+
+        {/* Daily Stats Card */}
+        <Card
+          bordered
+          elevate
+          width="100%"
+          padding="$3"
+          $sm={{ padding: '$4' }}
           backgroundColor="$background"
           borderColor="$borderColor"
         >
-          <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
-            Today
-          </Text>
-        </Button>
-      </XStack>
+          <YStack gap="$2">
+            <Text
+              fontSize="$3"
+              $sm={{ fontSize: '$4' }}
+              fontFamily="$sourceSans3"
+              fontWeight="700"
+              color="$color"
+            >
+              Daily Summary
+            </Text>
+            <XStack gap="$4" $sm={{ gap: '$6' }} flexWrap="wrap">
+              <YStack>
+                <Text
+                  fontSize="$2"
+                  $sm={{ fontSize: '$3' }}
+                  fontFamily="$sourceSans3"
+                  color="$gray11"
+                >
+                  Total Words
+                </Text>
+                <Text
+                  fontSize="$6"
+                  $sm={{ fontSize: '$7' }}
+                  fontFamily="$sourceSans3"
+                  fontWeight="700"
+                  color="$color"
+                >
+                  {dailyStats?.totalWords || 0}
+                </Text>
+              </YStack>
+              <YStack>
+                <Text
+                  fontSize="$2"
+                  $sm={{ fontSize: '$3' }}
+                  fontFamily="$sourceSans3"
+                  color="$gray11"
+                >
+                  Goal
+                </Text>
+                <Text
+                  fontSize="$6"
+                  $sm={{ fontSize: '$7' }}
+                  fontFamily="$sourceSans3"
+                  fontWeight="700"
+                  color="$color"
+                >
+                  {store$.profile.word_goal.get() || 750}
+                </Text>
+              </YStack>
+              <YStack>
+                <Text
+                  fontSize="$2"
+                  $sm={{ fontSize: '$3' }}
+                  fontFamily="$sourceSans3"
+                  color="$gray11"
+                >
+                  Flow Sessions
+                </Text>
+                <Text
+                  fontSize="$6"
+                  $sm={{ fontSize: '$7' }}
+                  fontFamily="$sourceSans3"
+                  fontWeight="700"
+                  color="$color"
+                >
+                  {dailyStats?.flows?.length || 0}
+                </Text>
+              </YStack>
+              <YStack>
+                <Text
+                  fontSize="$2"
+                  $sm={{ fontSize: '$3' }}
+                  fontFamily="$sourceSans3"
+                  color="$gray11"
+                >
+                  Progress
+                </Text>
+                <Text
+                  fontSize="$6"
+                  $sm={{ fontSize: '$7' }}
+                  fontFamily="$sourceSans3"
+                  fontWeight="700"
+                  color="$color"
+                >
+                  {Math.round((dailyStats?.progress || 0) * 100)}%
+                </Text>
+              </YStack>
+            </XStack>
+          </YStack>
+        </Card>
 
-      {/* Daily Stats Card */}
-      <Card
-        bordered
-        elevate
-        width="100%"
-        padding="$4"
-        backgroundColor="$background"
-        borderColor="$borderColor"
-      >
-        <YStack gap="$2">
-          <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="700" color="$color">
-            Daily Summary
-          </Text>
-          <XStack gap="$6" flexWrap="wrap">
-            <YStack>
-              <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
-                Total Words
-              </Text>
-              <Text fontSize="$7" fontFamily="$sourceSans3" fontWeight="700" color="$color">
-                {dailyStats?.totalWords || 0}
-              </Text>
-            </YStack>
-            <YStack>
-              <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
-                Goal
-              </Text>
-              <Text fontSize="$7" fontFamily="$sourceSans3" fontWeight="700" color="$color">
-                {store$.profile.word_goal.get() || 750}
-              </Text>
-            </YStack>
-            <YStack>
-              <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
-                Flow Sessions
-              </Text>
-              <Text fontSize="$7" fontFamily="$sourceSans3" fontWeight="700" color="$color">
-                {dailyStats?.flows?.length || 0}
-              </Text>
-            </YStack>
-            <YStack>
-              <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
-                Progress
-              </Text>
-              <Text fontSize="$7" fontFamily="$sourceSans3" fontWeight="700" color="$color">
-                {Math.round((dailyStats?.progress || 0) * 100)}%
-              </Text>
-            </YStack>
-          </XStack>
-        </YStack>
-      </Card>
+        {/* Flows List */}
+        <YStack gap="$3" $sm={{ gap: '$4' }} width="100%">
+          <H2 size="$7" $sm={{ size: '$8' }} fontFamily="$sourceSans3" fontWeight="700">
+            Flow Sessions
+          </H2>
 
-      {/* Flows List */}
-      <YStack gap="$4" width="100%" flex={1}>
-        <H2 size="$8" fontFamily="$sourceSans3" fontWeight="700">
-          Flow Sessions
-        </H2>
-
-        {!dailyEntry || dailyEntry.flows.length === 0 ? (
-          <Card
-            bordered
-            padding="$6"
-            backgroundColor="$background"
-            borderColor="$borderColor"
-            width="100%"
-          >
-            <YStack gap="$2" alignItems="center">
-              <Text fontSize="$5" fontFamily="$sourceSans3" color="$gray11" textAlign="center">
-                No flow sessions for this day
-              </Text>
-              <Text fontSize="$4" fontFamily="$sourceSans3" color="$gray10" textAlign="center">
-                Start writing in your journal to create your first flow session!
-              </Text>
-            </YStack>
-          </Card>
-        ) : (
-          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-            <YStack gap="$4" paddingBottom="$8">
+          {!dailyEntry || dailyEntry.flows.length === 0 ? (
+            <Card
+              bordered
+              padding="$4"
+              $sm={{ padding: '$6' }}
+              backgroundColor="$background"
+              borderColor="$borderColor"
+              width="100%"
+            >
+              <YStack gap="$2" alignItems="center">
+                <Text
+                  fontSize="$4"
+                  $sm={{ fontSize: '$5' }}
+                  fontFamily="$sourceSans3"
+                  color="$gray11"
+                  textAlign="center"
+                >
+                  No flow sessions for this day
+                </Text>
+                <Text
+                  fontSize="$3"
+                  $sm={{ fontSize: '$4' }}
+                  fontFamily="$sourceSans3"
+                  color="$gray10"
+                  textAlign="center"
+                >
+                  Start writing in your journal to create your first flow session!
+                </Text>
+              </YStack>
+            </Card>
+          ) : (
+            <YStack gap="$3" $sm={{ gap: '$4' }}>
               {dailyEntry.flows
                 .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
                 .map((flow: Flow, index: number) => (
@@ -218,7 +313,8 @@ export function DayViewScreen() {
                     key={flow.id}
                     bordered
                     elevate
-                    padding="$4"
+                    padding="$3"
+                    $sm={{ padding: '$4' }}
                     backgroundColor="$background"
                     borderColor="$borderColor"
                     width="100%"
@@ -248,9 +344,9 @@ export function DayViewScreen() {
                   </Card>
                 ))}
             </YStack>
-          </ScrollView>
-        )}
+          )}
+        </YStack>
       </YStack>
-    </YStack>
+    </ScrollView>
   )
 }
