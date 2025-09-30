@@ -115,7 +115,16 @@ export function DayViewScreen() {
           width="100%"
           flexWrap="wrap"
         >
-          <XStack gap="$2" alignItems="center" flex={1}>
+          <XStack
+            gap="$2"
+            alignItems="center"
+            flex={1}
+            justifyContent="center"
+            $sm={{
+              flex: 1,
+              justifyContent: 'center',
+            }}
+          >
             {/* Back button on mobile only - placed before date navigation */}
             <Button
               size="$3"
@@ -137,11 +146,16 @@ export function DayViewScreen() {
             />
             <Text
               fontSize="$5"
-              $sm={{ fontSize: '$6' }}
               fontFamily="$sourceSans3"
               fontWeight="600"
-              flex={1}
               textAlign="center"
+              paddingHorizontal="$3"
+              numberOfLines={1}
+              minWidth={200}
+              $sm={{
+                fontSize: '$6',
+                minWidth: 280,
+              }}
             >
               {formatDate(selectedDate)}
             </Text>
