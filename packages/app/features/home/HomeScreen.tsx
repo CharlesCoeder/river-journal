@@ -8,6 +8,10 @@ export function HomeScreen() {
     router.push('/journal')
   }
 
+  const handleReadJournal = () => {
+    router.push('/day-view')
+  }
+
   return (
     <YStack
       width="75%"
@@ -28,9 +32,14 @@ export function HomeScreen() {
         <Text fontSize="$6" fontFamily="$sourceSans3" fontWeight="700">
           This will be the home page!
         </Text>
-        <Button onPress={handleJournalScreen}>
+        <Button onPress={handleJournalScreen} width="100%" $sm={{ width: 'auto' }}>
           <Text fontSize="$6" fontFamily="$sourceSans3" fontWeight="700">
             Journal Screen
+          </Text>
+        </Button>
+        <Button onPress={handleReadJournal} width="100%" $sm={{ width: 'auto' }}>
+          <Text fontSize="$6" fontFamily="$sourceSans3" fontWeight="700">
+            Read Journal
           </Text>
         </Button>
         <ThemeSwitcher />
