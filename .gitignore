@@ -50,6 +50,10 @@ thumbs.db
 # bmad
 .bmad-core
 .cursor
+_bmad-output
+.agent
+.claude
+_bmad
 
 # tauri build
 apps/web/out
