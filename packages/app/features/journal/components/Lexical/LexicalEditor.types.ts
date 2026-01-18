@@ -12,6 +12,10 @@ export interface LexicalEditorBaseProps {
     content: string
     placeholder: string
   }
+  /** When true, the editor is read-only and cannot be edited */
+  readOnly?: boolean
+  /** Initial content to display (markdown format) */
+  initialContent?: string
 }
 
 // Web version props
