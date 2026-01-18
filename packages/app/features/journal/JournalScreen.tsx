@@ -1,4 +1,4 @@
-import { YStack, XStack, H1, Button, Dialog, Text } from '@my/ui'
+import { YStack, XStack, H1, Button, Dialog, Text, Spinner } from '@my/ui'
 import { ArrowLeft, Save } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { useState } from 'react'
@@ -9,6 +9,7 @@ import { use$ } from '@legendapp/state/react'
 export function JournalScreen() {
   const router = useRouter()
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const activeFlow = use$(store$.journal.activeFlow)
 
   const handleBackToHome = () => {
@@ -16,12 +17,22 @@ export function JournalScreen() {
   }
 
   const handleSaveFlow = () => {
+    // Set saving state to show loading on button
+    setIsSaving(true)
+
+    // Save first to populate lastSavedFlow for celebration screen
     saveActiveFlowSession()
+
+    // Explicitly close the dialog before navigating to prevent ghosting
+    // The dialog state must be cleared because navigation transitions on mobile
+    // can leave the previous screen visible for a moment / keep portals active
+    setIsSaving(false)
     setShowSaveDialog(false)
-    router.push('/')
+
+    router.replace('/journal/celebration')
   }
 
-  const handleSaveAndReturn = () => {
+  const handleExitFlow = () => {
     const content = getActiveFlowContent()
     if (content.trim()) {
       setShowSaveDialog(true)
@@ -68,7 +79,7 @@ export function JournalScreen() {
         <Button
           size="$3"
           circular
-          onPress={handleSaveAndReturn}
+          onPress={handleExitFlow}
           icon={Save}
           backgroundColor="$background"
           borderColor="$borderColor"
@@ -78,7 +89,12 @@ export function JournalScreen() {
       </XStack>
       <Editor />
 
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+      <Dialog
+        open={showSaveDialog || isSaving}
+        onOpenChange={(open) => {
+          if (!isSaving) setShowSaveDialog(open)
+        }}
+      >
         <Dialog.Portal>
           <Dialog.Overlay
             key="overlay"
@@ -122,6 +138,8 @@ export function JournalScreen() {
                   onPress={() => setShowSaveDialog(false)}
                   flexGrow={1}
                   $sm={{ flexGrow: 0 }}
+                  disabled={isSaving}
+                  opacity={isSaving ? 0.5 : 1}
                 >
                   <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
                     Cancel
@@ -134,10 +152,21 @@ export function JournalScreen() {
                 color="$color1"
                 flexGrow={1}
                 $sm={{ flexGrow: 0 }}
+                disabled={isSaving}
+                opacity={isSaving ? 0.7 : 1}
               >
-                <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
-                  Save Flow
-                </Text>
+                {isSaving ? (
+                  <XStack gap="$2" alignItems="center">
+                    <Spinner size="small" color="$color1" />
+                    <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
+                      Saving...
+                    </Text>
+                  </XStack>
+                ) : (
+                  <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
+                    Save Flow
+                  </Text>
+                )}
               </Button>
             </XStack>
           </Dialog.Content>

@@ -46,6 +46,7 @@ export const store$ = observable<AppState>({
     entries: {},
     flows: {},
     activeFlow: null,
+    lastSavedFlow: null,
   },
   lastUpdated: null,
 })
@@ -94,6 +95,7 @@ export const clearUserData = () => {
       entries: {},
       flows: {},
       activeFlow: null,
+      lastSavedFlow: null,
     })
     store$.lastUpdated.set(new Date().toISOString())
   })
@@ -154,7 +156,8 @@ export const updateActiveFlowContent = (content: string): void => {
 }
 
 /**
- * Saves the active flow session to the daily journal entry using mutable updates
+ * Saves the active flow session to the daily journal entry using mutable updates.
+ * Stores the flow data in lastSavedFlow for the celebration screen.
  */
 export const saveActiveFlowSession = (): void => {
   const activeFlow = store$.journal.activeFlow.get()
@@ -165,8 +168,16 @@ export const saveActiveFlowSession = (): void => {
   }
 
   const todayJournalDay = getTodayJournalDayString()
+  const timestamp = new Date().toISOString()
 
   batch(() => {
+    // Store flow data for celebration screen BEFORE clearing activeFlow
+    store$.journal.lastSavedFlow.set({
+      content: activeFlow.content,
+      wordCount: activeFlow.wordCount,
+      timestamp,
+    })
+
     // Find today's entry ID using the timezone-agnostic date string
     const entryIndex = store$.views.entryIdsByDate.get()
     let todayEntryId = entryIndex?.[todayJournalDay] || null
@@ -178,7 +189,7 @@ export const saveActiveFlowSession = (): void => {
         id: todayEntryId,
         // The `date` property is the 'YYYY-MM-DD' string, not a full timestamp.
         date: todayJournalDay,
-        lastModified: new Date().toISOString(),
+        lastModified: timestamp,
         local_session_id: store$.session.localSessionId.get(),
         user_id: store$.session.userId.get(), // Add userId on creation
       }
@@ -195,7 +206,7 @@ export const saveActiveFlowSession = (): void => {
       // This is the absolute, immutable truth of *when* the flow was written.
       // This separates the concept of a 'day' (for grouping) from the exact
       // moment of writing (for record-keeping).
-      timestamp: new Date().toISOString(),
+      timestamp,
       content: activeFlow.content,
       wordCount: activeFlow.wordCount,
       local_session_id: store$.session.localSessionId.get(),
@@ -206,12 +217,27 @@ export const saveActiveFlowSession = (): void => {
     store$.journal.flows[newFlowId].set(newFlow)
 
     // Update the entry's lastModified timestamp
-    store$.journal.entries[todayEntryId].lastModified.set(new Date().toISOString())
+    store$.journal.entries[todayEntryId].lastModified.set(timestamp)
 
-    // Clear the active flow session
-    store$.journal.activeFlow.set(null)
-    store$.lastUpdated.set(new Date().toISOString())
+    // NOTE: activeFlow is NOT cleared here - it will be cleared by CelebrationScreen
+    // on mount to prevent the placeholder flash during navigation
+    store$.lastUpdated.set(timestamp)
   })
+}
+
+/**
+ * Clears the lastSavedFlow state after user dismisses celebration screen
+ */
+export const clearLastSavedFlow = (): void => {
+  store$.journal.lastSavedFlow.set(null)
+}
+
+/**
+ * Clears the activeFlow state. Called by CelebrationScreen on mount
+ * to complete the save flow transition without causing placeholder flash.
+ */
+export const clearActiveFlow = (): void => {
+  store$.journal.activeFlow.set(null)
 }
 
 export const discardActiveFlowSession = (): void => {

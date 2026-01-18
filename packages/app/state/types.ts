@@ -66,6 +66,17 @@ export interface JournalData {
     content: string
     wordCount: number
   } | null
+  lastSavedFlow: LastSavedFlow | null // Temporary state for celebration screen
+}
+
+/**
+ * Temporary state to hold the last saved flow data for the celebration screen.
+ * Cleared when user dismisses the celebration screen.
+ */
+export interface LastSavedFlow {
+  content: string
+  wordCount: number
+  timestamp: string
 }
 
 // =================================================================
