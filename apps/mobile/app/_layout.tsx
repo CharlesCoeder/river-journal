@@ -10,6 +10,7 @@ import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { useTheme } from '@my/ui'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
+import { PersistentEditor } from 'app/features/journal/components/PersistentEditor'
 
 export const unstable_settings = {
   // Ensure that reloading on `/user` keeps a back button present.
@@ -53,6 +54,7 @@ function RootLayoutNav() {
             <TamaguifiedReactNavigationThemeProvider>
               <TamaguifiedSafeAreaView>
                 <Stack />
+                <PersistentEditor />
                 <NativeToast />
               </TamaguifiedSafeAreaView>
             </TamaguifiedReactNavigationThemeProvider>

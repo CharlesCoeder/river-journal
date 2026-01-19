@@ -3,7 +3,12 @@ import { ArrowLeft, Save } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { useState } from 'react'
 import { Editor } from './components/Editor'
-import { store$, saveActiveFlowSession, getActiveFlowContent } from 'app/state/store'
+import {
+  store$,
+  saveActiveFlowSession,
+  getActiveFlowContent,
+  hidePersistentEditor,
+} from 'app/state/store'
 import { use$ } from '@legendapp/state/react'
 
 export function JournalScreen() {
@@ -13,6 +18,7 @@ export function JournalScreen() {
   const activeFlow = use$(store$.journal.activeFlow)
 
   const handleBackToHome = () => {
+    hidePersistentEditor()
     router.push('/')
   }
 
@@ -28,6 +34,9 @@ export function JournalScreen() {
     // can leave the previous screen visible for a moment / keep portals active
     setIsSaving(false)
     setShowSaveDialog(false)
+
+    // Hide the persistent editor before navigating away
+    hidePersistentEditor()
 
     router.replace('/journal/celebration')
   }

@@ -8,14 +8,24 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 import { $getRoot } from 'lexical'
-import {
-  $convertFromMarkdownString,
-  $convertToMarkdownString,
-} from '@lexical/markdown'
+import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { ALL_TRANSFORMERS } from './transformers'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { injectFontCSS, createMobileLexicalConfig } from './utils'
 import type { LexicalEditorNativeProps } from './LexicalEditor.types'
+
+/**
+ * Plugin to set editor to read-only mode
+ */
+const ReadOnlyPlugin: React.FC<{ readOnly: boolean }> = ({ readOnly }) => {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    editor.setEditable(!readOnly)
+  }, [editor, readOnly])
+
+  return null
+}
 
 // Helper component to load and sync content
 const ContentSyncer: React.FC<{ content: string }> = ({ content }) => {
@@ -50,6 +60,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   onContentChange,
   initialContent,
   themeValues,
+  readOnly = false,
 }) => {
   const initialConfig = createMobileLexicalConfig()
   const styles = createMobileLexicalStyling(themeValues)
@@ -79,14 +90,23 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
               <ContentEditable style={styles.contentEditable} />
             </div>
           }
-          placeholder={<div style={styles.placeholder}>{placeholder}</div>}
+          placeholder={readOnly ? null : <div style={styles.placeholder}>{placeholder}</div>}
           ErrorBoundary={LexicalErrorBoundary}
         />
-        <HistoryPlugin />
-        {onContentChange ? (
+
+        {/* Read-only mode plugin */}
+        {readOnly && <ReadOnlyPlugin readOnly={readOnly} />}
+
+        {/* Only include history when editable */}
+        {!readOnly && <HistoryPlugin />}
+
+        {/* Only track changes when editable and callback provided */}
+        {!readOnly && onContentChange ? (
           <OnChangePlugin
             onChange={(editorState) => {
-              const markdown = editorState.read(() => $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true))
+              const markdown = editorState.read(() =>
+                $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true)
+              )
               onContentChange(markdown)
             }}
           />
