@@ -372,7 +372,7 @@ export function DayViewScreen() {
 
                       <Separator borderColor="$borderColor" />
 
-                      <Text fontSize="$4" fontFamily="$sourceSans3" lineHeight="$5" color="$color">
+                      <Text fontSize="$4" fontFamily="$sourceSans3" color="$color">
                         {flow.content}
                       </Text>
 
