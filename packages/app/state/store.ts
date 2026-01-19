@@ -248,6 +248,24 @@ export const discardActiveFlowSession = (): void => {
 }
 
 /**
+ * Deletes a flow session from local storage
+ * When sync is implemented, this will use soft delete with is_deleted flag.
+ */
+export const deleteFlow = (flowId: string): void => {
+  const flow = store$.journal.flows[flowId].peek()
+  if (!flow) {
+    console.warn(`[deleteFlow] Flow ${flowId} not found`)
+    return
+  }
+
+  batch(() => {
+    // Hard delete from local storage using Legend-State .delete()
+    store$.journal.flows[flowId].delete()
+    store$.lastUpdated.set(new Date().toISOString())
+  })
+}
+
+/**
  * Gets the current active flow content
  */
 export const getActiveFlowContent = (): string => {
