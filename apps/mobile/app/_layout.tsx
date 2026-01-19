@@ -76,12 +76,12 @@ function TamaguifiedReactNavigationThemeProvider({ children }: { children: React
     dark: baseTheme === 'dark',
     colors: {
       ...DefaultTheme.colors,
-      primary: theme.color.val,
-      background: theme.background.val,
-      card: theme.backgroundStrong?.val || theme.background.val,
-      text: theme.color.val,
-      border: theme.borderColor.val,
-      notification: theme.red10.val,
+      primary: theme.color?.val ?? DefaultTheme.colors.primary,
+      background: theme.background?.val ?? DefaultTheme.colors.background,
+      card: theme.backgroundStrong?.val ?? theme.background?.val ?? DefaultTheme.colors.card,
+      text: theme.color?.val ?? DefaultTheme.colors.text,
+      border: theme.borderColor?.val ?? DefaultTheme.colors.border,
+      notification: theme.red10?.val ?? DefaultTheme.colors.notification,
     },
   }
 
@@ -91,6 +91,6 @@ function TamaguifiedReactNavigationThemeProvider({ children }: { children: React
 // Similarly, we tamaguify the SafeAreaView
 function TamaguifiedSafeAreaView({ children }: { children: React.ReactNode }) {
   const theme = useTheme()
-  const backgroundColor = theme.background.val
+  const backgroundColor = theme.background?.val ?? '#fff'
   return <SafeAreaView style={{ flex: 1, backgroundColor }}>{children}</SafeAreaView>
 }
