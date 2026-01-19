@@ -61,17 +61,11 @@ export function CelebrationScreen() {
       >
         {/* Celebration Header */}
         <YStack gap="$4" alignItems="center" paddingTop="$8">
-          <H1
-            size="$10"
-            fontFamily="$sourceSans3"
-            fontWeight="400"
-            textAlign="center"
-            color="$color"
-          >
+          <H1 size="$10" fontFamily="$body" fontWeight="400" textAlign="center" color="$color">
             Flow complete!
           </H1>
 
-          <Text fontSize="$8" fontFamily="$sourceSans3" color="$color11" textAlign="center">
+          <Text fontSize="$8" fontFamily="$body" color="$color11" textAlign="center">
             {wordCount.toLocaleString()} {wordCount === 1 ? 'word' : 'words'}
           </Text>
         </YStack>
@@ -85,7 +79,7 @@ export function CelebrationScreen() {
             onPress={handleDismiss}
             paddingHorizontal="$8"
           >
-            <Text fontSize="$5" fontFamily="$sourceSans3" fontWeight="600" color="$color1">
+            <Text fontSize="$5" fontFamily="$body" fontWeight="600" color="$color1">
               Done
             </Text>
           </Button>

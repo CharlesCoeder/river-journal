@@ -121,7 +121,7 @@ export function DayViewScreen() {
               borderColor="$borderColor"
             />
             <YStack flex={1} minWidth={0}>
-              <H1 size="$11" fontFamily="$patrickHand" numberOfLines={1}>
+              <H1 size="$11" fontFamily="$body" numberOfLines={1}>
                 Day View
               </H1>
             </YStack>

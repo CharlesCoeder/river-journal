@@ -100,6 +100,127 @@ const patrickHandFont = createGenericFont(
   }
 )
 
+// Lato - UI/Heading Font (sans-serif)
+const latoFont = createGenericFont(
+  isWeb ? 'Lato, "Helvetica Neue", Helvetica, Arial, sans-serif' : 'Lato',
+  {
+    weight,
+    letterSpacing,
+    face: {
+      '300': { normal: 'Lato', italic: 'LatoItalic' },
+      '400': { normal: 'Lato', italic: 'LatoItalic' },
+      '600': { normal: 'LatoBold' },
+      '700': { normal: 'LatoBold' },
+    },
+  },
+  {
+    sizeLineHeight: (size) => Math.round(size * 1.4 + (size >= 12 ? 6 : 4)),
+  }
+)
+
+const latoItalicFont = createGenericFont(
+  isWeb ? 'Lato, "Helvetica Neue", Helvetica, Arial, sans-serif' : 'Lato',
+  {
+    weight,
+    letterSpacing,
+    face: {
+      '300': { normal: 'LatoItalic' },
+      '400': { normal: 'LatoItalic' },
+      '600': { normal: 'LatoItalic' },
+      '700': { normal: 'LatoItalic' },
+    },
+  },
+  {
+    sizeLineHeight: (size) => Math.round(size * 1.4 + (size >= 12 ? 6 : 4)),
+  }
+)
+
+const latoBoldFont = createGenericFont(
+  isWeb ? 'Lato, "Helvetica Neue", Helvetica, Arial, sans-serif' : 'Lato',
+  {
+    weight,
+    letterSpacing,
+    face: {
+      '300': { normal: 'LatoBold' },
+      '400': { normal: 'LatoBold' },
+      '600': { normal: 'LatoBold' },
+      '700': { normal: 'LatoBold' },
+    },
+  },
+  {
+    sizeLineHeight: (size) => Math.round(size * 1.4 + (size >= 12 ? 6 : 4)),
+  }
+)
+
+// Lora - Journal/Editor Font (serif)
+const loraFont = createGenericFont(
+  isWeb ? 'Lora, Georgia, "Times New Roman", serif' : 'Lora',
+  {
+    weight,
+    letterSpacing: { 1: 0, 2: 0, 3: 0, 4: 0 }, // Serif fonts typically need less letter-spacing
+    face: {
+      '300': { normal: 'Lora', italic: 'LoraItalic' },
+      '400': { normal: 'Lora', italic: 'LoraItalic' },
+      '600': { normal: 'LoraBold', italic: 'LoraBoldItalic' },
+      '700': { normal: 'LoraBold', italic: 'LoraBoldItalic' },
+    },
+  },
+  {
+    sizeLineHeight: (size) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)),
+  }
+)
+
+const loraItalicFont = createGenericFont(
+  isWeb ? 'Lora, Georgia, "Times New Roman", serif' : 'Lora',
+  {
+    weight,
+    letterSpacing: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    face: {
+      '300': { normal: 'LoraItalic' },
+      '400': { normal: 'LoraItalic' },
+      '600': { normal: 'LoraBoldItalic' },
+      '700': { normal: 'LoraBoldItalic' },
+    },
+  },
+  {
+    sizeLineHeight: (size) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)),
+  }
+)
+
+const loraBoldFont = createGenericFont(
+  isWeb ? 'Lora, Georgia, "Times New Roman", serif' : 'Lora',
+  {
+    weight,
+    letterSpacing: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    face: {
+      '300': { normal: 'LoraBold' },
+      '400': { normal: 'LoraBold' },
+      '600': { normal: 'LoraBold' },
+      '700': { normal: 'LoraBold' },
+    },
+  },
+  {
+    sizeLineHeight: (size) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)),
+  }
+)
+
+const loraBoldItalicFont = createGenericFont(
+  isWeb ? 'Lora, Georgia, "Times New Roman", serif' : 'Lora',
+  {
+    weight,
+    letterSpacing: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    face: {
+      '300': { normal: 'LoraBoldItalic' },
+      '400': { normal: 'LoraBoldItalic' },
+      '600': { normal: 'LoraBoldItalic' },
+      '700': { normal: 'LoraBoldItalic' },
+    },
+  },
+  {
+    sizeLineHeight: (size) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)),
+  }
+)
+
 export const interHeadingFont = createInterFont({
   size: {
     6: 15,
@@ -145,11 +266,14 @@ export const interBodyFont = createInterFont(
 )
 
 export const fonts = {
-  // Default heading and body fonts: Inter (came from Tamagui starter)
-  heading: interHeadingFont,
-  body: interBodyFont,
+  // Default heading and body fonts: Lato (UI font)
+  heading: latoFont,
+  body: latoFont,
 
-  // Source Sans 3 fonts
+  // Journal/Editor font: Lora (serif for writing)
+  journal: loraFont,
+
+  // Source Sans 3 fonts (legacy/fallback)
   sourceSans3: sourceSans3Font,
   sourceSans3Italic: sourceSans3ItalicFont,
   sourceSans3Bold: sourceSans3BoldFont,
@@ -157,4 +281,19 @@ export const fonts = {
 
   // Patrick Hand font
   patrickHand: patrickHandFont,
+
+  // Lato variants
+  lato: latoFont,
+  latoItalic: latoItalicFont,
+  latoBold: latoBoldFont,
+
+  // Lora variants
+  lora: loraFont,
+  loraItalic: loraItalicFont,
+  loraBold: loraBoldFont,
+  loraBoldItalic: loraBoldItalicFont,
+
+  // Inter fonts (kept for compatibility)
+  inter: interBodyFont,
+  interHeading: interHeadingFont,
 }

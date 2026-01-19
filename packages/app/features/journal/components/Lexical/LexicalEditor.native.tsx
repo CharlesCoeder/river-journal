@@ -135,7 +135,7 @@ const createMobileLexicalStyling = (themeValues?: {
       color: textColor,
       background: 'transparent',
       height: '100%',
-      fontFamily: 'sourceSans3',
+      fontFamily: 'Lora',
     },
     contentEditable: {
       outline: 'none',

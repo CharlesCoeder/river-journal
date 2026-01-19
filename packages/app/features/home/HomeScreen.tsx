@@ -26,7 +26,7 @@ export function HomeScreen() {
       paddingTop="$8"
     >
       <YStack>
-        <H1 size="$11" fontFamily="$patrickHand">
+        <H1 size="$11" fontFamily="$body">
           River Journal
         </H1>
         <Text fontSize="$6" fontFamily="$sourceSans3" fontWeight="700">

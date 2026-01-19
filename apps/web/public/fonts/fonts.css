@@ -32,3 +32,54 @@
   font-weight: 400;
   font-style: normal;
 }
+
+/* Lato - UI Font */
+@font-face {
+  font-family: "Lato";
+  src: url("/fonts/Lato/Lato-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "LatoItalic";
+  src: url("/fonts/Lato/Lato-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "LatoBold";
+  src: url("/fonts/Lato/Lato-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Lora - Journal Font */
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/Lora/Lora-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "LoraItalic";
+  src: url("/fonts/Lora/Lora-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "LoraBold";
+  src: url("/fonts/Lora/Lora-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "LoraBoldItalic";
+  src: url("/fonts/Lora/Lora-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
