@@ -52,6 +52,22 @@ export const store$ = observable<AppState>({
 })
 
 // =================================================================
+// 1b. EPHEMERAL STATE (NOT PERSISTED)
+// =================================================================
+// UI state that should reset on app restart - separate from persisted store$
+
+import type { PersistentEditorState, EditorLayoutBounds } from './types'
+
+export const ephemeral$ = observable<{ persistentEditor: PersistentEditorState }>({
+  persistentEditor: {
+    isVisible: false,
+    readOnly: false,
+    content: '',
+    layout: null,
+  },
+})
+
+// =================================================================
 // 2. CORE HELPER FUNCTIONS
 // =================================================================
 
@@ -293,6 +309,51 @@ export const debugActiveFlow = () => {
     hasContent: !!activeFlow?.content?.trim(),
     isActive: !!activeFlow,
   }
+}
+
+// -----------------------------------------------------------------
+// Persistent Editor Actions (Native only)
+// -----------------------------------------------------------------
+
+/**
+ * Shows the persistent editor with the given options.
+ * On native, the editor is always mounted at root but visibility is controlled here.
+ */
+export const showPersistentEditor = (
+  options: { readOnly?: boolean; content?: string; layout?: EditorLayoutBounds } = {}
+): void => {
+  ephemeral$.persistentEditor.assign({
+    isVisible: true,
+    readOnly: options.readOnly ?? false,
+    content: options.content ?? '',
+    layout: options.layout ?? null,
+  })
+}
+
+/**
+ * Updates the layout bounds of the persistent editor.
+ * Called when the placeholder View measures its position.
+ */
+export const updatePersistentEditorLayout = (layout: EditorLayoutBounds): void => {
+  ephemeral$.persistentEditor.layout.set(layout)
+}
+
+/**
+ * Hides the persistent editor and clears layout bounds.
+ */
+export const hidePersistentEditor = (): void => {
+  ephemeral$.persistentEditor.assign({
+    isVisible: false,
+    layout: null,
+  })
+}
+
+/**
+ * Updates the content in the persistent editor.
+ * Used for syncing content from Legend State to the editor.
+ */
+export const updatePersistentEditorContent = (content: string): void => {
+  ephemeral$.persistentEditor.content.set(content)
 }
 
 // -----------------------------------------------------------------
