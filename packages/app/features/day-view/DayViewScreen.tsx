@@ -1,11 +1,12 @@
 import { YStack, XStack, H1, H2, Button, Text, Card, ScrollView, Separator } from '@my/ui'
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar } from '@tamagui/lucide-icons'
+import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Trash2 } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { useState } from 'react'
 import { use$ } from '@legendapp/state/react'
-import { store$ } from 'app/state/store'
+import { store$, deleteFlow } from 'app/state/store'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import type { Flow } from 'app/state/types'
+import { DeleteFlowDialog } from './components/DeleteFlowDialog'
 
 export function DayViewScreen() {
   const router = useRouter()
@@ -14,6 +15,9 @@ export function DayViewScreen() {
   // Get the daily entry data for the selected date
   const dailyEntry = use$(store$.views.entryByDate(selectedDate))
   const dailyStats = use$(store$.views.statsByDate(selectedDate))
+
+  // State for delete confirmation dialog (Story 1.2)
+  const [deleteTarget, setDeleteTarget] = useState<Flow | null>(null)
 
   const handleBackToHome = () => {
     router.push('/')
@@ -52,6 +56,23 @@ export function DayViewScreen() {
       minute: '2-digit',
       hour12: true,
     })
+  }
+
+  /**
+   * Handles confirmed deletion of a flow
+   */
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      deleteFlow(deleteTarget.id)
+      setDeleteTarget(null)
+    }
+  }
+
+  /**
+   * Navigates to journal for writing
+   */
+  const handleBeginFlow = () => {
+    router.push('/journal')
   }
 
   return (
@@ -297,25 +318,31 @@ export function DayViewScreen() {
               borderColor="$borderColor"
               width="100%"
             >
-              <YStack gap="$2" alignItems="center">
+              <YStack gap="$4" alignItems="center">
                 <Text
-                  fontSize="$4"
-                  $sm={{ fontSize: '$5' }}
+                  fontSize="$5"
+                  $sm={{ fontSize: '$6' }}
                   fontFamily="$sourceSans3"
-                  color="$gray11"
+                  fontWeight="600"
+                  color="$color"
                   textAlign="center"
                 >
-                  No flow sessions for this day
+                  Ready to write?
                 </Text>
                 <Text
                   fontSize="$3"
                   $sm={{ fontSize: '$4' }}
                   fontFamily="$sourceSans3"
-                  color="$gray10"
+                  color="$gray11"
                   textAlign="center"
                 >
-                  Start writing in your journal to create your first flow session!
+                  Start a flow session and let your thoughts take shape.
                 </Text>
+                <Button size="$4" themeInverse onPress={handleBeginFlow} marginTop="$2">
+                  <Text fontFamily="$sourceSans3" fontWeight="600">
+                    Begin Flow
+                  </Text>
+                </Button>
               </YStack>
             </Card>
           ) : (
@@ -353,6 +380,16 @@ export function DayViewScreen() {
                         <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
                           {flow.wordCount} {flow.wordCount === 1 ? 'word' : 'words'}
                         </Text>
+                        <Button
+                          size="$2"
+                          circular
+                          chromeless
+                          icon={Trash2}
+                          onPress={() => setDeleteTarget(flow)}
+                          opacity={0.6}
+                          hoverStyle={{ opacity: 1 }}
+                          pressStyle={{ opacity: 1 }}
+                        />
                       </XStack>
                     </YStack>
                   </Card>
@@ -361,6 +398,13 @@ export function DayViewScreen() {
           )}
         </YStack>
       </YStack>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteFlowDialog
+        flow={deleteTarget}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </ScrollView>
   )
 }
