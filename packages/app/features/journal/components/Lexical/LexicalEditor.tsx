@@ -71,7 +71,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
                   minHeight: '200px',
                   fontSize: '16px',
                   lineHeight: '1.5',
-                  fontFamily: 'sourceSans3',
+                  fontFamily: 'Lora',
                 }}
               />
             </div>
@@ -86,7 +86,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
                   fontSize: '16px',
                   pointerEvents: 'none',
                   userSelect: 'none',
-                  fontFamily: 'sourceSans3',
+                  fontFamily: 'Lora',
                 }}
               >
                 {placeholderText}

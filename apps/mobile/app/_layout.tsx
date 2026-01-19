@@ -29,6 +29,15 @@ export default function App() {
     SourceSans3Bold: require('../public/fonts/SourceSans3/SourceSans3-Bold.ttf'),
     SourceSans3BoldItalic: require('../public/fonts/SourceSans3/SourceSans3-BoldItalic.ttf'),
     PatrickHand: require('../public/fonts/PatrickHand.ttf'),
+    // Lato - UI Font
+    Lato: require('../public/fonts/Lato/Lato-Regular.ttf'),
+    LatoItalic: require('../public/fonts/Lato/Lato-Italic.ttf'),
+    LatoBold: require('../public/fonts/Lato/Lato-Bold.ttf'),
+    // Lora - Journal Font
+    Lora: require('../public/fonts/Lora/Lora-Regular.ttf'),
+    LoraItalic: require('../public/fonts/Lora/Lora-Italic.ttf'),
+    LoraBold: require('../public/fonts/Lora/Lora-Bold.ttf'),
+    LoraBoldItalic: require('../public/fonts/Lora/Lora-BoldItalic.ttf'),
   })
 
   useEffect(() => {

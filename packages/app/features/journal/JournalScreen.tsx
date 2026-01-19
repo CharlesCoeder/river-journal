@@ -80,7 +80,7 @@ export function JournalScreen() {
             borderColor="$borderColor"
           />
           <YStack flex={1} minWidth={0}>
-            <H1 size="$11" $xs={{ size: '$9' }} fontFamily="$patrickHand" numberOfLines={1}>
+            <H1 size="$11" $xs={{ size: '$9' }} fontFamily="$body" numberOfLines={1}>
               River Journal
             </H1>
           </YStack>
@@ -133,10 +133,10 @@ export function JournalScreen() {
             width="100%"
             $sm={{ maxWidth: 400 }}
           >
-            <Dialog.Title fontSize="$7" fontFamily="$sourceSans3" fontWeight="700">
+            <Dialog.Title fontSize="$7" fontFamily="$body" fontWeight="700">
               Save Flow Session?
             </Dialog.Title>
-            <Dialog.Description fontSize="$5" fontFamily="$sourceSans3">
+            <Dialog.Description fontSize="$5" fontFamily="$body">
               Are you sure you want to save this flow and return to home?
             </Dialog.Description>
 
@@ -150,7 +150,7 @@ export function JournalScreen() {
                   disabled={isSaving}
                   opacity={isSaving ? 0.5 : 1}
                 >
-                  <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
+                  <Text fontSize="$4" fontFamily="$body" fontWeight="600">
                     Cancel
                   </Text>
                 </Button>
@@ -167,12 +167,12 @@ export function JournalScreen() {
                 {isSaving ? (
                   <XStack gap="$2" alignItems="center">
                     <Spinner size="small" color="$color1" />
-                    <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
+                    <Text fontSize="$4" fontFamily="$body" fontWeight="600">
                       Saving...
                     </Text>
                   </XStack>
                 ) : (
-                  <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
+                  <Text fontSize="$4" fontFamily="$body" fontWeight="600">
                     Save Flow
                   </Text>
                 )}
