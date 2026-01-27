@@ -1,8 +1,15 @@
-import { YStack, H1, Button, Text, ThemeSwitcher } from '@my/ui'
+import { YStack, H1, Button, Text, ThemeSwitcher, XStack } from '@my/ui'
 import { useRouter } from 'solito/navigation'
+import { use$ } from '@legendapp/state/react'
+import { store$ } from 'app/state/store'
+import { signOut } from 'app/utils'
+import { useCallback, useState } from 'react'
 
 export function HomeScreen() {
   const router = useRouter()
+  const isAuthenticated = use$(store$.session.isAuthenticated)
+  const email = use$(store$.session.email)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleJournalScreen = () => {
     router.push('/journal')
@@ -11,6 +18,19 @@ export function HomeScreen() {
   const handleReadJournal = () => {
     router.push('/day-view')
   }
+
+  const handleLogin = () => {
+    router.push('/auth')
+  }
+
+  const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true)
+    try {
+      await signOut()
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }, [])
 
   return (
     <YStack
@@ -25,6 +45,28 @@ export function HomeScreen() {
       marginLeft="12.5%"
       paddingTop="$8"
     >
+      {/* Auth Status / Login Button - Temporary placement */}
+      <XStack width="100%" justifyContent="flex-end">
+        {isAuthenticated ? (
+          <XStack gap="$3" alignItems="center">
+            <Text fontSize="$3" fontFamily="$body" color="$color11">
+              {email}
+            </Text>
+            <Button size="$3" variant="outlined" onPress={handleLogout} disabled={isLoggingOut}>
+              <Text fontSize="$3" fontFamily="$body">
+                {isLoggingOut ? 'Logging out...' : 'Log out'}
+              </Text>
+            </Button>
+          </XStack>
+        ) : (
+          <Button size="$3" onPress={handleLogin}>
+            <Text fontSize="$3" fontFamily="$body">
+              Log in
+            </Text>
+          </Button>
+        )}
+      </XStack>
+
       <YStack>
         <H1 size="$11" fontFamily="$body">
           River Journal

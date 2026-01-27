@@ -17,6 +17,8 @@
 export interface SessionState {
   localSessionId: string // Persistent UUID for the local device/browser session
   userId: string | null // Supabase user ID, populated on login
+  email: string | null // User's email address when authenticated
+  isAuthenticated: boolean // Whether user is logged in
 }
 
 /**

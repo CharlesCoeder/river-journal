@@ -4,6 +4,7 @@ import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
 import { configurePersistence } from './persistConfig'
 import { store$ } from './store'
+import { initAuthListener, getInitialSession } from '../utils/auth'
 
 export const appStatus$ = observable({
   isPersistenceLoaded: false,
@@ -37,6 +38,21 @@ export async function initializePersistence() {
 
     // Wait for all observables to be loaded from storage.
     await Promise.all(persistencePromises)
+
+    // Initialize auth listener to sync Supabase auth state with Legend-State
+    initAuthListener()
+
+    // Hydrate initial session if user was previously logged in
+    const session = await getInitialSession()
+    if (session?.user) {
+      batch(() => {
+        store$.session.assign({
+          userId: session.user.id,
+          email: session.user.email ?? null,
+          isAuthenticated: true,
+        })
+      })
+    }
 
     // Once all are loaded, update the global state.
     batch(() => {
