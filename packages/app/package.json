@@ -11,6 +11,7 @@
     "@lexical/react": "^0.33.1",
     "@my/ui": "0.0.1",
     "@react-navigation/native": "^6.1.17",
+    "@supabase/supabase-js": "^2.93.1",
     "@tamagui/animations-react-native": "^1.126.18",
     "@tamagui/colors": "^1.126.18",
     "@tamagui/font-inter": "^1.126.18",

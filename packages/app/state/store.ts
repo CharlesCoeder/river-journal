@@ -40,6 +40,8 @@ export const store$ = observable<AppState>({
   session: {
     localSessionId: '', // Populated on app startup from device storage
     userId: null,
+    email: null,
+    isAuthenticated: false,
   },
   profile: null, // Populated on login
   journal: {
