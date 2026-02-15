@@ -128,4 +128,5 @@ web-build/
 dist/
 
 expo-env.d.ts
+.env
 # @end expo-cli
