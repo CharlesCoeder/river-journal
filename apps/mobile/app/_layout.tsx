@@ -62,7 +62,12 @@ function RootLayoutNav() {
           <Provider>
             <TamaguifiedReactNavigationThemeProvider>
               <TamaguifiedSafeAreaView>
-                <Stack />
+                <Stack>
+                  <Stack.Screen
+                    name="google-auth"
+                    options={{ animation: 'none', headerShown: false }}
+                  />
+                </Stack>
                 <PersistentEditor />
                 <NativeToast />
               </TamaguifiedSafeAreaView>

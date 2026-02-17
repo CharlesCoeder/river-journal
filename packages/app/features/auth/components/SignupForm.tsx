@@ -10,6 +10,8 @@ import { Eye, EyeOff } from '@tamagui/lucide-icons'
 import { use$ } from '@legendapp/state/react'
 import { signUpWithEmail } from 'app/utils'
 import type { AuthFormObservable } from '../AuthScreen'
+import { GoogleSignInButton } from './GoogleSignInButton'
+import { OAuthDivider } from './OAuthDivider'
 
 // Actions type matching what AuthScreen provides
 interface AuthActions {
@@ -175,6 +177,10 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
 
   return (
     <YStack gap="$4" width="100%">
+      {/* Google OAuth */}
+      <GoogleSignInButton onSuccess={onSuccess} />
+      <OAuthDivider />
+
       {/* Email Input */}
       <YStack gap="$2">
         <Text fontSize="$3" fontFamily="$body" color="$color11">

@@ -4,6 +4,7 @@
  */
 
 import type { Session, AuthError, User } from '@supabase/supabase-js'
+import { Platform } from 'react-native'
 import { supabase } from './supabase'
 import { store$ } from '../state/store'
 import { batch } from '@legendapp/state'
@@ -18,6 +19,10 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
   signup_disabled: 'Sign up is currently disabled.',
   invalid_credentials: 'Invalid email or password.',
   email_not_confirmed: 'Please verify your email address.',
+  // Google OAuth specific
+  access_denied: 'Sign in was cancelled. Please try again.',
+  invalid_token: 'Authentication failed. Please try again.',
+  popup_closed: 'Sign in window was closed. Please try again.',
 }
 
 /**
@@ -138,6 +143,27 @@ export const signInWithEmail = async (
   }
 
   return { user: data.user, error: null }
+}
+
+/**
+ * Signs in with Google OAuth (web — redirect-based flow)
+ * On web, this redirects the browser to Google's consent screen.
+ * The existing `detectSessionInUrl: true` setting handles the return.
+ */
+export const signInWithGoogle = async (): Promise<{ error: string | null }> => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo:
+        Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined,
+    },
+  })
+
+  if (error) {
+    return { error: getAuthErrorMessage(error) }
+  }
+
+  return { error: null }
 }
 
 /**

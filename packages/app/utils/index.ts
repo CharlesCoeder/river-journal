@@ -8,6 +8,7 @@ export {
   getInitialSession,
   signUpWithEmail,
   signInWithEmail,
+  signInWithGoogle,
   signOut,
   getAuthErrorMessage,
   AUTH_ERROR_MESSAGES,
