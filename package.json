@@ -59,6 +59,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
-    "@tauri-apps/cli": "^2.5.0"
+    "@tauri-apps/cli": "^2.5.0",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/react-test-renderer": "^19",
+    "@vitejs/plugin-react": "^5.1.4",
+    "happy-dom": "^20.6.1",
+    "react-test-renderer": "19.0.0"
   }
 }
