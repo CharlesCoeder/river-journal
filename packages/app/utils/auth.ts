@@ -92,7 +92,7 @@ export const initAuthListener = () => {
   } = supabase.auth.onAuthStateChange((event, session) => {
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
-      console.log('🔐 Auth state change:', event, session?.user?.email)
+      console.log('🔐 Auth state change:', event)
     }
 
     if (event === 'TOKEN_REFRESHED') {
@@ -113,18 +113,6 @@ export const initAuthListener = () => {
   return () => {
     subscription.unsubscribe()
   }
-}
-
-/**
- * Gets the current auth session (for initial hydration)
- */
-export const getInitialSession = async (): Promise<Session | null> => {
-  const { data, error } = await supabase.auth.getSession()
-  if (error) {
-    console.error('Error getting initial session:', error)
-    return null
-  }
-  return data.session
 }
 
 /**
@@ -203,7 +191,10 @@ export const signOut = async (): Promise<{ error: string | null }> => {
  * Checks if the current user has a password set via the user_has_password() RPC.
  * Requires the SECURITY DEFINER function to be deployed in Supabase.
  */
-export const checkHasPassword = async (): Promise<{ hasPassword: boolean; error: string | null }> => {
+export const checkHasPassword = async (): Promise<{
+  hasPassword: boolean
+  error: string | null
+}> => {
   const { data, error } = await supabase.rpc('user_has_password')
 
   if (error) {
@@ -230,9 +221,7 @@ export const getUserProviders = async () => {
  * Updates (or sets) the current user's password.
  * Works for both "add password" (OAuth-only user) and "change password" flows.
  */
-export const updatePassword = async (
-  newPassword: string
-): Promise<{ error: string | null }> => {
+export const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
 
   if (error) {
