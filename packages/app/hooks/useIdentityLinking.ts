@@ -4,7 +4,7 @@
  * After redirect, the page reloads and onAuthStateChange handles session update.
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { supabase } from 'app/utils/supabase'
 import type { UserIdentity } from '@supabase/supabase-js'
 
@@ -25,6 +25,13 @@ export function useIdentityLinking(): IdentityLinkingState {
   const [isLoading, setIsLoading] = useState(true)
   const [isLinkingGoogle, setIsLinkingGoogle] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isMounted = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
 
   const fetchProviderData = useCallback(async () => {
     setIsLoading(true)
@@ -48,12 +55,17 @@ export function useIdentityLinking(): IdentityLinkingState {
         throw err
       }
 
+      if (!isMounted.current) return
+
       setIdentities(identitiesResult.value.data?.identities ?? [])
       setHasPassword(passwordOk ? passwordResult.value.data === true : false)
     } catch (err: any) {
+      if (!isMounted.current) return
       setError(err.message || 'Failed to load account information.')
     } finally {
-      setIsLoading(false)
+      if (isMounted.current) {
+        setIsLoading(false)
+      }
     }
   }, [])
 
@@ -76,19 +88,25 @@ export function useIdentityLinking(): IdentityLinkingState {
       })
 
       if (linkError) {
-        setError(linkError.message)
-        setIsLinkingGoogle(false)
+        if (isMounted.current) {
+          setError(linkError.message)
+          setIsLinkingGoogle(false)
+        }
         return
       }
 
       // Page should redirect to Google consent. If redirect silently fails,
       // reset after 10s so the button doesn't stay stuck in a spinner.
       setTimeout(() => {
-        setIsLinkingGoogle(false)
+        if (isMounted.current) {
+          setIsLinkingGoogle(false)
+        }
       }, 10_000)
     } catch {
-      setError('Could not connect to Google. Please try again.')
-      setIsLinkingGoogle(false)
+      if (isMounted.current) {
+        setError('Could not connect to Google. Please try again.')
+        setIsLinkingGoogle(false)
+      }
     }
   }, [])
 
