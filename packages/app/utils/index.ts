@@ -5,7 +5,6 @@
 export { supabase } from './supabase'
 export {
   initAuthListener,
-  getInitialSession,
   signUpWithEmail,
   signInWithEmail,
   signInWithGoogle,
