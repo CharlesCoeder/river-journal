@@ -87,7 +87,6 @@ const updateSessionState = (session: Session | null) => {
  * Call this once on app startup to sync Supabase auth with Legend-State
  */
 export const initAuthListener = () => {
-  // Listen for auth state changes
   const {
     data: { subscription },
   } = supabase.auth.onAuthStateChange((event, session) => {
@@ -96,10 +95,21 @@ export const initAuthListener = () => {
       console.log('🔐 Auth state change:', event, session?.user?.email)
     }
 
+    if (event === 'TOKEN_REFRESHED') {
+      // Token successfully refreshed — update session state with new tokens
+      updateSessionState(session)
+      return
+    }
+
+    if (event === 'SIGNED_OUT') {
+      // Explicit sign-out or expired/revoked session — clear auth state gracefully
+      updateSessionState(null)
+      return
+    }
+
     updateSessionState(session)
   })
 
-  // Return unsubscribe function for cleanup
   return () => {
     subscription.unsubscribe()
   }
