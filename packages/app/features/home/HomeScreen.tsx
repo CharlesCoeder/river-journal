@@ -1,9 +1,10 @@
-import { YStack, H1, Button, Text, ThemeSwitcher, XStack } from '@my/ui'
+import { YStack, H1, Button, Text, ThemeSwitcher, XStack, Separator } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { signOut } from 'app/utils'
 import { useCallback, useState } from 'react'
+import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 
 export function HomeScreen() {
   const router = useRouter()
@@ -86,6 +87,14 @@ export function HomeScreen() {
         </Button>
         <ThemeSwitcher />
       </YStack>
+
+      {/* Linked Accounts — visible when logged in */}
+      {isAuthenticated && (
+        <>
+          <Separator width="100%" />
+          <LinkedProviders />
+        </>
+      )}
     </YStack>
   )
 }
