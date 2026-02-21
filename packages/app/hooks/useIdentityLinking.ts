@@ -78,8 +78,14 @@ export function useIdentityLinking(): IdentityLinkingState {
       if (linkError) {
         setError(linkError.message)
         setIsLinkingGoogle(false)
+        return
       }
-      // No error → page redirects to Google consent. Linking state resets on reload.
+
+      // Page should redirect to Google consent. If redirect silently fails,
+      // reset after 10s so the button doesn't stay stuck in a spinner.
+      setTimeout(() => {
+        setIsLinkingGoogle(false)
+      }, 10_000)
     } catch {
       setError('Could not connect to Google. Please try again.')
       setIsLinkingGoogle(false)
