@@ -44,18 +44,28 @@ export function useIdentityLinking(): IdentityLinkingState {
     setIsLoading(true)
     setError(null)
     try {
-      const [identitiesResult, passwordResult] = await Promise.all([
+      const [identitiesResult, passwordResult] = await Promise.allSettled([
         supabase.auth.getUserIdentities(),
         supabase.rpc('user_has_password'),
       ])
 
       if (!isMounted.current) return
 
-      if (identitiesResult.error) throw identitiesResult.error
-      if (passwordResult.error) throw passwordResult.error
+      const identitiesOk =
+        identitiesResult.status === 'fulfilled' && !identitiesResult.value.error
+      const passwordOk =
+        passwordResult.status === 'fulfilled' && !passwordResult.value.error
 
-      setIdentities(identitiesResult.data.identities)
-      setHasPassword(passwordResult.data === true)
+      if (!identitiesOk) {
+        const err =
+          identitiesResult.status === 'fulfilled'
+            ? identitiesResult.value.error
+            : identitiesResult.reason
+        throw err
+      }
+
+      setIdentities(identitiesResult.value.data?.identities ?? [])
+      setHasPassword(passwordOk ? passwordResult.value.data === true : false)
     } catch (err: any) {
       if (isMounted.current) {
         setError(err.message || 'Failed to load account information.')
