@@ -23,6 +23,10 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
   access_denied: 'Sign in was cancelled. Please try again.',
   invalid_token: 'Authentication failed. Please try again.',
   popup_closed: 'Sign in window was closed. Please try again.',
+  // Identity linking specific
+  identity_already_exists: 'This Google account is already linked to another account.',
+  identity_not_found: 'Identity not found.',
+  single_identity_not_deletable: 'You must keep at least one sign-in method.',
 }
 
 /**
@@ -45,6 +49,12 @@ export const getAuthErrorMessage = (error: AuthError): string => {
   }
   if (message.includes('invalid') && message.includes('email')) {
     return AUTH_ERROR_MESSAGES.invalid_email
+  }
+  if (message.includes('identity') && message.includes('already')) {
+    return AUTH_ERROR_MESSAGES.identity_already_exists
+  }
+  if (message.includes('single_identity') || message.includes('cannot delete')) {
+    return AUTH_ERROR_MESSAGES.single_identity_not_deletable
   }
 
   // Fallback to the original message
@@ -174,6 +184,49 @@ export const signOut = async (): Promise<{ error: string | null }> => {
 
   if (error) {
     return { error: error.message }
+  }
+
+  return { error: null }
+}
+
+/**
+ * Checks if the current user has a password set via the user_has_password() RPC.
+ * Requires the SECURITY DEFINER function to be deployed in Supabase.
+ */
+export const checkHasPassword = async (): Promise<{ hasPassword: boolean; error: string | null }> => {
+  const { data, error } = await supabase.rpc('user_has_password')
+
+  if (error) {
+    return { hasPassword: false, error: error.message }
+  }
+
+  return { hasPassword: data === true, error: null }
+}
+
+/**
+ * Gets the current user's linked identity providers.
+ */
+export const getUserProviders = async () => {
+  const { data, error } = await supabase.auth.getUserIdentities()
+
+  if (error) {
+    return { identities: [], error: getAuthErrorMessage(error) }
+  }
+
+  return { identities: data.identities, error: null }
+}
+
+/**
+ * Updates (or sets) the current user's password.
+ * Works for both "add password" (OAuth-only user) and "change password" flows.
+ */
+export const updatePassword = async (
+  newPassword: string
+): Promise<{ error: string | null }> => {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+  if (error) {
+    return { error: getAuthErrorMessage(error) }
   }
 
   return { error: null }

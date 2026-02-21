@@ -12,4 +12,7 @@ export {
   signOut,
   getAuthErrorMessage,
   AUTH_ERROR_MESSAGES,
+  checkHasPassword,
+  getUserProviders,
+  updatePassword,
 } from './auth'
