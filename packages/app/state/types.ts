@@ -133,7 +133,7 @@ export interface AppState {
 
 export interface Flow {
   id: string
-  entry_id: string
+  dailyEntryId: string
   timestamp: string
   content: string
   wordCount: number
@@ -143,7 +143,7 @@ export interface Flow {
 
 export interface Entry {
   id: string
-  date: string // "YYYY-MM-DD"
+  entryDate: string // "YYYY-MM-DD"
   lastModified: string
   user_id?: string | null
   local_session_id: string
@@ -154,7 +154,7 @@ export interface Entry {
  */
 export interface DailyEntryView {
   id: string
-  date: string
+  entryDate: string
   lastModified: string
   flows: Flow[]
   totalWords: number

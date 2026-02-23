@@ -205,8 +205,8 @@ export const saveActiveFlowSession = (): void => {
       todayEntryId = generateEntryId(todayJournalDay)
       const newEntry: Entry = {
         id: todayEntryId,
-        // The `date` property is the 'YYYY-MM-DD' string, not a full timestamp.
-        date: todayJournalDay,
+        // The `entryDate` property is the 'YYYY-MM-DD' string, not a full timestamp.
+        entryDate: todayJournalDay,
         lastModified: timestamp,
         local_session_id: store$.session.localSessionId.get(),
         user_id: store$.session.userId.get(), // Add userId on creation
@@ -219,7 +219,7 @@ export const saveActiveFlowSession = (): void => {
     const newFlowId = generateFlowId()
     const newFlow: Flow = {
       id: newFlowId,
-      entry_id: todayEntryId,
+      dailyEntryId: todayEntryId,
       // The flow's timestamp is stored as a full, precise UTC string.
       // This is the absolute, immutable truth of *when* the flow was written.
       // This separates the concept of a 'day' (for grouping) from the exact
@@ -464,7 +464,7 @@ store$.assign({
       // into a simple { 'date': 'id' } map.
       return allEntries.reduce(
         (index, entry) => {
-          index[entry.date] = entry.id
+          index[entry.entryDate] = entry.id
           return index
         },
         {} as Record<string, string>
@@ -476,7 +476,7 @@ store$.assign({
      */
     flowsByEntryId: (entryId: string): Flow[] => {
       const allFlows = Object.values(store$.journal.flows.get())
-      return allFlows.filter((flow) => flow.entry_id === entryId)
+      return allFlows.filter((flow) => flow.dailyEntryId === entryId)
     },
 
     /**
@@ -488,13 +488,13 @@ store$.assign({
     entryByDate: (date: string): DailyEntryView | null => {
       // This computed depends on `entries` and `flows`.
       const allEntries = Object.values(store$.journal.entries.get())
-      const entryData = allEntries.find((entry) => entry.date === date)
+      const entryData = allEntries.find((entry) => entry.entryDate === date)
 
       if (!entryData) return null
 
       const allFlows = Object.values(store$.journal.flows.get())
       // Find all flows that belong to this entry.
-      const flows = allFlows.filter((flow) => flow.entry_id === entryData.id)
+      const flows = allFlows.filter((flow) => flow.dailyEntryId === entryData.id)
       const totalWords = flows.reduce((sum, flow) => sum + flow.wordCount, 0)
 
       return {
@@ -546,11 +546,11 @@ store$.assign({
 
       return allEntries
         .map((entry) => {
-          const flows = allFlows.filter((flow) => flow.entry_id === entry.id)
+          const flows = allFlows.filter((flow) => flow.dailyEntryId === entry.id)
           const totalWords = flows.reduce((sum, flow) => sum + flow.wordCount, 0)
           return { ...entry, flows, totalWords }
         })
-        .sort((a, b) => b.date.localeCompare(a.date))
+        .sort((a, b) => b.entryDate.localeCompare(a.entryDate))
     },
 
     /**
@@ -564,7 +564,7 @@ store$.assign({
       // This view now implicitly depends on the `allEntriesSorted` view for its data,
       // making it even more efficient.
       const sortedEntries = store$.views.allEntriesSorted()
-      return sortedEntries.filter((entry) => entry.date.startsWith(month))
+      return sortedEntries.filter((entry) => entry.entryDate.startsWith(month))
     },
 
     /**
@@ -575,7 +575,7 @@ store$.assign({
      */
     entriesByYear: (year: string): DailyEntryView[] => {
       const sortedEntries = store$.views.allEntriesSorted()
-      return sortedEntries.filter((entry) => entry.date.startsWith(year))
+      return sortedEntries.filter((entry) => entry.entryDate.startsWith(year))
     },
   },
 })
