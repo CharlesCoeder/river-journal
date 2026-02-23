@@ -3,6 +3,7 @@
 import { useEffectOnce, use$ } from '@legendapp/state/react'
 import { appStatus$ } from 'app/state/initializeApp'
 import { initializePersistence } from 'app/state/initializeApp'
+import { Text } from '@my/ui'
 
 export function PersistenceGate({ children }: { children: React.ReactNode }) {
   const isLoaded = use$(appStatus$.isPersistenceLoaded)
@@ -13,7 +14,7 @@ export function PersistenceGate({ children }: { children: React.ReactNode }) {
   }, [])
 
   if (error) {
-    return <div>Error loading application data.</div>
+    return <Text>Error loading application data.</Text>
   }
 
   return isLoaded ? <>{children}</> : null
