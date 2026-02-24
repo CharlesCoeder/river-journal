@@ -15,7 +15,7 @@ import { Editor } from './components/Editor'
 
 export function CelebrationScreen() {
   const router = useRouter()
-  const lastSavedFlow = use$(store$.journal.lastSavedFlow)
+  const lastSavedFlow = use$(store$.lastSavedFlow)
 
   // Clear the activeFlow on mount to complete the save transition
   // This is done here (not in saveActiveFlowSession) to prevent placeholder flash

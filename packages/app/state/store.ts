@@ -17,6 +17,8 @@ import type {
   ColorThemeName,
 } from './types'
 import { DEFAULT_COLOR_THEMES } from './types'
+import { flows$ } from './flows'
+import { entries$ } from './entries'
 
 import { getTodayJournalDayString } from './date-utils'
 
@@ -44,14 +46,13 @@ export const store$ = observable<AppState>({
     isAuthenticated: false,
   },
   profile: null, // Populated on login
-  journal: {
-    entries: {},
-    flows: {},
-    activeFlow: null,
-    lastSavedFlow: null,
-  },
+  activeFlow: null,
+  lastSavedFlow: null,
   lastUpdated: null,
 })
+
+// Re-export granular observables for convenience
+export { flows$, entries$ }
 
 // =================================================================
 // 1b. EPHEMERAL STATE (NOT PERSISTED)
@@ -109,12 +110,10 @@ export const calculateWordCount = (content: string): number =>
 export const clearUserData = () => {
   batch(() => {
     store$.profile.set(null)
-    store$.journal.set({
-      entries: {},
-      flows: {},
-      activeFlow: null,
-      lastSavedFlow: null,
-    })
+    store$.activeFlow.set(null)
+    store$.lastSavedFlow.set(null)
+    flows$.set({})
+    entries$.set({})
     store$.lastUpdated.set(new Date().toISOString())
   })
 }
@@ -132,7 +131,7 @@ export const clearUserData = () => {
  */
 export const startNewActiveFlow = (): void => {
   batch(() => {
-    store$.journal.activeFlow.set({
+    store$.activeFlow.set({
       content: '',
       wordCount: 0,
     })
@@ -149,8 +148,8 @@ export const updateActiveFlowContent = (content: string): void => {
 
   batch(() => {
     // Auto-initialize active flow on first keystroke if none exists
-    if (!store$.journal.activeFlow.get() && content.length > 0) {
-      store$.journal.activeFlow.set({
+    if (!store$.activeFlow.get() && content.length > 0) {
+      store$.activeFlow.set({
         content,
         wordCount,
       })
@@ -164,10 +163,10 @@ export const updateActiveFlowContent = (content: string): void => {
           wordCount,
         })
       }
-    } else if (store$.journal.activeFlow.get()) {
+    } else if (store$.activeFlow.get()) {
       // Direct mutable updates to the active flow
-      store$.journal.activeFlow.content.set(content)
-      store$.journal.activeFlow.wordCount.set(wordCount)
+      store$.activeFlow.content.set(content)
+      store$.activeFlow.wordCount.set(wordCount)
     }
     store$.lastUpdated.set(new Date().toISOString())
   })
@@ -178,7 +177,7 @@ export const updateActiveFlowContent = (content: string): void => {
  * Stores the flow data in lastSavedFlow for the celebration screen.
  */
 export const saveActiveFlowSession = (): void => {
-  const activeFlow = store$.journal.activeFlow.get()
+  const activeFlow = store$.activeFlow.get()
 
   // Don't save if there's no active flow or it's empty
   if (!activeFlow || !activeFlow.content.trim()) {
@@ -190,7 +189,7 @@ export const saveActiveFlowSession = (): void => {
 
   batch(() => {
     // Store flow data for celebration screen BEFORE clearing activeFlow
-    store$.journal.lastSavedFlow.set({
+    store$.lastSavedFlow.set({
       content: activeFlow.content,
       wordCount: activeFlow.wordCount,
       timestamp,
@@ -212,7 +211,7 @@ export const saveActiveFlowSession = (): void => {
         user_id: store$.session.userId.get(), // Add userId on creation
       }
       // Directly set the new entry in the entries map
-      store$.journal.entries[todayEntryId].set(newEntry)
+      entries$[todayEntryId].set(newEntry)
     }
 
     // Create the new flow session
@@ -232,10 +231,10 @@ export const saveActiveFlowSession = (): void => {
     }
 
     // Directly add the new flow to the flows map
-    store$.journal.flows[newFlowId].set(newFlow)
+    flows$[newFlowId].set(newFlow)
 
     // Update the entry's lastModified timestamp
-    store$.journal.entries[todayEntryId].lastModified.set(timestamp)
+    entries$[todayEntryId].lastModified.set(timestamp)
 
     // NOTE: activeFlow is NOT cleared here - it will be cleared by CelebrationScreen
     // on mount to prevent the placeholder flash during navigation
@@ -247,7 +246,7 @@ export const saveActiveFlowSession = (): void => {
  * Clears the lastSavedFlow state after user dismisses celebration screen
  */
 export const clearLastSavedFlow = (): void => {
-  store$.journal.lastSavedFlow.set(null)
+  store$.lastSavedFlow.set(null)
 }
 
 /**
@@ -255,12 +254,12 @@ export const clearLastSavedFlow = (): void => {
  * to complete the save flow transition without causing placeholder flash.
  */
 export const clearActiveFlow = (): void => {
-  store$.journal.activeFlow.set(null)
+  store$.activeFlow.set(null)
 }
 
 export const discardActiveFlowSession = (): void => {
   batch(() => {
-    store$.journal.activeFlow.set(null)
+    store$.activeFlow.set(null)
     store$.lastUpdated.set(new Date().toISOString())
   })
 }
@@ -270,7 +269,7 @@ export const discardActiveFlowSession = (): void => {
  * When sync is implemented, this will use soft delete with is_deleted flag.
  */
 export const deleteFlow = (flowId: string): void => {
-  const flow = store$.journal.flows[flowId].peek()
+  const flow = flows$[flowId].peek()
   if (!flow) {
     console.warn(`[deleteFlow] Flow ${flowId} not found`)
     return
@@ -278,7 +277,7 @@ export const deleteFlow = (flowId: string): void => {
 
   batch(() => {
     // Hard delete from local storage using Legend-State .delete()
-    store$.journal.flows[flowId].delete()
+    flows$[flowId].delete()
     store$.lastUpdated.set(new Date().toISOString())
   })
 }
@@ -287,21 +286,21 @@ export const deleteFlow = (flowId: string): void => {
  * Gets the current active flow content
  */
 export const getActiveFlowContent = (): string => {
-  return store$.journal.activeFlow.content.get() || ''
+  return store$.activeFlow.content.get() || ''
 }
 
 /**
  * Gets the current active flow word count
  */
 export const getActiveFlowWordCount = (): number => {
-  return store$.journal.activeFlow.wordCount.get() || 0
+  return store$.activeFlow.wordCount.get() || 0
 }
 
 /**
  * Debug function to test active flow persistence
  */
 export const debugActiveFlow = () => {
-  const activeFlow = store$.journal.activeFlow.get()
+  const activeFlow = store$.activeFlow.get()
   const lastUpdated = store$.lastUpdated.get()
 
   return {
@@ -459,7 +458,7 @@ store$.assign({
      * making date-to-ID lookups instantaneous.
      */
     entryIdsByDate: (): Record<string, string> => {
-      const allEntries = Object.values(store$.journal.entries.get())
+      const allEntries = Object.values(entries$.get())
       // The `reduce` function efficiently transforms the array of entries
       // into a simple { 'date': 'id' } map.
       return allEntries.reduce(
@@ -475,7 +474,7 @@ store$.assign({
      * A highly efficient lookup table to get all flows for a specific entry ID.
      */
     flowsByEntryId: (entryId: string): Flow[] => {
-      const allFlows = Object.values(store$.journal.flows.get())
+      const allFlows = Object.values(flows$.get())
       return allFlows.filter((flow) => flow.dailyEntryId === entryId)
     },
 
@@ -486,13 +485,13 @@ store$.assign({
      * This is the most performant way to get data for a single item.
      */
     entryByDate: (date: string): DailyEntryView | null => {
-      // This computed depends on `entries` and `flows`.
-      const allEntries = Object.values(store$.journal.entries.get())
+      // This computed depends on `entries$` and `flows$`.
+      const allEntries = Object.values(entries$.get())
       const entryData = allEntries.find((entry) => entry.entryDate === date)
 
       if (!entryData) return null
 
-      const allFlows = Object.values(store$.journal.flows.get())
+      const allFlows = Object.values(flows$.get())
       // Find all flows that belong to this entry.
       const flows = allFlows.filter((flow) => flow.dailyEntryId === entryData.id)
       const totalWords = flows.reduce((sum, flow) => sum + flow.wordCount, 0)
@@ -541,8 +540,8 @@ store$.assign({
      * or flow is added, changed, or removed.
      */
     allEntriesSorted: (): DailyEntryView[] => {
-      const allEntries = Object.values(store$.journal.entries.get())
-      const allFlows = Object.values(store$.journal.flows.get())
+      const allEntries = Object.values(entries$.get())
+      const allFlows = Object.values(flows$.get())
 
       return allEntries
         .map((entry) => {

@@ -17,7 +17,7 @@ import { store$, updateActiveFlowContent } from '../../../../state/store'
 /**
  * A non-rendering component that creates a robust, two-way, debounced
  * synchronization between the Lexical editor and the Legend State
- * `store$.journal.activeFlow` observable. This component is the bridge
+ * `store$.activeFlow` observable. This component is the bridge
  * that enables fine-grained reactivity for the editor.
  */
 export function LexicalSync(): React.ReactElement {
@@ -32,7 +32,7 @@ export function LexicalSync(): React.ReactElement {
   // Flow 1: Syncing from Legend State --> Lexical Editor
   // This hook runs side-effects when an observable changes.
   // ------------------------------------------------------------------
-  useObserve(store$.journal.activeFlow.content, ({ value: contentFromState }) => {
+  useObserve(store$.activeFlow.content, ({ value: contentFromState }) => {
     // If the change was initiated by our own debounced update from the
     // editor, we ignore it to prevent the loop.
     if (isSyncingFromState.current) {
@@ -75,7 +75,7 @@ export function LexicalSync(): React.ReactElement {
   // Effect to set the initial state of the editor when it first mounts.
   // This is crucial for restoring an unsaved draft from a previous session.
   useEffect(() => {
-    const initialContent = store$.journal.activeFlow.content.get()
+    const initialContent = store$.activeFlow.content.get()
     if (initialContent) {
       editor.update(
         () => {
