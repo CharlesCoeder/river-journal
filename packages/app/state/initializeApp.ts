@@ -4,6 +4,8 @@ import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
 import { configurePersistence } from './persistConfig'
 import { store$ } from './store'
+import { flows$ } from './flows'
+import { entries$ } from './entries'
 import { initAuthListener } from '../utils/auth'
 
 export const appStatus$ = observable({
@@ -12,11 +14,32 @@ export const appStatus$ = observable({
 })
 
 function setupPersistence() {
+  // Persist the core store (session, profile, activeFlow, lastSavedFlow)
   syncObservable(
     store$,
     configurePersistence({
       persist: {
         name: 'app-state',
+      },
+    })
+  )
+
+  // Persist flows as a separate observable with its own storage key
+  syncObservable(
+    flows$,
+    configurePersistence({
+      persist: {
+        name: 'flows',
+      },
+    })
+  )
+
+  // Persist entries as a separate observable with its own storage key
+  syncObservable(
+    entries$,
+    configurePersistence({
+      persist: {
+        name: 'entries',
       },
     })
   )
@@ -29,12 +52,11 @@ export async function initializePersistence() {
 
     // Create an array of promises that resolve when each persisted observable is loaded.
     // The syncState helper returns an observable with load statuses.
-    const persistencePromises = [when(syncState(store$).isPersistLoaded)]
-
-    // If no persisted stores yet, create a resolved promise to prevent errors.
-    if (persistencePromises.length === 0) {
-      persistencePromises.push(Promise.resolve(true))
-    }
+    const persistencePromises = [
+      when(syncState(store$).isPersistLoaded),
+      when(syncState(flows$).isPersistLoaded),
+      when(syncState(entries$).isPersistLoaded),
+    ]
 
     // Wait for all observables to be loaded from storage.
     await Promise.all(persistencePromises)

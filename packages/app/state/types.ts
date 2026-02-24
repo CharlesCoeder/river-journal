@@ -59,19 +59,6 @@ export interface UserProfile {
 }
 
 /**
- * For the journal's data, kept in a normalized structure.
- */
-export interface JournalData {
-  entries: Record<string, Entry> // Keyed by Entry ID
-  flows: Record<string, Flow> // Keyed by Flow ID
-  activeFlow: {
-    content: string
-    wordCount: number
-  } | null
-  lastSavedFlow: LastSavedFlow | null // Temporary state for celebration screen
-}
-
-/**
  * Temporary state to hold the last saved flow data for the celebration screen.
  * Cleared when user dismisses the celebration screen.
  */
@@ -108,11 +95,18 @@ export interface PersistentEditorState {
 
 /**
  * The single, unified state object for the entire application.
+ * Note: `flows` and `entries` have been extracted to standalone observables
+ * (`flows$` in flows.ts, `entries$` in entries.ts) to enable per-table
+ * syncedSupabase() configuration.
  */
 export interface AppState {
   session: SessionState
   profile: UserProfile | null // Null when the user is anonymous
-  journal: JournalData
+  activeFlow: {
+    content: string
+    wordCount: number
+  } | null
+  lastSavedFlow: LastSavedFlow | null // Temporary state for celebration screen
   lastUpdated: string | null
 
   // Computed views will be attached here

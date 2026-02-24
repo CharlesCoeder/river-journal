@@ -8,8 +8,8 @@ import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/ind
 
 // Database configuration for IndexedDB
 const DB_NAME = 'RiverJournal'
-const DB_VERSION = 1
-const TABLE_NAMES = ['app-state']
+const DB_VERSION = 2
+const TABLE_NAMES = ['app-state', 'flows', 'entries']
 
 // Configure IndexedDB persistence
 export const configurePersistence = configureSynced({

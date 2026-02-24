@@ -33,7 +33,7 @@ export const Editor = ({ readOnly = false, initialContent }: EditorProps) => {
       // Pass initial content only - PersistentEditor manages its own content after that
       showPersistentEditor({
         readOnly,
-        content: readOnly ? initialContent || '' : store$.journal.activeFlow.content.get() || '',
+        content: readOnly ? initialContent || '' : store$.activeFlow.content.get() || '',
       })
 
       // Hide when component unmounts
@@ -66,7 +66,6 @@ export const Editor = ({ readOnly = false, initialContent }: EditorProps) => {
     if (readOnly) return // Don't handle changes in readOnly mode
     debouncedUpdateStore(markdown)
   }
-
 
   const themeValues = {
     textColor: theme.color.val,

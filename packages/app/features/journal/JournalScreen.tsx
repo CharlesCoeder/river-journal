@@ -15,7 +15,7 @@ export function JournalScreen() {
   const router = useRouter()
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const activeFlow = use$(store$.journal.activeFlow)
+  const activeFlow = use$(store$.activeFlow)
 
   const handleBackToHome = () => {
     hidePersistentEditor()
