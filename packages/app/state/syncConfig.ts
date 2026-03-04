@@ -15,6 +15,7 @@ import { configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase'
 import { supabase } from '../utils/supabase'
 import { persistPlugin } from './persistConfig'
 import type { Flow, Entry } from './types'
+import { v4 as uuidv4 } from 'uuid'
 
 // =================================================================
 // UUID GENERATION
@@ -25,11 +26,7 @@ export function generateUUID(): string {
     return crypto.randomUUID()
   }
   // Fallback for environments without crypto.randomUUID
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+  return uuidv4()
 }
 
 // =================================================================
