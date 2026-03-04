@@ -6,7 +6,8 @@
  * computed views that operate on the state.
  */
 
-import { observable, syncState, batch, when } from '@legendapp/state'
+import { observable, batch, when } from '@legendapp/state'
+import { syncState } from '@legendapp/state'
 import type {
   AppState,
   Flow,
@@ -21,6 +22,7 @@ import { flows$ } from './flows'
 import { entries$ } from './entries'
 
 import { getTodayJournalDayString } from './date-utils'
+import { generateUUID } from './syncConfig'
 
 // Default theme values when no profile exists
 const DEFAULT_BASE_THEME: BaseThemeName = 'light'
@@ -44,6 +46,7 @@ export const store$ = observable<AppState>({
     userId: null,
     email: null,
     isAuthenticated: false,
+    syncEnabled: false,
   },
   profile: null, // Populated on login
   activeFlow: null,
@@ -94,11 +97,9 @@ export const waitForStoreLoaded = async () => {
 }
 
 // ID generation and word count utilities
-export const generateFlowId = (): string =>
-  `flow_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+export const generateFlowId = (): string => generateUUID()
 
-export const generateEntryId = (date: string): string =>
-  `entry_${date}_${Math.random().toString(36).substring(2, 9)}`
+export const generateEntryId = (_date: string): string => generateUUID()
 
 export const calculateWordCount = (content: string): number =>
   content.trim() ? content.trim().split(/\s+/).length : 0
@@ -265,8 +266,9 @@ export const discardActiveFlowSession = (): void => {
 }
 
 /**
- * Deletes a flow session from local storage
- * When sync is implemented, this will use soft delete with is_deleted flag.
+ * Deletes a flow session. Sync-aware:
+ * - syncEnabled: .delete() triggers fieldDeleted → sets is_deleted=true in Supabase
+ * - no sync: hard delete from local storage
  */
 export const deleteFlow = (flowId: string): void => {
   const flow = flows$[flowId].peek()
@@ -276,7 +278,10 @@ export const deleteFlow = (flowId: string): void => {
   }
 
   batch(() => {
-    // Hard delete from local storage using Legend-State .delete()
+    // .delete() is the correct call in both cases:
+    // When syncedSupabase has fieldDeleted configured, .delete() automatically
+    // sets is_deleted=true for the remote sync. When sync is disabled (waitFor
+    // blocks remote ops), it still removes the item from the local observable.
     flows$[flowId].delete()
     store$.lastUpdated.set(new Date().toISOString())
   })
@@ -458,7 +463,7 @@ store$.assign({
      * making date-to-ID lookups instantaneous.
      */
     entryIdsByDate: (): Record<string, string> => {
-      const allEntries = Object.values(entries$.get())
+      const allEntries = Object.values(entries$.get() ?? {})
       // The `reduce` function efficiently transforms the array of entries
       // into a simple { 'date': 'id' } map.
       return allEntries.reduce(
@@ -474,7 +479,7 @@ store$.assign({
      * A highly efficient lookup table to get all flows for a specific entry ID.
      */
     flowsByEntryId: (entryId: string): Flow[] => {
-      const allFlows = Object.values(flows$.get())
+      const allFlows = Object.values(flows$.get() ?? {})
       return allFlows.filter((flow) => flow.dailyEntryId === entryId)
     },
 
@@ -485,14 +490,12 @@ store$.assign({
      * This is the most performant way to get data for a single item.
      */
     entryByDate: (date: string): DailyEntryView | null => {
-      // This computed depends on `entries$` and `flows$`.
-      const allEntries = Object.values(entries$.get())
+      const allEntries = Object.values(entries$.get() ?? {})
       const entryData = allEntries.find((entry) => entry.entryDate === date)
 
       if (!entryData) return null
 
-      const allFlows = Object.values(flows$.get())
-      // Find all flows that belong to this entry.
+      const allFlows = Object.values(flows$.get() ?? {})
       const flows = allFlows.filter((flow) => flow.dailyEntryId === entryData.id)
       const totalWords = flows.reduce((sum, flow) => sum + flow.wordCount, 0)
 
@@ -540,8 +543,8 @@ store$.assign({
      * or flow is added, changed, or removed.
      */
     allEntriesSorted: (): DailyEntryView[] => {
-      const allEntries = Object.values(entries$.get())
-      const allFlows = Object.values(flows$.get())
+      const allEntries = Object.values(entries$.get() ?? {})
+      const allFlows = Object.values(flows$.get() ?? {})
 
       return allEntries
         .map((entry) => {

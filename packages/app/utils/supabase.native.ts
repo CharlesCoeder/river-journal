@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '../types/database'
 import { MMKV } from 'react-native-mmkv'
 
 // Create a dedicated MMKV instance for Supabase auth storage
@@ -51,7 +52,7 @@ if (!supabaseUrl) {
   throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL and could not infer local development URL')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: mmkvStorageAdapter,
     autoRefreshToken: true,
