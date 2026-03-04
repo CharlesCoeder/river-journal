@@ -78,7 +78,6 @@ export async function initializePersistence() {
       process.env.EXPO_PUBLIC_SYNC_ENABLED === 'true'
 
     if (envSyncEnabled) {
-      store$.session.syncEnabled.set(true)
       if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
         console.log('🔄 Sync auto-enabled via env flag')
@@ -86,6 +85,9 @@ export async function initializePersistence() {
     }
 
     batch(() => {
+      if (envSyncEnabled) {
+        store$.session.syncEnabled.set(true)
+      }
       appStatus$.isPersistenceLoaded.set(true)
       appStatus$.error.set(null)
     })

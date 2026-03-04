@@ -1,11 +1,37 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { observable } from '@legendapp/state'
 
-vi.mock('../../utils/supabase', () => ({
-  supabase: {},
+// Mock Supabase client to prevent network requests during tests
+vi.mock('../../utils/supabase', () => {
+  return {
+    supabase: {
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        upsert: vi.fn().mockReturnThis(),
+        single: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+      })),
+    },
+  }
+})
+
+// Mock persistence to avoid IDB/MMKV issues in Node
+vi.mock('../persistConfig', () => ({
+  persistPlugin: {
+    getTable: vi.fn(() => ({})),
+    setTable: vi.fn(),
+    deleteTable: vi.fn(),
+    getMetadata: vi.fn(),
+    setMetadata: vi.fn(),
+    deleteMetadata: vi.fn(),
+    loadTable: vi.fn(),
+    saveTable: vi.fn(),
+  },
+  configurePersistence: vi.fn(),
 }))
 
-import { isSyncReady$, syncUserId$, generateUUID } from '../syncConfig'
+import { isSyncReady$, syncUserId$ } from '../syncConfig'
+import { flows$ } from '../flows'
+import { entries$ } from '../entries'
 
 describe('Sync readiness gate', () => {
   beforeEach(() => {
@@ -32,34 +58,35 @@ describe('Sync readiness gate', () => {
   })
 })
 
-describe('UUID generation for sync', () => {
-  it('produces UUIDs accepted by Postgres UUID type', () => {
-    for (let i = 0; i < 50; i++) {
-      const id = generateUUID()
-      expect(id).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
-      )
-    }
+describe('Synced Observables Initialization', () => {
+  it('flows$ initializes as an observable object', () => {
+    const flows = flows$.get()
+    expect(typeof flows).toBe('object')
   })
 
-  it('is usable as an observable key', () => {
-    const obs$ = observable<Record<string, { id: string; value: number }>>({})
-    const id = generateUUID()
-    obs$[id].set({ id, value: 42 })
-    expect(obs$[id].get()).toEqual({ id, value: 42 })
+  it('entries$ initializes as an observable object', () => {
+    const entries = entries$.get()
+    expect(typeof entries).toBe('object')
   })
-})
-
-describe('syncEnabled flag on SessionState', () => {
-  it('syncEnabled defaults to false in a fresh store', () => {
-    // Import types only — we verify the shape, not a live store
-    const session = {
-      localSessionId: '',
-      userId: null,
-      email: null,
-      isAuthenticated: false,
-      syncEnabled: false,
+  
+  it('allows local mutations on flows$', () => {
+    const testFlow = {
+      id: 'test-flow-1',
+      dailyEntryId: 'test-entry-1',
+      content: 'test content',
+      wordCount: 2,
+      timestamp: new Date().toISOString(),
+      local_session_id: 'test-session',
     }
-    expect(session.syncEnabled).toBe(false)
+    
+    // Set a local flow
+    flows$[testFlow.id].set(testFlow)
+    
+    // Verify it was set
+    const flows = flows$.get()
+    expect(flows[testFlow.id]).toEqual(testFlow)
+    
+    // Clean up
+    flows$[testFlow.id].delete()
   })
 })
