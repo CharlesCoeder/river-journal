@@ -1,4 +1,4 @@
-import { YStack, H1, Button, Text, ThemeSwitcher, XStack, Separator, Card } from '@my/ui'
+import { YStack, H1, Button, Text, ThemeSwitcher, XStack, Separator, Card, ScrollView } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { syncState } from '@legendapp/state'
@@ -93,17 +93,27 @@ export function HomeScreen() {
   }, [])
 
   return (
+    <ScrollView flex={1} backgroundColor="$background" contentContainerStyle={{ flexGrow: 1 }}>
     <YStack
-      width="75%"
-      maxWidth="75%"
+      width="100%"
+      maxWidth="100%"
       backgroundColor="$background"
-      gap="$8"
+      gap="$4"
       flex={1}
       alignItems="flex-start"
       justifyContent="flex-start"
       alignSelf="flex-start"
-      marginLeft="12.5%"
-      paddingTop="$8"
+      paddingHorizontal="$4"
+      paddingTop="$4"
+      paddingBottom="$8"
+      $sm={{
+        width: '75%',
+        maxWidth: '75%',
+        marginLeft: '12.5%',
+        gap: '$8',
+        paddingHorizontal: 0,
+        paddingTop: '$8',
+      }}
     >
       {/* Auth Status / Login Button - Temporary placement */}
       <XStack width="100%" justifyContent="flex-end">
@@ -163,5 +173,6 @@ export function HomeScreen() {
         </>
       )}
     </YStack>
+    </ScrollView>
   )
 }
