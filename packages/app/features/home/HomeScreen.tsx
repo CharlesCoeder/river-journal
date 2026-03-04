@@ -1,10 +1,69 @@
-import { YStack, H1, Button, Text, ThemeSwitcher, XStack, Separator } from '@my/ui'
+import { YStack, H1, Button, Text, ThemeSwitcher, XStack, Separator, Card } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
+import { syncState } from '@legendapp/state'
 import { store$ } from 'app/state/store'
+import { flows$ } from 'app/state/flows'
+import { entries$ } from 'app/state/entries'
+import { isSyncReady$ } from 'app/state/syncConfig'
 import { signOut } from 'app/utils'
 import { useCallback, useState } from 'react'
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
+
+function DevSyncIndicator() {
+  const syncEnabled = use$(store$.session.syncEnabled)
+  const isAuthenticated = use$(store$.session.isAuthenticated)
+  const isSyncReady = use$(isSyncReady$)
+  const flowsSyncState = use$(syncState(flows$))
+  const entriesSyncState = use$(syncState(entries$))
+
+  const dot = (on: boolean) => (on ? '🟢' : '🔴')
+
+  return (
+    <Card bordered padding="$3" backgroundColor="$backgroundHover" width="100%">
+      <YStack gap="$1">
+        <Text fontSize="$2" fontFamily="$body" fontWeight="700" color="$color11">
+          DEV SYNC STATUS
+        </Text>
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {dot(syncEnabled)} env flag (syncEnabled): {String(syncEnabled)}
+        </Text>
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {dot(isAuthenticated)} isAuthenticated: {String(isAuthenticated)}
+        </Text>
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {dot(isSyncReady)} isSyncReady$ (gate open): {String(isSyncReady)}
+        </Text>
+        <Separator marginVertical="$1" />
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {dot(!!flowsSyncState?.isPersistLoaded)} flows persist loaded:{' '}
+          {String(!!flowsSyncState?.isPersistLoaded)}
+        </Text>
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {dot(!!flowsSyncState?.isSyncEnabled)} flows sync enabled:{' '}
+          {String(!!flowsSyncState?.isSyncEnabled)}
+        </Text>
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {flowsSyncState?.error ? `❌ flows error: ${flowsSyncState.error}` : '✅ flows: no error'}
+        </Text>
+        <Separator marginVertical="$1" />
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {dot(!!entriesSyncState?.isPersistLoaded)} entries persist loaded:{' '}
+          {String(!!entriesSyncState?.isPersistLoaded)}
+        </Text>
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {dot(!!entriesSyncState?.isSyncEnabled)} entries sync enabled:{' '}
+          {String(!!entriesSyncState?.isSyncEnabled)}
+        </Text>
+        <Text fontSize="$2" fontFamily="$body" color="$color11">
+          {entriesSyncState?.error
+            ? `❌ entries error: ${entriesSyncState.error}`
+            : '✅ entries: no error'}
+        </Text>
+      </YStack>
+    </Card>
+  )
+}
 
 export function HomeScreen() {
   const router = useRouter()
@@ -93,6 +152,14 @@ export function HomeScreen() {
         <>
           <Separator width="100%" />
           <LinkedProviders />
+        </>
+      )}
+
+      {/* Temporary dev sync status indicator */}
+      {process.env.NODE_ENV === 'development' && (
+        <>
+          <Separator width="100%" />
+          <DevSyncIndicator />
         </>
       )}
     </YStack>

@@ -19,6 +19,7 @@ export interface SessionState {
   userId: string | null // Supabase user ID, populated on login
   email: string | null // User's email address when authenticated
   isAuthenticated: boolean // Whether user is logged in
+  syncEnabled: boolean // Whether remote Supabase sync is active
 }
 
 /**
