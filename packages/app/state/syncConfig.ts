@@ -49,6 +49,7 @@ configureSyncedSupabase({
 
 export const isSyncReady$ = observable(false)
 export const syncUserId$ = observable<string | null>(null)
+export const orphanFlowsPending$ = observable<{ flowCount: number; entryCount: number; userId: string } | null>(null)
 
 // =================================================================
 // SHARED EXPORTS

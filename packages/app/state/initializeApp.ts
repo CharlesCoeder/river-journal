@@ -3,10 +3,10 @@ import { syncState, when, observe } from '@legendapp/state'
 import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
 import { configurePersistence } from './persistConfig'
-import { store$ } from './store'
+import { store$, countUndecidedOrphans } from './store'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
-import { isSyncReady$, syncUserId$ } from './syncConfig'
+import { isSyncReady$, syncUserId$, orphanFlowsPending$ } from './syncConfig'
 import { initAuthListener } from '../utils/auth'
 
 export const appStatus$ = observable({
@@ -34,20 +34,48 @@ function setupPersistence() {
 }
 
 function setupSyncReadinessGate() {
-  // Reactively wire isSyncReady$ and syncUserId$ to store$.session,
-  // avoiding circular imports between store.ts and flows.ts/entries.ts.
+  // Reactively wire isSyncReady$, syncUserId$, and orphanFlowsPending$ to
+  // store$.session, avoiding circular imports between store.ts and flows.ts/entries.ts.
   observe(() => {
     const isAuthenticated = store$.session.isAuthenticated.get()
     const syncEnabled = store$.session.syncEnabled.get()
     const userId = store$.session.userId.get()
 
-    const ready = isAuthenticated && syncEnabled
-    isSyncReady$.set(ready)
-    syncUserId$.set(userId)
+    if (!isAuthenticated || !syncEnabled || !userId) {
+      // Not ready for sync — clear orphan state and close gate
+      orphanFlowsPending$.set(null)
+      isSyncReady$.set(false)
+      syncUserId$.set(userId)
 
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log('🔗 [syncGate]', { isAuthenticated, syncEnabled, ready, userId: userId?.slice(0, 8) ?? null })
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('🔗 [syncGate] closed', { isAuthenticated, syncEnabled, userId: userId?.slice(0, 8) ?? null })
+      }
+      return
+    }
+
+    // Authenticated + sync enabled: check for undecided orphan flows
+    syncUserId$.set(userId)
+    const { flowCount, entryCount } = countUndecidedOrphans()
+
+    if (flowCount > 0 || entryCount > 0) {
+      // Orphans pending user decision — keep gate closed, show dialog
+      orphanFlowsPending$.set({ flowCount, entryCount, userId })
+      isSyncReady$.set(false)
+
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('🔗 [syncGate] orphans pending consent', { flowCount, entryCount, userId: userId.slice(0, 8) })
+      }
+    } else {
+      // No undecided orphans — open sync gate immediately
+      orphanFlowsPending$.set(null)
+      isSyncReady$.set(true)
+
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('🔗 [syncGate] open (no orphans)', { userId: userId.slice(0, 8) })
+      }
     }
   })
 }

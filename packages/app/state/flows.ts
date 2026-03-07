@@ -33,13 +33,27 @@ export const flows$ = observable<Record<string, Flow>>(
     // No client-side filter needed — flows RLS scopes via daily_entries.user_id
     // which is enforced server-side through the EXISTS subquery policy.
 
+    // Use upsert for creates to handle re-syncing flows that already exist
+    // in Supabase (e.g., anonymous flows adopted after login). Without this,
+    // Legend-State's default INSERT hits the PK constraint → 409 Conflict.
+    create: (input: any) =>
+      supabase
+        .from('flows')
+        .upsert(input, { onConflict: 'id' })
+        .select()
+        .single(),
+
     transform: {
       load: (value: any) => {
         if (!value) return value
         if (Array.isArray(value)) {
           if (process.env.NODE_ENV === 'development') {
+            const localFlowIds = Object.keys(flows$.peek() ?? {})
             // eslint-disable-next-line no-console
-            console.log(`📥 [flows] list response: ${value.length} rows from Supabase`)
+            console.log(
+              `📥 [flows] list response: ${value.length} rows from Supabase (local has ${localFlowIds.length} flows)`,
+              { serverIds: value.map((r: any) => r.id?.slice(0, 8)), localIds: localFlowIds.map(id => id.slice(0, 8)) }
+            )
           }
           return value.map((row: any) => dbFlowToLocal(row))
         }
@@ -53,11 +67,14 @@ export const flows$ = observable<Record<string, Flow>>(
         return value
       },
       save: (value: any) => {
-        if (process.env.NODE_ENV === 'development' && value) {
+        if (!value) return value
+        // Skip syncing flows with no user_id (anonymous/orphan data).
+        // adoptOrphanFlows() will stamp the user_id, then the item will sync.
+        if (!value.user_id) return undefined
+        if (process.env.NODE_ENV === 'development') {
           // eslint-disable-next-line no-console
           console.log('📤 [flows] outgoing create/update', value.id ?? '(new)')
         }
-        if (!value) return value
         return localFlowToDb(value)
       },
     },

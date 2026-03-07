@@ -22,7 +22,7 @@ import { flows$ } from './flows'
 import { entries$ } from './entries'
 
 import { getTodayJournalDayString } from './date-utils'
-import { generateUUID } from './syncConfig'
+import { generateUUID, isSyncReady$, orphanFlowsPending$ } from './syncConfig'
 
 // Default theme values when no profile exists
 const DEFAULT_BASE_THEME: BaseThemeName = 'light'
@@ -106,17 +106,205 @@ export const calculateWordCount = (content: string): number =>
 
 /**
  * Resets the application's data state, preserving the session.
- * Useful for logout scenarios.
+ * Flows and entries with sync_excluded: true are preserved (local-only data
+ * that the user explicitly declined to sync). All cloud-synced data is cleared.
+ *
+ * Two-phase clear: first nullify user_id on synced items so that
+ * transform.save returns undefined (preventing Legend-State from queuing
+ * Supabase delete operations via retrySync), then replace the maps with
+ * only the kept items.
  */
 export const clearUserData = () => {
+  const allFlows = flows$.get() ?? {}
+  const allEntries = entries$.get() ?? {}
+
+  // Phase 1: strip user_id from items we're about to remove.
+  // transform.save returns undefined for !user_id, so any sync operations
+  // Legend-State generates for these items will be skipped.
+  batch(() => {
+    for (const [id, flow] of Object.entries(allFlows)) {
+      if (flow.sync_excluded !== true && flow.user_id) {
+        flows$[id].user_id.set(null)
+      }
+    }
+    for (const [id, entry] of Object.entries(allEntries)) {
+      if (entry.sync_excluded !== true && entry.user_id) {
+        entries$[id].user_id.set(null)
+      }
+    }
+  })
+
+  // Phase 2: replace the maps. Removed items already have user_id=null,
+  // so Legend-State won't queue ghost deletes against Supabase.
   batch(() => {
     store$.profile.set(null)
     store$.activeFlow.set(null)
     store$.lastSavedFlow.set(null)
-    flows$.set({})
-    entries$.set({})
+
+    const keptFlows: Record<string, Flow> = {}
+    for (const [id, flow] of Object.entries(allFlows)) {
+      if (flow.sync_excluded === true) {
+        keptFlows[id] = flow
+      }
+    }
+    flows$.set(keptFlows)
+
+    const keptEntries: Record<string, Entry> = {}
+    for (const [id, entry] of Object.entries(allEntries)) {
+      if (entry.sync_excluded === true) {
+        keptEntries[id] = entry
+      }
+    }
+    entries$.set(keptEntries)
+
     store$.lastUpdated.set(new Date().toISOString())
   })
+}
+
+/**
+ * Adopts orphan (anonymous) entries and flows by stamping them with the
+ * authenticated user's ID. Skips items with sync_excluded: true (user explicitly
+ * declined those). Must run BEFORE the sync gate opens to prevent RLS 403s.
+ */
+export const adoptOrphanFlows = (userId: string): void => {
+  const allEntries = entries$.get() ?? {}
+  const allFlows = flows$.get() ?? {}
+  let adoptedEntries = 0
+  let adoptedFlows = 0
+
+  if (process.env.NODE_ENV === 'development') {
+    const orphanEntryIds = Object.entries(allEntries)
+      .filter(([_, e]) => !e.user_id && !e.sync_excluded)
+      .map(([id]) => id.slice(0, 8))
+    const orphanFlowIds = Object.entries(allFlows)
+      .filter(([_, f]) => !f.user_id && !f.sync_excluded)
+      .map(([id]) => id.slice(0, 8))
+    // eslint-disable-next-line no-console
+    console.log(
+      `🏠 [adoptOrphanFlows] PRE-ADOPT: ${Object.keys(allEntries).length} entries (${orphanEntryIds.length} undecided orphans), ${Object.keys(allFlows).length} flows (${orphanFlowIds.length} undecided orphans)`,
+      { orphanEntryIds, orphanFlowIds }
+    )
+  }
+
+  batch(() => {
+    for (const [entryId, entry] of Object.entries(allEntries)) {
+      if (!entry.user_id && !entry.sync_excluded) {
+        entries$[entryId].user_id.set(userId)
+        adoptedEntries++
+      }
+    }
+
+    for (const [flowId, flow] of Object.entries(allFlows)) {
+      if (!flow.user_id && !flow.sync_excluded) {
+        flows$[flowId].user_id.set(userId)
+        adoptedFlows++
+      }
+    }
+  })
+
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log(
+      `🏠 [adoptOrphanFlows] POST-ADOPT: adopted ${adoptedEntries} entries, ${adoptedFlows} flows for user ${userId.slice(0, 8)}…`
+    )
+  }
+}
+
+/**
+ * Returns the count of undecided orphan flows and entries: items that were
+ * created locally before login (have a real local_session_id), have no user_id,
+ * and have not been explicitly excluded.
+ *
+ * Uses peek() to avoid creating reactive subscriptions when called from observe().
+ * Flows downloaded from Supabase have local_session_id: '' (set by dbFlowToLocal)
+ * and must NOT be counted — they're already in the cloud.
+ *
+ * Uses for-in loops to avoid allocating intermediate arrays from
+ * Object.values().filter(), which matters for users with large local stores
+ * since this runs inside the observe() block on auth/sync changes.
+ */
+export const countUndecidedOrphans = (): { flowCount: number; entryCount: number } => {
+  const allEntries = entries$.peek() ?? {}
+  const allFlows = flows$.peek() ?? {}
+
+  let entryCount = 0
+  for (const id in allEntries) {
+    const e = allEntries[id]
+    if (!e.user_id && !e.sync_excluded && !!e.local_session_id) entryCount++
+  }
+
+  let flowCount = 0
+  for (const id in allFlows) {
+    const f = allFlows[id]
+    if (!f.user_id && !f.sync_excluded && !!f.local_session_id) flowCount++
+  }
+
+  return { flowCount, entryCount }
+}
+
+/**
+ * Marks all undecided local-origin orphan flows and entries as sync_excluded: true.
+ * Only affects items created on this device (!!local_session_id) — Supabase-downloaded
+ * flows (local_session_id: '') are already in the cloud and must not be excluded.
+ */
+export const excludeOrphanFlows = (): void => {
+  const allEntries = entries$.get() ?? {}
+  const allFlows = flows$.get() ?? {}
+
+  batch(() => {
+    for (const [entryId, entry] of Object.entries(allEntries)) {
+      if (!entry.user_id && !entry.sync_excluded && !!entry.local_session_id) {
+        entries$[entryId].sync_excluded.set(true)
+      }
+    }
+
+    for (const [flowId, flow] of Object.entries(allFlows)) {
+      if (!flow.user_id && !flow.sync_excluded && !!flow.local_session_id) {
+        flows$[flowId].sync_excluded.set(true)
+      }
+    }
+  })
+}
+
+/** Optional overrides for testing (e.g. to simulate adoption throwing). */
+export type ResolveOrphanFlowsOverrides = {
+  adoptFn?: (userId: string) => void
+  excludeFn?: () => void
+}
+
+/**
+ * Resolves the orphan flows consent dialog.
+ * If adopt=true: stamps all undecided orphans with userId and opens sync gate.
+ * If adopt=false: marks all undecided orphans as sync_excluded and opens sync gate.
+ *
+ * Always clears orphanFlowsPending$ and opens the sync gate, even on error,
+ * to prevent the user from being stuck with an undismissable dialog.
+ *
+ * @param adopt - true to adopt orphans, false to exclude them
+ * @param overrides - optional test overrides (adoptFn, excludeFn); production never passes this
+ */
+export const resolveOrphanFlows = (
+  adopt: boolean,
+  overrides?: ResolveOrphanFlowsOverrides
+): void => {
+  const pending = orphanFlowsPending$.get()
+  if (!pending) return
+
+  const doAdopt = overrides?.adoptFn ?? adoptOrphanFlows
+  const doExclude = overrides?.excludeFn ?? excludeOrphanFlows
+
+  try {
+    if (adopt) {
+      doAdopt(pending.userId)
+    } else {
+      doExclude()
+    }
+  } catch (error) {
+    console.error('[resolveOrphanFlows] Failed to resolve orphans:', error)
+  }
+
+  orphanFlowsPending$.set(null)
+  isSyncReady$.set(true)
 }
 
 // =================================================================
