@@ -54,6 +54,7 @@ _bmad-output
 .agent
 .claude
 _bmad
+.agents
 
 # tauri build
 apps/web/out
