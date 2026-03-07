@@ -20,6 +20,7 @@ import { signOut } from 'app/utils'
 import { useCallback, useState } from 'react'
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 import { SyncToggle } from 'app/features/home/components/SyncToggle'
+import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 
 function DevSyncIndicator() {
   if (process.env.NODE_ENV !== 'development') return null
@@ -180,6 +181,9 @@ export function HomeScreen() {
             <SyncToggle />
           </YStack>
         )}
+
+        {/* Orphan flows consent dialog — self-managing, renders when orphanFlowsPending$ is non-null */}
+        <OrphanFlowsDialog />
 
         <Separator width="100%" />
         <DevSyncIndicator />

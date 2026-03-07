@@ -50,8 +50,12 @@ export const entries$ = observable<Record<string, Entry>>(
         if (!value) return value
         if (Array.isArray(value)) {
           if (process.env.NODE_ENV === 'development') {
+            const localEntryIds = Object.keys(entries$.peek() ?? {})
             // eslint-disable-next-line no-console
-            console.log(`📥 [entries] list response: ${value.length} rows from Supabase`)
+            console.log(
+              `📥 [entries] list response: ${value.length} rows from Supabase (local has ${localEntryIds.length} entries)`,
+              { serverIds: value.map((r: any) => r.id?.slice(0, 8)), localIds: localEntryIds.map(id => id.slice(0, 8)) }
+            )
           }
           return value.map((row: any) => dbEntryToLocal(row))
         }
@@ -65,11 +69,14 @@ export const entries$ = observable<Record<string, Entry>>(
         return value
       },
       save: (value: any) => {
-        if (process.env.NODE_ENV === 'development' && value) {
+        if (!value) return value
+        // Skip syncing entries with no user_id (anonymous/orphan data).
+        // adoptOrphanFlows() will stamp the user_id, then the item will sync.
+        if (!value.user_id) return undefined
+        if (process.env.NODE_ENV === 'development') {
           // eslint-disable-next-line no-console
           console.log('📤 [entries] outgoing create/update', value.id ?? '(new)')
         }
-        if (!value) return value
         return localEntryToDb(value)
       },
     },

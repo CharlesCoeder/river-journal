@@ -134,6 +134,7 @@ export interface Flow {
   wordCount: number
   user_id?: string | null
   local_session_id: string
+  sync_excluded?: boolean
 }
 
 export interface Entry {
@@ -142,6 +143,7 @@ export interface Entry {
   lastModified: string
   user_id?: string | null
   local_session_id: string
+  sync_excluded?: boolean
 }
 
 /**
