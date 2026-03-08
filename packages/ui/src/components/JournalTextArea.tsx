@@ -13,7 +13,7 @@ const StyledJournalArea = styled(TextArea, {
 
   // Default styles are defined here.
   fontSize: '$5',
-  lineHeight: '$6',
+  lineHeight: 32,
   padding: '$3',
   borderRadius: '$4',
   borderWidth: 0,
