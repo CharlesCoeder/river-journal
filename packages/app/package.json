@@ -10,6 +10,8 @@
     "@legendapp/state": "^3.0.0-beta.31",
     "@lexical/react": "^0.33.1",
     "@my/ui": "0.0.1",
+    "@noble/ciphers": "^2.1.1",
+    "@noble/hashes": "^2.0.1",
     "@react-navigation/native": "^6.1.17",
     "@supabase/supabase-js": "^2.93.1",
     "@tamagui/animations-react-native": "^1.126.18",

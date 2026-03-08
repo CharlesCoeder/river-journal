@@ -221,4 +221,32 @@ describe('HomeScreen encryption flow', () => {
     expect(text).toContain('Managed encryption')
     expect(text).toContain('This choice is read-only for now.')
   })
+
+  it('shows key-required messaging when E2E is selected but local key is missing', async () => {
+    const renderer = await renderHomeScreen()
+
+    await act(async () => {
+      encryptionSetup$.assign({
+        hasLoadedMode: true,
+        currentMode: 'e2e',
+        currentModeSalt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        hasLocalE2EKey: false,
+        error: {
+          message: 'Encryption password required on this device before Cloud Sync can be enabled.',
+          code: 'e2e_password_required',
+        },
+      })
+    })
+    await flush()
+
+    const text = getTextContent(renderer.root)
+    expect(text).toContain('End-to-end encryption')
+    expect(text).toContain('Encryption password required on this device')
+    expect(text).toContain(
+      'This account uses end-to-end encryption. Enter your encryption password on this device to unlock Cloud Sync.'
+    )
+
+    const toggle = renderer.root.findByProps({ testID: 'sync-toggle' })
+    expect(toggle.props.disabled).toBe(true)
+  })
 })

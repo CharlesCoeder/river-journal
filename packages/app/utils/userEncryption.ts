@@ -1,6 +1,12 @@
 import { supabase } from './supabase'
 import type { TablesInsert } from '../types/database'
 import type { EncryptionMode } from '../types/index'
+import {
+  EncryptionError,
+  deriveMasterKeyFromPassword,
+  generateEncryptionSaltHex,
+} from './encryption'
+import { clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
 
 export interface EncryptionSettings {
   mode: EncryptionMode | null
@@ -83,10 +89,67 @@ export async function startE2EEncryptionBootstrap(_input: {
   userId: string
   password: string
 }): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
-  return {
-    error: toEncryptionError(
-      'End-to-end encrypted cloud sync is not available in this build yet. Your mode choice was saved, but Cloud Sync stays off until Story 4.2 lands.',
-      'e2e_bootstrap_pending'
-    ).error,
+  const input = _input
+  let shouldCleanupLocalKey = false
+
+  if (!input.password.trim()) {
+    return {
+      error: toEncryptionError('Encryption password is required.', 'missing_password').error,
+    }
+  }
+
+  try {
+    const salt = generateEncryptionSaltHex()
+    const masterKey = deriveMasterKeyFromPassword(input.password, salt)
+    const payload: TablesInsert<'users'> = {
+      id: input.userId,
+      encryption_mode: 'e2e',
+      encryption_salt: salt,
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .upsert(payload, { onConflict: 'id' })
+      .select('encryption_mode, encryption_salt')
+      .single()
+
+    if (error) {
+      shouldCleanupLocalKey = true
+      return {
+        error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
+      }
+    }
+
+    try {
+      await storeMasterKey(input.userId, masterKey)
+    } catch (error) {
+      shouldCleanupLocalKey = true
+      return {
+        error: toEncryptionError(
+          (error as Error).message || 'Failed to store encryption key on this device.',
+          'local_key_store_failed'
+        ).error,
+      }
+    }
+
+    return { error: null }
+  } catch (error) {
+    shouldCleanupLocalKey = true
+    if (error instanceof EncryptionError) {
+      return {
+        error: toEncryptionError(error.message, error.code).error,
+      }
+    }
+
+    return {
+      error: toEncryptionError(
+        (error as Error).message || 'Failed to bootstrap end-to-end encryption.',
+        'e2e_bootstrap_failed'
+      ).error,
+    }
+  } finally {
+    if (shouldCleanupLocalKey) {
+      await clearStoredMasterKey(input.userId)
+    }
   }
 }

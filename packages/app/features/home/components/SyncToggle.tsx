@@ -20,8 +20,13 @@ const MODE_LABELS = {
 } as const
 
 const MODE_DESCRIPTIONS = {
-  e2e: 'Your mode choice is saved. Cloud Sync stays off until encrypted sync is available in this build.',
-  managed: 'Managed encryption is saved for this account. This choice cannot be changed here.',
+  e2eReady:
+    'End-to-end encryption is active on this device. Cloud Sync uploads encrypted journal content.',
+  e2eNeedsKey:
+    'This account uses end-to-end encryption. Enter your encryption password on this device to unlock Cloud Sync.',
+  e2eSetupIncomplete:
+    'End-to-end encryption setup is incomplete for this account. Cloud Sync stays off until setup is completed.',
+  managed: 'Managed encryption is active for this account. This choice is read-only here.',
 } as const
 
 /**
@@ -33,10 +38,13 @@ export function SyncToggle() {
   const isLoadingMode = use$(encryptionSetup$.isLoadingMode)
   const currentMode = use$(encryptionSetup$.currentMode)
   const currentModeSalt = use$(encryptionSetup$.currentModeSalt)
+  const hasLocalE2EKey = use$(encryptionSetup$.hasLocalE2EKey)
   const error = use$(encryptionSetup$.error)
 
-  const isE2EPendingBootstrap = currentMode === 'e2e' && !currentModeSalt
-  const isSwitchDisabled = isLoadingMode || isE2EPendingBootstrap
+  const isE2EReadyOnDevice = currentMode === 'e2e' && !!currentModeSalt && hasLocalE2EKey
+  const isE2EKeyRequiredOnDevice = currentMode === 'e2e' && !!currentModeSalt && !hasLocalE2EKey
+  const isE2ESetupIncomplete = currentMode === 'e2e' && !currentModeSalt
+  const isSwitchDisabled = isLoadingMode || isE2EKeyRequiredOnDevice || isE2ESetupIncomplete
 
   const handleCheckedChange = useCallback((checked: boolean) => {
     if (!checked) {
@@ -50,11 +58,17 @@ export function SyncToggle() {
 
   const description = isLoadingMode
     ? 'Checking your encryption settings before Cloud Sync can turn on.'
-    : currentMode
-      ? MODE_DESCRIPTIONS[currentMode]
-      : syncEnabled
-        ? EXPLANATIONS.syncOn
-        : EXPLANATIONS.syncOff
+    : currentMode === 'managed'
+      ? MODE_DESCRIPTIONS.managed
+      : isE2EReadyOnDevice
+        ? MODE_DESCRIPTIONS.e2eReady
+        : isE2EKeyRequiredOnDevice
+          ? MODE_DESCRIPTIONS.e2eNeedsKey
+          : isE2ESetupIncomplete
+            ? MODE_DESCRIPTIONS.e2eSetupIncomplete
+            : syncEnabled
+              ? EXPLANATIONS.syncOn
+              : EXPLANATIONS.syncOff
 
   return (
     <Card bordered padding="$4" backgroundColor="$background" width="100%">
@@ -85,6 +99,22 @@ export function SyncToggle() {
               <Text fontSize="$4" fontFamily="$body" fontWeight="600">
                 {MODE_LABELS[currentMode]}
               </Text>
+              {currentMode === 'managed' && (
+                <Text fontSize="$2" fontFamily="$body" color="$green10">
+                  Ready on this device
+                </Text>
+              )}
+              {currentMode === 'e2e' && (
+                <Text
+                  fontSize="$2"
+                  fontFamily="$body"
+                  color={isE2EReadyOnDevice ? '$green10' : '$orange10'}
+                >
+                  {isE2EReadyOnDevice
+                    ? 'Ready on this device'
+                    : 'Encryption password required on this device'}
+                </Text>
+              )}
               <Text fontSize="$2" fontFamily="$body" color="$color11">
                 This choice is read-only for now.
               </Text>

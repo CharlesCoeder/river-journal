@@ -1,0 +1,944 @@
+diff --git a/apps/mobile/package.json b/apps/mobile/package.json
+index d2c9124..b278790 100644
+--- a/apps/mobile/package.json
++++ b/apps/mobile/package.json
+@@ -30,6 +30,7 @@
+     "expo-linear-gradient": "~14.1.5",
+     "expo-linking": "~7.1.7",
+     "expo-router": "~5.1.5",
++    "expo-secure-store": "^55.0.8",
+     "expo-splash-screen": "~0.30.10",
+     "expo-status-bar": "~2.2.3",
+     "expo-updates": "~0.28.17",
+diff --git a/docs b/docs
+index de4c531..f077d57 160000
+--- a/docs
++++ b/docs
+@@ -1 +1 @@
+-Subproject commit de4c5318b0423bef3c287a83e3705023b84c88a6
++Subproject commit f077d5771b72588137d688a6ca28826526687471-dirty
+diff --git a/packages/app/features/home/__tests__/HomeScreen.encryption.test.tsx b/packages/app/features/home/__tests__/HomeScreen.encryption.test.tsx
+index e7bc635..5834ab4 100644
+--- a/packages/app/features/home/__tests__/HomeScreen.encryption.test.tsx
++++ b/packages/app/features/home/__tests__/HomeScreen.encryption.test.tsx
+@@ -221,4 +221,32 @@ describe('HomeScreen encryption flow', () => {
+     expect(text).toContain('Managed encryption')
+     expect(text).toContain('This choice is read-only for now.')
+   })
++
++  it('shows key-required messaging when E2E is selected but local key is missing', async () => {
++    const renderer = await renderHomeScreen()
++
++    await act(async () => {
++      encryptionSetup$.assign({
++        hasLoadedMode: true,
++        currentMode: 'e2e',
++        currentModeSalt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
++        hasLocalE2EKey: false,
++        error: {
++          message: 'Encryption password required on this device before Cloud Sync can be enabled.',
++          code: 'e2e_password_required',
++        },
++      })
++    })
++    await flush()
++
++    const text = getTextContent(renderer.root)
++    expect(text).toContain('End-to-end encryption')
++    expect(text).toContain('Encryption password required on this device')
++    expect(text).toContain(
++      'This account uses end-to-end encryption. Enter your encryption password on this device to unlock Cloud Sync.'
++    )
++
++    const toggle = renderer.root.findByProps({ testID: 'sync-toggle' })
++    expect(toggle.props.disabled).toBe(true)
++  })
+ })
+diff --git a/packages/app/features/home/components/EncryptionModeDialog.tsx b/packages/app/features/home/components/EncryptionModeDialog.tsx
+index b988422..ab7fddb 100644
+--- a/packages/app/features/home/components/EncryptionModeDialog.tsx
++++ b/packages/app/features/home/components/EncryptionModeDialog.tsx
+@@ -131,10 +131,6 @@ export function EncryptionModeDialog() {
+                       If you forget this password, your cloud data is unrecoverable.
+                     </Text>
+                   )}
+-                  <Text fontSize="$2" fontFamily="$body" color="$color11">
+-                    Cloud content is still plaintext in the current sync pipeline until the
+-                    follow-up encryption bootstrap lands.
+-                  </Text>
+                 </YStack>
+ 
+                 {error && (
+diff --git a/packages/app/features/home/components/SyncToggle.tsx b/packages/app/features/home/components/SyncToggle.tsx
+index 68c07b5..8ebd041 100644
+--- a/packages/app/features/home/components/SyncToggle.tsx
++++ b/packages/app/features/home/components/SyncToggle.tsx
+@@ -20,8 +20,13 @@ const MODE_LABELS = {
+ } as const
+ 
+ const MODE_DESCRIPTIONS = {
+-  e2e: 'Your mode choice is saved. Cloud Sync stays off until encrypted sync is available in this build.',
+-  managed: 'Managed encryption is saved for this account. This choice cannot be changed here.',
++  e2eReady:
++    'End-to-end encryption is active on this device. Cloud Sync uploads encrypted journal content.',
++  e2eNeedsKey:
++    'This account uses end-to-end encryption. Enter your encryption password on this device to unlock Cloud Sync.',
++  e2eSetupIncomplete:
++    'End-to-end encryption setup is incomplete for this account. Cloud Sync stays off until setup is completed.',
++  managed: 'Managed encryption is active for this account. This choice is read-only here.',
+ } as const
+ 
+ /**
+@@ -33,10 +38,13 @@ export function SyncToggle() {
+   const isLoadingMode = use$(encryptionSetup$.isLoadingMode)
+   const currentMode = use$(encryptionSetup$.currentMode)
+   const currentModeSalt = use$(encryptionSetup$.currentModeSalt)
++  const hasLocalE2EKey = use$(encryptionSetup$.hasLocalE2EKey)
+   const error = use$(encryptionSetup$.error)
+ 
+-  const isE2EPendingBootstrap = currentMode === 'e2e' && !currentModeSalt
+-  const isSwitchDisabled = isLoadingMode || isE2EPendingBootstrap
++  const isE2EReadyOnDevice = currentMode === 'e2e' && !!currentModeSalt && hasLocalE2EKey
++  const isE2EKeyRequiredOnDevice = currentMode === 'e2e' && !!currentModeSalt && !hasLocalE2EKey
++  const isE2ESetupIncomplete = currentMode === 'e2e' && !currentModeSalt
++  const isSwitchDisabled = isLoadingMode || isE2EKeyRequiredOnDevice || isE2ESetupIncomplete
+ 
+   const handleCheckedChange = useCallback((checked: boolean) => {
+     if (!checked) {
+@@ -50,11 +58,17 @@ export function SyncToggle() {
+ 
+   const description = isLoadingMode
+     ? 'Checking your encryption settings before Cloud Sync can turn on.'
+-    : currentMode
+-      ? MODE_DESCRIPTIONS[currentMode]
+-      : syncEnabled
+-        ? EXPLANATIONS.syncOn
+-        : EXPLANATIONS.syncOff
++    : currentMode === 'managed'
++      ? MODE_DESCRIPTIONS.managed
++      : isE2EReadyOnDevice
++        ? MODE_DESCRIPTIONS.e2eReady
++        : isE2EKeyRequiredOnDevice
++          ? MODE_DESCRIPTIONS.e2eNeedsKey
++          : isE2ESetupIncomplete
++            ? MODE_DESCRIPTIONS.e2eSetupIncomplete
++            : syncEnabled
++              ? EXPLANATIONS.syncOn
++              : EXPLANATIONS.syncOff
+ 
+   return (
+     <Card bordered padding="$4" backgroundColor="$background" width="100%">
+@@ -85,6 +99,22 @@ export function SyncToggle() {
+               <Text fontSize="$4" fontFamily="$body" fontWeight="600">
+                 {MODE_LABELS[currentMode]}
+               </Text>
++              {currentMode === 'managed' && (
++                <Text fontSize="$2" fontFamily="$body" color="$green10">
++                  Ready on this device
++                </Text>
++              )}
++              {currentMode === 'e2e' && (
++                <Text
++                  fontSize="$2"
++                  fontFamily="$body"
++                  color={isE2EReadyOnDevice ? '$green10' : '$orange10'}
++                >
++                  {isE2EReadyOnDevice
++                    ? 'Ready on this device'
++                    : 'Encryption password required on this device'}
++                </Text>
++              )}
+               <Text fontSize="$2" fontFamily="$body" color="$color11">
+                 This choice is read-only for now.
+               </Text>
+diff --git a/packages/app/package.json b/packages/app/package.json
+index 4cf456a..36fc9f0 100644
+--- a/packages/app/package.json
++++ b/packages/app/package.json
+@@ -10,6 +10,8 @@
+     "@legendapp/state": "^3.0.0-beta.31",
+     "@lexical/react": "^0.33.1",
+     "@my/ui": "0.0.1",
++    "@noble/ciphers": "^2.1.1",
++    "@noble/hashes": "^2.0.1",
+     "@react-navigation/native": "^6.1.17",
+     "@supabase/supabase-js": "^2.93.1",
+     "@tamagui/animations-react-native": "^1.126.18",
+diff --git a/packages/app/state/__tests__/encryptionSetup.test.ts b/packages/app/state/__tests__/encryptionSetup.test.ts
+index d026326..d1503b2 100644
+--- a/packages/app/state/__tests__/encryptionSetup.test.ts
++++ b/packages/app/state/__tests__/encryptionSetup.test.ts
+@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
+ const mockReadUserEncryptionSettings = vi.fn()
+ const mockUpsertUserEncryptionMode = vi.fn()
+ const mockStartE2EEncryptionBootstrap = vi.fn()
++const mockLoadMasterKey = vi.fn()
+ 
+ vi.mock('../../utils/userEncryption', () => ({
+   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
+@@ -10,6 +11,13 @@ vi.mock('../../utils/userEncryption', () => ({
+   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
+ }))
+ 
++vi.mock('../../utils/encryptionKeyStore', () => ({
++  loadMasterKey: (...args: unknown[]) => mockLoadMasterKey(...args),
++  getCachedMasterKey: vi.fn(),
++  storeMasterKey: vi.fn(),
++  clearStoredMasterKey: vi.fn(),
++}))
++
+ vi.mock('../../utils/supabase', () => ({
+   supabase: {
+     from: vi.fn(() => ({
+@@ -71,12 +79,9 @@ describe('encryption setup orchestration', () => {
+       error: null,
+     })
+     mockStartE2EEncryptionBootstrap.mockResolvedValue({
+-      error: {
+-        message:
+-          'End-to-end encrypted cloud sync is not available in this build yet. Your mode choice was saved, but Cloud Sync stays off until Story 4.2 lands.',
+-        code: 'e2e_bootstrap_pending',
+-      },
++      error: null,
+     })
++    mockLoadMasterKey.mockResolvedValue(null)
+   })
+ 
+   it('first-time enable opens the chooser instead of enabling sync', async () => {
+@@ -132,6 +137,7 @@ describe('encryption setup orchestration', () => {
+       hasLoadedMode: true,
+       currentMode: 'managed',
+       currentModeSalt: null,
++      hasLocalE2EKey: false,
+       error: null,
+     })
+     isEncryptionReadyForSync$.set(true)
+@@ -162,48 +168,53 @@ describe('encryption setup orchestration', () => {
+     })
+   })
+ 
+-  it('E2E password submission persists mode and keeps sync off until bootstrap exists', async () => {
++  it('E2E password submission stores mode+salt+key and enables sync', async () => {
+     await requestSyncEnable()
+     await confirmEncryptionModeSelection()
+-    mockUpsertUserEncryptionMode.mockResolvedValueOnce({
+-      data: { mode: 'e2e', salt: null },
++    mockReadUserEncryptionSettings.mockResolvedValueOnce({
++      data: {
++        mode: 'e2e',
++        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
++      },
+       error: null,
+     })
++    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+ 
+     const didEnable = await submitE2EPassword('password123', 'password123')
+ 
+-    expect(didEnable).toBe(false)
+-    expect(mockUpsertUserEncryptionMode).toHaveBeenCalledWith({
+-      userId: 'user-1',
+-      mode: 'e2e',
+-    })
++    expect(didEnable).toBe(true)
+     expect(mockStartE2EEncryptionBootstrap).toHaveBeenCalledWith({
+       userId: 'user-1',
+       password: 'password123',
+     })
+     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
++    expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(true)
++    expect(store$.session.syncEnabled.get()).toBe(true)
++    expect(isEncryptionReadyForSync$.get()).toBe(true)
+     expect(encryptionSetup$.isOpen.get()).toBe(false)
+-    expect(store$.session.syncEnabled.get()).toBe(false)
+-    expect(isEncryptionReadyForSync$.get()).toBe(false)
+-    expect(encryptionSetup$.error.get()?.code).toBe('e2e_bootstrap_pending')
+   })
+ 
+-  it('rehydrating a pending E2E mode surfaces the blocking error', async () => {
++  it('rehydrating E2E mode with missing local key blocks sync with key-required state', async () => {
+     mockReadUserEncryptionSettings.mockResolvedValueOnce({
+-      data: { mode: 'e2e', salt: null },
++      data: {
++        mode: 'e2e',
++        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
++      },
+       error: null,
+     })
++    mockLoadMasterKey.mockResolvedValueOnce(null)
+ 
+     const mode = await loadCurrentEncryptionMode()
+ 
+     expect(mode).toBe('e2e')
+     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
++    expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(false)
+     expect(encryptionSetup$.error.get()).toEqual({
+-      message:
+-        'End-to-end encryption is selected for this account, but encrypted cloud sync is not available in this build yet.',
+-      code: 'e2e_bootstrap_pending',
++      message: 'Encryption password required on this device before Cloud Sync can be enabled.',
++      code: 'e2e_password_required',
+     })
+     expect(store$.session.syncEnabled.get()).toBe(false)
++    expect(isEncryptionReadyForSync$.get()).toBe(false)
+   })
+ 
+   it('deduplicates concurrent encryption-mode loads', async () => {
+diff --git a/packages/app/state/__tests__/syncConfig.test.ts b/packages/app/state/__tests__/syncConfig.test.ts
+index e2e9b10..e36a919 100644
+--- a/packages/app/state/__tests__/syncConfig.test.ts
++++ b/packages/app/state/__tests__/syncConfig.test.ts
+@@ -1,4 +1,4 @@
+-import { describe, it, expect, vi } from 'vitest'
++import { beforeEach, describe, it, expect, vi } from 'vitest'
+ 
+ vi.mock('../../utils/supabase', () => ({
+   supabase: {},
+@@ -10,7 +10,12 @@ import {
+   localEntryToDb,
+   dbFlowToLocal,
+   localFlowToDb,
++  syncEncryptionError$,
++  syncEncryptionMode$,
++  syncUserId$,
+ } from '../syncConfig'
++import { deriveMasterKeyFromPassword, isEncryptedFlowPayload } from '../../utils/encryption'
++import { clearStoredMasterKey, storeMasterKey } from '../../utils/encryptionKeyStore'
+ 
+ describe('generateUUID', () => {
+   it('returns a valid UUID v4 format', () => {
+@@ -73,6 +78,13 @@ describe('Entry transforms', () => {
+ })
+ 
+ describe('Flow transforms', () => {
++  beforeEach(async () => {
++    syncEncryptionError$.set(null)
++    syncEncryptionMode$.set(null)
++    syncUserId$.set('user-1')
++    await clearStoredMasterKey('user-1')
++  })
++
+   const dbRow = {
+     id: 'f1',
+     daily_entry_id: 'e1',
+@@ -129,4 +141,89 @@ describe('Flow transforms', () => {
+     })
+     expect(db).not.toHaveProperty('daily_entry_id')
+   })
++
++  it('encrypts flow content at the sync boundary for e2e mode and decrypts on load', async () => {
++    const key = deriveMasterKeyFromPassword(
++      'correct horse battery staple',
++      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
++    )
++    await storeMasterKey('user-1', key)
++    syncEncryptionMode$.set('e2e')
++
++    const plaintext = 'Flow content that should be encrypted in Supabase.'
++    const db = localFlowToDb({
++      id: 'f1',
++      dailyEntryId: 'e1',
++      content: plaintext,
++      wordCount: 8,
++      timestamp: '2026-03-03T10:05:00Z',
++      user_id: 'user-1',
++      local_session_id: 'sess1',
++    })
++
++    expect(db).toHaveProperty('content')
++    expect(typeof db.content).toBe('string')
++    expect(db.content).not.toBe(plaintext)
++    expect(isEncryptedFlowPayload(db.content as string)).toBe(true)
++
++    const local = dbFlowToLocal({
++      ...dbRow,
++      content: db.content as string,
++    })
++
++    expect(local.content).toBe(plaintext)
++    expect(syncEncryptionError$.get()).toBeNull()
++  })
++
++  it('fails loudly instead of uploading plaintext when e2e mode has no local key', () => {
++    syncEncryptionMode$.set('e2e')
++
++    expect(() =>
++      localFlowToDb({
++        id: 'f1',
++        dailyEntryId: 'e1',
++        content: 'should not upload',
++        user_id: 'user-1',
++        local_session_id: 'sess1',
++      })
++    ).toThrowError(/e2e_password_required/)
++
++    expect(syncEncryptionError$.get()).toEqual({
++      message: 'Encryption password required on this device before encrypted flows can sync.',
++      code: 'e2e_password_required',
++    })
++  })
++
++  it('surfaces explicit errors when encrypted payload cannot be decrypted', async () => {
++    const encryptionKey = deriveMasterKeyFromPassword(
++      'correct horse battery staple',
++      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
++    )
++    await storeMasterKey('user-1', encryptionKey)
++    syncEncryptionMode$.set('e2e')
++
++    const dbPayload = localFlowToDb({
++      id: 'f1',
++      dailyEntryId: 'e1',
++      content: 'secret text',
++      user_id: 'user-1',
++      local_session_id: 'sess1',
++    })
++
++    await clearStoredMasterKey('user-1')
++    const wrongKey = deriveMasterKeyFromPassword(
++      'wrong key',
++      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
++    )
++    await storeMasterKey('user-1', wrongKey)
++
++    expect(() =>
++      dbFlowToLocal({
++        ...dbRow,
++        content: dbPayload.content as string,
++      })
++    ).toThrowError(/flow_decrypt_failed/)
++
++    expect(syncEncryptionError$.get()?.code).toBe('flow_decrypt_failed')
++  })
+ })
+diff --git a/packages/app/state/encryptionSetup.ts b/packages/app/state/encryptionSetup.ts
+index 985eee7..863bf78 100644
+--- a/packages/app/state/encryptionSetup.ts
++++ b/packages/app/state/encryptionSetup.ts
+@@ -1,11 +1,13 @@
+-import { batch, observable } from '@legendapp/state'
++import { batch, observable, observe } from '@legendapp/state'
+ import type { EncryptionMode } from '../types/index'
+ import { store$ } from './store'
++import { loadMasterKey } from '../utils/encryptionKeyStore'
+ import {
+   readUserEncryptionSettings,
+   startE2EEncryptionBootstrap,
+   upsertUserEncryptionMode,
+ } from '../utils/userEncryption'
++import { syncEncryptionError$, syncEncryptionMode$ } from './syncConfig'
+ 
+ export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'saving'
+ 
+@@ -15,14 +17,41 @@ export interface EncryptionSetupError {
+ }
+ 
+ const DEFAULT_MODE: EncryptionMode = 'e2e'
+-const E2E_BOOTSTRAP_PENDING_ERROR: EncryptionSetupError = {
+-  message:
+-    'End-to-end encryption is selected for this account, but encrypted cloud sync is not available in this build yet.',
+-  code: 'e2e_bootstrap_pending',
++const E2E_SALT_REQUIRED_ERROR: EncryptionSetupError = {
++  message: 'End-to-end encryption setup is incomplete for this account. Please finish setup again.',
++  code: 'e2e_salt_missing',
+ }
++const E2E_PASSWORD_REQUIRED_ERROR: EncryptionSetupError = {
++  message: 'Encryption password required on this device before Cloud Sync can be enabled.',
++  code: 'e2e_password_required',
++}
++
++const getSyncEligibility = (
++  mode: EncryptionMode | null,
++  salt: string | null,
++  hasLocalE2EKey: boolean
++): {
++  canEnableSync: boolean
++  blockingError: EncryptionSetupError | null
++} => {
++  if (mode === 'managed') {
++    return { canEnableSync: true, blockingError: null }
++  }
++
++  if (mode !== 'e2e') {
++    return { canEnableSync: false, blockingError: null }
++  }
++
++  if (!salt) {
++    return { canEnableSync: false, blockingError: E2E_SALT_REQUIRED_ERROR }
++  }
++
++  if (!hasLocalE2EKey) {
++    return { canEnableSync: false, blockingError: E2E_PASSWORD_REQUIRED_ERROR }
++  }
+ 
+-const getSyncEligibility = (mode: EncryptionMode | null, salt: string | null): boolean =>
+-  mode === 'managed' || (mode === 'e2e' && !!salt)
++  return { canEnableSync: true, blockingError: null }
++}
+ 
+ let loadCurrentEncryptionModePromise: Promise<EncryptionMode | null> | null = null
+ 
+@@ -35,6 +64,7 @@ export const encryptionSetup$ = observable({
+   error: null as EncryptionSetupError | null,
+   currentMode: null as EncryptionMode | null,
+   currentModeSalt: null as string | null,
++  hasLocalE2EKey: false,
+   hasLoadedMode: false,
+   isLoadingMode: false,
+ })
+@@ -47,29 +77,47 @@ const resetDialogState = () => {
+   })
+ }
+ 
+-const applyLoadedSettings = (mode: EncryptionMode | null, salt: string | null) => {
+-  const canEnableSync = getSyncEligibility(mode, salt)
+-  const pendingE2E = mode === 'e2e' && !salt
++const applyLoadedSettings = (
++  mode: EncryptionMode | null,
++  salt: string | null,
++  hasLocalE2EKey: boolean
++) => {
++  const eligibility = getSyncEligibility(mode, salt, hasLocalE2EKey)
+ 
+   batch(() => {
++    syncEncryptionMode$.set(mode)
+     encryptionSetup$.currentMode.set(mode)
+     encryptionSetup$.currentModeSalt.set(salt)
++    encryptionSetup$.hasLocalE2EKey.set(hasLocalE2EKey)
+     encryptionSetup$.hasLoadedMode.set(true)
+-    isEncryptionReadyForSync$.set(canEnableSync)
+-    encryptionSetup$.error.set(pendingE2E ? E2E_BOOTSTRAP_PENDING_ERROR : null)
++    isEncryptionReadyForSync$.set(eligibility.canEnableSync)
++    encryptionSetup$.error.set(eligibility.blockingError)
+ 
+-    if (!canEnableSync) {
++    if (!eligibility.canEnableSync) {
+       store$.session.syncEnabled.set(false)
+     }
+   })
+ }
+ 
++const resolveLocalE2EKeyAvailability = async (
++  userId: string,
++  mode: EncryptionMode | null,
++  salt: string | null
++): Promise<boolean> => {
++  if (mode !== 'e2e' || !salt) return false
++  const key = await loadMasterKey(userId)
++  return !!key
++}
++
+ export const resetEncryptionSetupState = () => {
+   batch(() => {
+     resetDialogState()
++    syncEncryptionMode$.set(null)
++    syncEncryptionError$.set(null)
+     encryptionSetup$.error.set(null)
+     encryptionSetup$.currentMode.set(null)
+     encryptionSetup$.currentModeSalt.set(null)
++    encryptionSetup$.hasLocalE2EKey.set(false)
+     encryptionSetup$.hasLoadedMode.set(false)
+     encryptionSetup$.isLoadingMode.set(false)
+     isEncryptionReadyForSync$.set(false)
+@@ -78,7 +126,10 @@ export const resetEncryptionSetupState = () => {
+ }
+ 
+ export const clearEncryptionSetupError = () => {
+-  encryptionSetup$.error.set(null)
++  batch(() => {
++    encryptionSetup$.error.set(null)
++    syncEncryptionError$.set(null)
++  })
+ }
+ 
+ export const setSelectedEncryptionMode = (mode: EncryptionMode) => {
+@@ -118,7 +169,13 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
+         return null
+       }
+ 
+-      applyLoadedSettings(result.data.mode, result.data.salt)
++      const hasLocalE2EKey = await resolveLocalE2EKeyAvailability(
++        userId,
++        result.data.mode,
++        result.data.salt
++      )
++
++      applyLoadedSettings(result.data.mode, result.data.salt, hasLocalE2EKey)
+       return result.data.mode
+     } finally {
+       encryptionSetup$.isLoadingMode.set(false)
+@@ -162,6 +219,7 @@ export const requestSyncEnable = async (): Promise<boolean> => {
+ 
+   const currentMode = encryptionSetup$.currentMode.get()
+   const salt = encryptionSetup$.currentModeSalt.get()
++  const hasLocalE2EKey = encryptionSetup$.hasLocalE2EKey.get()
+ 
+   if (!currentMode) {
+     store$.session.syncEnabled.set(false)
+@@ -169,14 +227,16 @@ export const requestSyncEnable = async (): Promise<boolean> => {
+     return false
+   }
+ 
+-  if (getSyncEligibility(currentMode, salt)) {
++  const eligibility = getSyncEligibility(currentMode, salt, hasLocalE2EKey)
++
++  if (eligibility.canEnableSync) {
+     store$.session.syncEnabled.set(true)
+     return true
+   }
+ 
+   batch(() => {
+     store$.session.syncEnabled.set(false)
+-    encryptionSetup$.error.set(E2E_BOOTSTRAP_PENDING_ERROR)
++    encryptionSetup$.error.set(eligibility.blockingError)
+   })
+   return false
+ }
+@@ -204,7 +264,7 @@ const persistEncryptionMode = async (mode: EncryptionMode): Promise<boolean> =>
+     return false
+   }
+ 
+-  applyLoadedSettings(result.data.mode, result.data.salt)
++  applyLoadedSettings(result.data.mode, result.data.salt, false)
+   return true
+ }
+ 
+@@ -269,9 +329,9 @@ export const submitE2EPassword = async (
+   }
+ 
+   encryptionSetup$.error.set(null)
++  syncEncryptionError$.set(null)
+ 
+-  const persisted = await persistEncryptionMode('e2e')
+-  if (!persisted) return false
++  encryptionSetup$.step.set('saving')
+ 
+   const bootstrapResult = await startE2EEncryptionBootstrap({
+     userId,
+@@ -280,13 +340,30 @@ export const submitE2EPassword = async (
+ 
+   if (bootstrapResult.error) {
+     batch(() => {
+-      resetDialogState()
++      encryptionSetup$.step.set('e2e-password')
+       encryptionSetup$.error.set(bootstrapResult.error)
+       store$.session.syncEnabled.set(false)
+     })
+     return false
+   }
+ 
++  await loadCurrentEncryptionMode()
++
++  const eligibility = getSyncEligibility(
++    encryptionSetup$.currentMode.get(),
++    encryptionSetup$.currentModeSalt.get(),
++    encryptionSetup$.hasLocalE2EKey.get()
++  )
++
++  if (!eligibility.canEnableSync) {
++    batch(() => {
++      encryptionSetup$.step.set('e2e-password')
++      encryptionSetup$.error.set(eligibility.blockingError)
++      store$.session.syncEnabled.set(false)
++    })
++    return false
++  }
++
+   batch(() => {
+     resetDialogState()
+     encryptionSetup$.error.set(null)
+@@ -295,3 +372,14 @@ export const submitE2EPassword = async (
+   })
+   return true
+ }
++
++observe(() => {
++  const runtimeError = syncEncryptionError$.get()
++  if (!runtimeError) return
++
++  batch(() => {
++    store$.session.syncEnabled.set(false)
++    isEncryptionReadyForSync$.set(false)
++    encryptionSetup$.error.set(runtimeError)
++  })
++})
+diff --git a/packages/app/state/syncConfig.ts b/packages/app/state/syncConfig.ts
+index 4c19878..3f0abef 100644
+--- a/packages/app/state/syncConfig.ts
++++ b/packages/app/state/syncConfig.ts
+@@ -15,7 +15,15 @@ import { configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase'
+ import { supabase } from '../utils/supabase'
+ import { persistPlugin } from './persistConfig'
+ import type { Flow, Entry } from './types'
++import type { EncryptionMode } from '../types/index'
+ import { v4 as uuidv4 } from 'uuid'
++import {
++  EncryptionError,
++  decryptFlowContent,
++  encryptFlowContent,
++  isEncryptedFlowPayload,
++} from '../utils/encryption'
++import { getCachedMasterKey } from '../utils/encryptionKeyStore'
+ 
+ // =================================================================
+ // UUID GENERATION
+@@ -50,6 +58,25 @@ configureSyncedSupabase({
+ export const isSyncReady$ = observable(false)
+ export const syncUserId$ = observable<string | null>(null)
+ export const orphanFlowsPending$ = observable<{ flowCount: number; entryCount: number; userId: string } | null>(null)
++export const syncEncryptionMode$ = observable<EncryptionMode | null>(null)
++
++export interface SyncEncryptionError {
++  message: string
++  code: string
++}
++
++export const syncEncryptionError$ = observable<SyncEncryptionError | null>(null)
++
++const toSyncEncryptionError = (message: string, code: string): SyncEncryptionError => ({
++  message,
++  code,
++})
++
++const setSyncEncryptionError = (message: string, code: string): never => {
++  const syncError = toSyncEncryptionError(message, code)
++  syncEncryptionError$.set(syncError)
++  throw new Error(`${syncError.code}: ${syncError.message}`)
++}
+ 
+ // =================================================================
+ // SHARED EXPORTS
+@@ -104,12 +131,70 @@ interface DbFlowRow {
+   is_deleted?: boolean
+ }
+ 
++const decryptFlowContentFromDb = (content: string): string => {
++  if (!isEncryptedFlowPayload(content)) return content
++
++  const userId = syncUserId$.peek()
++  if (!userId) {
++    return setSyncEncryptionError(
++      'Encrypted flow cannot be decrypted because no authenticated user is available for key lookup.',
++      'missing_sync_user'
++    )
++  }
++
++  const key = getCachedMasterKey(userId)
++  if (!key) {
++    return setSyncEncryptionError(
++      'Encryption password required on this device before encrypted flows can sync.',
++      'e2e_password_required'
++    )
++  }
++
++  try {
++    const plaintext = decryptFlowContent(content, key)
++    syncEncryptionError$.set(null)
++    return plaintext
++  } catch (error) {
++    if (error instanceof EncryptionError) {
++      return setSyncEncryptionError(error.message, error.code)
++    }
++
++    const fallbackMessage = (error as Error).message || 'Failed to decrypt encrypted flow content.'
++    return setSyncEncryptionError(fallbackMessage, 'flow_decrypt_failed')
++  }
++}
++
++const encryptFlowContentForDb = (content: string, userId: string): string => {
++  if (syncEncryptionMode$.peek() !== 'e2e') return content
++
++  const key = getCachedMasterKey(userId)
++  if (!key) {
++    return setSyncEncryptionError(
++      'Encryption password required on this device before encrypted flows can sync.',
++      'e2e_password_required'
++    )
++  }
++
++  try {
++    const encryptedContent = encryptFlowContent(content, key)
++    syncEncryptionError$.set(null)
++    return encryptedContent
++  } catch (error) {
++    if (error instanceof EncryptionError) {
++      return setSyncEncryptionError(error.message, error.code)
++    }
++
++    const fallbackMessage = (error as Error).message || 'Failed to encrypt flow content.'
++    return setSyncEncryptionError(fallbackMessage, 'flow_encrypt_failed')
++  }
++}
++
+ export function dbFlowToLocal(row: DbFlowRow): Flow {
+   return {
+     id: row.id,
+     dailyEntryId: row.daily_entry_id,
+     timestamp: row.created_at,
+-    content: row.content,
++    content: decryptFlowContentFromDb(row.content),
+     wordCount: row.word_count,
+     local_session_id: '',
+   }
+@@ -119,7 +204,13 @@ export function localFlowToDb(value: Partial<Flow> & { id?: string }): Record<st
+   const result: Record<string, unknown> = {}
+   if (value.id !== undefined) result.id = value.id
+   if (value.dailyEntryId !== undefined) result.daily_entry_id = value.dailyEntryId
+-  if (value.content !== undefined) result.content = value.content
++  if (value.content !== undefined) {
++    if (value.user_id) {
++      result.content = encryptFlowContentForDb(value.content, value.user_id)
++    } else {
++      result.content = value.content
++    }
++  }
+   if (value.wordCount !== undefined) result.word_count = value.wordCount
+   if (value.timestamp !== undefined) result.created_at = value.timestamp
+   // updated_at handled by DB trigger
+diff --git a/packages/app/utils/userEncryption.ts b/packages/app/utils/userEncryption.ts
+index 295db43..6dd10fc 100644
+--- a/packages/app/utils/userEncryption.ts
++++ b/packages/app/utils/userEncryption.ts
+@@ -1,6 +1,12 @@
+ import { supabase } from './supabase'
+ import type { TablesInsert } from '../types/database'
+ import type { EncryptionMode } from '../types/index'
++import {
++  EncryptionError,
++  deriveMasterKeyFromPassword,
++  generateEncryptionSaltHex,
++} from './encryption'
++import { clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
+ 
+ export interface EncryptionSettings {
+   mode: EncryptionMode | null
+@@ -83,10 +89,67 @@ export async function startE2EEncryptionBootstrap(_input: {
+   userId: string
+   password: string
+ }): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+-  return {
+-    error: toEncryptionError(
+-      'End-to-end encrypted cloud sync is not available in this build yet. Your mode choice was saved, but Cloud Sync stays off until Story 4.2 lands.',
+-      'e2e_bootstrap_pending'
+-    ).error,
++  const input = _input
++  let shouldCleanupLocalKey = false
++
++  if (!input.password.trim()) {
++    return {
++      error: toEncryptionError('Encryption password is required.', 'missing_password').error,
++    }
++  }
++
++  try {
++    const salt = generateEncryptionSaltHex()
++    const masterKey = deriveMasterKeyFromPassword(input.password, salt)
++    const payload: TablesInsert<'users'> = {
++      id: input.userId,
++      encryption_mode: 'e2e',
++      encryption_salt: salt,
++    }
++
++    const { error } = await supabase
++      .from('users')
++      .upsert(payload, { onConflict: 'id' })
++      .select('encryption_mode, encryption_salt')
++      .single()
++
++    if (error) {
++      shouldCleanupLocalKey = true
++      return {
++        error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
++      }
++    }
++
++    try {
++      await storeMasterKey(input.userId, masterKey)
++    } catch (error) {
++      shouldCleanupLocalKey = true
++      return {
++        error: toEncryptionError(
++          (error as Error).message || 'Failed to store encryption key on this device.',
++          'local_key_store_failed'
++        ).error,
++      }
++    }
++
++    return { error: null }
++  } catch (error) {
++    shouldCleanupLocalKey = true
++    if (error instanceof EncryptionError) {
++      return {
++        error: toEncryptionError(error.message, error.code).error,
++      }
++    }
++
++    return {
++      error: toEncryptionError(
++        (error as Error).message || 'Failed to bootstrap end-to-end encryption.',
++        'e2e_bootstrap_failed'
++      ).error,
++    }
++  } finally {
++    if (shouldCleanupLocalKey) {
++      await clearStoredMasterKey(input.userId)
++    }
+   }
+ }
+diff --git a/yarn.lock b/yarn.lock
+index a68fc26..1ac044e 100644
+--- a/yarn.lock
++++ b/yarn.lock
+@@ -3963,6 +3963,20 @@ __metadata:
+   languageName: node
+   linkType: hard
+ 
++"@noble/ciphers@npm:^2.1.1":
++  version: 2.1.1
++  resolution: "@noble/ciphers@npm:2.1.1"
++  checksum: 10/efca189b2719ed7309616a6824328d713bd37156e1bcead453725e51fc93311fb2f54e4d46bef0391fa17ce18bd9c2364511290774504a8600264b572f6a1db5
++  languageName: node
++  linkType: hard
++
++"@noble/hashes@npm:^2.0.1":
++  version: 2.0.1
++  resolution: "@noble/hashes@npm:2.0.1"
++  checksum: 10/f4d00e7564eb4ff4e6d16be151dd0e404aede35f91e4372b0a8a6ec888379c1dd1e02c721b480af8e7853bea9637185b5cb9533970c5b77d60c254ead0cfd8f7
++  languageName: node
++  linkType: hard
++
+ "@nodelib/fs.scandir@npm:2.1.5":
+   version: 2.1.5
+   resolution: "@nodelib/fs.scandir@npm:2.1.5"
+@@ -8570,6 +8584,8 @@ __metadata:
+     "@legendapp/state": "npm:^3.0.0-beta.31"
+     "@lexical/react": "npm:^0.33.1"
+     "@my/ui": "npm:0.0.1"
++    "@noble/ciphers": "npm:^2.1.1"
++    "@noble/hashes": "npm:^2.0.1"
+     "@react-navigation/native": "npm:^6.1.17"
+     "@supabase/supabase-js": "npm:^2.93.1"
+     "@tamagui/animations-react-native": "npm:^1.126.18"
+@@ -11987,6 +12003,15 @@ __metadata:
+   languageName: node
+   linkType: hard
+ 
++"expo-secure-store@npm:^55.0.8":
++  version: 55.0.8
++  resolution: "expo-secure-store@npm:55.0.8"
++  peerDependencies:
++    expo: "*"
++  checksum: 10/a7c98273294dfb6ac6da906f920ab331b74b4f8eef39f8793ec739ac1928ea55e9a8ccf66cda0930dda76f4324f752f394a4ec252f1f186e8cfba5aa3e198789
++  languageName: node
++  linkType: hard
++
+ "expo-splash-screen@npm:~0.30.10":
+   version: 0.30.10
+   resolution: "expo-splash-screen@npm:0.30.10"
+@@ -15365,6 +15390,7 @@ __metadata:
+     expo-linear-gradient: "npm:~14.1.5"
+     expo-linking: "npm:~7.1.7"
+     expo-router: "npm:~5.1.5"
++    expo-secure-store: "npm:^55.0.8"
+     expo-splash-screen: "npm:~0.30.10"
+     expo-status-bar: "npm:~2.2.3"
+     expo-updates: "npm:~0.28.17"

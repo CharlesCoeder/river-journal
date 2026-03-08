@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 vi.mock('../../utils/supabase', () => ({
   supabase: {},
@@ -10,7 +10,12 @@ import {
   localEntryToDb,
   dbFlowToLocal,
   localFlowToDb,
+  syncEncryptionError$,
+  syncEncryptionMode$,
+  syncUserId$,
 } from '../syncConfig'
+import { deriveMasterKeyFromPassword, isEncryptedFlowPayload } from '../../utils/encryption'
+import { clearStoredMasterKey, storeMasterKey } from '../../utils/encryptionKeyStore'
 
 describe('generateUUID', () => {
   it('returns a valid UUID v4 format', () => {
@@ -73,6 +78,13 @@ describe('Entry transforms', () => {
 })
 
 describe('Flow transforms', () => {
+  beforeEach(async () => {
+    syncEncryptionError$.set(null)
+    syncEncryptionMode$.set(null)
+    syncUserId$.set('user-1')
+    await clearStoredMasterKey('user-1')
+  })
+
   const dbRow = {
     id: 'f1',
     daily_entry_id: 'e1',
@@ -128,5 +140,90 @@ describe('Flow transforms', () => {
       word_count: 2,
     })
     expect(db).not.toHaveProperty('daily_entry_id')
+  })
+
+  it('encrypts flow content at the sync boundary for e2e mode and decrypts on load', async () => {
+    const key = deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', key)
+    syncEncryptionMode$.set('e2e')
+
+    const plaintext = 'Flow content that should be encrypted in Supabase.'
+    const db = localFlowToDb({
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: plaintext,
+      wordCount: 8,
+      timestamp: '2026-03-03T10:05:00Z',
+      user_id: 'user-1',
+      local_session_id: 'sess1',
+    })
+
+    expect(db).toHaveProperty('content')
+    expect(typeof db.content).toBe('string')
+    expect(db.content).not.toBe(plaintext)
+    expect(isEncryptedFlowPayload(db.content as string)).toBe(true)
+
+    const local = dbFlowToLocal({
+      ...dbRow,
+      content: db.content as string,
+    })
+
+    expect(local.content).toBe(plaintext)
+    expect(syncEncryptionError$.get()).toBeNull()
+  })
+
+  it('fails loudly instead of uploading plaintext when e2e mode has no local key', () => {
+    syncEncryptionMode$.set('e2e')
+
+    expect(() =>
+      localFlowToDb({
+        id: 'f1',
+        dailyEntryId: 'e1',
+        content: 'should not upload',
+        user_id: 'user-1',
+        local_session_id: 'sess1',
+      })
+    ).toThrowError(/e2e_password_required/)
+
+    expect(syncEncryptionError$.get()).toEqual({
+      message: 'Encryption password required on this device before encrypted flows can sync.',
+      code: 'e2e_password_required',
+    })
+  })
+
+  it('surfaces explicit errors when encrypted payload cannot be decrypted', async () => {
+    const encryptionKey = deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', encryptionKey)
+    syncEncryptionMode$.set('e2e')
+
+    const dbPayload = localFlowToDb({
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: 'secret text',
+      user_id: 'user-1',
+      local_session_id: 'sess1',
+    })
+
+    await clearStoredMasterKey('user-1')
+    const wrongKey = deriveMasterKeyFromPassword(
+      'wrong key',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', wrongKey)
+
+    expect(() =>
+      dbFlowToLocal({
+        ...dbRow,
+        content: dbPayload.content as string,
+      })
+    ).toThrowError(/flow_decrypt_failed/)
+
+    expect(syncEncryptionError$.get()?.code).toBe('flow_decrypt_failed')
   })
 })
