@@ -3,11 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockReadUserEncryptionSettings = vi.fn()
 const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
+const mockLoadEncryptionKey = vi.fn()
 
 vi.mock('../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
   upsertUserEncryptionMode: (...args: unknown[]) => mockUpsertUserEncryptionMode(...args),
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
+}))
+
+vi.mock('../../utils/encryptionKeyStore', () => ({
+  loadEncryptionKey: (...args: unknown[]) => mockLoadEncryptionKey(...args),
 }))
 
 vi.mock('../../utils/supabase', () => ({
@@ -70,12 +75,17 @@ describe('encryption setup orchestration', () => {
       data: { mode: 'managed', salt: null },
       error: null,
     })
+    mockLoadEncryptionKey.mockResolvedValue({
+      keyHex: null,
+      backend: 'session',
+    })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
-      error: {
-        message:
-          'End-to-end encrypted cloud sync is not available in this build yet. Your mode choice was saved, but Cloud Sync stays off until Story 4.2 lands.',
-        code: 'e2e_bootstrap_pending',
+      data: {
+        mode: 'e2e',
+        salt: 'ab'.repeat(16),
+        keyBackend: 'secure',
       },
+      error: null,
     })
   })
 
@@ -132,6 +142,7 @@ describe('encryption setup orchestration', () => {
       hasLoadedMode: true,
       currentMode: 'managed',
       currentModeSalt: null,
+      localKeyState: 'unknown',
       error: null,
     })
     isEncryptionReadyForSync$.set(true)
@@ -165,32 +176,26 @@ describe('encryption setup orchestration', () => {
   it('E2E password submission persists mode and keeps sync off until bootstrap exists', async () => {
     await requestSyncEnable()
     await confirmEncryptionModeSelection()
-    mockUpsertUserEncryptionMode.mockResolvedValueOnce({
-      data: { mode: 'e2e', salt: null },
-      error: null,
-    })
 
     const didEnable = await submitE2EPassword('password123', 'password123')
 
-    expect(didEnable).toBe(false)
-    expect(mockUpsertUserEncryptionMode).toHaveBeenCalledWith({
-      userId: 'user-1',
-      mode: 'e2e',
-    })
+    expect(didEnable).toBe(true)
     expect(mockStartE2EEncryptionBootstrap).toHaveBeenCalledWith({
       userId: 'user-1',
       password: 'password123',
     })
     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
+    expect(encryptionSetup$.currentModeSalt.get()).toBe('ab'.repeat(16))
+    expect(encryptionSetup$.localKeyState.get()).toBe('available')
     expect(encryptionSetup$.isOpen.get()).toBe(false)
-    expect(store$.session.syncEnabled.get()).toBe(false)
-    expect(isEncryptionReadyForSync$.get()).toBe(false)
-    expect(encryptionSetup$.error.get()?.code).toBe('e2e_bootstrap_pending')
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+    expect(encryptionSetup$.error.get()).toBeNull()
   })
 
-  it('rehydrating a pending E2E mode surfaces the blocking error', async () => {
+  it('rehydrating salt-only E2E keeps sync blocked and requires the key', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
-      data: { mode: 'e2e', salt: null },
+      data: { mode: 'e2e', salt: 'cd'.repeat(16) },
       error: null,
     })
 
@@ -198,12 +203,54 @@ describe('encryption setup orchestration', () => {
 
     expect(mode).toBe('e2e')
     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
+    expect(encryptionSetup$.localKeyState.get()).toBe('missing')
     expect(encryptionSetup$.error.get()).toEqual({
-      message:
-        'End-to-end encryption is selected for this account, but encrypted cloud sync is not available in this build yet.',
-      code: 'e2e_bootstrap_pending',
+      message: 'This device still needs your encryption password before Cloud Sync can turn on.',
+      code: 'encryption_key_required',
     })
     expect(store$.session.syncEnabled.get()).toBe(false)
+  })
+
+  it('existing E2E users become ready when the local key is available', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: { mode: 'e2e', salt: 'ef'.repeat(16) },
+      error: null,
+    })
+    mockLoadEncryptionKey.mockResolvedValueOnce({
+      keyHex: 'aa'.repeat(32),
+      backend: 'secure',
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('e2e')
+    expect(encryptionSetup$.localKeyState.get()).toBe('available')
+    expect(encryptionSetup$.keyBackend.get()).toBe('secure')
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+  })
+
+  it('bootstrap rollback failure keeps sync off and resets the chosen mode', async () => {
+    await requestSyncEnable()
+    await confirmEncryptionModeSelection()
+    mockStartE2EEncryptionBootstrap.mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: 'This device could not store the encryption key securely.',
+        code: 'encryption_key_storage_failed',
+      },
+    })
+
+    const didEnable = await submitE2EPassword('password123', 'password123')
+
+    expect(didEnable).toBe(false)
+    expect(encryptionSetup$.currentMode.get()).toBeNull()
+    expect(encryptionSetup$.currentModeSalt.get()).toBeNull()
+    expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'This device could not store the encryption key securely.',
+      code: 'encryption_key_storage_failed',
+    })
   })
 
   it('deduplicates concurrent encryption-mode loads', async () => {

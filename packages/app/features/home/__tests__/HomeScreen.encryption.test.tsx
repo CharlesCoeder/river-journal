@@ -8,11 +8,16 @@ const mockPush = vi.fn()
 const mockReadUserEncryptionSettings = vi.fn()
 const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
+const mockLoadEncryptionKey = vi.fn()
 
 vi.mock('../../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
   upsertUserEncryptionMode: (...args: unknown[]) => mockUpsertUserEncryptionMode(...args),
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
+}))
+
+vi.mock('../../../utils/encryptionKeyStore', () => ({
+  loadEncryptionKey: (...args: unknown[]) => mockLoadEncryptionKey(...args),
 }))
 
 vi.mock('../../../utils/supabase', () => ({
@@ -163,8 +168,17 @@ describe('HomeScreen encryption flow', () => {
       data: { mode: 'managed', salt: null },
       error: null,
     })
+    mockLoadEncryptionKey.mockResolvedValue({
+      keyHex: null,
+      backend: 'session',
+    })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
-      error: { message: 'pending', code: 'e2e_bootstrap_pending' },
+      data: {
+        mode: 'e2e',
+        salt: 'ab'.repeat(16),
+        keyBackend: 'secure',
+      },
+      error: null,
     })
   })
 
@@ -220,5 +234,26 @@ describe('HomeScreen encryption flow', () => {
     expect(text).toContain('Encryption mode')
     expect(text).toContain('Managed encryption')
     expect(text).toContain('This choice is read-only for now.')
+  })
+
+  it('shows the pending-key state for E2E users without a local key', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: { mode: 'e2e', salt: 'cd'.repeat(16) },
+      error: null,
+    })
+    mockLoadEncryptionKey.mockResolvedValueOnce({
+      keyHex: null,
+      backend: 'session',
+    })
+
+    const renderer = await renderHomeScreen()
+    await act(async () => {
+      await loadCurrentEncryptionMode()
+    })
+
+    const text = getTextContent(renderer.root).join(' ')
+
+    expect(text).toContain('This device still needs your encryption password before Cloud Sync can turn on.')
+    expect(text).not.toContain('Cloud content is still plaintext in the current sync pipeline')
   })
 })

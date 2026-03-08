@@ -7,6 +7,7 @@ import {
   encryptionSetup$,
   requestSyncEnable,
 } from 'app/state/encryptionSetup'
+import { syncEncryptionError$ } from 'app/state/syncConfig'
 
 const EXPLANATIONS = {
   syncOn:
@@ -20,8 +21,12 @@ const MODE_LABELS = {
 } as const
 
 const MODE_DESCRIPTIONS = {
-  e2e: 'Your mode choice is saved. Cloud Sync stays off until encrypted sync is available in this build.',
-  managed: 'Managed encryption is saved for this account. This choice cannot be changed here.',
+  e2eReady: 'End-to-end encryption is ready on this device. Journal content syncs encrypted before upload.',
+  e2eKeyRequired:
+    'End-to-end encryption is selected for this account, but this device still needs the encryption password before sync can turn on.',
+  e2eSetupIncomplete:
+    'End-to-end encryption setup is incomplete for this account. Cloud Sync stays off until setup is retried.',
+  managed: 'Managed encryption is active for this account. This choice is read-only here.',
 } as const
 
 /**
@@ -33,10 +38,15 @@ export function SyncToggle() {
   const isLoadingMode = use$(encryptionSetup$.isLoadingMode)
   const currentMode = use$(encryptionSetup$.currentMode)
   const currentModeSalt = use$(encryptionSetup$.currentModeSalt)
-  const error = use$(encryptionSetup$.error)
+  const localKeyState = use$(encryptionSetup$.localKeyState)
+  const localError = use$(encryptionSetup$.error)
+  const syncError = use$(syncEncryptionError$)
+  const error = localError ?? syncError
 
-  const isE2EPendingBootstrap = currentMode === 'e2e' && !currentModeSalt
-  const isSwitchDisabled = isLoadingMode || isE2EPendingBootstrap
+  const isE2ESetupIncomplete = currentMode === 'e2e' && !currentModeSalt
+  const isE2EKeyRequired =
+    currentMode === 'e2e' && !!currentModeSalt && localKeyState !== 'available'
+  const isSwitchDisabled = isLoadingMode || isE2ESetupIncomplete || isE2EKeyRequired
 
   const handleCheckedChange = useCallback((checked: boolean) => {
     if (!checked) {
@@ -50,11 +60,17 @@ export function SyncToggle() {
 
   const description = isLoadingMode
     ? 'Checking your encryption settings before Cloud Sync can turn on.'
-    : currentMode
-      ? MODE_DESCRIPTIONS[currentMode]
-      : syncEnabled
-        ? EXPLANATIONS.syncOn
-        : EXPLANATIONS.syncOff
+    : currentMode === 'managed'
+      ? MODE_DESCRIPTIONS.managed
+      : currentMode === 'e2e' && isE2ESetupIncomplete
+        ? MODE_DESCRIPTIONS.e2eSetupIncomplete
+        : currentMode === 'e2e' && isE2EKeyRequired
+          ? MODE_DESCRIPTIONS.e2eKeyRequired
+          : currentMode === 'e2e'
+            ? MODE_DESCRIPTIONS.e2eReady
+            : syncEnabled
+              ? EXPLANATIONS.syncOn
+              : EXPLANATIONS.syncOff
 
   return (
     <Card bordered padding="$4" backgroundColor="$background" width="100%">

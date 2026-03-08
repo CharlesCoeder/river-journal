@@ -103,7 +103,7 @@ export function EncryptionModeDialog() {
               </AlertDialog.Title>
 
               <AlertDialog.Description fontFamily="$body" fontSize="$4" color="$color">
-                Choose how Cloud Sync protects your journal before anything is uploaded.
+                Choose how Cloud Sync protects your journal before any journal content is uploaded.
               </AlertDialog.Description>
             </YStack>
 
@@ -131,10 +131,6 @@ export function EncryptionModeDialog() {
                       If you forget this password, your cloud data is unrecoverable.
                     </Text>
                   )}
-                  <Text fontSize="$2" fontFamily="$body" color="$color11">
-                    Cloud content is still plaintext in the current sync pipeline until the
-                    follow-up encryption bootstrap lands.
-                  </Text>
                 </YStack>
 
                 {error && (

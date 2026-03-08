@@ -15,6 +15,7 @@ import { configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase'
 import { supabase } from '../utils/supabase'
 import { persistPlugin } from './persistConfig'
 import type { Flow, Entry } from './types'
+import type { EncryptionMode } from '../types/index'
 import { v4 as uuidv4 } from 'uuid'
 
 // =================================================================
@@ -50,6 +51,22 @@ configureSyncedSupabase({
 export const isSyncReady$ = observable(false)
 export const syncUserId$ = observable<string | null>(null)
 export const orphanFlowsPending$ = observable<{ flowCount: number; entryCount: number; userId: string } | null>(null)
+export const syncEncryptionMode$ = observable<EncryptionMode | null>(null)
+export const syncEncryptionSalt$ = observable<string | null>(null)
+export const syncEncryptionKeyState$ = observable<'unknown' | 'available' | 'missing'>('unknown')
+export const syncEncryptionKeyBackend$ = observable<'secure' | 'session' | null>(null)
+export const syncEncryptionError$ = observable<{ message: string; code: string } | null>(null)
+export const encryptionSyncLockRequested$ = observable(false)
+
+export const clearSyncEncryptionError = () => {
+  syncEncryptionError$.set(null)
+}
+
+export const requestEncryptionSyncLock = (error: { message: string; code: string }) => {
+  syncEncryptionError$.set(error)
+  isSyncReady$.set(false)
+  encryptionSyncLockRequested$.set(true)
+}
 
 // =================================================================
 // SHARED EXPORTS

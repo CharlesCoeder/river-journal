@@ -6,7 +6,13 @@ import { configurePersistence } from './persistConfig'
 import { store$, countUndecidedOrphans } from './store'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
-import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$ } from './syncConfig'
+import {
+  encryptionSyncLockRequested$,
+  generateUUID,
+  isSyncReady$,
+  orphanFlowsPending$,
+  syncUserId$,
+} from './syncConfig'
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 
@@ -35,6 +41,15 @@ function setupPersistence() {
 }
 
 function setupSyncReadinessGate() {
+  observe(() => {
+    if (!encryptionSyncLockRequested$.get()) return
+
+    batch(() => {
+      store$.session.syncEnabled.set(false)
+      encryptionSyncLockRequested$.set(false)
+    })
+  })
+
   // Reactively wire isSyncReady$, syncUserId$, and orphanFlowsPending$ to
   // store$.session, avoiding circular imports between store.ts and flows.ts/entries.ts.
   observe(() => {
