@@ -19,6 +19,7 @@ import { isSyncReady$ } from 'app/state/syncConfig'
 import { signOut } from 'app/utils'
 import { useCallback, useState } from 'react'
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
+import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { SyncToggle } from 'app/features/home/components/SyncToggle'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 
@@ -183,6 +184,7 @@ export function HomeScreen() {
         )}
 
         {/* Orphan flows consent dialog — self-managing, renders when orphanFlowsPending$ is non-null */}
+        <EncryptionModeDialog />
         <OrphanFlowsDialog />
 
         <Separator width="100%" />

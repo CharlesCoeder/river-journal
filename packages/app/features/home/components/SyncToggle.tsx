@@ -1,6 +1,12 @@
+import { useCallback } from 'react'
 import { Switch, Label, XStack, YStack, Text, Card, Separator } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
+import {
+  clearEncryptionSetupError,
+  encryptionSetup$,
+  requestSyncEnable,
+} from 'app/state/encryptionSetup'
 
 const EXPLANATIONS = {
   syncOn:
@@ -8,14 +14,47 @@ const EXPLANATIONS = {
   syncOff: 'Sync your journal to the cloud. Access your writing from any device.',
 } as const
 
+const MODE_LABELS = {
+  e2e: 'End-to-end encryption',
+  managed: 'Managed encryption',
+} as const
+
+const MODE_DESCRIPTIONS = {
+  e2e: 'Your mode choice is saved. Cloud Sync stays off until encrypted sync is available in this build.',
+  managed: 'Managed encryption is saved for this account. This choice cannot be changed here.',
+} as const
+
 /**
  * SyncToggle — lets the authenticated user enable/disable cloud sync.
- * Reads and writes `store$.session.syncEnabled` directly.
- * The sync readiness gate (`isSyncReady$`) reacts automatically via
- * `setupSyncReadinessGate()` in initializeApp.ts.
+ * First-time enablement is intercepted by the shared encryption setup state.
  */
 export function SyncToggle() {
   const syncEnabled = use$(store$.session.syncEnabled)
+  const isLoadingMode = use$(encryptionSetup$.isLoadingMode)
+  const currentMode = use$(encryptionSetup$.currentMode)
+  const currentModeSalt = use$(encryptionSetup$.currentModeSalt)
+  const error = use$(encryptionSetup$.error)
+
+  const isE2EPendingBootstrap = currentMode === 'e2e' && !currentModeSalt
+  const isSwitchDisabled = isLoadingMode || isE2EPendingBootstrap
+
+  const handleCheckedChange = useCallback((checked: boolean) => {
+    if (!checked) {
+      clearEncryptionSetupError()
+      store$.session.syncEnabled.set(false)
+      return
+    }
+
+    void requestSyncEnable()
+  }, [])
+
+  const description = isLoadingMode
+    ? 'Checking your encryption settings before Cloud Sync can turn on.'
+    : currentMode
+      ? MODE_DESCRIPTIONS[currentMode]
+      : syncEnabled
+        ? EXPLANATIONS.syncOn
+        : EXPLANATIONS.syncOff
 
   return (
     <Card bordered padding="$4" backgroundColor="$background" width="100%">
@@ -28,18 +67,42 @@ export function SyncToggle() {
             id="sync-toggle"
             testID="sync-toggle"
             checked={syncEnabled}
-            onCheckedChange={(checked: boolean) => store$.session.syncEnabled.set(checked)}
+            onCheckedChange={handleCheckedChange}
             size="$4"
+            disabled={isSwitchDisabled}
           >
             <Switch.Thumb animation="quick" />
           </Switch>
         </XStack>
 
+        {currentMode && (
+          <>
+            <Separator />
+            <YStack gap="$1">
+              <Text fontSize="$2" fontFamily="$body" color="$color10" textTransform="uppercase">
+                Encryption mode
+              </Text>
+              <Text fontSize="$4" fontFamily="$body" fontWeight="600">
+                {MODE_LABELS[currentMode]}
+              </Text>
+              <Text fontSize="$2" fontFamily="$body" color="$color11">
+                This choice is read-only for now.
+              </Text>
+            </YStack>
+          </>
+        )}
+
         <Separator />
 
         <Text fontSize="$3" fontFamily="$body" color="$color11">
-          {syncEnabled ? EXPLANATIONS.syncOn : EXPLANATIONS.syncOff}
+          {description}
         </Text>
+
+        {error && (
+          <Text fontSize="$3" fontFamily="$body" color="$red10">
+            {error.message}
+          </Text>
+        )}
       </YStack>
     </Card>
   )

@@ -104,6 +104,27 @@ export const generateEntryId = (_date: string): string => generateUUID()
 export const calculateWordCount = (content: string): number =>
   content.trim() ? content.trim().split(/\s+/).length : 0
 
+const isUndecidedOrphanEntry = (entry: Entry): boolean =>
+  // "Undecided orphan" means local anonymous data that has not yet been
+  // adopted into an authenticated account and has not been explicitly marked
+  // local-only. The sync gate uses this to decide whether to show the
+  // orphan-consent dialog before opening cloud sync.
+  !entry.user_id && !entry.sync_excluded && !!entry.local_session_id
+
+const isUndecidedOrphanFlow = (
+  flow: Flow,
+  allEntries: Record<string, Entry>
+): boolean => {
+  if (flow.user_id || flow.sync_excluded) return false
+
+  const relatedEntry = allEntries[flow.dailyEntryId]
+  if (!relatedEntry) {
+    return !!flow.local_session_id
+  }
+
+  return isUndecidedOrphanEntry(relatedEntry) && !!flow.local_session_id
+}
+
 /**
  * Resets the application's data state, preserving the session.
  * Flows and entries with sync_excluded: true are preserved (local-only data
@@ -211,13 +232,14 @@ export const adoptOrphanFlows = (userId: string): void => {
 }
 
 /**
- * Returns the count of undecided orphan flows and entries: items that were
- * created locally before login (have a real local_session_id), have no user_id,
- * and have not been explicitly excluded.
+ * Returns the count of undecided orphan flows and entries: anonymous local data
+ * with no user_id, no sync_excluded decision yet, and a local_session_id proving
+ * it originated on this device.
  *
  * Uses peek() to avoid creating reactive subscriptions when called from observe().
- * Flows downloaded from Supabase have local_session_id: '' (set by dbFlowToLocal)
- * and must NOT be counted — they're already in the cloud.
+ * Parent entry ownership plus local_session_id determines whether a flow is still
+ * orphaned, which skips downloaded cloud data while keeping the consent dialog
+ * limited to true local-origin records.
  *
  * Uses for-in loops to avoid allocating intermediate arrays from
  * Object.values().filter(), which matters for users with large local stores
@@ -230,36 +252,48 @@ export const countUndecidedOrphans = (): { flowCount: number; entryCount: number
   let entryCount = 0
   for (const id in allEntries) {
     const e = allEntries[id]
-    if (!e.user_id && !e.sync_excluded && !!e.local_session_id) entryCount++
+    if (isUndecidedOrphanEntry(e)) entryCount++
   }
 
   let flowCount = 0
   for (const id in allFlows) {
     const f = allFlows[id]
-    if (!f.user_id && !f.sync_excluded && !!f.local_session_id) flowCount++
+    if (isUndecidedOrphanFlow(f, allEntries)) flowCount++
   }
 
   return { flowCount, entryCount }
 }
 
 /**
- * Marks all undecided local-origin orphan flows and entries as sync_excluded: true.
- * Only affects items created on this device (!!local_session_id) — Supabase-downloaded
- * flows (local_session_id: '') are already in the cloud and must not be excluded.
+ * Marks all undecided orphan flows and entries as sync_excluded: true.
+ * Parent entry ownership plus local_session_id prevents downloaded cloud data
+ * from being excluded.
  */
 export const excludeOrphanFlows = (): void => {
   const allEntries = entries$.get() ?? {}
   const allFlows = flows$.get() ?? {}
+  const orphanEntryIds = new Set(
+    Object.entries(allEntries)
+      .filter(([, entry]) => isUndecidedOrphanEntry(entry))
+      .map(([entryId]) => entryId)
+  )
 
   batch(() => {
     for (const [entryId, entry] of Object.entries(allEntries)) {
-      if (!entry.user_id && !entry.sync_excluded && !!entry.local_session_id) {
+      if (isUndecidedOrphanEntry(entry)) {
         entries$[entryId].sync_excluded.set(true)
       }
     }
 
     for (const [flowId, flow] of Object.entries(allFlows)) {
-      if (!flow.user_id && !flow.sync_excluded && !!flow.local_session_id) {
+      const relatedEntry = allEntries[flow.dailyEntryId]
+      const shouldExclude =
+        !flow.user_id &&
+        !flow.sync_excluded &&
+        !!flow.local_session_id &&
+        (orphanEntryIds.has(flow.dailyEntryId) || !relatedEntry)
+
+      if (shouldExclude) {
         flows$[flowId].sync_excluded.set(true)
       }
     }
