@@ -91,7 +91,6 @@ export function OrphanFlowsDialog() {
 
               <AlertDialog.Action asChild>
                 <Button
-                  theme="active"
                   onPress={() => handleResolve(true)}
                   disabled={isResolving}
                   fontFamily="$body"

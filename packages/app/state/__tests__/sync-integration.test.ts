@@ -288,7 +288,9 @@ describe('excludeOrphanFlows', () => {
     // Flows downloaded from Supabase via dbFlowToLocal() have local_session_id: ''.
     // They're already in the cloud — marking them sync_excluded would be wrong.
     flows$!['f-from-supabase'].set(makeFlow('f-from-supabase', { local_session_id: '' }))
-    entries$!['e-from-supabase'].set(makeEntry('e-from-supabase', { local_session_id: '' }))
+    entries$!['e-from-supabase'].set(
+      makeEntry('e-from-supabase', { local_session_id: '', user_id: 'user-123' })
+    )
 
     excludeOrphanFlows()
 

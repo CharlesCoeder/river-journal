@@ -6,8 +6,9 @@ import { configurePersistence } from './persistConfig'
 import { store$, countUndecidedOrphans } from './store'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
-import { isSyncReady$, syncUserId$, orphanFlowsPending$ } from './syncConfig'
+import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$ } from './syncConfig'
 import { initAuthListener } from '../utils/auth'
+import { isEncryptionReadyForSync$ } from './encryptionSetup'
 
 export const appStatus$ = observable({
   isPersistenceLoaded: false,
@@ -40,8 +41,9 @@ function setupSyncReadinessGate() {
     const isAuthenticated = store$.session.isAuthenticated.get()
     const syncEnabled = store$.session.syncEnabled.get()
     const userId = store$.session.userId.get()
+    const isEncryptionReadyForSync = isEncryptionReadyForSync$.get()
 
-    if (!isAuthenticated || !syncEnabled || !userId) {
+    if (!isAuthenticated || !syncEnabled || !userId || !isEncryptionReadyForSync) {
       // Not ready for sync — clear orphan state and close gate
       orphanFlowsPending$.set(null)
       isSyncReady$.set(false)
@@ -49,7 +51,12 @@ function setupSyncReadinessGate() {
 
       if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
-        console.log('🔗 [syncGate] closed', { isAuthenticated, syncEnabled, userId: userId?.slice(0, 8) ?? null })
+        console.log('🔗 [syncGate] closed', {
+          isAuthenticated,
+          syncEnabled,
+          userId: userId?.slice(0, 8) ?? null,
+          isEncryptionReadyForSync,
+        })
       }
       return
     }
@@ -80,6 +87,13 @@ function setupSyncReadinessGate() {
   })
 }
 
+function ensureLocalSessionId() {
+  const existingLocalSessionId = store$.session.localSessionId.get()
+  if (existingLocalSessionId) return
+
+  store$.session.localSessionId.set(generateUUID())
+}
+
 export async function initializePersistence() {
   try {
     setupPersistence()
@@ -92,6 +106,7 @@ export async function initializePersistence() {
     ]
 
     await Promise.all(persistencePromises)
+    ensureLocalSessionId()
 
     // Initialize auth listener — fires INITIAL_SESSION immediately to hydrate
     // session state, then handles SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.

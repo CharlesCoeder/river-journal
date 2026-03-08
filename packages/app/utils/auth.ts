@@ -8,6 +8,7 @@ import { Platform } from 'react-native'
 import { supabase } from './supabase'
 import { store$ } from '../state/store'
 import { batch } from '@legendapp/state'
+import { loadCurrentEncryptionMode, resetEncryptionSetupState } from '../state/encryptionSetup'
 
 /**
  * Common Supabase auth error codes mapped to user-friendly messages
@@ -80,6 +81,12 @@ const updateSessionState = (session: Session | null) => {
       })
     }
   })
+
+  if (session?.user) {
+    void loadCurrentEncryptionMode()
+  } else {
+    resetEncryptionSetupState()
+  }
 }
 
 /**
