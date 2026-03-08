@@ -5,6 +5,7 @@ interface E2EPasswordFormProps {
   errorMessage?: string
   isSaving: boolean
   onBack: () => void
+  onCancel: () => void
   onSubmit: (password: string, confirmPassword: string) => void
 }
 
@@ -12,6 +13,7 @@ export function E2EPasswordForm({
   errorMessage,
   isSaving,
   onBack,
+  onCancel,
   onSubmit,
 }: E2EPasswordFormProps) {
   const [password, setPassword] = useState('')
@@ -77,6 +79,15 @@ export function E2EPasswordForm({
       )}
 
       <XStack gap="$3" justifyContent="flex-end">
+        <Button
+          testID="e2e-password-cancel"
+          variant="outlined"
+          onPress={onCancel}
+          disabled={isSaving}
+          fontFamily="$body"
+        >
+          Cancel
+        </Button>
         <Button
           testID="e2e-password-back"
           variant="outlined"

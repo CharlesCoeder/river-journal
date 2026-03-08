@@ -126,12 +126,14 @@ export function EncryptionModeDialog() {
                   <Text fontSize="$3" fontFamily="$body" color="$orange10" fontWeight="700">
                     This choice cannot be changed later.
                   </Text>
-                  <Text fontSize="$3" fontFamily="$body" color="$red10" fontWeight="700">
-                    If you forget this password, your cloud data is unrecoverable.
-                  </Text>
+                  {selectedMode === 'e2e' && (
+                    <Text fontSize="$3" fontFamily="$body" color="$red10" fontWeight="700">
+                      If you forget this password, your cloud data is unrecoverable.
+                    </Text>
+                  )}
                   <Text fontSize="$2" fontFamily="$body" color="$color11">
-                    Cloud content is still plaintext in the current sync pipeline until the follow-up
-                    encryption bootstrap lands.
+                    Cloud content is still plaintext in the current sync pipeline until the
+                    follow-up encryption bootstrap lands.
                   </Text>
                 </YStack>
 
@@ -163,6 +165,7 @@ export function EncryptionModeDialog() {
                 errorMessage={error?.message}
                 isSaving={step === 'saving'}
                 onBack={returnToEncryptionChoice}
+                onCancel={cancelEncryptionSetup}
                 onSubmit={(password, confirmPassword) => {
                   void submitE2EPassword(password, confirmPassword)
                 }}
