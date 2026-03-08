@@ -15,7 +15,15 @@ import { configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase'
 import { supabase } from '../utils/supabase'
 import { persistPlugin } from './persistConfig'
 import type { Flow, Entry } from './types'
+import type { EncryptionMode } from '../types/index'
 import { v4 as uuidv4 } from 'uuid'
+import {
+  EncryptionError,
+  decryptFlowContent,
+  encryptFlowContent,
+  isEncryptedFlowPayload,
+} from '../utils/encryption'
+import { getCachedMasterKey } from '../utils/encryptionKeyStore'
 
 // =================================================================
 // UUID GENERATION
@@ -50,6 +58,25 @@ configureSyncedSupabase({
 export const isSyncReady$ = observable(false)
 export const syncUserId$ = observable<string | null>(null)
 export const orphanFlowsPending$ = observable<{ flowCount: number; entryCount: number; userId: string } | null>(null)
+export const syncEncryptionMode$ = observable<EncryptionMode | null>(null)
+
+export interface SyncEncryptionError {
+  message: string
+  code: string
+}
+
+export const syncEncryptionError$ = observable<SyncEncryptionError | null>(null)
+
+const toSyncEncryptionError = (message: string, code: string): SyncEncryptionError => ({
+  message,
+  code,
+})
+
+const setSyncEncryptionError = (message: string, code: string): never => {
+  const syncError = toSyncEncryptionError(message, code)
+  syncEncryptionError$.set(syncError)
+  throw new Error(`${syncError.code}: ${syncError.message}`)
+}
 
 // =================================================================
 // SHARED EXPORTS
@@ -104,12 +131,70 @@ interface DbFlowRow {
   is_deleted?: boolean
 }
 
+const decryptFlowContentFromDb = (content: string): string => {
+  if (!isEncryptedFlowPayload(content)) return content
+
+  const userId = syncUserId$.peek()
+  if (!userId) {
+    return setSyncEncryptionError(
+      'Encrypted flow cannot be decrypted because no authenticated user is available for key lookup.',
+      'missing_sync_user'
+    )
+  }
+
+  const key = getCachedMasterKey(userId)
+  if (!key) {
+    return setSyncEncryptionError(
+      'Encryption password required on this device before encrypted flows can sync.',
+      'e2e_password_required'
+    )
+  }
+
+  try {
+    const plaintext = decryptFlowContent(content, key)
+    syncEncryptionError$.set(null)
+    return plaintext
+  } catch (error) {
+    if (error instanceof EncryptionError) {
+      return setSyncEncryptionError(error.message, error.code)
+    }
+
+    const fallbackMessage = (error as Error).message || 'Failed to decrypt encrypted flow content.'
+    return setSyncEncryptionError(fallbackMessage, 'flow_decrypt_failed')
+  }
+}
+
+const encryptFlowContentForDb = (content: string, userId: string): string => {
+  if (syncEncryptionMode$.peek() !== 'e2e') return content
+
+  const key = getCachedMasterKey(userId)
+  if (!key) {
+    return setSyncEncryptionError(
+      'Encryption password required on this device before encrypted flows can sync.',
+      'e2e_password_required'
+    )
+  }
+
+  try {
+    const encryptedContent = encryptFlowContent(content, key)
+    syncEncryptionError$.set(null)
+    return encryptedContent
+  } catch (error) {
+    if (error instanceof EncryptionError) {
+      return setSyncEncryptionError(error.message, error.code)
+    }
+
+    const fallbackMessage = (error as Error).message || 'Failed to encrypt flow content.'
+    return setSyncEncryptionError(fallbackMessage, 'flow_encrypt_failed')
+  }
+}
+
 export function dbFlowToLocal(row: DbFlowRow): Flow {
   return {
     id: row.id,
     dailyEntryId: row.daily_entry_id,
     timestamp: row.created_at,
-    content: row.content,
+    content: decryptFlowContentFromDb(row.content),
     wordCount: row.word_count,
     local_session_id: '',
   }
@@ -119,7 +204,13 @@ export function localFlowToDb(value: Partial<Flow> & { id?: string }): Record<st
   const result: Record<string, unknown> = {}
   if (value.id !== undefined) result.id = value.id
   if (value.dailyEntryId !== undefined) result.daily_entry_id = value.dailyEntryId
-  if (value.content !== undefined) result.content = value.content
+  if (value.content !== undefined) {
+    if (value.user_id) {
+      result.content = encryptFlowContentForDb(value.content, value.user_id)
+    } else {
+      result.content = value.content
+    }
+  }
   if (value.wordCount !== undefined) result.word_count = value.wordCount
   if (value.timestamp !== undefined) result.created_at = value.timestamp
   // updated_at handled by DB trigger

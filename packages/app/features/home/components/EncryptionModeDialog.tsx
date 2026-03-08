@@ -131,10 +131,6 @@ export function EncryptionModeDialog() {
                       If you forget this password, your cloud data is unrecoverable.
                     </Text>
                   )}
-                  <Text fontSize="$2" fontFamily="$body" color="$color11">
-                    Cloud content is still plaintext in the current sync pipeline until the
-                    follow-up encryption bootstrap lands.
-                  </Text>
                 </YStack>
 
                 {error && (

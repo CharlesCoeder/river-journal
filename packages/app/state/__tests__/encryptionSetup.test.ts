@@ -3,11 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockReadUserEncryptionSettings = vi.fn()
 const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
+const mockLoadMasterKey = vi.fn()
 
 vi.mock('../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
   upsertUserEncryptionMode: (...args: unknown[]) => mockUpsertUserEncryptionMode(...args),
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
+}))
+
+vi.mock('../../utils/encryptionKeyStore', () => ({
+  loadMasterKey: (...args: unknown[]) => mockLoadMasterKey(...args),
+  getCachedMasterKey: vi.fn(),
+  storeMasterKey: vi.fn(),
+  clearStoredMasterKey: vi.fn(),
 }))
 
 vi.mock('../../utils/supabase', () => ({
@@ -71,12 +79,9 @@ describe('encryption setup orchestration', () => {
       error: null,
     })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
-      error: {
-        message:
-          'End-to-end encrypted cloud sync is not available in this build yet. Your mode choice was saved, but Cloud Sync stays off until Story 4.2 lands.',
-        code: 'e2e_bootstrap_pending',
-      },
+      error: null,
     })
+    mockLoadMasterKey.mockResolvedValue(null)
   })
 
   it('first-time enable opens the chooser instead of enabling sync', async () => {
@@ -132,6 +137,7 @@ describe('encryption setup orchestration', () => {
       hasLoadedMode: true,
       currentMode: 'managed',
       currentModeSalt: null,
+      hasLocalE2EKey: false,
       error: null,
     })
     isEncryptionReadyForSync$.set(true)
@@ -162,48 +168,53 @@ describe('encryption setup orchestration', () => {
     })
   })
 
-  it('E2E password submission persists mode and keeps sync off until bootstrap exists', async () => {
+  it('E2E password submission stores mode+salt+key and enables sync', async () => {
     await requestSyncEnable()
     await confirmEncryptionModeSelection()
-    mockUpsertUserEncryptionMode.mockResolvedValueOnce({
-      data: { mode: 'e2e', salt: null },
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
       error: null,
     })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
 
     const didEnable = await submitE2EPassword('password123', 'password123')
 
-    expect(didEnable).toBe(false)
-    expect(mockUpsertUserEncryptionMode).toHaveBeenCalledWith({
-      userId: 'user-1',
-      mode: 'e2e',
-    })
+    expect(didEnable).toBe(true)
     expect(mockStartE2EEncryptionBootstrap).toHaveBeenCalledWith({
       userId: 'user-1',
       password: 'password123',
     })
     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
+    expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(true)
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.isOpen.get()).toBe(false)
-    expect(store$.session.syncEnabled.get()).toBe(false)
-    expect(isEncryptionReadyForSync$.get()).toBe(false)
-    expect(encryptionSetup$.error.get()?.code).toBe('e2e_bootstrap_pending')
   })
 
-  it('rehydrating a pending E2E mode surfaces the blocking error', async () => {
+  it('rehydrating E2E mode with missing local key blocks sync with key-required state', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
-      data: { mode: 'e2e', salt: null },
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
       error: null,
     })
+    mockLoadMasterKey.mockResolvedValueOnce(null)
 
     const mode = await loadCurrentEncryptionMode()
 
     expect(mode).toBe('e2e')
     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
+    expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(false)
     expect(encryptionSetup$.error.get()).toEqual({
-      message:
-        'End-to-end encryption is selected for this account, but encrypted cloud sync is not available in this build yet.',
-      code: 'e2e_bootstrap_pending',
+      message: 'Encryption password required on this device before Cloud Sync can be enabled.',
+      code: 'e2e_password_required',
     })
     expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
   })
 
   it('deduplicates concurrent encryption-mode loads', async () => {
