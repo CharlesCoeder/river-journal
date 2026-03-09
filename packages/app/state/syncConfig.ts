@@ -79,7 +79,7 @@ const toSyncEncryptionError = (message: string, code: string): SyncEncryptionErr
 const setSyncEncryptionError = (message: string, code: string): never => {
   const syncError = toSyncEncryptionError(message, code)
   syncEncryptionError$.set(syncError)
-  throw new Error(`${syncError.code}: ${syncError.message}`)
+  throw new EncryptionError(`${syncError.code}: ${syncError.message}`, code)
 }
 
 // =================================================================
@@ -194,11 +194,18 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
 }
 
 export function dbFlowToLocal(row: DbFlowRow): Flow {
+  let content: string
+  try {
+    content = decryptFlowContentFromDb(row.content)
+  } catch {
+    content = row.content
+  }
+
   return {
     id: row.id,
     dailyEntryId: row.daily_entry_id,
     timestamp: row.created_at,
-    content: decryptFlowContentFromDb(row.content),
+    content,
     wordCount: row.word_count,
     local_session_id: '',
   }

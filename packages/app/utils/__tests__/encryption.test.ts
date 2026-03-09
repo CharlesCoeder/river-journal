@@ -9,19 +9,19 @@ import {
 } from '../encryption'
 
 describe('encryption utils', () => {
-  it('derives a deterministic key from password + salt', () => {
+  it('derives a deterministic key from password + salt', async () => {
     const saltHex = '4a7d2a4f6f7ce932f934f01750d75e6ea27a9579fce42f8a938cb2f08f4249fb'
-    const a = deriveMasterKeyFromPassword('correct horse battery staple', saltHex)
-    const b = deriveMasterKeyFromPassword('correct horse battery staple', saltHex)
-    const c = deriveMasterKeyFromPassword('different password', saltHex)
+    const a = await deriveMasterKeyFromPassword('correct horse battery staple', saltHex)
+    const b = await deriveMasterKeyFromPassword('correct horse battery staple', saltHex)
+    const c = await deriveMasterKeyFromPassword('different password', saltHex)
 
     expect(a).toEqual(b)
     expect(a).not.toEqual(c)
     expect(a).toHaveLength(32)
   })
 
-  it('encrypts/decrypts flow content with a versioned payload envelope', () => {
-    const key = deriveMasterKeyFromPassword(
+  it('encrypts/decrypts flow content with a versioned payload envelope', async () => {
+    const key = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
       '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
     )
