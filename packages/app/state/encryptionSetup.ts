@@ -313,6 +313,9 @@ export const submitE2EPassword = async (
 ): Promise<boolean> => {
   const normalizedPassword = password.trim()
   const normalizedConfirmPassword = confirmPassword.trim()
+  const currentMode = encryptionSetup$.currentMode.get()
+  const currentModeSalt = encryptionSetup$.currentModeSalt.get()
+  const isUnlockingExistingE2E = currentMode === 'e2e' && !!currentModeSalt
 
   if (!normalizedPassword) {
     encryptionSetup$.error.set({
@@ -330,7 +333,7 @@ export const submitE2EPassword = async (
     return false
   }
 
-  if (normalizedPassword !== normalizedConfirmPassword) {
+  if (!isUnlockingExistingE2E && normalizedPassword !== normalizedConfirmPassword) {
     encryptionSetup$.error.set({
       message: 'Encryption passwords do not match.',
       code: 'password_mismatch',
@@ -352,10 +355,8 @@ export const submitE2EPassword = async (
 
   encryptionSetup$.step.set('saving')
 
-  const currentMode = encryptionSetup$.currentMode.get()
-  const currentModeSalt = encryptionSetup$.currentModeSalt.get()
   const bootstrapResult =
-    currentMode === 'e2e' && currentModeSalt
+    isUnlockingExistingE2E
       ? await unlockE2EEncryptionOnDevice({
           userId,
           password: normalizedPassword,

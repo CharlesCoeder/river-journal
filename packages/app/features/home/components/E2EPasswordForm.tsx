@@ -11,6 +11,7 @@ interface E2EPasswordFormProps {
   title?: string
   description?: string
   showBackButton?: boolean
+  requireConfirmation?: boolean
 }
 
 export function E2EPasswordForm({
@@ -23,6 +24,7 @@ export function E2EPasswordForm({
   title = 'Create an encryption password',
   description = 'This password is separate from your account password and cannot be recovered for you.',
   showBackButton = true,
+  requireConfirmation = true,
 }: E2EPasswordFormProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -52,29 +54,31 @@ export function E2EPasswordForm({
           onChangeText={setPassword}
           secureTextEntry
           autoCapitalize="none"
-          autoComplete="password-new"
-          textContentType="newPassword"
+          autoComplete={requireConfirmation ? 'password-new' : 'current-password'}
+          textContentType={requireConfirmation ? 'newPassword' : 'password'}
           placeholder="At least 8 characters"
           disabled={isSaving}
         />
       </YStack>
 
-      <YStack gap="$2">
-        <Text fontSize="$3" fontFamily="$body" color="$color11">
-          Confirm encryption password
-        </Text>
-        <Input
-          testID="e2e-confirm-password-input"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete="password-new"
-          textContentType="newPassword"
-          placeholder="Re-enter your password"
-          disabled={isSaving}
-        />
-      </YStack>
+      {requireConfirmation && (
+        <YStack gap="$2">
+          <Text fontSize="$3" fontFamily="$body" color="$color11">
+            Confirm encryption password
+          </Text>
+          <Input
+            testID="e2e-confirm-password-input"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="password-new"
+            textContentType="newPassword"
+            placeholder="Re-enter your password"
+            disabled={isSaving}
+          />
+        </YStack>
+      )}
 
       <Text fontSize="$2" fontFamily="$body" color="$color10">
         If you forget this password, your cloud data is unrecoverable.

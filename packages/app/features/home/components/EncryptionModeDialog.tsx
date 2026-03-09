@@ -167,6 +167,7 @@ export function EncryptionModeDialog() {
                 onBack={returnToEncryptionChoice}
                 onCancel={cancelEncryptionSetup}
                 showBackButton={!isModeLocked}
+                requireConfirmation={!isUnlockingExistingE2E}
                 submitLabel={
                   isUnlockingExistingE2E ? 'Unlock Cloud Sync on this device' : 'Save and continue'
                 }
