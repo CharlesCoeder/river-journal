@@ -20,6 +20,7 @@
     "@tamagui/lucide-icons": "^1.126.18",
     "@tamagui/shorthands": "^1.126.18",
     "@tamagui/themes": "^1.126.18",
+    "@tauri-apps/api": "^2.5.0",
     "burnt": "^0.12.2",
     "expo-constants": "~17.1.6",
     "expo-linking": "~7.1.4",

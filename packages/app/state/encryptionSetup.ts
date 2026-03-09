@@ -4,6 +4,7 @@ import { store$ } from './store'
 import { loadMasterKey } from '../utils/encryptionKeyStore'
 import {
   readUserEncryptionSettings,
+  unlockE2EEncryptionOnDevice,
   startE2EEncryptionBootstrap,
   upsertUserEncryptionMode,
 } from '../utils/userEncryption'
@@ -61,6 +62,7 @@ export const encryptionSetup$ = observable({
   isOpen: false,
   selectedMode: DEFAULT_MODE as EncryptionMode,
   step: 'choice' as EncryptionSetupStep,
+  isModeLocked: false,
   error: null as EncryptionSetupError | null,
   currentMode: null as EncryptionMode | null,
   currentModeSalt: null as string | null,
@@ -74,6 +76,7 @@ const resetDialogState = () => {
     encryptionSetup$.isOpen.set(false)
     encryptionSetup$.selectedMode.set(DEFAULT_MODE)
     encryptionSetup$.step.set('choice')
+    encryptionSetup$.isModeLocked.set(false)
   })
 }
 
@@ -191,6 +194,17 @@ const openEncryptionSetup = () => {
     encryptionSetup$.isOpen.set(true)
     encryptionSetup$.selectedMode.set(DEFAULT_MODE)
     encryptionSetup$.step.set('choice')
+    encryptionSetup$.isModeLocked.set(false)
+    encryptionSetup$.error.set(null)
+  })
+}
+
+export const continueLockedE2ESetup = () => {
+  batch(() => {
+    encryptionSetup$.isOpen.set(true)
+    encryptionSetup$.selectedMode.set('e2e')
+    encryptionSetup$.step.set('e2e-password')
+    encryptionSetup$.isModeLocked.set(true)
     encryptionSetup$.error.set(null)
   })
 }
@@ -204,6 +218,11 @@ export const cancelEncryptionSetup = () => {
 }
 
 export const returnToEncryptionChoice = () => {
+  if (encryptionSetup$.isModeLocked.get()) {
+    cancelEncryptionSetup()
+    return
+  }
+
   batch(() => {
     encryptionSetup$.step.set('choice')
     encryptionSetup$.error.set(null)
@@ -333,10 +352,19 @@ export const submitE2EPassword = async (
 
   encryptionSetup$.step.set('saving')
 
-  const bootstrapResult = await startE2EEncryptionBootstrap({
-    userId,
-    password: normalizedPassword,
-  })
+  const currentMode = encryptionSetup$.currentMode.get()
+  const currentModeSalt = encryptionSetup$.currentModeSalt.get()
+  const bootstrapResult =
+    currentMode === 'e2e' && currentModeSalt
+      ? await unlockE2EEncryptionOnDevice({
+          userId,
+          password: normalizedPassword,
+          salt: currentModeSalt,
+        })
+      : await startE2EEncryptionBootstrap({
+          userId,
+          password: normalizedPassword,
+        })
 
   if (bootstrapResult.error) {
     batch(() => {

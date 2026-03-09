@@ -66,8 +66,12 @@ export function EncryptionModeDialog() {
   const selectedMode = use$(encryptionSetup$.selectedMode)
   const step = use$(encryptionSetup$.step)
   const error = use$(encryptionSetup$.error)
+  const currentModeSalt = use$(encryptionSetup$.currentModeSalt)
+  const isModeLocked = use$(encryptionSetup$.isModeLocked)
 
   if (!isOpen) return null
+
+  const isUnlockingExistingE2E = isModeLocked && !!currentModeSalt
 
   return (
     <AlertDialog open={isOpen} onOpenChange={() => {}}>
@@ -162,6 +166,20 @@ export function EncryptionModeDialog() {
                 isSaving={step === 'saving'}
                 onBack={returnToEncryptionChoice}
                 onCancel={cancelEncryptionSetup}
+                showBackButton={!isModeLocked}
+                submitLabel={
+                  isUnlockingExistingE2E ? 'Unlock Cloud Sync on this device' : 'Save and continue'
+                }
+                title={
+                  isUnlockingExistingE2E
+                    ? 'Enter your encryption password'
+                    : 'Create an encryption password'
+                }
+                description={
+                  isUnlockingExistingE2E
+                    ? 'Use the encryption password you already chose for this account so this device can unlock Cloud Sync.'
+                    : 'This password is separate from your account password and cannot be recovered for you.'
+                }
                 onSubmit={(password, confirmPassword) => {
                   void submitE2EPassword(password, confirmPassword)
                 }}

@@ -31,7 +31,10 @@ const toEncryptionError = (message: string, code: string): EncryptionSettingsErr
 
 export async function readUserEncryptionSettings(
   userId: string
-): Promise<{ data: EncryptionSettings; error: null } | { data: null; error: EncryptionSettingsError['error'] }> {
+): Promise<
+  | { data: EncryptionSettings; error: null }
+  | { data: null; error: EncryptionSettingsError['error'] }
+> {
   const { data, error } = await supabase
     .from('users')
     .select('encryption_mode, encryption_salt')
@@ -57,7 +60,10 @@ export async function readUserEncryptionSettings(
 export async function upsertUserEncryptionMode(input: {
   userId: string
   mode: EncryptionMode
-}): Promise<{ data: EncryptionSettings; error: null } | { data: null; error: EncryptionSettingsError['error'] }> {
+}): Promise<
+  | { data: EncryptionSettings; error: null }
+  | { data: null; error: EncryptionSettingsError['error'] }
+> {
   const payload: TablesInsert<'users'> = {
     id: input.userId,
     encryption_mode: input.mode,
@@ -145,6 +151,45 @@ export async function startE2EEncryptionBootstrap(_input: {
       error: toEncryptionError(
         (error as Error).message || 'Failed to bootstrap end-to-end encryption.',
         'e2e_bootstrap_failed'
+      ).error,
+    }
+  } finally {
+    if (shouldCleanupLocalKey) {
+      await clearStoredMasterKey(input.userId)
+    }
+  }
+}
+
+export async function unlockE2EEncryptionOnDevice(input: {
+  userId: string
+  password: string
+  salt: string
+}): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+  let shouldCleanupLocalKey = false
+
+  if (!input.password.trim()) {
+    return {
+      error: toEncryptionError('Encryption password is required.', 'missing_password').error,
+    }
+  }
+
+  try {
+    const masterKey = deriveMasterKeyFromPassword(input.password, input.salt)
+    shouldCleanupLocalKey = true
+    await storeMasterKey(input.userId, masterKey)
+    shouldCleanupLocalKey = false
+    return { error: null }
+  } catch (error) {
+    if (error instanceof EncryptionError) {
+      return {
+        error: toEncryptionError(error.message, error.code).error,
+      }
+    }
+
+    return {
+      error: toEncryptionError(
+        (error as Error).message || 'Failed to unlock end-to-end encryption on this device.',
+        'local_key_store_failed'
       ).error,
     }
   } finally {

@@ -8,11 +8,13 @@ const mockPush = vi.fn()
 const mockReadUserEncryptionSettings = vi.fn()
 const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
+const mockUnlockE2EEncryptionOnDevice = vi.fn()
 
 vi.mock('../../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
   upsertUserEncryptionMode: (...args: unknown[]) => mockUpsertUserEncryptionMode(...args),
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
+  unlockE2EEncryptionOnDevice: (...args: unknown[]) => mockUnlockE2EEncryptionOnDevice(...args),
 }))
 
 vi.mock('../../../utils/supabase', () => ({
@@ -52,8 +54,10 @@ vi.mock('@my/ui', async () => {
     return Component
   }
 
-  const Button = ({ children, ...props }: any) => ReactModule.createElement('Button', props, children)
-  const Switch = ({ children, ...props }: any) => ReactModule.createElement('Switch', props, children)
+  const Button = ({ children, ...props }: any) =>
+    ReactModule.createElement('Button', props, children)
+  const Switch = ({ children, ...props }: any) =>
+    ReactModule.createElement('Switch', props, children)
   const AlertDialog = ({ children, open, ...props }: any) =>
     open ? ReactModule.createElement('AlertDialog', props, children) : null
 
@@ -63,8 +67,10 @@ vi.mock('@my/ui', async () => {
   AlertDialog.Content = passthrough('AlertDialogContent')
   AlertDialog.Title = passthrough('AlertDialogTitle')
   AlertDialog.Description = passthrough('AlertDialogDescription')
-  AlertDialog.Cancel = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
-  AlertDialog.Action = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  AlertDialog.Cancel = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
+  AlertDialog.Action = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
 
   return {
     AlertDialog,
@@ -131,13 +137,13 @@ const renderHomeScreen = async () => {
 const getTextContent = (root: ReturnType<typeof create>['root']) =>
   root
     .findAll(
-      node =>
+      (node) =>
         String(node.type) === 'Text' ||
         String(node.type) === 'AlertDialogTitle' ||
         String(node.type) === 'AlertDialogDescription' ||
         String(node.type) === 'Button'
     )
-    .flatMap(node => {
+    .flatMap((node) => {
       const children = node.props.children
       return Array.isArray(children) ? children : [children]
     })
@@ -165,6 +171,9 @@ describe('HomeScreen encryption flow', () => {
     })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
       error: { message: 'pending', code: 'e2e_bootstrap_pending' },
+    })
+    mockUnlockE2EEncryptionOnDevice.mockResolvedValue({
+      error: null,
     })
   })
 
@@ -248,5 +257,36 @@ describe('HomeScreen encryption flow', () => {
 
     const toggle = renderer.root.findByProps({ testID: 'sync-toggle' })
     expect(toggle.props.disabled).toBe(true)
+    expect(renderer.root.findByProps({ testID: 'continue-e2e-setup' })).toBeTruthy()
+  })
+
+  it('opens the password step when continuing locked E2E setup', async () => {
+    const renderer = await renderHomeScreen()
+
+    await act(async () => {
+      encryptionSetup$.assign({
+        hasLoadedMode: true,
+        currentMode: 'e2e',
+        currentModeSalt: null,
+        hasLocalE2EKey: false,
+        error: {
+          message:
+            'End-to-end encryption setup is incomplete for this account. Please finish setup again.',
+          code: 'e2e_salt_missing',
+        },
+      })
+    })
+    await flush()
+
+    const continueButton = renderer.root.findByProps({ testID: 'continue-e2e-setup' })
+
+    await act(async () => {
+      continueButton.props.onPress()
+      await Promise.resolve()
+    })
+
+    const text = getTextContent(renderer.root)
+    expect(text).toContain('Finish end-to-end setup')
+    expect(text).toContain('Create an encryption password')
   })
 })

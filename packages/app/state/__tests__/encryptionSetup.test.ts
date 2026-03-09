@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockReadUserEncryptionSettings = vi.fn()
 const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
+const mockUnlockE2EEncryptionOnDevice = vi.fn()
 const mockLoadMasterKey = vi.fn()
 
 vi.mock('../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
   upsertUserEncryptionMode: (...args: unknown[]) => mockUpsertUserEncryptionMode(...args),
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
+  unlockE2EEncryptionOnDevice: (...args: unknown[]) => mockUnlockE2EEncryptionOnDevice(...args),
 }))
 
 vi.mock('../../utils/encryptionKeyStore', () => ({
@@ -79,6 +81,9 @@ describe('encryption setup orchestration', () => {
       error: null,
     })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
+      error: null,
+    })
+    mockUnlockE2EEncryptionOnDevice.mockResolvedValue({
       error: null,
     })
     mockLoadMasterKey.mockResolvedValue(null)
@@ -215,6 +220,37 @@ describe('encryption setup orchestration', () => {
     })
     expect(store$.session.syncEnabled.get()).toBe(false)
     expect(isEncryptionReadyForSync$.get()).toBe(false)
+  })
+
+  it('existing E2E users can unlock sync on this device without re-bootstrapping', async () => {
+    encryptionSetup$.assign({
+      isOpen: true,
+      step: 'e2e-password',
+      currentMode: 'e2e',
+      currentModeSalt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      hasLocalE2EKey: false,
+      hasLoadedMode: true,
+    })
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(7))
+
+    const didEnable = await submitE2EPassword('password123', 'password123')
+
+    expect(didEnable).toBe(true)
+    expect(mockUnlockE2EEncryptionOnDevice).toHaveBeenCalledWith({
+      userId: 'user-1',
+      password: 'password123',
+      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+    })
+    expect(mockStartE2EEncryptionBootstrap).not.toHaveBeenCalled()
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
 
   it('deduplicates concurrent encryption-mode loads', async () => {
