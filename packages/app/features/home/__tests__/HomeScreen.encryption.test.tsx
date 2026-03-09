@@ -1,8 +1,8 @@
-import React from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, create } from 'react-test-renderer'
+// @vitest-environment happy-dom
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true
+import React from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 const mockPush = vi.fn()
 const mockReadUserEncryptionSettings = vi.fn()
@@ -47,26 +47,83 @@ vi.mock('../../../state/persistConfig', () => ({
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
-  const passthrough = (name: string) => {
+  const mapProps = (props: Record<string, unknown>) => {
+    const {
+      testID,
+      onPress,
+      onChangeText,
+      id,
+      htmlFor,
+      disabled,
+      value,
+      placeholder,
+      children,
+    } = props
+
+    return {
+      ...(id ? { id } : {}),
+      ...(htmlFor ? { htmlFor } : {}),
+      ...(disabled !== undefined ? { disabled } : {}),
+      ...(value !== undefined ? { value } : {}),
+      ...(placeholder !== undefined ? { placeholder } : {}),
+      ...(testID ? { 'data-testid': testID } : {}),
+      ...(onPress ? { onClick: onPress } : {}),
+      ...(onChangeText
+        ? {
+            onChange: (event: Event) => {
+              const target = event.target as HTMLInputElement
+              onChangeText(target.value)
+            },
+          }
+        : {}),
+    }
+  }
+
+  const passthrough = (tagName: keyof HTMLElementTagNameMap) => {
     const Component = ({ children, ...props }: any) =>
-      ReactModule.createElement(name, props, children)
-    Component.displayName = name
+      ReactModule.createElement(tagName, mapProps(props), children)
+    Component.displayName = tagName
     return Component
   }
 
-  const Button = ({ children, ...props }: any) =>
-    ReactModule.createElement('Button', props, children)
-  const Switch = ({ children, ...props }: any) =>
-    ReactModule.createElement('Switch', props, children)
-  const AlertDialog = ({ children, open, ...props }: any) =>
-    open ? ReactModule.createElement('AlertDialog', props, children) : null
+  const Button = ({ children, onPress, testID, disabled, ...props }: any) =>
+    ReactModule.createElement(
+      'button',
+      {
+        type: 'button',
+        disabled,
+        ...(testID ? { 'data-testid': testID } : {}),
+        onClick: onPress,
+      },
+      children
+    )
 
-  Switch.Thumb = passthrough('SwitchThumb')
-  AlertDialog.Portal = passthrough('AlertDialogPortal')
-  AlertDialog.Overlay = passthrough('AlertDialogOverlay')
-  AlertDialog.Content = passthrough('AlertDialogContent')
-  AlertDialog.Title = passthrough('AlertDialogTitle')
-  AlertDialog.Description = passthrough('AlertDialogDescription')
+  const Switch = ({ children, checked, onCheckedChange, testID, disabled, ...props }: any) =>
+    ReactModule.createElement(
+      'label',
+      mapProps(props),
+      ReactModule.createElement('input', {
+        type: 'checkbox',
+        checked,
+        disabled,
+        'data-testid': testID,
+        onChange: (event: Event) => {
+          const target = event.target as HTMLInputElement
+          onCheckedChange?.(target.checked)
+        },
+      }),
+      children
+    )
+
+  const AlertDialog = ({ children, open, ...props }: any) =>
+    open ? ReactModule.createElement('div', mapProps(props), children) : null
+
+  Switch.Thumb = passthrough('span')
+  AlertDialog.Portal = passthrough('div')
+  AlertDialog.Overlay = passthrough('div')
+  AlertDialog.Content = passthrough('div')
+  AlertDialog.Title = passthrough('h2')
+  AlertDialog.Description = passthrough('p')
   AlertDialog.Cancel = ({ children }: any) =>
     ReactModule.createElement(ReactModule.Fragment, null, children)
   AlertDialog.Action = ({ children }: any) =>
@@ -75,17 +132,29 @@ vi.mock('@my/ui', async () => {
   return {
     AlertDialog,
     Button,
-    Card: passthrough('Card'),
-    H1: passthrough('H1'),
-    Input: ({ children, ...props }: any) => ReactModule.createElement('Input', props, children),
-    Label: passthrough('Label'),
-    ScrollView: passthrough('ScrollView'),
-    Separator: passthrough('Separator'),
+    Card: passthrough('section'),
+    H1: passthrough('h1'),
+    Input: ({ children, testID, value, onChangeText, secureTextEntry, disabled, placeholder, autoComplete }: any) =>
+      ReactModule.createElement('input', {
+        type: secureTextEntry ? 'password' : 'text',
+        value,
+        disabled,
+        placeholder,
+        autoComplete,
+        ...(testID ? { 'data-testid': testID } : {}),
+        onChange: (event: Event) => {
+          const target = event.target as HTMLInputElement
+          onChangeText?.(target.value)
+        },
+      }),
+    Label: passthrough('label'),
+    ScrollView: passthrough('div'),
+    Separator: passthrough('hr'),
     Switch,
-    Text: passthrough('Text'),
-    ThemeSwitcher: passthrough('ThemeSwitcher'),
-    XStack: passthrough('XStack'),
-    YStack: passthrough('YStack'),
+    Text: passthrough('span'),
+    ThemeSwitcher: passthrough('div'),
+    XStack: passthrough('div'),
+    YStack: passthrough('div'),
   }
 })
 
@@ -100,7 +169,7 @@ vi.mock('app/utils', () => ({
 }))
 
 vi.mock('app/features/auth/components/LinkedProviders', () => ({
-  LinkedProviders: () => React.createElement('LinkedProviders'),
+  LinkedProviders: () => React.createElement('div', null, 'LinkedProviders'),
 }))
 
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
@@ -115,39 +184,9 @@ import {
 } from '../../../state/encryptionSetup'
 import { HomeScreen } from '../HomeScreen'
 
-const flush = async () => {
-  await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-}
-
-const renderHomeScreen = async () => {
-  let renderer!: ReturnType<typeof create>
-
-  await act(async () => {
-    renderer = create(React.createElement(HomeScreen))
-    await Promise.resolve()
-    await Promise.resolve()
-  })
-
-  return renderer
-}
-
-const getTextContent = (root: ReturnType<typeof create>['root']) =>
-  root
-    .findAll(
-      (node) =>
-        String(node.type) === 'Text' ||
-        String(node.type) === 'AlertDialogTitle' ||
-        String(node.type) === 'AlertDialogDescription' ||
-        String(node.type) === 'Button'
-    )
-    .flatMap((node) => {
-      const children = node.props.children
-      return Array.isArray(children) ? children : [children]
-    })
-    .filter((value): value is string => typeof value === 'string')
+afterEach(() => {
+  cleanup()
+})
 
 describe('HomeScreen encryption flow', () => {
   beforeEach(() => {
@@ -178,22 +217,19 @@ describe('HomeScreen encryption flow', () => {
   })
 
   it('opens the chooser from the authenticated home sync toggle', async () => {
-    const renderer = await renderHomeScreen()
+    render(React.createElement(HomeScreen))
 
-    const toggle = renderer.root.findByProps({ testID: 'sync-toggle' })
+    fireEvent.click(screen.getByTestId('sync-toggle'))
 
-    await act(async () => {
-      toggle.props.onCheckedChange(true)
-      await Promise.resolve()
+    await waitFor(() => {
+      expect(store$.session.syncEnabled.get()).toBe(false)
+      expect(encryptionSetup$.isOpen.get()).toBe(true)
+      expect(screen.getByText('Choose your encryption mode')).toBeTruthy()
     })
-
-    expect(store$.session.syncEnabled.get()).toBe(false)
-    expect(encryptionSetup$.isOpen.get()).toBe(true)
-    expect(getTextContent(renderer.root)).toContain('Choose your encryption mode')
   })
 
   it('renders E2E as the default choice with the required warnings', async () => {
-    const renderer = await renderHomeScreen()
+    render(React.createElement(HomeScreen))
 
     await act(async () => {
       encryptionSetup$.assign({
@@ -204,13 +240,11 @@ describe('HomeScreen encryption flow', () => {
       })
     })
 
-    const text = getTextContent(renderer.root)
-
-    expect(text).toContain('Confirm End-to-End Encryption')
-    expect(text).toContain('E2E Encryption')
-    expect(text).toContain('Managed Encryption')
-    expect(text).toContain('This choice cannot be changed later.')
-    expect(text).toContain('If you forget this password, your cloud data is unrecoverable.')
+    expect(screen.getByText('Confirm End-to-End Encryption')).toBeTruthy()
+    expect(screen.getByText('E2E Encryption')).toBeTruthy()
+    expect(screen.getByText('Managed Encryption')).toBeTruthy()
+    expect(screen.getByText('This choice cannot be changed later.')).toBeTruthy()
+    expect(screen.getByText('If you forget this password, your cloud data is unrecoverable.')).toBeTruthy()
   })
 
   it('shows the current encryption mode as read-only on the home screen', async () => {
@@ -219,20 +253,19 @@ describe('HomeScreen encryption flow', () => {
       error: null,
     })
 
-    const renderer = await renderHomeScreen()
+    render(React.createElement(HomeScreen))
+
     await act(async () => {
       await loadCurrentEncryptionMode()
     })
 
-    const text = getTextContent(renderer.root)
-
-    expect(text).toContain('Encryption mode')
-    expect(text).toContain('Managed encryption')
-    expect(text).toContain('This choice is read-only for now.')
+    expect(screen.getByText('Encryption mode')).toBeTruthy()
+    expect(screen.getByText('Managed encryption')).toBeTruthy()
+    expect(screen.getByText('This choice is read-only for now.')).toBeTruthy()
   })
 
   it('shows key-required messaging when E2E is selected but local key is missing', async () => {
-    const renderer = await renderHomeScreen()
+    render(React.createElement(HomeScreen))
 
     await act(async () => {
       encryptionSetup$.assign({
@@ -246,22 +279,20 @@ describe('HomeScreen encryption flow', () => {
         },
       })
     })
-    await flush()
 
-    const text = getTextContent(renderer.root)
-    expect(text).toContain('End-to-end encryption')
-    expect(text).toContain('Encryption password required on this device')
-    expect(text).toContain(
-      'This account uses end-to-end encryption. Enter your encryption password on this device to unlock Cloud Sync.'
-    )
-
-    const toggle = renderer.root.findByProps({ testID: 'sync-toggle' })
-    expect(toggle.props.disabled).toBe(true)
-    expect(renderer.root.findByProps({ testID: 'continue-e2e-setup' })).toBeTruthy()
+    expect(screen.getByText('End-to-end encryption')).toBeTruthy()
+    expect(screen.getByText('Encryption password required on this device')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'This account uses end-to-end encryption. Enter your encryption password on this device to unlock Cloud Sync.'
+      )
+    ).toBeTruthy()
+    expect(screen.getByTestId('sync-toggle')).toHaveProperty('disabled', true)
+    expect(screen.getByTestId('continue-e2e-setup')).toBeTruthy()
   })
 
   it('opens the password step when continuing locked E2E setup', async () => {
-    const renderer = await renderHomeScreen()
+    render(React.createElement(HomeScreen))
 
     await act(async () => {
       encryptionSetup$.assign({
@@ -276,22 +307,17 @@ describe('HomeScreen encryption flow', () => {
         },
       })
     })
-    await flush()
 
-    const continueButton = renderer.root.findByProps({ testID: 'continue-e2e-setup' })
+    fireEvent.click(screen.getByTestId('continue-e2e-setup'))
 
-    await act(async () => {
-      continueButton.props.onPress()
-      await Promise.resolve()
+    await waitFor(() => {
+      expect(screen.getByText('Finish end-to-end setup')).toBeTruthy()
+      expect(screen.getByText('Create an encryption password')).toBeTruthy()
     })
-
-    const text = getTextContent(renderer.root)
-    expect(text).toContain('Finish end-to-end setup')
-    expect(text).toContain('Create an encryption password')
   })
 
   it('shows a single-password unlock form for existing E2E devices', async () => {
-    const renderer = await renderHomeScreen()
+    render(React.createElement(HomeScreen))
 
     await act(async () => {
       encryptionSetup$.assign({
@@ -305,10 +331,8 @@ describe('HomeScreen encryption flow', () => {
       })
     })
 
-    const text = getTextContent(renderer.root)
-
-    expect(text).toContain('Enter your encryption password')
-    expect(text).not.toContain('Confirm encryption password')
-    expect(() => renderer.root.findByProps({ testID: 'e2e-confirm-password-input' })).toThrow()
+    expect(screen.getByText('Enter your encryption password')).toBeTruthy()
+    expect(screen.queryByText('Confirm encryption password')).toBeNull()
+    expect(screen.queryByTestId('e2e-confirm-password-input')).toBeNull()
   })
 })

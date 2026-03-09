@@ -1,10 +1,12 @@
 import { supabase } from './supabase'
-import type { TablesInsert } from '../types/database'
+import type { Tables, TablesInsert } from '../types/database'
 import type { EncryptionMode } from '../types/index'
 import {
   EncryptionError,
+  decryptFlowContent,
   deriveMasterKeyFromPassword,
   generateEncryptionSaltHex,
+  isEncryptedFlowPayload,
 } from './encryption'
 import { clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
 
@@ -28,6 +30,13 @@ const normalizeEncryptionMode = (value: string | null | undefined): EncryptionMo
 const toEncryptionError = (message: string, code: string): EncryptionSettingsError => ({
   error: { message, code },
 })
+
+const INVALID_ENCRYPTION_PASSWORD_ERROR = {
+  message: 'Encryption password is incorrect for this account.',
+  code: 'invalid_encryption_password',
+} satisfies EncryptionSettingsError['error']
+
+type FlowVerificationRow = Pick<Tables<'flows'>, 'id' | 'content'>
 
 export async function readUserEncryptionSettings(
   userId: string
@@ -160,6 +169,59 @@ export async function startE2EEncryptionBootstrap(_input: {
   }
 }
 
+export async function validateE2EMasterKeyForUser(input: {
+  masterKey: Uint8Array
+  invalidKeyMessage?: string
+  invalidKeyCode?: string
+}): Promise<{ error: null; didVerify: boolean } | { error: EncryptionSettingsError['error']; didVerify: boolean }> {
+  const { data, error } = await supabase.from('flows').select('id, content').limit(50)
+
+  if (error) {
+    return {
+      error: toEncryptionError(error.message, error.code ?? 'flows_read_failed').error,
+      didVerify: false,
+    }
+  }
+
+  const encryptedFlow = ((data ?? []) as FlowVerificationRow[]).find(flow =>
+    isEncryptedFlowPayload(flow.content)
+  )
+
+  if (!encryptedFlow) {
+    return { error: null, didVerify: false }
+  }
+
+  try {
+    decryptFlowContent(encryptedFlow.content, input.masterKey)
+    return { error: null, didVerify: true }
+  } catch (error) {
+    if (error instanceof EncryptionError && error.code === 'flow_decrypt_failed') {
+      return {
+        error: toEncryptionError(
+          input.invalidKeyMessage ?? INVALID_ENCRYPTION_PASSWORD_ERROR.message,
+          input.invalidKeyCode ?? INVALID_ENCRYPTION_PASSWORD_ERROR.code
+        ).error,
+        didVerify: true,
+      }
+    }
+
+    if (error instanceof EncryptionError) {
+      return {
+        error: toEncryptionError(error.message, error.code).error,
+        didVerify: true,
+      }
+    }
+
+    return {
+      error: toEncryptionError(
+        (error as Error).message || 'Failed to verify the encryption key for this account.',
+        'flow_decrypt_failed'
+      ).error,
+      didVerify: true,
+    }
+  }
+}
+
 export async function unlockE2EEncryptionOnDevice(input: {
   userId: string
   password: string
@@ -175,6 +237,12 @@ export async function unlockE2EEncryptionOnDevice(input: {
 
   try {
     const masterKey = await deriveMasterKeyFromPassword(input.password, input.salt)
+    const validation = await validateE2EMasterKeyForUser({ masterKey })
+
+    if (validation.error) {
+      return { error: validation.error }
+    }
+
     shouldCleanupLocalKey = true
     await storeMasterKey(input.userId, masterKey)
     shouldCleanupLocalKey = false

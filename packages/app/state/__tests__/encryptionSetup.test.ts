@@ -4,20 +4,23 @@ const mockReadUserEncryptionSettings = vi.fn()
 const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
 const mockUnlockE2EEncryptionOnDevice = vi.fn()
+const mockValidateE2EMasterKeyForUser = vi.fn()
 const mockLoadMasterKey = vi.fn()
+const mockClearStoredMasterKey = vi.fn()
 
 vi.mock('../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
   upsertUserEncryptionMode: (...args: unknown[]) => mockUpsertUserEncryptionMode(...args),
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
   unlockE2EEncryptionOnDevice: (...args: unknown[]) => mockUnlockE2EEncryptionOnDevice(...args),
+  validateE2EMasterKeyForUser: (...args: unknown[]) => mockValidateE2EMasterKeyForUser(...args),
 }))
 
 vi.mock('../../utils/encryptionKeyStore', () => ({
   loadMasterKey: (...args: unknown[]) => mockLoadMasterKey(...args),
   getCachedMasterKey: vi.fn(),
   storeMasterKey: vi.fn(),
-  clearStoredMasterKey: vi.fn(),
+  clearStoredMasterKey: (...args: unknown[]) => mockClearStoredMasterKey(...args),
 }))
 
 vi.mock('../../utils/supabase', () => ({
@@ -86,7 +89,12 @@ describe('encryption setup orchestration', () => {
     mockUnlockE2EEncryptionOnDevice.mockResolvedValue({
       error: null,
     })
+    mockValidateE2EMasterKeyForUser.mockResolvedValue({
+      error: null,
+      didVerify: false,
+    })
     mockLoadMasterKey.mockResolvedValue(null)
+    mockClearStoredMasterKey.mockResolvedValue(undefined)
   })
 
   it('first-time enable opens the chooser instead of enabling sync', async () => {
@@ -218,6 +226,38 @@ describe('encryption setup orchestration', () => {
       message: 'Encryption password required on this device before Cloud Sync can be enabled.',
       code: 'e2e_password_required',
     })
+    expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
+  })
+
+  it('clears an invalid stored E2E key and keeps sync blocked until the password is re-entered', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(9))
+    mockValidateE2EMasterKeyForUser.mockResolvedValueOnce({
+      error: {
+        message:
+          'The stored encryption key on this device could not unlock your journal. Enter your encryption password again.',
+        code: 'invalid_local_encryption_key',
+      },
+      didVerify: true,
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('e2e')
+    expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message:
+        'The stored encryption key on this device could not unlock your journal. Enter your encryption password again.',
+      code: 'invalid_local_encryption_key',
+    })
+    expect(mockClearStoredMasterKey).toHaveBeenCalledWith('user-1')
     expect(store$.session.syncEnabled.get()).toBe(false)
     expect(isEncryptionReadyForSync$.get()).toBe(false)
   })

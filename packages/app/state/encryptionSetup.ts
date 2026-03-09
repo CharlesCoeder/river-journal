@@ -1,12 +1,13 @@
 import { batch, observable, observe } from '@legendapp/state'
 import type { EncryptionMode } from '../types/index'
 import { store$ } from './store'
-import { loadMasterKey } from '../utils/encryptionKeyStore'
+import { clearStoredMasterKey, loadMasterKey } from '../utils/encryptionKeyStore'
 import {
   readUserEncryptionSettings,
   unlockE2EEncryptionOnDevice,
   startE2EEncryptionBootstrap,
   upsertUserEncryptionMode,
+  validateE2EMasterKeyForUser,
 } from '../utils/userEncryption'
 import { syncEncryptionError$, syncEncryptionMode$ } from './syncConfig'
 
@@ -129,10 +130,35 @@ const resolveLocalE2EKeyAvailability = async (
   userId: string,
   mode: EncryptionMode | null,
   salt: string | null
-): Promise<boolean> => {
-  if (mode !== 'e2e' || !salt) return false
+) : Promise<{ hasLocalE2EKey: boolean; error: EncryptionSetupError | null }> => {
+  if (mode !== 'e2e' || !salt) {
+    return { hasLocalE2EKey: false, error: null }
+  }
+
   const key = await loadMasterKey(userId)
-  return !!key
+  if (!key) {
+    return { hasLocalE2EKey: false, error: null }
+  }
+
+  const validation = await validateE2EMasterKeyForUser({
+    masterKey: key,
+    invalidKeyMessage:
+      'The stored encryption key on this device could not unlock your journal. Enter your encryption password again.',
+    invalidKeyCode: 'invalid_local_encryption_key',
+  })
+
+  if (!validation.error) {
+    return { hasLocalE2EKey: true, error: null }
+  }
+
+  if (validation.error.code === 'invalid_local_encryption_key') {
+    await clearStoredMasterKey(userId)
+  }
+
+  return {
+    hasLocalE2EKey: false,
+    error: validation.error,
+  }
 }
 
 export const resetEncryptionSetupState = () => {
@@ -196,12 +222,15 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
       }
 
       try {
-        const hasLocalE2EKey = await resolveLocalE2EKeyAvailability(
+        const localKeyState = await resolveLocalE2EKeyAvailability(
           userId,
           result.data.mode,
           result.data.salt
         )
-        applyLoadedSettings(result.data.mode, result.data.salt, hasLocalE2EKey)
+        applyLoadedSettings(result.data.mode, result.data.salt, localKeyState.hasLocalE2EKey)
+        if (localKeyState.error) {
+          encryptionSetup$.error.set(localKeyState.error)
+        }
       } catch (error) {
         applyLoadedSettings(result.data.mode, result.data.salt, false)
         encryptionSetup$.error.set(

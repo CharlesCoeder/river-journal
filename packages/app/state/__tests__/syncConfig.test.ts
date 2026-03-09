@@ -10,6 +10,7 @@ import {
   localEntryToDb,
   dbFlowToLocal,
   localFlowToDb,
+  mapDbFlowToLocalOrKeepExisting,
   syncEncryptionError$,
   syncEncryptionMode$,
   syncUserId$,
@@ -215,12 +216,89 @@ describe('Flow transforms', () => {
     )
     await storeMasterKey('user-1', wrongKey)
 
-    const result = dbFlowToLocal({
+    expect(() =>
+      dbFlowToLocal({
+        ...dbRow,
+        content: dbPayload.content as string,
+      })
+    ).toThrowError(/flow_decrypt_failed/)
+
+    expect(syncEncryptionError$.get()?.code).toBe('flow_decrypt_failed')
+  })
+
+  it('preserves existing local plaintext when a downloaded encrypted row cannot be decrypted', async () => {
+    const encryptionKey = await deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', encryptionKey)
+    syncEncryptionMode$.set('e2e')
+
+    const dbPayload = localFlowToDb({
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: 'secret text',
+      user_id: 'user-1',
+      local_session_id: 'sess1',
+    })
+
+    await clearStoredMasterKey('user-1')
+    const wrongKey = await deriveMasterKeyFromPassword(
+      'wrong key',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', wrongKey)
+
+    const existingLocalFlow = {
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: 'existing plaintext',
+      wordCount: 2,
+      timestamp: '2026-03-03T10:05:00Z',
+      local_session_id: 'sess1',
+    }
+
+    const result = mapDbFlowToLocalOrKeepExisting(
+      {
+        ...dbRow,
+        content: dbPayload.content as string,
+      },
+      existingLocalFlow
+    )
+
+    expect(result).toEqual(existingLocalFlow)
+    expect(syncEncryptionError$.get()?.code).toBe('flow_decrypt_failed')
+  })
+
+  it('drops unreadable encrypted rows instead of leaking ciphertext into local state', async () => {
+    const encryptionKey = await deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', encryptionKey)
+    syncEncryptionMode$.set('e2e')
+
+    const dbPayload = localFlowToDb({
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: 'secret text',
+      user_id: 'user-1',
+      local_session_id: 'sess1',
+    })
+
+    await clearStoredMasterKey('user-1')
+    const wrongKey = await deriveMasterKeyFromPassword(
+      'wrong key',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', wrongKey)
+
+    const result = mapDbFlowToLocalOrKeepExisting({
       ...dbRow,
       content: dbPayload.content as string,
     })
 
-    expect(result.content).toBe(dbPayload.content as string)
+    expect(result).toBeNull()
     expect(syncEncryptionError$.get()?.code).toBe('flow_decrypt_failed')
   })
 })
