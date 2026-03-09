@@ -35,6 +35,9 @@ module.exports = () => {
     typescript: {
       ignoreBuildErrors: true,
     },
+    env: {
+      NEXT_PUBLIC_IS_DESKTOP_APP: 'true',
+    },
     // Enable static export for Tauri
     output: 'export',
     trailingSlash: true,

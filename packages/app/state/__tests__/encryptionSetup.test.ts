@@ -222,6 +222,32 @@ describe('encryption setup orchestration', () => {
     expect(isEncryptionReadyForSync$.get()).toBe(false)
   })
 
+  it('surfaces secure-storage failures while hydrating desktop E2E state', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockRejectedValueOnce({
+      message: 'Timed out while accessing the desktop keychain for the encryption key.',
+      code: 'desktop_keychain_load_timeout',
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('e2e')
+    expect(encryptionSetup$.currentMode.get()).toBe('e2e')
+    expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Timed out while accessing the desktop keychain for the encryption key.',
+      code: 'desktop_keychain_load_timeout',
+    })
+    expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
+  })
+
   it('existing E2E users can unlock sync on this device without re-bootstrapping', async () => {
     encryptionSetup$.assign({
       isOpen: true,

@@ -4,8 +4,10 @@ const inMemoryMasterKeyCache = new Map<string, Uint8Array>()
 const TAURI_SET_ENCRYPTION_KEY_COMMAND = 'set_encryption_key'
 const TAURI_GET_ENCRYPTION_KEY_COMMAND = 'get_encryption_key'
 const TAURI_DELETE_ENCRYPTION_KEY_COMMAND = 'delete_encryption_key'
+const TAURI_KEYCHAIN_TIMEOUT_MS = 4000
 
 const cloneBytes = (value: Uint8Array): Uint8Array => new Uint8Array(value)
+const isDesktopAppBuild = (): boolean => process.env.NEXT_PUBLIC_IS_DESKTOP_APP === 'true'
 const isTauriRuntime = (): boolean =>
   typeof window !== 'undefined' &&
   (Object.prototype.hasOwnProperty.call(window, '__TAURI_INTERNALS__') ||
@@ -13,20 +15,106 @@ const isTauriRuntime = (): boolean =>
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>
 
+export class EncryptionKeyStoreError extends Error {
+  code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.name = 'EncryptionKeyStoreError'
+    this.code = code
+  }
+}
+
+const logKeyStoreDiagnostic = (message: string, details?: Record<string, unknown>) => {
+  if (process.env.NODE_ENV !== 'development') return
+
+  // eslint-disable-next-line no-console
+  console.info('[encryptionKeyStore]', message, {
+    isDesktopAppBuild: isDesktopAppBuild(),
+    hasWindow: typeof window !== 'undefined',
+    hasTauriRuntime: typeof window !== 'undefined' ? isTauriRuntime() : false,
+    protocol: typeof window !== 'undefined' ? window.location?.protocol : null,
+    userAgent:
+      typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string'
+        ? navigator.userAgent
+        : null,
+    ...details,
+  })
+}
+
 const getTauriInvoke = async (): Promise<TauriInvoke | null> => {
-  if (!isTauriRuntime()) return null
+  if (typeof window === 'undefined') return null
+
+  if (!isTauriRuntime()) {
+    if (isDesktopAppBuild()) {
+      const error = new EncryptionKeyStoreError(
+        'Desktop secure storage is unavailable because the Tauri runtime bridge is missing in this renderer.',
+        'desktop_runtime_unavailable'
+      )
+      logKeyStoreDiagnostic('missing Tauri runtime bridge', { code: error.code })
+      throw error
+    }
+
+    logKeyStoreDiagnostic('Tauri runtime not detected; using web/session-only key storage')
+    return null
+  }
 
   try {
     const { invoke } = await import('@tauri-apps/api/core')
+    logKeyStoreDiagnostic('loaded Tauri invoke bridge')
     return invoke
-  } catch {
+  } catch (error) {
+    if (isDesktopAppBuild()) {
+      const wrappedError = toKeyStoreError(
+        error,
+        'Desktop secure storage is unavailable because the Tauri API bridge could not be loaded.',
+        'desktop_tauri_api_unavailable'
+      )
+      logKeyStoreDiagnostic('failed to load Tauri invoke bridge', {
+        code: wrappedError.code,
+        message: wrappedError.message,
+      })
+      throw wrappedError
+    }
+
+    logKeyStoreDiagnostic('failed to load Tauri API in non-desktop runtime; using session storage')
     return null
   }
 }
 
+const withKeychainTimeout = async <T>(
+  operation: Promise<T>,
+  timeoutMessage: string,
+  timeoutCode: string
+): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new EncryptionKeyStoreError(timeoutMessage, timeoutCode))
+        }, TAURI_KEYCHAIN_TIMEOUT_MS)
+      }),
+    ])
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId)
+  }
+}
+
+const toKeyStoreError = (error: unknown, fallbackMessage: string, fallbackCode: string) => {
+  if (error instanceof EncryptionKeyStoreError) return error
+
+  const message =
+    error instanceof Error && error.message ? error.message : fallbackMessage
+
+  return new EncryptionKeyStoreError(message, fallbackCode)
+}
+
 /**
  * Web stays session-only until a future explicit "Trust this browser" flow exists.
- * Desktop uses the Tauri keychain bridge when available and otherwise falls back to the same session cache.
+ * Desktop requires the Tauri keychain bridge to persist across app restarts.
  */
 export async function storeMasterKey(userId: string, masterKey: Uint8Array): Promise<void> {
   inMemoryMasterKeyCache.set(userId, cloneBytes(masterKey))
@@ -34,32 +122,83 @@ export async function storeMasterKey(userId: string, masterKey: Uint8Array): Pro
   const invoke = await getTauriInvoke()
   if (!invoke) return
 
+  const expectedKeyHex = bytesToHex(masterKey)
+
   try {
-    await invoke<void>(TAURI_SET_ENCRYPTION_KEY_COMMAND, {
+    logKeyStoreDiagnostic('storing master key via Tauri keychain', { userId })
+    await withKeychainTimeout(
+      invoke<void>(TAURI_SET_ENCRYPTION_KEY_COMMAND, {
+        userId,
+        keyHex: expectedKeyHex,
+      }),
+      'Timed out while storing the encryption key in the desktop keychain.',
+      'desktop_keychain_store_timeout'
+    )
+
+    const persistedKeyHex = await withKeychainTimeout(
+      invoke<string | null>(TAURI_GET_ENCRYPTION_KEY_COMMAND, { userId }),
+      'Timed out while verifying the desktop keychain after storing the encryption key.',
+      'desktop_keychain_store_verify_timeout'
+    )
+
+    if (persistedKeyHex !== expectedKeyHex) {
+      throw new EncryptionKeyStoreError(
+        'Desktop keychain did not return the stored encryption key during verification.',
+        'desktop_keychain_store_verification_failed'
+      )
+    }
+
+    logKeyStoreDiagnostic('verified stored master key via Tauri keychain', { userId })
+  } catch (error) {
+    inMemoryMasterKeyCache.delete(userId)
+    logKeyStoreDiagnostic('failed to store master key via Tauri keychain', {
       userId,
-      keyHex: bytesToHex(masterKey),
+      message: error instanceof Error ? error.message : null,
     })
-  } catch {
-    // The session cache is already warm; keep desktop usable even when the keychain bridge fails.
+    throw toKeyStoreError(
+      error,
+      'Failed to store the encryption key in the desktop keychain.',
+      'desktop_keychain_store_failed'
+    )
   }
 }
 
 export async function loadMasterKey(userId: string): Promise<Uint8Array | null> {
   const key = inMemoryMasterKeyCache.get(userId)
-  if (key) return cloneBytes(key)
+  if (key) {
+    logKeyStoreDiagnostic('loaded master key from in-memory cache', { userId })
+    return cloneBytes(key)
+  }
 
   const invoke = await getTauriInvoke()
   if (!invoke) return null
 
   try {
-    const keyHex = await invoke<string | null>(TAURI_GET_ENCRYPTION_KEY_COMMAND, { userId })
-    if (!keyHex) return null
+    logKeyStoreDiagnostic('loading master key via Tauri keychain', { userId })
+    const keyHex = await withKeychainTimeout(
+      invoke<string | null>(TAURI_GET_ENCRYPTION_KEY_COMMAND, { userId }),
+      'Timed out while accessing the desktop keychain for the encryption key.',
+      'desktop_keychain_load_timeout'
+    )
+    if (!keyHex) {
+      logKeyStoreDiagnostic('no persisted master key returned from Tauri keychain', { userId })
+      return null
+    }
 
     const persistedKey = hexToBytes(keyHex)
     inMemoryMasterKeyCache.set(userId, cloneBytes(persistedKey))
+    logKeyStoreDiagnostic('loaded master key from Tauri keychain', { userId })
     return cloneBytes(persistedKey)
-  } catch {
-    return null
+  } catch (error) {
+    logKeyStoreDiagnostic('failed to load master key via Tauri keychain', {
+      userId,
+      message: error instanceof Error ? error.message : null,
+    })
+    throw toKeyStoreError(
+      error,
+      'Failed to access the desktop keychain for the encryption key.',
+      'desktop_keychain_load_failed'
+    )
   }
 }
 
@@ -71,11 +210,8 @@ export function getCachedMasterKey(userId: string): Uint8Array | null {
 export async function hasStoredMasterKey(userId: string): Promise<boolean> {
   if (inMemoryMasterKeyCache.has(userId)) return true
 
-  const invoke = await getTauriInvoke()
-  if (!invoke) return false
-
   try {
-    return !!(await invoke<string | null>(TAURI_GET_ENCRYPTION_KEY_COMMAND, { userId }))
+    return !!(await loadMasterKey(userId))
   } catch {
     return false
   }
@@ -84,12 +220,25 @@ export async function hasStoredMasterKey(userId: string): Promise<boolean> {
 export async function clearStoredMasterKey(userId: string): Promise<void> {
   inMemoryMasterKeyCache.delete(userId)
 
-  const invoke = await getTauriInvoke()
+  let invoke: TauriInvoke | null = null
+  try {
+    invoke = await getTauriInvoke()
+  } catch (error) {
+    logKeyStoreDiagnostic('failed to initialize Tauri bridge during key cleanup', {
+      userId,
+      message: error instanceof Error ? error.message : null,
+    })
+    return
+  }
   if (!invoke) return
 
   try {
+    logKeyStoreDiagnostic('clearing master key via Tauri keychain', { userId })
     await invoke<void>(TAURI_DELETE_ENCRYPTION_KEY_COMMAND, { userId })
-  } catch {
-    // Session cleanup already happened; ignore keychain deletion errors here.
+  } catch (error) {
+    logKeyStoreDiagnostic('failed to clear master key via Tauri keychain', {
+      userId,
+      message: error instanceof Error ? error.message : null,
+    })
   }
 }

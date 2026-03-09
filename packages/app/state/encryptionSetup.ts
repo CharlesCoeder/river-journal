@@ -27,6 +27,29 @@ const E2E_PASSWORD_REQUIRED_ERROR: EncryptionSetupError = {
   code: 'e2e_password_required',
 }
 
+const toEncryptionSetupError = (
+  error: unknown,
+  fallbackMessage: string,
+  fallbackCode: string
+): EncryptionSetupError => {
+  if (error && typeof error === 'object') {
+    const message = 'message' in error && typeof error.message === 'string' ? error.message : null
+    const code = 'code' in error && typeof error.code === 'string' ? error.code : null
+
+    if (message || code) {
+      return {
+        message: message ?? fallbackMessage,
+        code: code ?? fallbackCode,
+      }
+    }
+  }
+
+  return {
+    message: fallbackMessage,
+    code: fallbackCode,
+  }
+}
+
 const getSyncEligibility = (
   mode: EncryptionMode | null,
   salt: string | null,
@@ -172,13 +195,23 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
         return null
       }
 
-      const hasLocalE2EKey = await resolveLocalE2EKeyAvailability(
-        userId,
-        result.data.mode,
-        result.data.salt
-      )
-
-      applyLoadedSettings(result.data.mode, result.data.salt, hasLocalE2EKey)
+      try {
+        const hasLocalE2EKey = await resolveLocalE2EKeyAvailability(
+          userId,
+          result.data.mode,
+          result.data.salt
+        )
+        applyLoadedSettings(result.data.mode, result.data.salt, hasLocalE2EKey)
+      } catch (error) {
+        applyLoadedSettings(result.data.mode, result.data.salt, false)
+        encryptionSetup$.error.set(
+          toEncryptionSetupError(
+            error,
+            'Failed to access secure key storage on this device. Cloud Sync remains off.',
+            'local_key_store_unavailable'
+          )
+        )
+      }
       return result.data.mode
     } finally {
       encryptionSetup$.isLoadingMode.set(false)
