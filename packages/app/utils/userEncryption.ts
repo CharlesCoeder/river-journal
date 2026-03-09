@@ -106,7 +106,7 @@ export async function startE2EEncryptionBootstrap(_input: {
 
   try {
     const salt = generateEncryptionSaltHex()
-    const masterKey = deriveMasterKeyFromPassword(input.password, salt)
+    const masterKey = await deriveMasterKeyFromPassword(input.password, salt)
     const payload: TablesInsert<'users'> = {
       id: input.userId,
       encryption_mode: 'e2e',
@@ -174,7 +174,7 @@ export async function unlockE2EEncryptionOnDevice(input: {
   }
 
   try {
-    const masterKey = deriveMasterKeyFromPassword(input.password, input.salt)
+    const masterKey = await deriveMasterKeyFromPassword(input.password, input.salt)
     shouldCleanupLocalKey = true
     await storeMasterKey(input.userId, masterKey)
     shouldCleanupLocalKey = false

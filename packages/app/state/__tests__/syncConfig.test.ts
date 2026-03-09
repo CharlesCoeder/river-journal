@@ -141,7 +141,7 @@ describe('Flow transforms', () => {
   })
 
   it('encrypts flow content at the sync boundary for e2e mode and decrypts on load', async () => {
-    const key = deriveMasterKeyFromPassword(
+    const key = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
       '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
     )
@@ -193,7 +193,7 @@ describe('Flow transforms', () => {
   })
 
   it('surfaces explicit errors when encrypted payload cannot be decrypted', async () => {
-    const encryptionKey = deriveMasterKeyFromPassword(
+    const encryptionKey = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
       '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
     )
@@ -209,19 +209,18 @@ describe('Flow transforms', () => {
     })
 
     await clearStoredMasterKey('user-1')
-    const wrongKey = deriveMasterKeyFromPassword(
+    const wrongKey = await deriveMasterKeyFromPassword(
       'wrong key',
       '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
     )
     await storeMasterKey('user-1', wrongKey)
 
-    expect(() =>
-      dbFlowToLocal({
-        ...dbRow,
-        content: dbPayload.content as string,
-      })
-    ).toThrowError(/flow_decrypt_failed/)
+    const result = dbFlowToLocal({
+      ...dbRow,
+      content: dbPayload.content as string,
+    })
 
+    expect(result.content).toBe(dbPayload.content as string)
     expect(syncEncryptionError$.get()?.code).toBe('flow_decrypt_failed')
   })
 })

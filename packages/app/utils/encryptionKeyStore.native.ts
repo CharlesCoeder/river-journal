@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store'
 import { bytesToHex, hexToBytes } from '@noble/ciphers/utils.js'
 
-const MASTER_KEY_PREFIX = 'river-journal:e2e:master-key:'
+const MASTER_KEY_PREFIX = 'river-journal.e2e.master-key.'
 const inMemoryMasterKeyCache = new Map<string, Uint8Array>()
 
 const cloneBytes = (value: Uint8Array): Uint8Array => new Uint8Array(value)

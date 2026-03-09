@@ -1,6 +1,6 @@
 import { xchacha20poly1305 } from '@noble/ciphers/chacha.js'
 import { bytesToHex, bytesToUtf8, hexToBytes, randomBytes, utf8ToBytes } from '@noble/ciphers/utils.js'
-import { scrypt } from '@noble/hashes/scrypt.js'
+import { scryptAsync } from '@noble/hashes/scrypt.js'
 
 const ENCRYPTION_ALGORITHM = 'xchacha20poly1305' as const
 const ENCRYPTION_VERSION = 1 as const
@@ -161,7 +161,7 @@ export function generateEncryptionSaltHex(): string {
   return bytesToHex(randomBytes(SALT_BYTES))
 }
 
-export function deriveMasterKeyFromPassword(password: string, saltHex: string): Uint8Array {
+export async function deriveMasterKeyFromPassword(password: string, saltHex: string): Promise<Uint8Array> {
   if (!password.trim()) {
     throwEncryptionError('Encryption password is required.', 'missing_password')
   }
@@ -173,7 +173,9 @@ export function deriveMasterKeyFromPassword(password: string, saltHex: string): 
     throwEncryptionError('Encryption salt length is invalid.', 'invalid_salt')
   }
 
-  return scrypt(password, salt, {
+  await new Promise(resolve => setTimeout(resolve, 0))
+
+  return scryptAsync(password, salt, {
     N: 2 ** 17,
     r: 8,
     p: 1,
