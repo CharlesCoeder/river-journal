@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
-import { Switch, Label, XStack, YStack, Text, Card, Separator } from '@my/ui'
+import { Switch, Label, XStack, YStack, Text, Card, Separator, Button } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import {
   clearEncryptionSetupError,
+  continueLockedE2ESetup,
   encryptionSetup$,
   requestSyncEnable,
 } from 'app/state/encryptionSetup'
@@ -45,6 +46,7 @@ export function SyncToggle() {
   const isE2EKeyRequiredOnDevice = currentMode === 'e2e' && !!currentModeSalt && !hasLocalE2EKey
   const isE2ESetupIncomplete = currentMode === 'e2e' && !currentModeSalt
   const isSwitchDisabled = isLoadingMode || isE2EKeyRequiredOnDevice || isE2ESetupIncomplete
+  const canContinueE2ESetup = isE2EKeyRequiredOnDevice || isE2ESetupIncomplete
 
   const handleCheckedChange = useCallback((checked: boolean) => {
     if (!checked) {
@@ -54,6 +56,10 @@ export function SyncToggle() {
     }
 
     void requestSyncEnable()
+  }, [])
+
+  const handleContinueE2ESetup = useCallback(() => {
+    continueLockedE2ESetup()
   }, [])
 
   const description = isLoadingMode
@@ -112,7 +118,9 @@ export function SyncToggle() {
                 >
                   {isE2EReadyOnDevice
                     ? 'Ready on this device'
-                    : 'Encryption password required on this device'}
+                    : isE2EKeyRequiredOnDevice
+                      ? 'Encryption password required on this device'
+                      : 'Setup incomplete on this account'}
                 </Text>
               )}
               <Text fontSize="$2" fontFamily="$body" color="$color11">
@@ -127,6 +135,20 @@ export function SyncToggle() {
         <Text fontSize="$3" fontFamily="$body" color="$color11">
           {description}
         </Text>
+
+        {canContinueE2ESetup && (
+          <XStack justifyContent="flex-start">
+            <Button
+              testID="continue-e2e-setup"
+              size="$3"
+              variant="outlined"
+              onPress={handleContinueE2ESetup}
+              fontFamily="$body"
+            >
+              {isE2EKeyRequiredOnDevice ? 'Enter encryption password' : 'Finish encryption setup'}
+            </Button>
+          </XStack>
+        )}
 
         {error && (
           <Text fontSize="$3" fontFamily="$body" color="$red10">

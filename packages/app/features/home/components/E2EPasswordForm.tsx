@@ -7,6 +7,10 @@ interface E2EPasswordFormProps {
   onBack: () => void
   onCancel: () => void
   onSubmit: (password: string, confirmPassword: string) => void
+  submitLabel?: string
+  title?: string
+  description?: string
+  showBackButton?: boolean
 }
 
 export function E2EPasswordForm({
@@ -15,6 +19,10 @@ export function E2EPasswordForm({
   onBack,
   onCancel,
   onSubmit,
+  submitLabel = 'Save and continue',
+  title = 'Create an encryption password',
+  description = 'This password is separate from your account password and cannot be recovered for you.',
+  showBackButton = true,
 }: E2EPasswordFormProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -27,10 +35,10 @@ export function E2EPasswordForm({
     <YStack gap="$3">
       <YStack gap="$1.5">
         <Text fontSize="$5" fontFamily="$body" fontWeight="700">
-          Create an encryption password
+          {title}
         </Text>
         <Text fontSize="$3" fontFamily="$body" color="$color11">
-          This password is separate from your account password and cannot be recovered for you.
+          {description}
         </Text>
       </YStack>
 
@@ -88,22 +96,24 @@ export function E2EPasswordForm({
         >
           Cancel
         </Button>
-        <Button
-          testID="e2e-password-back"
-          variant="outlined"
-          onPress={onBack}
-          disabled={isSaving}
-          fontFamily="$body"
-        >
-          Back
-        </Button>
+        {showBackButton && (
+          <Button
+            testID="e2e-password-back"
+            variant="outlined"
+            onPress={onBack}
+            disabled={isSaving}
+            fontFamily="$body"
+          >
+            Back
+          </Button>
+        )}
         <Button
           testID="e2e-password-submit"
           onPress={handleSubmit}
           disabled={isSaving}
           fontFamily="$body"
         >
-          {isSaving ? 'Saving…' : 'Save and continue'}
+          {isSaving ? 'Saving…' : submitLabel}
         </Button>
       </XStack>
     </YStack>

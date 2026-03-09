@@ -39,7 +39,7 @@ vi.mock('../encryptionKeyStore', () => ({
   hasStoredMasterKey: vi.fn(),
 }))
 
-import { startE2EEncryptionBootstrap } from '../userEncryption'
+import { startE2EEncryptionBootstrap, unlockE2EEncryptionOnDevice } from '../userEncryption'
 
 describe('startE2EEncryptionBootstrap', () => {
   beforeEach(() => {
@@ -70,10 +70,7 @@ describe('startE2EEncryptionBootstrap', () => {
     expect(payload.encryption_salt).toMatch(/^[0-9a-f]+$/)
     expect(payload).not.toHaveProperty('password')
 
-    expect(mockStoreMasterKey).toHaveBeenCalledWith(
-      'user-1',
-      expect.any(Uint8Array)
-    )
+    expect(mockStoreMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
   })
 
   it('returns a structured error when salt persistence fails', async () => {
@@ -101,6 +98,42 @@ describe('startE2EEncryptionBootstrap', () => {
     const result = await startE2EEncryptionBootstrap({
       userId: 'user-1',
       password: 'correct horse battery staple',
+    })
+
+    expect(result.error).toEqual({
+      message: 'secure-store unavailable',
+      code: 'local_key_store_failed',
+    })
+    expect(mockClearStoredMasterKey).toHaveBeenCalledWith('user-1')
+  })
+})
+
+describe('unlockE2EEncryptionOnDevice', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockStoreMasterKey.mockResolvedValue(undefined)
+    mockClearStoredMasterKey.mockResolvedValue(undefined)
+  })
+
+  it('derives and stores the local key without writing users row state', async () => {
+    const result = await unlockE2EEncryptionOnDevice({
+      userId: 'user-1',
+      password: 'correct horse battery staple',
+      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+    })
+
+    expect(result.error).toBeNull()
+    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockStoreMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
+  })
+
+  it('returns a structured error when local storage fails', async () => {
+    mockStoreMasterKey.mockRejectedValueOnce(new Error('secure-store unavailable'))
+
+    const result = await unlockE2EEncryptionOnDevice({
+      userId: 'user-1',
+      password: 'correct horse battery staple',
+      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
     })
 
     expect(result.error).toEqual({
