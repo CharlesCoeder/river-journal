@@ -289,4 +289,26 @@ describe('HomeScreen encryption flow', () => {
     expect(text).toContain('Finish end-to-end setup')
     expect(text).toContain('Create an encryption password')
   })
+
+  it('shows a single-password unlock form for existing E2E devices', async () => {
+    const renderer = await renderHomeScreen()
+
+    await act(async () => {
+      encryptionSetup$.assign({
+        isOpen: true,
+        selectedMode: 'e2e',
+        step: 'e2e-password',
+        isModeLocked: true,
+        currentMode: 'e2e',
+        currentModeSalt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        hasLoadedMode: true,
+      })
+    })
+
+    const text = getTextContent(renderer.root)
+
+    expect(text).toContain('Enter your encryption password')
+    expect(text).not.toContain('Confirm encryption password')
+    expect(() => renderer.root.findByProps({ testID: 'e2e-confirm-password-input' })).toThrow()
+  })
 })

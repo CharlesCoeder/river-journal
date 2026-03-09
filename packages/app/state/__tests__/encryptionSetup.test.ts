@@ -240,7 +240,7 @@ describe('encryption setup orchestration', () => {
     })
     mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(7))
 
-    const didEnable = await submitE2EPassword('password123', 'password123')
+    const didEnable = await submitE2EPassword('password123', '')
 
     expect(didEnable).toBe(true)
     expect(mockUnlockE2EEncryptionOnDevice).toHaveBeenCalledWith({
