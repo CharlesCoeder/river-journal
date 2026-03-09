@@ -194,12 +194,7 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
 }
 
 export function dbFlowToLocal(row: DbFlowRow): Flow {
-  let content: string
-  try {
-    content = decryptFlowContentFromDb(row.content)
-  } catch {
-    content = row.content
-  }
+  const content = decryptFlowContentFromDb(row.content)
 
   return {
     id: row.id,
@@ -208,6 +203,17 @@ export function dbFlowToLocal(row: DbFlowRow): Flow {
     content,
     wordCount: row.word_count,
     local_session_id: '',
+  }
+}
+
+export function mapDbFlowToLocalOrKeepExisting(
+  row: DbFlowRow,
+  existingLocalFlow?: Flow | null
+): Flow | null {
+  try {
+    return dbFlowToLocal(row)
+  } catch {
+    return existingLocalFlow ?? null
   }
 }
 

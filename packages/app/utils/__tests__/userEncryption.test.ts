@@ -1,24 +1,41 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { encryptFlowContent, deriveMasterKeyFromPassword } from '../encryption'
 
 const {
-  mockSingle,
-  mockSelect,
-  mockUpsert,
+  mockUsersSingle,
+  mockUsersSelect,
+  mockUsersUpsert,
+  mockFlowsLimit,
+  mockFlowsSelect,
   mockFrom,
   mockStoreMasterKey,
   mockClearStoredMasterKey,
 } = vi.hoisted(() => {
-  const single = vi.fn()
-  const select = vi.fn(() => ({ single }))
-  const upsert = vi.fn(() => ({ select }))
-  const from = vi.fn(() => ({ upsert }))
+  const usersSingle = vi.fn()
+  const usersSelect = vi.fn(() => ({ single: usersSingle }))
+  const usersUpsert = vi.fn(() => ({ select: usersSelect }))
+  const flowsLimit = vi.fn()
+  const flowsSelect = vi.fn(() => ({ limit: flowsLimit }))
+  const from = vi.fn((table: string) => {
+    if (table === 'users') {
+      return { upsert: usersUpsert }
+    }
+
+    if (table === 'flows') {
+      return { select: flowsSelect }
+    }
+
+    throw new Error(`Unexpected table: ${table}`)
+  })
   const storeMasterKey = vi.fn()
   const clearStoredMasterKey = vi.fn()
 
   return {
-    mockSingle: single,
-    mockSelect: select,
-    mockUpsert: upsert,
+    mockUsersSingle: usersSingle,
+    mockUsersSelect: usersSelect,
+    mockUsersUpsert: usersUpsert,
+    mockFlowsLimit: flowsLimit,
+    mockFlowsSelect: flowsSelect,
     mockFrom: from,
     mockStoreMasterKey: storeMasterKey,
     mockClearStoredMasterKey: clearStoredMasterKey,
@@ -44,8 +61,12 @@ import { startE2EEncryptionBootstrap, unlockE2EEncryptionOnDevice } from '../use
 describe('startE2EEncryptionBootstrap', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSingle.mockResolvedValue({
+    mockUsersSingle.mockResolvedValue({
       data: { encryption_mode: 'e2e', encryption_salt: 'abc123' },
+      error: null,
+    })
+    mockFlowsLimit.mockResolvedValue({
+      data: [],
       error: null,
     })
     mockStoreMasterKey.mockResolvedValue(undefined)
@@ -60,9 +81,9 @@ describe('startE2EEncryptionBootstrap', () => {
 
     expect(result.error).toBeNull()
     expect(mockFrom).toHaveBeenCalledWith('users')
-    expect(mockUpsert).toHaveBeenCalledTimes(1)
+    expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
 
-    const upsertCalls = mockUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
+    const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
     const payload = upsertCalls[0][0]
     expect(payload.id).toBe('user-1')
     expect(payload.encryption_mode).toBe('e2e')
@@ -74,7 +95,7 @@ describe('startE2EEncryptionBootstrap', () => {
   })
 
   it('returns a structured error when salt persistence fails', async () => {
-    mockSingle.mockResolvedValueOnce({
+    mockUsersSingle.mockResolvedValueOnce({
       data: null,
       error: { message: 'DB failed', code: 'db_failed' },
     })
@@ -111,6 +132,10 @@ describe('startE2EEncryptionBootstrap', () => {
 describe('unlockE2EEncryptionOnDevice', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFlowsLimit.mockResolvedValue({
+      data: [],
+      error: null,
+    })
     mockStoreMasterKey.mockResolvedValue(undefined)
     mockClearStoredMasterKey.mockResolvedValue(undefined)
   })
@@ -123,8 +148,33 @@ describe('unlockE2EEncryptionOnDevice', () => {
     })
 
     expect(result.error).toBeNull()
-    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockFrom).toHaveBeenCalledWith('flows')
     expect(mockStoreMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
+  })
+
+  it('rejects the wrong encryption password when existing encrypted flows cannot be decrypted', async () => {
+    const correctKey = await deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    const encryptedPayload = encryptFlowContent('secret text', correctKey)
+
+    mockFlowsLimit.mockResolvedValueOnce({
+      data: [{ id: 'flow-1', content: encryptedPayload }],
+      error: null,
+    })
+
+    const result = await unlockE2EEncryptionOnDevice({
+      userId: 'user-1',
+      password: 'wrong password',
+      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+    })
+
+    expect(result.error).toEqual({
+      message: 'Encryption password is incorrect for this account.',
+      code: 'invalid_encryption_password',
+    })
+    expect(mockStoreMasterKey).not.toHaveBeenCalled()
   })
 
   it('returns a structured error when local storage fails', async () => {

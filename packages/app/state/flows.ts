@@ -18,6 +18,7 @@ import {
   isSyncReady$,
   dbFlowToLocal,
   localFlowToDb,
+  mapDbFlowToLocalOrKeepExisting,
 } from './syncConfig'
 
 // =================================================================
@@ -55,14 +56,21 @@ export const flows$ = observable<Record<string, Flow>>(
               { serverIds: value.map((r: any) => r.id?.slice(0, 8)), localIds: localFlowIds.map(id => id.slice(0, 8)) }
             )
           }
-          return value.map((row: any) => dbFlowToLocal(row))
+          return value
+            .map((row: any) =>
+              mapDbFlowToLocalOrKeepExisting(row, row?.id ? flows$.peek()?.[row.id] ?? null : null)
+            )
+            .filter((row: Flow | null): row is Flow => row !== null)
         }
         if (value.daily_entry_id !== undefined) {
           if (process.env.NODE_ENV === 'development') {
             // eslint-disable-next-line no-console
             console.log('📥 [flows] single row save-response transformed', value.id)
           }
-          return dbFlowToLocal(value)
+          return mapDbFlowToLocalOrKeepExisting(
+            value,
+            value?.id ? flows$.peek()?.[value.id] ?? null : null
+          )
         }
         return value
       },
