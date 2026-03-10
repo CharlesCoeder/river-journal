@@ -21,6 +21,7 @@ import { useCallback, useState } from 'react'
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { SyncToggle } from 'app/features/home/components/SyncToggle'
+import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 
 function DevSyncIndicator() {
@@ -180,6 +181,7 @@ export function HomeScreen() {
 
             <Separator width="100%" />
             <SyncToggle />
+            <KeyringPrompt />
           </YStack>
         )}
 

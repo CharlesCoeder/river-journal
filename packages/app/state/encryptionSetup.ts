@@ -1,13 +1,14 @@
 import { batch, observable, observe } from '@legendapp/state'
 import type { EncryptionMode } from '../types/index'
 import { store$ } from './store'
-import { clearStoredMasterKey, loadMasterKey } from '../utils/encryptionKeyStore'
+import { clearStoredMasterKey, hasPlatformKeyring, loadMasterKey } from '../utils/encryptionKeyStore'
 import {
   readUserEncryptionSettings,
   unlockE2EEncryptionOnDevice,
   startE2EEncryptionBootstrap,
   upsertUserEncryptionMode,
   validateE2EMasterKeyForUser,
+  persistMasterKeyToKeyring,
 } from '../utils/userEncryption'
 import { syncEncryptionError$, syncEncryptionMode$ } from './syncConfig'
 
@@ -95,6 +96,22 @@ export const encryptionSetup$ = observable({
   isLoadingMode: false,
 })
 
+export const keyringPrompt$ = observable({
+  isVisible: false,
+  isPersisting: false,
+  persistError: null as EncryptionSetupError | null,
+})
+
+/** Observable for components to react to keyring persist outcomes (toast trigger). */
+export const keyringPersistResult$ = observable({
+  success: false,
+  error: null as EncryptionSetupError | null,
+})
+
+/** Pending master key for Phase 2 keyring persistence (never observable/persisted). */
+let pendingKeyringMasterKey: Uint8Array | null = null
+let pendingKeyringUserId: string | null = null
+
 const resetDialogState = () => {
   batch(() => {
     encryptionSetup$.isOpen.set(false)
@@ -173,7 +190,14 @@ export const resetEncryptionSetupState = () => {
     encryptionSetup$.hasLoadedMode.set(false)
     encryptionSetup$.isLoadingMode.set(false)
     isEncryptionReadyForSync$.set(false)
+    keyringPrompt$.isVisible.set(false)
+    keyringPrompt$.isPersisting.set(false)
+    keyringPrompt$.persistError.set(null)
+    keyringPersistResult$.success.set(false)
+    keyringPersistResult$.error.set(null)
     loadCurrentEncryptionModePromise = null
+    pendingKeyringMasterKey = null
+    pendingKeyringUserId = null
   })
 }
 
@@ -461,6 +485,17 @@ export const submitE2EPassword = async (
     store$.session.syncEnabled.set(true)
     isEncryptionReadyForSync$.set(true)
   })
+
+  // Phase 2: offer keyring persistence on platforms that support it
+  if (bootstrapResult.masterKey) {
+    const hasKeyring = await hasPlatformKeyring()
+    if (hasKeyring) {
+      pendingKeyringMasterKey = bootstrapResult.masterKey
+      pendingKeyringUserId = userId
+      keyringPrompt$.isVisible.set(true)
+    }
+  }
+
   return true
 }
 
@@ -474,3 +509,67 @@ observe(() => {
     encryptionSetup$.error.set(runtimeError)
   })
 })
+
+/**
+ * Phase 2: User accepted keyring persistence — runs the keyring write in the
+ * background and updates `keyringPersistResult$` so UI can react (toast).
+ */
+export const acceptKeyringPersistence = async (): Promise<void> => {
+  if (!pendingKeyringMasterKey || !pendingKeyringUserId) {
+    keyringPrompt$.isVisible.set(false)
+    return
+  }
+
+  batch(() => {
+    keyringPrompt$.isPersisting.set(true)
+    keyringPrompt$.persistError.set(null)
+    keyringPersistResult$.success.set(false)
+    keyringPersistResult$.error.set(null)
+  })
+
+  const result = await persistMasterKeyToKeyring({
+    userId: pendingKeyringUserId,
+    masterKey: pendingKeyringMasterKey,
+  })
+
+  pendingKeyringMasterKey = null
+  pendingKeyringUserId = null
+
+  if (result.error) {
+    batch(() => {
+      keyringPrompt$.isPersisting.set(false)
+      keyringPrompt$.persistError.set(result.error)
+      keyringPersistResult$.error.set(result.error)
+    })
+    return
+  }
+
+  batch(() => {
+    keyringPrompt$.isVisible.set(false)
+    keyringPrompt$.isPersisting.set(false)
+    keyringPrompt$.persistError.set(null)
+    keyringPersistResult$.success.set(true)
+  })
+}
+
+/** User declined keyring persistence — key remains in memory only for this session. */
+export const declineKeyringPersistence = (): void => {
+  pendingKeyringMasterKey = null
+  pendingKeyringUserId = null
+  batch(() => {
+    keyringPrompt$.isVisible.set(false)
+    keyringPrompt$.isPersisting.set(false)
+    keyringPrompt$.persistError.set(null)
+  })
+}
+
+/** Dismiss a keyring persistence error — hides the prompt. */
+export const dismissKeyringPrompt = (): void => {
+  pendingKeyringMasterKey = null
+  pendingKeyringUserId = null
+  batch(() => {
+    keyringPrompt$.isVisible.set(false)
+    keyringPrompt$.isPersisting.set(false)
+    keyringPrompt$.persistError.set(null)
+  })
+}

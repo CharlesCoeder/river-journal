@@ -1,3 +1,5 @@
+use scrypt::{scrypt, Params as ScryptParams};
+
 const ENCRYPTION_SERVICE_NAME: &str = "River Journal";
 
 #[tauri::command]
@@ -81,13 +83,46 @@ async fn delete_encryption_key(user_id: String) -> Result<(), String> {
   })
 }
 
+/// Derive a 32-byte master key from password + hex-encoded salt using native scrypt.
+/// Parameters match the JS side: N=2^17, r=8, p=1, dkLen=32.
+#[tauri::command]
+async fn derive_encryption_key(password: String, salt_hex: String) -> Result<String, String> {
+  log::info!("derive_encryption_key start");
+  tauri::async_runtime::spawn_blocking(move || {
+    let salt = hex::decode(&salt_hex).map_err(|error| {
+      format!("invalid salt hex: {error}")
+    })?;
+    // log_n=17 → N=2^17, r=8, p=1, dkLen=32
+    let params = ScryptParams::new(17, 8, 1, 32).map_err(|error| {
+      format!("invalid scrypt params: {error}")
+    })?;
+    let mut key = vec![0u8; 32];
+    scrypt(password.as_bytes(), &salt, &params, &mut key).map_err(|error| {
+      format!("scrypt derivation failed: {error}")
+    })?;
+    Ok(hex::encode(key))
+  })
+  .await
+  .map_err(|error| error.to_string())
+  .and_then(|result| result)
+  .map(|key_hex| {
+    log::info!("derive_encryption_key success");
+    key_hex
+  })
+  .map_err(|error| {
+    log::error!("derive_encryption_key failed: {}", error);
+    error
+  })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
     .invoke_handler(tauri::generate_handler![
       set_encryption_key,
       get_encryption_key,
-      delete_encryption_key
+      delete_encryption_key,
+      derive_encryption_key
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

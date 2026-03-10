@@ -5,8 +5,10 @@ const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
 const mockUnlockE2EEncryptionOnDevice = vi.fn()
 const mockValidateE2EMasterKeyForUser = vi.fn()
+const mockPersistMasterKeyToKeyring = vi.fn()
 const mockLoadMasterKey = vi.fn()
 const mockClearStoredMasterKey = vi.fn()
+const mockHasPlatformKeyring = vi.fn()
 
 vi.mock('../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
@@ -14,13 +16,16 @@ vi.mock('../../utils/userEncryption', () => ({
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
   unlockE2EEncryptionOnDevice: (...args: unknown[]) => mockUnlockE2EEncryptionOnDevice(...args),
   validateE2EMasterKeyForUser: (...args: unknown[]) => mockValidateE2EMasterKeyForUser(...args),
+  persistMasterKeyToKeyring: (...args: unknown[]) => mockPersistMasterKeyToKeyring(...args),
 }))
 
 vi.mock('../../utils/encryptionKeyStore', () => ({
   loadMasterKey: (...args: unknown[]) => mockLoadMasterKey(...args),
   getCachedMasterKey: vi.fn(),
   storeMasterKey: vi.fn(),
+  cacheOnlyMasterKey: vi.fn(),
   clearStoredMasterKey: (...args: unknown[]) => mockClearStoredMasterKey(...args),
+  hasPlatformKeyring: (...args: unknown[]) => mockHasPlatformKeyring(...args),
 }))
 
 vi.mock('../../utils/supabase', () => ({
@@ -52,10 +57,14 @@ vi.mock('../persistConfig', () => ({
 
 import { store$ } from '../store'
 import {
+  acceptKeyringPersistence,
   cancelEncryptionSetup,
   confirmEncryptionModeSelection,
+  declineKeyringPersistence,
   encryptionSetup$,
   isEncryptionReadyForSync$,
+  keyringPersistResult$,
+  keyringPrompt$,
   loadCurrentEncryptionMode,
   requestSyncEnable,
   resetEncryptionSetupState,
@@ -85,9 +94,11 @@ describe('encryption setup orchestration', () => {
     })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
       error: null,
+      masterKey: new Uint8Array(32).fill(1),
     })
     mockUnlockE2EEncryptionOnDevice.mockResolvedValue({
       error: null,
+      masterKey: new Uint8Array(32).fill(1),
     })
     mockValidateE2EMasterKeyForUser.mockResolvedValue({
       error: null,
@@ -95,6 +106,8 @@ describe('encryption setup orchestration', () => {
     })
     mockLoadMasterKey.mockResolvedValue(null)
     mockClearStoredMasterKey.mockResolvedValue(undefined)
+    mockHasPlatformKeyring.mockResolvedValue(false)
+    mockPersistMasterKeyToKeyring.mockResolvedValue({ error: null })
   })
 
   it('first-time enable opens the chooser instead of enabling sync', async () => {
@@ -343,5 +356,85 @@ describe('encryption setup orchestration', () => {
     })
 
     await Promise.all([pendingOne, pendingTwo])
+  })
+
+  it('shows keyring prompt after successful E2E submit when platform has keyring', async () => {
+    mockHasPlatformKeyring.mockResolvedValueOnce(true)
+    await requestSyncEnable()
+    await confirmEncryptionModeSelection()
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+
+    const didEnable = await submitE2EPassword('password123', 'password123')
+
+    expect(didEnable).toBe(true)
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    expect(keyringPrompt$.isVisible.get()).toBe(true)
+  })
+
+  it('does not show keyring prompt when platform has no keyring', async () => {
+    mockHasPlatformKeyring.mockResolvedValueOnce(false)
+    await requestSyncEnable()
+    await confirmEncryptionModeSelection()
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+
+    const didEnable = await submitE2EPassword('password123', 'password123')
+
+    expect(didEnable).toBe(true)
+    expect(keyringPrompt$.isVisible.get()).toBe(false)
+  })
+
+  it('acceptKeyringPersistence calls persistMasterKeyToKeyring and reports success', async () => {
+    mockHasPlatformKeyring.mockResolvedValueOnce(true)
+    await requestSyncEnable()
+    await confirmEncryptionModeSelection()
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+    await submitE2EPassword('password123', 'password123')
+
+    await acceptKeyringPersistence()
+
+    expect(mockPersistMasterKeyToKeyring).toHaveBeenCalled()
+    expect(keyringPrompt$.isVisible.get()).toBe(false)
+    expect(keyringPersistResult$.success.get()).toBe(true)
+  })
+
+  it('declineKeyringPersistence hides prompt without writing to keyring', async () => {
+    mockHasPlatformKeyring.mockResolvedValueOnce(true)
+    await requestSyncEnable()
+    await confirmEncryptionModeSelection()
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+    await submitE2EPassword('password123', 'password123')
+
+    declineKeyringPersistence()
+
+    expect(keyringPrompt$.isVisible.get()).toBe(false)
+    expect(mockPersistMasterKeyToKeyring).not.toHaveBeenCalled()
   })
 })

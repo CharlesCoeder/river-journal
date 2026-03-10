@@ -42,3 +42,18 @@ export async function clearStoredMasterKey(userId: string): Promise<void> {
   inMemoryMasterKeyCache.delete(userId)
   await SecureStore.deleteItemAsync(getMasterKeyId(userId))
 }
+
+/**
+ * Cache the master key in memory only, without touching Expo SecureStore.
+ * Used during Phase 1 of the deferred keyring flow.
+ */
+export function cacheOnlyMasterKey(userId: string, masterKey: Uint8Array): void {
+  inMemoryMasterKeyCache.set(userId, cloneBytes(masterKey))
+}
+
+/**
+ * Native platforms always have a durable keyring (Expo SecureStore).
+ */
+export async function hasPlatformKeyring(): Promise<boolean> {
+  return true
+}
