@@ -9,6 +9,7 @@ const {
   mockFlowsSelect,
   mockFrom,
   mockStoreMasterKey,
+  mockCacheOnlyMasterKey,
   mockClearStoredMasterKey,
 } = vi.hoisted(() => {
   const usersSingle = vi.fn()
@@ -28,6 +29,7 @@ const {
     throw new Error(`Unexpected table: ${table}`)
   })
   const storeMasterKey = vi.fn()
+  const cacheOnlyMasterKey = vi.fn()
   const clearStoredMasterKey = vi.fn()
 
   return {
@@ -38,6 +40,7 @@ const {
     mockFlowsSelect: flowsSelect,
     mockFrom: from,
     mockStoreMasterKey: storeMasterKey,
+    mockCacheOnlyMasterKey: cacheOnlyMasterKey,
     mockClearStoredMasterKey: clearStoredMasterKey,
   }
 })
@@ -50,13 +53,19 @@ vi.mock('../supabase', () => ({
 
 vi.mock('../encryptionKeyStore', () => ({
   storeMasterKey: mockStoreMasterKey,
+  cacheOnlyMasterKey: mockCacheOnlyMasterKey,
   clearStoredMasterKey: mockClearStoredMasterKey,
   loadMasterKey: vi.fn(),
   getCachedMasterKey: vi.fn(),
   hasStoredMasterKey: vi.fn(),
+  hasPlatformKeyring: vi.fn().mockResolvedValue(false),
 }))
 
-import { startE2EEncryptionBootstrap, unlockE2EEncryptionOnDevice } from '../userEncryption'
+import {
+  startE2EEncryptionBootstrap,
+  unlockE2EEncryptionOnDevice,
+  persistMasterKeyToKeyring,
+} from '../userEncryption'
 
 describe('startE2EEncryptionBootstrap', () => {
   beforeEach(() => {
@@ -73,13 +82,14 @@ describe('startE2EEncryptionBootstrap', () => {
     mockClearStoredMasterKey.mockResolvedValue(undefined)
   })
 
-  it('persists mode+salt and stores the derived key locally', async () => {
+  it('persists mode+salt, caches the key in memory, and returns the master key', async () => {
     const result = await startE2EEncryptionBootstrap({
       userId: 'user-1',
       password: 'correct horse battery staple',
     })
 
     expect(result.error).toBeNull()
+    expect(result.masterKey).toBeInstanceOf(Uint8Array)
     expect(mockFrom).toHaveBeenCalledWith('users')
     expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
 
@@ -91,7 +101,9 @@ describe('startE2EEncryptionBootstrap', () => {
     expect(payload.encryption_salt).toMatch(/^[0-9a-f]+$/)
     expect(payload).not.toHaveProperty('password')
 
-    expect(mockStoreMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
+    // Key is cached in memory only — not written to keyring
+    expect(mockCacheOnlyMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
+    expect(mockStoreMasterKey).not.toHaveBeenCalled()
   })
 
   it('returns a structured error when salt persistence fails', async () => {
@@ -109,23 +121,9 @@ describe('startE2EEncryptionBootstrap', () => {
       message: 'DB failed',
       code: 'db_failed',
     })
+    expect(result.masterKey).toBeNull()
+    expect(mockCacheOnlyMasterKey).not.toHaveBeenCalled()
     expect(mockStoreMasterKey).not.toHaveBeenCalled()
-    expect(mockClearStoredMasterKey).toHaveBeenCalledWith('user-1')
-  })
-
-  it('returns a structured error and cleans partial state when local key storage fails', async () => {
-    mockStoreMasterKey.mockRejectedValueOnce(new Error('secure-store unavailable'))
-
-    const result = await startE2EEncryptionBootstrap({
-      userId: 'user-1',
-      password: 'correct horse battery staple',
-    })
-
-    expect(result.error).toEqual({
-      message: 'secure-store unavailable',
-      code: 'local_key_store_failed',
-    })
-    expect(mockClearStoredMasterKey).toHaveBeenCalledWith('user-1')
   })
 })
 
@@ -140,7 +138,7 @@ describe('unlockE2EEncryptionOnDevice', () => {
     mockClearStoredMasterKey.mockResolvedValue(undefined)
   })
 
-  it('derives and stores the local key without writing users row state', async () => {
+  it('derives and caches the local key in memory without writing to keyring', async () => {
     const result = await unlockE2EEncryptionOnDevice({
       userId: 'user-1',
       password: 'correct horse battery staple',
@@ -148,8 +146,10 @@ describe('unlockE2EEncryptionOnDevice', () => {
     })
 
     expect(result.error).toBeNull()
+    expect(result.masterKey).toBeInstanceOf(Uint8Array)
     expect(mockFrom).toHaveBeenCalledWith('flows')
-    expect(mockStoreMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
+    expect(mockCacheOnlyMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
+    expect(mockStoreMasterKey).not.toHaveBeenCalled()
   })
 
   it('rejects the wrong encryption password when existing encrypted flows cannot be decrypted', async () => {
@@ -174,22 +174,35 @@ describe('unlockE2EEncryptionOnDevice', () => {
       message: 'Encryption password is incorrect for this account.',
       code: 'invalid_encryption_password',
     })
+    expect(result.masterKey).toBeNull()
+    expect(mockCacheOnlyMasterKey).not.toHaveBeenCalled()
     expect(mockStoreMasterKey).not.toHaveBeenCalled()
   })
+})
 
-  it('returns a structured error when local storage fails', async () => {
-    mockStoreMasterKey.mockRejectedValueOnce(new Error('secure-store unavailable'))
+describe('persistMasterKeyToKeyring', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockStoreMasterKey.mockResolvedValue(undefined)
+  })
 
-    const result = await unlockE2EEncryptionOnDevice({
-      userId: 'user-1',
-      password: 'correct horse battery staple',
-      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-    })
+  it('writes the key to the platform keyring', async () => {
+    const key = new Uint8Array(32).fill(1)
+    const result = await persistMasterKeyToKeyring({ userId: 'user-1', masterKey: key })
+
+    expect(result.error).toBeNull()
+    expect(mockStoreMasterKey).toHaveBeenCalledWith('user-1', key)
+  })
+
+  it('returns a structured error when keyring write fails', async () => {
+    mockStoreMasterKey.mockRejectedValueOnce(new Error('keychain unavailable'))
+    const key = new Uint8Array(32).fill(1)
+
+    const result = await persistMasterKeyToKeyring({ userId: 'user-1', masterKey: key })
 
     expect(result.error).toEqual({
-      message: 'secure-store unavailable',
-      code: 'local_key_store_failed',
+      message: 'keychain unavailable',
+      code: 'keyring_persist_failed',
     })
-    expect(mockClearStoredMasterKey).toHaveBeenCalledWith('user-1')
   })
 })

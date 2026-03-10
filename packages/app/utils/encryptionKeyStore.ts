@@ -242,3 +242,26 @@ export async function clearStoredMasterKey(userId: string): Promise<void> {
     })
   }
 }
+
+/**
+ * Cache the master key in memory only, without touching any platform keyring.
+ * Used during Phase 1 of the deferred keyring flow so the app can enable sync
+ * immediately after key derivation without waiting for keyring I/O.
+ */
+export function cacheOnlyMasterKey(userId: string, masterKey: Uint8Array): void {
+  inMemoryMasterKeyCache.set(userId, cloneBytes(masterKey))
+}
+
+/**
+ * Returns true when the current platform has a durable keyring backend
+ * (Tauri desktop with OS keychain). Web session-only storage is not
+ * considered a platform keyring.
+ */
+export async function hasPlatformKeyring(): Promise<boolean> {
+  try {
+    const invoke = await getTauriInvoke()
+    return invoke !== null
+  } catch {
+    return false
+  }
+}

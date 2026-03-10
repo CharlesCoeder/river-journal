@@ -8,7 +8,7 @@ import {
   generateEncryptionSaltHex,
   isEncryptedFlowPayload,
 } from './encryption'
-import { clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
+import { cacheOnlyMasterKey, clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
 
 export interface EncryptionSettings {
   mode: EncryptionMode | null
@@ -103,13 +103,13 @@ export async function upsertUserEncryptionMode(input: {
 export async function startE2EEncryptionBootstrap(_input: {
   userId: string
   password: string
-}): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+}): Promise<{ error: null; masterKey: Uint8Array } | { error: EncryptionSettingsError['error']; masterKey: null }> {
   const input = _input
-  let shouldCleanupLocalKey = false
 
   if (!input.password.trim()) {
     return {
       error: toEncryptionError('Encryption password is required.', 'missing_password').error,
+      masterKey: null,
     }
   }
 
@@ -129,30 +129,21 @@ export async function startE2EEncryptionBootstrap(_input: {
       .single()
 
     if (error) {
-      shouldCleanupLocalKey = true
       return {
         error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
+        masterKey: null,
       }
     }
 
-    try {
-      await storeMasterKey(input.userId, masterKey)
-    } catch (error) {
-      shouldCleanupLocalKey = true
-      return {
-        error: toEncryptionError(
-          (error as Error).message || 'Failed to store encryption key on this device.',
-          'local_key_store_failed'
-        ).error,
-      }
-    }
+    // Phase 1: cache in memory only — keyring persistence is deferred
+    cacheOnlyMasterKey(input.userId, masterKey)
 
-    return { error: null }
+    return { error: null, masterKey }
   } catch (error) {
-    shouldCleanupLocalKey = true
     if (error instanceof EncryptionError) {
       return {
         error: toEncryptionError(error.message, error.code).error,
+        masterKey: null,
       }
     }
 
@@ -161,10 +152,7 @@ export async function startE2EEncryptionBootstrap(_input: {
         (error as Error).message || 'Failed to bootstrap end-to-end encryption.',
         'e2e_bootstrap_failed'
       ).error,
-    }
-  } finally {
-    if (shouldCleanupLocalKey) {
-      await clearStoredMasterKey(input.userId)
+      masterKey: null,
     }
   }
 }
@@ -226,12 +214,11 @@ export async function unlockE2EEncryptionOnDevice(input: {
   userId: string
   password: string
   salt: string
-}): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
-  let shouldCleanupLocalKey = false
-
+}): Promise<{ error: null; masterKey: Uint8Array } | { error: EncryptionSettingsError['error']; masterKey: null }> {
   if (!input.password.trim()) {
     return {
       error: toEncryptionError('Encryption password is required.', 'missing_password').error,
+      masterKey: null,
     }
   }
 
@@ -240,17 +227,18 @@ export async function unlockE2EEncryptionOnDevice(input: {
     const validation = await validateE2EMasterKeyForUser({ masterKey })
 
     if (validation.error) {
-      return { error: validation.error }
+      return { error: validation.error, masterKey: null }
     }
 
-    shouldCleanupLocalKey = true
-    await storeMasterKey(input.userId, masterKey)
-    shouldCleanupLocalKey = false
-    return { error: null }
+    // Phase 1: cache in memory only — keyring persistence is deferred
+    cacheOnlyMasterKey(input.userId, masterKey)
+
+    return { error: null, masterKey }
   } catch (error) {
     if (error instanceof EncryptionError) {
       return {
         error: toEncryptionError(error.message, error.code).error,
+        masterKey: null,
       }
     }
 
@@ -259,10 +247,28 @@ export async function unlockE2EEncryptionOnDevice(input: {
         (error as Error).message || 'Failed to unlock end-to-end encryption on this device.',
         'local_key_store_failed'
       ).error,
+      masterKey: null,
     }
-  } finally {
-    if (shouldCleanupLocalKey) {
-      await clearStoredMasterKey(input.userId)
+  }
+}
+
+/**
+ * Phase 2: Persist the master key to the platform keyring in the background.
+ * Returns success/failure without throwing so callers can show toast feedback.
+ */
+export async function persistMasterKeyToKeyring(input: {
+  userId: string
+  masterKey: Uint8Array
+}): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+  try {
+    await storeMasterKey(input.userId, input.masterKey)
+    return { error: null }
+  } catch (error) {
+    return {
+      error: toEncryptionError(
+        (error as Error).message || 'Failed to store the encryption key in the device keychain.',
+        'keyring_persist_failed'
+      ).error,
     }
   }
 }
