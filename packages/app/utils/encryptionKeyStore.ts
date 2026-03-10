@@ -28,6 +28,15 @@ export class EncryptionKeyStoreError extends Error {
 const logKeyStoreDiagnostic = (message: string, details?: Record<string, unknown>) => {
   if (process.env.NODE_ENV !== 'development') return
 
+  // Truncate userId to avoid logging full identifiers alongside key-storage operations.
+  const sanitized = details
+    ? Object.fromEntries(
+        Object.entries(details).map(([k, v]) =>
+          k === 'userId' && typeof v === 'string' ? [k, `${v.slice(0, 8)}…`] : [k, v]
+        )
+      )
+    : undefined
+
   // eslint-disable-next-line no-console
   console.info('[encryptionKeyStore]', message, {
     isDesktopAppBuild: isDesktopAppBuild(),
@@ -38,7 +47,7 @@ const logKeyStoreDiagnostic = (message: string, details?: Record<string, unknown
       typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string'
         ? navigator.userAgent
         : null,
-    ...details,
+    ...sanitized,
   })
 }
 

@@ -69,8 +69,13 @@ const installReactNativeRandomValuesFallback = () => {
         },
       }
     }
-  } catch {
-    // Fall through to the hard failure below if no secure runtime source is available.
+  } catch (installError) {
+    // Preserve the error so it is visible to debuggers if expo-crypto fails to import.
+    // assertCryptoGetRandomValues() will throw with a clear user-facing message below.
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.warn('[encryption] Failed to install React Native crypto polyfill:', installError)
+    }
   }
 }
 
@@ -96,7 +101,7 @@ const assertHex = (value: string, fieldName: string) => {
 }
 
 const assertMasterKey = (masterKey: Uint8Array) => {
-  if (!(masterKey instanceof Uint8Array) || masterKey.length !== KEY_BYTES) {
+  if (!ArrayBuffer.isView(masterKey) || masterKey.byteLength !== KEY_BYTES) {
     throwEncryptionError(
       'Encryption key is invalid. A 32-byte master key is required.',
       'invalid_master_key'

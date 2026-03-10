@@ -12,7 +12,7 @@ export async function tryNativeScrypt(
   salt: Uint8Array
 ): Promise<Uint8Array | null> {
   try {
-    // Prefer async scrypt to avoid blocking the JS thread
+    // Async scrypt avoids blocking the React Native JS thread during the expensive N=2^17 computation.
     if (typeof QuickCrypto.scrypt === 'function') {
       return new Promise<Uint8Array | null>((resolve) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,12 +32,14 @@ export async function tryNativeScrypt(
       })
     }
 
-    // Fall back to sync variant
-    if (typeof QuickCrypto.scryptSync === 'function') {
-      const key = QuickCrypto.scryptSync(password, salt, KEY_BYTES, SCRYPT_PARAMS)
-      return new Uint8Array(key)
-    }
-
+    // scryptSync is intentionally NOT used here: calling it with N=2^17 would block the JS thread
+    // for ~200ms and freeze the UI. If the async API is unavailable (unexpected API change in a
+    // future react-native-quick-crypto release), return null so the caller falls back to
+    // @noble/hashes scryptAsync instead of silently hanging the thread.
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[nativeScrypt] react-native-quick-crypto async scrypt API not found; falling back to JS scryptAsync.'
+    )
     return null
   } catch {
     return null
