@@ -164,10 +164,9 @@ export function generateEncryptionSaltHex(): string {
 const TAURI_DERIVE_KEY_COMMAND = 'derive_encryption_key'
 
 /**
- * Attempt native scrypt derivation via the Tauri Rust backend.
- * Returns null if Tauri is unavailable (web/mobile).
+ * Attempt native scrypt via Tauri Rust backend (desktop).
  */
-const tryNativeScrypt = async (password: string, saltHex: string): Promise<Uint8Array | null> => {
+const tryTauriScrypt = async (password: string, saltHex: string): Promise<Uint8Array | null> => {
   if (typeof window === 'undefined') return null
 
   const hasTauri =
@@ -184,7 +183,6 @@ const tryNativeScrypt = async (password: string, saltHex: string): Promise<Uint8
     })
     return hexToBytes(keyHex)
   } catch {
-    // Fall through to JS scrypt
     return null
   }
 }
@@ -201,13 +199,21 @@ export async function deriveMasterKeyFromPassword(password: string, saltHex: str
     throwEncryptionError('Encryption salt length is invalid.', 'invalid_salt')
   }
 
-  // Prefer native Rust scrypt on Tauri desktop (dramatically faster)
-  const nativeResult = await tryNativeScrypt(password, saltHex)
-  if (nativeResult && nativeResult.length === KEY_BYTES) {
-    return nativeResult
+  // 1. Prefer native Rust scrypt on Tauri desktop
+  const tauriResult = await tryTauriScrypt(password, saltHex)
+  if (tauriResult && tauriResult.length === KEY_BYTES) {
+    return tauriResult
   }
 
-  // Fallback: JS scryptAsync (web / mobile)
+  // 2. Prefer native OpenSSL scrypt on React Native mobile
+  //    Import resolves to nativeScrypt.native.ts (RN) or nativeScrypt.ts (web/desktop stub)
+  const { tryNativeScrypt } = await import('./nativeScrypt')
+  const rnResult = await tryNativeScrypt(password, salt)
+  if (rnResult && rnResult.length === KEY_BYTES) {
+    return rnResult
+  }
+
+  // 3. Fallback: JS scryptAsync (web)
   await new Promise(resolve => setTimeout(resolve, 0))
 
   return scryptAsync(password, salt, {
