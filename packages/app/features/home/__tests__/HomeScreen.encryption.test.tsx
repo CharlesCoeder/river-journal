@@ -15,6 +15,10 @@ vi.mock('../../../utils/userEncryption', () => ({
   upsertUserEncryptionMode: (...args: unknown[]) => mockUpsertUserEncryptionMode(...args),
   startE2EEncryptionBootstrap: (...args: unknown[]) => mockStartE2EEncryptionBootstrap(...args),
   unlockE2EEncryptionOnDevice: (...args: unknown[]) => mockUnlockE2EEncryptionOnDevice(...args),
+  validateE2EMasterKeyForUser: vi.fn().mockResolvedValue({ isValid: true, error: null }),
+  persistMasterKeyToKeyring: vi.fn().mockResolvedValue({ error: null }),
+  bootstrapManagedEncryption: vi.fn().mockResolvedValue({ error: null, managedKeyHex: 'a'.repeat(64) }),
+  fetchManagedEncryptionKey: vi.fn().mockResolvedValue({ data: 'a'.repeat(64), error: null }),
 }))
 
 vi.mock('../../../utils/supabase', () => ({

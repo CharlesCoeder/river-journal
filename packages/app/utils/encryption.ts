@@ -5,6 +5,7 @@ import { scryptAsync } from '@noble/hashes/scrypt.js'
 const ENCRYPTION_ALGORITHM = 'xchacha20poly1305' as const
 const ENCRYPTION_VERSION = 1 as const
 const ENCRYPTION_PAYLOAD_PREFIX = 'rj:e2e:v1:'
+const MANAGED_PAYLOAD_PREFIX = 'rj:managed:v1:'
 const NONCE_BYTES = 24
 const KEY_BYTES = 32
 const SALT_BYTES = 32
@@ -286,3 +287,71 @@ export function decryptFlowContent(serialized: string, masterKey: Uint8Array): s
     )
   }
 }
+
+// =================================================================
+// MANAGED ENCRYPTION
+// =================================================================
+
+export function isManagedEncryptedPayload(content: string): boolean {
+  return content.startsWith(MANAGED_PAYLOAD_PREFIX)
+}
+
+export function encodeManagedPayload(payload: EncryptedFlowPayload): string {
+  const normalized = normalizePayload(payload)
+  return `${MANAGED_PAYLOAD_PREFIX}${JSON.stringify(normalized)}`
+}
+
+export function decodeManagedPayload(serialized: string): EncryptedFlowPayload {
+  if (!isManagedEncryptedPayload(serialized)) {
+    throwEncryptionError('Flow payload is not a managed encryption envelope.', 'unsupported_payload_format')
+  }
+
+  const json = serialized.slice(MANAGED_PAYLOAD_PREFIX.length)
+  try {
+    return normalizePayload(JSON.parse(json) as unknown)
+  } catch (error) {
+    if (error instanceof EncryptionError) throw error
+    return throwEncryptionError('Managed payload JSON is malformed.', 'encrypted_payload_invalid_json')
+  }
+}
+
+export function encryptFlowContentManaged(plaintext: string, managedKey: Uint8Array): string {
+  assertMasterKey(managedKey)
+  assertCryptoGetRandomValues()
+
+  const nonce = randomBytes(NONCE_BYTES)
+  const cipher = xchacha20poly1305(managedKey, nonce)
+  const ciphertext = cipher.encrypt(utf8ToBytes(plaintext))
+
+  return encodeManagedPayload({
+    version: ENCRYPTION_VERSION,
+    algorithm: ENCRYPTION_ALGORITHM,
+    nonce: bytesToHex(nonce),
+    ciphertext: bytesToHex(ciphertext),
+  })
+}
+
+export function decryptFlowContentManaged(serialized: string, managedKey: Uint8Array): string {
+  assertMasterKey(managedKey)
+  const payload = decodeManagedPayload(serialized)
+
+  const nonce = hexToBytes(payload.nonce)
+  const ciphertext = hexToBytes(payload.ciphertext)
+
+  try {
+    const cipher = xchacha20poly1305(managedKey, nonce)
+    const plaintext = cipher.decrypt(ciphertext)
+    return bytesToUtf8(plaintext)
+  } catch (error) {
+    return throwEncryptionError(
+      `Failed to decrypt managed-mode flow content: ${(error as Error).message}`,
+      'flow_decrypt_failed'
+    )
+  }
+}
+
+export function generateManagedEncryptionKey(): string {
+  assertCryptoGetRandomValues()
+  return bytesToHex(randomBytes(KEY_BYTES))
+}
+

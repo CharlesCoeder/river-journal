@@ -6,6 +6,8 @@ const mockStartE2EEncryptionBootstrap = vi.fn()
 const mockUnlockE2EEncryptionOnDevice = vi.fn()
 const mockValidateE2EMasterKeyForUser = vi.fn()
 const mockPersistMasterKeyToKeyring = vi.fn()
+const mockBootstrapManagedEncryption = vi.fn()
+const mockFetchManagedEncryptionKey = vi.fn()
 const mockLoadMasterKey = vi.fn()
 const mockClearStoredMasterKey = vi.fn()
 const mockHasPlatformKeyring = vi.fn()
@@ -17,6 +19,8 @@ vi.mock('../../utils/userEncryption', () => ({
   unlockE2EEncryptionOnDevice: (...args: unknown[]) => mockUnlockE2EEncryptionOnDevice(...args),
   validateE2EMasterKeyForUser: (...args: unknown[]) => mockValidateE2EMasterKeyForUser(...args),
   persistMasterKeyToKeyring: (...args: unknown[]) => mockPersistMasterKeyToKeyring(...args),
+  bootstrapManagedEncryption: (...args: unknown[]) => mockBootstrapManagedEncryption(...args),
+  fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
 }))
 
 vi.mock('../../utils/encryptionKeyStore', () => ({
@@ -71,6 +75,7 @@ import {
   setSelectedEncryptionMode,
   submitE2EPassword,
 } from '../encryptionSetup'
+import { syncManagedKeyHex$ } from '../syncConfig'
 
 describe('encryption setup orchestration', () => {
   beforeEach(() => {
@@ -108,6 +113,14 @@ describe('encryption setup orchestration', () => {
     mockClearStoredMasterKey.mockResolvedValue(undefined)
     mockHasPlatformKeyring.mockResolvedValue(false)
     mockPersistMasterKeyToKeyring.mockResolvedValue({ error: null })
+    mockBootstrapManagedEncryption.mockResolvedValue({
+      error: null,
+      managedKeyHex: 'a'.repeat(64),
+    })
+    mockFetchManagedEncryptionKey.mockResolvedValue({
+      data: 'a'.repeat(64),
+      error: null,
+    })
   })
 
   it('first-time enable opens the chooser instead of enabling sync', async () => {
@@ -130,21 +143,19 @@ describe('encryption setup orchestration', () => {
     expect(encryptionSetup$.step.get()).toBe('choice')
   })
 
-  it('managed mode persists encryption_mode and enables sync', async () => {
+  it('managed mode calls bootstrapManagedEncryption and caches the key', async () => {
     await requestSyncEnable()
     setSelectedEncryptionMode('managed')
 
     const didEnable = await confirmEncryptionModeSelection()
 
     expect(didEnable).toBe(true)
-    expect(mockUpsertUserEncryptionMode).toHaveBeenCalledWith({
-      userId: 'user-1',
-      mode: 'managed',
-    })
+    expect(mockBootstrapManagedEncryption).toHaveBeenCalledWith({ userId: 'user-1' })
     expect(store$.session.syncEnabled.get()).toBe(true)
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.isOpen.get()).toBe(false)
+    expect(syncManagedKeyHex$.get()).toBe('a'.repeat(64))
   })
 
   it('E2E selection advances to the password step and keeps sync blocked', async () => {
@@ -176,12 +187,67 @@ describe('encryption setup orchestration', () => {
     expect(mockReadUserEncryptionSettings).not.toHaveBeenCalled()
   })
 
+  it('managed bootstrap failure leaves sync off and surfaces an error', async () => {
+    await requestSyncEnable()
+    setSelectedEncryptionMode('managed')
+    mockBootstrapManagedEncryption.mockResolvedValueOnce({
+      error: { message: 'Key generation failed.', code: 'managed_bootstrap_failed' },
+      managedKeyHex: null,
+    })
+
+    const didEnable = await confirmEncryptionModeSelection()
+
+    expect(didEnable).toBe(false)
+    expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Key generation failed.',
+      code: 'managed_bootstrap_failed',
+    })
+  })
+
+  it('loadCurrentEncryptionMode fetches and caches managed key', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: { mode: 'managed', salt: null },
+      error: null,
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('managed')
+    expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
+    expect(syncManagedKeyHex$.get()).toBe('a'.repeat(64))
+    expect(encryptionSetup$.currentMode.get()).toBe('managed')
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+  })
+
+  it('blocks sync when managed key cannot be fetched', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: { mode: 'managed', salt: null },
+      error: null,
+    })
+    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Managed key missing', code: 'managed_key_missing' },
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('managed')
+    expect(encryptionSetup$.currentMode.get()).toBe('managed')
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
+    expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Managed key missing',
+      code: 'managed_key_missing',
+    })
+  })
+
   it('persistence failure leaves sync off and surfaces an error', async () => {
     await requestSyncEnable()
     setSelectedEncryptionMode('managed')
-    mockUpsertUserEncryptionMode.mockResolvedValueOnce({
-      data: null,
+    mockBootstrapManagedEncryption.mockResolvedValueOnce({
       error: { message: 'Could not save encryption mode.', code: 'save_failed' },
+      managedKeyHex: null,
     })
 
     const didEnable = await confirmEncryptionModeSelection()

@@ -9,8 +9,10 @@ import {
   upsertUserEncryptionMode,
   validateE2EMasterKeyForUser,
   persistMasterKeyToKeyring,
+  bootstrapManagedEncryption,
+  fetchManagedEncryptionKey,
 } from '../utils/userEncryption'
-import { syncEncryptionError$, syncEncryptionMode$ } from './syncConfig'
+import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyHex$ } from './syncConfig'
 
 export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'saving'
 
@@ -198,6 +200,7 @@ export const resetEncryptionSetupState = () => {
     loadCurrentEncryptionModePromise = null
     pendingKeyringMasterKey = null
     pendingKeyringUserId = null
+    syncManagedKeyHex$.set(null)
   })
 }
 
@@ -245,6 +248,26 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
         return null
       }
 
+      // Managed mode: fetch the managed key from Supabase and cache it
+      if (result.data.mode === 'managed') {
+        const keyResult = await fetchManagedEncryptionKey(userId)
+        if (keyResult.error) {
+          batch(() => {
+            encryptionSetup$.error.set(keyResult.error)
+            encryptionSetup$.hasLoadedMode.set(true)
+            encryptionSetup$.currentMode.set('managed')
+            isEncryptionReadyForSync$.set(false)
+            store$.session.syncEnabled.set(false)
+          })
+          syncEncryptionMode$.set('managed')
+          return 'managed'
+        }
+        syncManagedKeyHex$.set(keyResult.data)
+        applyLoadedSettings('managed', null, false)
+        return 'managed'
+      }
+
+      // E2E mode: resolve local key availability
       try {
         const localKeyState = await resolveLocalE2EKeyAvailability(
           userId,
@@ -381,9 +404,32 @@ export const confirmEncryptionModeSelection = async (): Promise<boolean> => {
     return false
   }
 
-  const persisted = await persistEncryptionMode('managed')
+  // Managed mode: persist mode, then generate + store the managed key
+  const userId = store$.session.userId.get()
+  if (!userId) {
+    encryptionSetup$.error.set({
+      message: 'You must be signed in before Cloud Sync can be configured.',
+      code: 'missing_user',
+    })
+    return false
+  }
 
-  if (!persisted) return false
+  encryptionSetup$.step.set('saving')
+
+  const bootstrapResult = await bootstrapManagedEncryption({ userId })
+
+  if (bootstrapResult.error) {
+    batch(() => {
+      encryptionSetup$.error.set(bootstrapResult.error)
+      encryptionSetup$.step.set('choice')
+      store$.session.syncEnabled.set(false)
+    })
+    return false
+  }
+
+  syncManagedKeyHex$.set(bootstrapResult.managedKeyHex)
+
+  applyLoadedSettings('managed', null, false)
 
   batch(() => {
     resetDialogState()

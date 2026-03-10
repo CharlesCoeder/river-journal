@@ -5,6 +5,9 @@ const {
   mockUsersSingle,
   mockUsersSelect,
   mockUsersUpsert,
+  mockUsersMaybeSingle,
+  mockUsersEq,
+  mockUsersSelectRead,
   mockFlowsLimit,
   mockFlowsSelect,
   mockFrom,
@@ -15,11 +18,14 @@ const {
   const usersSingle = vi.fn()
   const usersSelect = vi.fn(() => ({ single: usersSingle }))
   const usersUpsert = vi.fn(() => ({ select: usersSelect }))
+  const usersMaybeSingle = vi.fn()
+  const usersEq = vi.fn(() => ({ maybeSingle: usersMaybeSingle }))
+  const usersSelectRead = vi.fn(() => ({ eq: usersEq }))
   const flowsLimit = vi.fn()
   const flowsSelect = vi.fn(() => ({ limit: flowsLimit }))
   const from = vi.fn((table: string) => {
     if (table === 'users') {
-      return { upsert: usersUpsert }
+      return { upsert: usersUpsert, select: usersSelectRead }
     }
 
     if (table === 'flows') {
@@ -36,6 +42,9 @@ const {
     mockUsersSingle: usersSingle,
     mockUsersSelect: usersSelect,
     mockUsersUpsert: usersUpsert,
+    mockUsersMaybeSingle: usersMaybeSingle,
+    mockUsersEq: usersEq,
+    mockUsersSelectRead: usersSelectRead,
     mockFlowsLimit: flowsLimit,
     mockFlowsSelect: flowsSelect,
     mockFrom: from,
@@ -65,6 +74,8 @@ import {
   startE2EEncryptionBootstrap,
   unlockE2EEncryptionOnDevice,
   persistMasterKeyToKeyring,
+  bootstrapManagedEncryption,
+  fetchManagedEncryptionKey,
 } from '../userEncryption'
 
 describe('startE2EEncryptionBootstrap', () => {
@@ -203,6 +214,97 @@ describe('persistMasterKeyToKeyring', () => {
     expect(result.error).toEqual({
       message: 'keychain unavailable',
       code: 'keyring_persist_failed',
+    })
+  })
+})
+
+describe('bootstrapManagedEncryption', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUsersSingle.mockResolvedValue({
+      data: { encryption_mode: 'managed', managed_encryption_key: 'abc123' },
+      error: null,
+    })
+  })
+
+  it('generates a managed key, upserts to Supabase, and returns the hex key', async () => {
+    const result = await bootstrapManagedEncryption({ userId: 'user-1' })
+
+    expect(result.error).toBeNull()
+    expect(result.managedKeyHex).toBeTruthy()
+    expect(typeof result.managedKeyHex).toBe('string')
+    expect(result.managedKeyHex).toMatch(/^[0-9a-f]{64}$/)
+    expect(mockFrom).toHaveBeenCalledWith('users')
+    expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
+
+    const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
+    const payload = upsertCalls[0][0]
+    expect(payload.id).toBe('user-1')
+    expect(payload.encryption_mode).toBe('managed')
+    expect(payload.managed_encryption_key).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('returns a structured error when upsert fails', async () => {
+    mockUsersSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'DB failed', code: 'db_failed' },
+    })
+
+    const result = await bootstrapManagedEncryption({ userId: 'user-1' })
+
+    expect(result.error).toEqual({
+      message: 'DB failed',
+      code: 'db_failed',
+    })
+    expect(result.managedKeyHex).toBeNull()
+  })
+})
+
+describe('fetchManagedEncryptionKey', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('reads managed_encryption_key from Supabase', async () => {
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: { managed_encryption_key: 'abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234' },
+      error: null,
+    })
+
+    const result = await fetchManagedEncryptionKey('user-1')
+
+    expect(result.error).toBeNull()
+    expect(result.data).toBe('abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234')
+    expect(mockFrom).toHaveBeenCalledWith('users')
+  })
+
+  it('returns error when managed key is missing', async () => {
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: { managed_encryption_key: null },
+      error: null,
+    })
+
+    const result = await fetchManagedEncryptionKey('user-1')
+
+    expect(result.data).toBeNull()
+    expect(result.error).toEqual({
+      message: 'Managed encryption key not found for this account.',
+      code: 'managed_key_missing',
+    })
+  })
+
+  it('returns error on DB failure', async () => {
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Connection lost', code: 'network_error' },
+    })
+
+    const result = await fetchManagedEncryptionKey('user-1')
+
+    expect(result.data).toBeNull()
+    expect(result.error).toEqual({
+      message: 'Connection lost',
+      code: 'network_error',
     })
   })
 })

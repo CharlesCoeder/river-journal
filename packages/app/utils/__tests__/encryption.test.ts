@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
   decodeEncryptedPayload,
+  decodeManagedPayload,
   decryptFlowContent,
+  decryptFlowContentManaged,
   deriveMasterKeyFromPassword,
   encryptFlowContent,
+  encryptFlowContentManaged,
   generateEncryptionSaltHex,
+  generateManagedEncryptionKey,
   isEncryptedFlowPayload,
+  isManagedEncryptedPayload,
 } from '../encryption'
+import { hexToBytes } from '@noble/ciphers/utils.js'
 
 describe('encryption utils', () => {
   it('derives a deterministic key from password + salt', async () => {
@@ -54,3 +60,54 @@ describe('encryption utils', () => {
     expect(saltA).not.toBe(saltB)
   })
 })
+
+describe('managed encryption', () => {
+  it('generates a 32-byte managed encryption key as hex', () => {
+    const keyHex = generateManagedEncryptionKey()
+    expect(keyHex).toMatch(/^[0-9a-f]+$/)
+    expect(keyHex).toHaveLength(64)
+
+    const keyB = generateManagedEncryptionKey()
+    expect(keyHex).not.toBe(keyB)
+  })
+
+  it('round-trips encrypt/decrypt with managed prefix', () => {
+    const keyHex = generateManagedEncryptionKey()
+    const managedKey = hexToBytes(keyHex)
+    const plaintext = 'Managed mode journal entry content'
+
+    const encrypted = encryptFlowContentManaged(plaintext, managedKey)
+    expect(isManagedEncryptedPayload(encrypted)).toBe(true)
+    expect(isEncryptedFlowPayload(encrypted)).toBe(false)
+
+    const decoded = decodeManagedPayload(encrypted)
+    expect(decoded.version).toBe(1)
+    expect(decoded.algorithm).toBe('xchacha20poly1305')
+
+    const decrypted = decryptFlowContentManaged(encrypted, managedKey)
+    expect(decrypted).toBe(plaintext)
+  })
+
+  it('detects managed vs E2E prefix correctly', () => {
+    expect(isManagedEncryptedPayload('rj:managed:v1:{"test":1}')).toBe(true)
+    expect(isManagedEncryptedPayload('rj:e2e:v1:{"test":1}')).toBe(false)
+    expect(isManagedEncryptedPayload('plain text')).toBe(false)
+
+    expect(isEncryptedFlowPayload('rj:e2e:v1:{"test":1}')).toBe(true)
+    expect(isEncryptedFlowPayload('rj:managed:v1:{"test":1}')).toBe(false)
+  })
+
+  it('rejects malformed managed payloads', () => {
+    expect(() => decodeManagedPayload('hello world')).toThrowError(/unsupported|payload/i)
+    expect(() => decodeManagedPayload('rj:managed:v1:{"version":99}')).toThrowError(/version/i)
+  })
+
+  it('fails to decrypt managed content with wrong key', () => {
+    const keyA = hexToBytes(generateManagedEncryptionKey())
+    const keyB = hexToBytes(generateManagedEncryptionKey())
+    const encrypted = encryptFlowContentManaged('secret', keyA)
+
+    expect(() => decryptFlowContentManaged(encrypted, keyB)).toThrowError(/decrypt/i)
+  })
+})
+
