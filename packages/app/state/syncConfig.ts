@@ -20,10 +20,14 @@ import { v4 as uuidv4 } from 'uuid'
 import {
   EncryptionError,
   decryptFlowContent,
+  decryptFlowContentManaged,
   encryptFlowContent,
+  encryptFlowContentManaged,
   isEncryptedFlowPayload,
+  isManagedEncryptedPayload,
 } from '../utils/encryption'
 import { getCachedMasterKey } from '../utils/encryptionKeyStore'
+import { hexToBytes } from '@noble/ciphers/utils.js'
 
 // =================================================================
 // UUID GENERATION
@@ -63,6 +67,7 @@ export const orphanFlowsPending$ = observable<{
   userId: string
 } | null>(null)
 export const syncEncryptionMode$ = observable<EncryptionMode | null>(null)
+export const syncManagedKeyHex$ = observable<string | null>(null)
 
 export interface SyncEncryptionError {
   message: string
@@ -136,6 +141,30 @@ interface DbFlowRow {
 }
 
 const decryptFlowContentFromDb = (content: string): string => {
+  // Dispatch on payload prefix (self-describing) — not on user’s current mode
+  if (isManagedEncryptedPayload(content)) {
+    const keyHex = syncManagedKeyHex$.peek()
+    if (!keyHex) {
+      return setSyncEncryptionError(
+        'Managed encryption key is not available. Please sign in again.',
+        'managed_key_missing'
+      )
+    }
+
+    try {
+      const managedKey = hexToBytes(keyHex)
+      const plaintext = decryptFlowContentManaged(content, managedKey)
+      syncEncryptionError$.set(null)
+      return plaintext
+    } catch (error) {
+      if (error instanceof EncryptionError) {
+        return setSyncEncryptionError(error.message, error.code)
+      }
+      const fallbackMessage = (error as Error).message || 'Failed to decrypt managed-mode flow content.'
+      return setSyncEncryptionError(fallbackMessage, 'flow_decrypt_failed')
+    }
+  }
+
   if (!isEncryptedFlowPayload(content)) return content
 
   const userId = syncUserId$.peek()
@@ -169,7 +198,32 @@ const decryptFlowContentFromDb = (content: string): string => {
 }
 
 const encryptFlowContentForDb = (content: string, userId: string): string => {
-  if (syncEncryptionMode$.peek() !== 'e2e') return content
+  const mode = syncEncryptionMode$.peek()
+
+  if (mode === 'managed') {
+    const keyHex = syncManagedKeyHex$.peek()
+    if (!keyHex) {
+      return setSyncEncryptionError(
+        'Managed encryption key is not available. Please sign in again.',
+        'managed_key_missing'
+      )
+    }
+
+    try {
+      const managedKey = hexToBytes(keyHex)
+      const encryptedContent = encryptFlowContentManaged(content, managedKey)
+      syncEncryptionError$.set(null)
+      return encryptedContent
+    } catch (error) {
+      if (error instanceof EncryptionError) {
+        return setSyncEncryptionError(error.message, error.code)
+      }
+      const fallbackMessage = (error as Error).message || 'Failed to encrypt flow content.'
+      return setSyncEncryptionError(fallbackMessage, 'flow_encrypt_failed')
+    }
+  }
+
+  if (mode !== 'e2e') return content
 
   const key = getCachedMasterKey(userId)
   if (!key) {

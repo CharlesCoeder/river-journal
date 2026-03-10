@@ -6,6 +6,7 @@ import {
   decryptFlowContent,
   deriveMasterKeyFromPassword,
   generateEncryptionSaltHex,
+  generateManagedEncryptionKey,
   isEncryptedFlowPayload,
 } from './encryption'
 import { cacheOnlyMasterKey, clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
@@ -272,3 +273,84 @@ export async function persistMasterKeyToKeyring(input: {
     }
   }
 }
+
+export async function bootstrapManagedEncryption(input: {
+  userId: string
+}): Promise<
+  | { error: null; managedKeyHex: string }
+  | { error: EncryptionSettingsError['error']; managedKeyHex: null }
+> {
+  try {
+    const managedKeyHex = generateManagedEncryptionKey()
+
+    const payload: TablesInsert<'users'> = {
+      id: input.userId,
+      encryption_mode: 'managed',
+      managed_encryption_key: managedKeyHex,
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .upsert(payload, { onConflict: 'id' })
+      .select('encryption_mode, managed_encryption_key')
+      .single()
+
+    if (error) {
+      return {
+        error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
+        managedKeyHex: null,
+      }
+    }
+
+    return { error: null, managedKeyHex }
+  } catch (error) {
+    if (error instanceof EncryptionError) {
+      return {
+        error: toEncryptionError(error.message, error.code).error,
+        managedKeyHex: null,
+      }
+    }
+
+    return {
+      error: toEncryptionError(
+        (error as Error).message || 'Failed to bootstrap managed encryption.',
+        'managed_bootstrap_failed'
+      ).error,
+      managedKeyHex: null,
+    }
+  }
+}
+
+export async function fetchManagedEncryptionKey(
+  userId: string
+): Promise<
+  | { data: string; error: null }
+  | { data: null; error: EncryptionSettingsError['error'] }
+> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('managed_encryption_key')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    return {
+      data: null,
+      error: toEncryptionError(error.message, error.code ?? 'users_read_failed').error,
+    }
+  }
+
+  const keyHex = data?.managed_encryption_key
+  if (!keyHex) {
+    return {
+      data: null,
+      error: toEncryptionError(
+        'Managed encryption key not found for this account.',
+        'managed_key_missing'
+      ).error,
+    }
+  }
+
+  return { data: keyHex, error: null }
+}
+

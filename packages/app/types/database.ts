@@ -107,6 +107,7 @@ export type Database = {
           encryption_mode: Database['public']['Enums']['encryption_mode'] | null
           encryption_salt: string | null
           id: string
+          managed_encryption_key: string | null
           preferences: Json
           updated_at: string
         }
@@ -115,6 +116,7 @@ export type Database = {
           encryption_mode?: Database['public']['Enums']['encryption_mode'] | null
           encryption_salt?: string | null
           id: string
+          managed_encryption_key?: string | null
           preferences?: Json
           updated_at?: string
         }
@@ -123,6 +125,7 @@ export type Database = {
           encryption_mode?: Database['public']['Enums']['encryption_mode'] | null
           encryption_salt?: string | null
           id?: string
+          managed_encryption_key?: string | null
           preferences?: Json
           updated_at?: string
         }

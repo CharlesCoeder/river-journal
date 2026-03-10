@@ -13,10 +13,18 @@ import {
   mapDbFlowToLocalOrKeepExisting,
   syncEncryptionError$,
   syncEncryptionMode$,
+  syncManagedKeyHex$,
   syncUserId$,
 } from '../syncConfig'
-import { deriveMasterKeyFromPassword, isEncryptedFlowPayload } from '../../utils/encryption'
+import {
+  deriveMasterKeyFromPassword,
+  encryptFlowContentManaged,
+  generateManagedEncryptionKey,
+  isEncryptedFlowPayload,
+  isManagedEncryptedPayload,
+} from '../../utils/encryption'
 import { clearStoredMasterKey, storeMasterKey } from '../../utils/encryptionKeyStore'
+import { hexToBytes } from '@noble/ciphers/utils.js'
 
 describe('generateUUID', () => {
   it('returns a valid UUID v4 format', () => {
@@ -80,6 +88,7 @@ describe('Flow transforms', () => {
   beforeEach(async () => {
     syncEncryptionError$.set(null)
     syncEncryptionMode$.set(null)
+    syncManagedKeyHex$.set(null)
     syncUserId$.set('user-1')
     await clearStoredMasterKey('user-1')
   })
@@ -300,5 +309,118 @@ describe('Flow transforms', () => {
 
     expect(result).toBeNull()
     expect(syncEncryptionError$.get()?.code).toBe('flow_decrypt_failed')
+  })
+
+  it('encrypts flow content with managed prefix in managed mode', () => {
+    const keyHex = generateManagedEncryptionKey()
+    syncManagedKeyHex$.set(keyHex)
+    syncEncryptionMode$.set('managed')
+
+    const plaintext = 'Managed encryption content'
+    const db = localFlowToDb({
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: plaintext,
+      wordCount: 3,
+      timestamp: '2026-03-10T10:00:00Z',
+      user_id: 'user-1',
+      local_session_id: 'sess1',
+    })
+
+    expect(db.content).not.toBe(plaintext)
+    expect(isManagedEncryptedPayload(db.content as string)).toBe(true)
+    expect(isEncryptedFlowPayload(db.content as string)).toBe(false)
+    expect(syncEncryptionError$.get()).toBeNull()
+  })
+
+  it('decrypts managed-prefix content from DB using the managed key', () => {
+    const keyHex = generateManagedEncryptionKey()
+    const managedKey = hexToBytes(keyHex)
+    syncManagedKeyHex$.set(keyHex)
+
+    const plaintext = 'Managed round-trip test'
+    const encrypted = encryptFlowContentManaged(plaintext, managedKey)
+
+    const local = dbFlowToLocal({
+      ...dbRow,
+      content: encrypted,
+    })
+
+    expect(local.content).toBe(plaintext)
+    expect(syncEncryptionError$.get()).toBeNull()
+  })
+
+  it('managed encrypt/decrypt round-trips through sync transforms', () => {
+    const keyHex = generateManagedEncryptionKey()
+    syncManagedKeyHex$.set(keyHex)
+    syncEncryptionMode$.set('managed')
+
+    const plaintext = 'Full managed round-trip through sync transforms'
+    const db = localFlowToDb({
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: plaintext,
+      wordCount: 7,
+      timestamp: '2026-03-10T10:00:00Z',
+      user_id: 'user-1',
+      local_session_id: 'sess1',
+    })
+
+    const local = dbFlowToLocal({
+      ...dbRow,
+      content: db.content as string,
+    })
+
+    expect(local.content).toBe(plaintext)
+  })
+
+  it('fails loudly when managed mode has no cached key', () => {
+    syncEncryptionMode$.set('managed')
+    syncManagedKeyHex$.set(null)
+
+    expect(() =>
+      localFlowToDb({
+        id: 'f1',
+        dailyEntryId: 'e1',
+        content: 'should not upload',
+        user_id: 'user-1',
+        local_session_id: 'sess1',
+      })
+    ).toThrowError(/managed_key_missing/)
+
+    expect(syncEncryptionError$.get()).toEqual({
+      message: 'Managed encryption key is not available. Please sign in again.',
+      code: 'managed_key_missing',
+    })
+  })
+
+  it('E2E payloads still use the E2E decrypt path even when managed key is available', async () => {
+    const e2eKey = await deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+    )
+    await storeMasterKey('user-1', e2eKey)
+    syncEncryptionMode$.set('e2e')
+
+    // Also set a managed key to prove it doesn't interfere
+    syncManagedKeyHex$.set(generateManagedEncryptionKey())
+
+    const plaintext = 'E2E content still works'
+    const db = localFlowToDb({
+      id: 'f1',
+      dailyEntryId: 'e1',
+      content: plaintext,
+      user_id: 'user-1',
+      local_session_id: 'sess1',
+    })
+
+    expect(isEncryptedFlowPayload(db.content as string)).toBe(true)
+    expect(isManagedEncryptedPayload(db.content as string)).toBe(false)
+
+    const local = dbFlowToLocal({
+      ...dbRow,
+      content: db.content as string,
+    })
+    expect(local.content).toBe(plaintext)
   })
 })
