@@ -285,6 +285,33 @@ export async function bootstrapManagedEncryption(input: {
   | { error: EncryptionSettingsError['error']; managedKeyHex: null }
 > {
   try {
+    const existing = await fetchManagedEncryptionKey(input.userId)
+    if (existing.data) {
+      const payload: TablesInsert<'users'> = {
+        id: input.userId,
+        encryption_mode: 'managed',
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .upsert(payload, { onConflict: 'id' })
+        .select('encryption_mode')
+        .single()
+
+      if (error) {
+        return {
+          error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
+          managedKeyHex: null,
+        }
+      }
+
+      return { error: null, managedKeyHex: existing.data }
+    }
+
+    if (existing.error && existing.error.code !== 'managed_key_missing') {
+      return { error: existing.error, managedKeyHex: null }
+    }
+
     const managedKeyHex = generateManagedEncryptionKey()
 
     const payload: TablesInsert<'users'> = {

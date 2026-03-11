@@ -607,6 +607,43 @@ describe('encryption setup orchestration', () => {
     expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
 
+  it('re-enabling E2E from managed mode unlocks with existing salt instead of bootstrapping', async () => {
+    encryptionSetup$.assign({
+      isOpen: true,
+      step: 'e2e-password',
+      currentMode: 'managed',
+      currentModeSalt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      hasLocalE2EKey: false,
+      hasLoadedMode: true,
+    })
+    mockUpsertUserEncryptionMode.mockResolvedValueOnce({
+      data: { mode: 'e2e', salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df', managedKeyHex: null },
+      error: null,
+    })
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(7))
+
+    const didEnable = await submitE2EPassword('password123', '')
+
+    expect(didEnable).toBe(true)
+    expect(mockUnlockE2EEncryptionOnDevice).toHaveBeenCalledWith({
+      userId: 'user-1',
+      password: 'password123',
+      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+    })
+    expect(mockStartE2EEncryptionBootstrap).not.toHaveBeenCalled()
+    expect(mockUpsertUserEncryptionMode).toHaveBeenCalledWith({ userId: 'user-1', mode: 'e2e' })
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+  })
+
   it('keeps sync enabled when managed mode encounters legacy E2E unlock requirement', async () => {
     store$.session.syncEnabled.set(true)
     isEncryptionReadyForSync$.set(true)
