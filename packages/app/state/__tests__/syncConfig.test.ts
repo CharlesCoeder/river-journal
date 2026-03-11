@@ -121,33 +121,59 @@ describe('Flow transforms', () => {
   })
 
   it('localFlowToDb converts camelCase → snake_case', () => {
+    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncEncryptionMode$.set('managed')
+
     const db = localFlowToDb({
       id: 'f1',
       dailyEntryId: 'e1',
       content: 'Hello world',
       wordCount: 2,
       timestamp: '2026-03-03T10:05:00Z',
+      user_id: 'user-1',
       local_session_id: 'sess1',
     })
-    expect(db).toEqual({
-      id: 'f1',
-      daily_entry_id: 'e1',
-      content: 'Hello world',
-      word_count: 2,
-      created_at: '2026-03-03T10:05:00Z',
-    })
+    expect(db.id).toBe('f1')
+    expect(db.daily_entry_id).toBe('e1')
+    expect(db.word_count).toBe(2)
+    expect(db.created_at).toBe('2026-03-03T10:05:00Z')
+    expect(db.content).toBeDefined()
+    expect(db.content).not.toBe('Hello world')
     expect(db).not.toHaveProperty('local_session_id')
     expect(db).not.toHaveProperty('user_id')
   })
 
   it('localFlowToDb handles partial updates', () => {
-    const db = localFlowToDb({ id: 'f1', content: 'Updated text', wordCount: 2 })
-    expect(db).toEqual({
-      id: 'f1',
-      content: 'Updated text',
-      word_count: 2,
-    })
+    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncEncryptionMode$.set('managed')
+
+    const db = localFlowToDb({ id: 'f1', content: 'Updated text', wordCount: 2, user_id: 'user-1' })
+    expect(db.id).toBe('f1')
+    expect(db.word_count).toBe(2)
+    expect(db.content).toBeDefined()
+    expect(db.content).not.toBe('Updated text')
     expect(db).not.toHaveProperty('daily_entry_id')
+  })
+
+  it('falls back to syncUserId$ when value has no user_id', () => {
+    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncEncryptionMode$.set('managed')
+    syncUserId$.set('user-1')
+
+    const db = localFlowToDb({ id: 'f1', content: 'content without explicit user_id' })
+    expect(db.content).toBeDefined()
+    expect(db.content).not.toBe('content without explicit user_id')
+    expect(isManagedEncryptedPayload(db.content as string)).toBe(true)
+  })
+
+  it('throws when content is provided but no user is available for encryption', () => {
+    syncUserId$.set(null)
+    syncEncryptionMode$.set('managed')
+    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+
+    expect(() =>
+      localFlowToDb({ id: 'f1', content: 'plaintext that must not upload' })
+    ).toThrowError(/missing_sync_user/)
   })
 
   it('encrypts flow content at the sync boundary for e2e mode and decrypts on load', async () => {
