@@ -8,6 +8,7 @@ const mockValidateE2EMasterKeyForUser = vi.fn()
 const mockPersistMasterKeyToKeyring = vi.fn()
 const mockBootstrapManagedEncryption = vi.fn()
 const mockFetchManagedEncryptionKey = vi.fn()
+const mockClearManagedEncryptionKeyCache = vi.fn()
 const mockLoadMasterKey = vi.fn()
 const mockClearStoredMasterKey = vi.fn()
 const mockHasPlatformKeyring = vi.fn()
@@ -21,6 +22,7 @@ vi.mock('../../utils/userEncryption', () => ({
   persistMasterKeyToKeyring: (...args: unknown[]) => mockPersistMasterKeyToKeyring(...args),
   bootstrapManagedEncryption: (...args: unknown[]) => mockBootstrapManagedEncryption(...args),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
+  clearManagedEncryptionKeyCache: (...args: unknown[]) => mockClearManagedEncryptionKeyCache(...args),
 }))
 
 vi.mock('../../utils/encryptionKeyStore', () => ({
@@ -72,10 +74,14 @@ import {
   loadCurrentEncryptionMode,
   requestSyncEnable,
   resetEncryptionSetupState,
+  retryFetchManagedKey,
+  retryWithE2EPassword,
   setSelectedEncryptionMode,
   submitE2EPassword,
 } from '../encryptionSetup'
-import { syncManagedKeyHex$ } from '../syncConfig'
+import { syncManagedKeyBytes$ } from '../syncConfig'
+import { syncEncryptionError$ } from '../syncConfig'
+import { hexToBytes } from '@noble/ciphers/utils.js'
 
 describe('encryption setup orchestration', () => {
   beforeEach(() => {
@@ -155,7 +161,7 @@ describe('encryption setup orchestration', () => {
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.isOpen.get()).toBe(false)
-    expect(syncManagedKeyHex$.get()).toBe('a'.repeat(64))
+    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
   })
 
   it('E2E selection advances to the password step and keeps sync blocked', async () => {
@@ -215,7 +221,7 @@ describe('encryption setup orchestration', () => {
 
     expect(mode).toBe('managed')
     expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
-    expect(syncManagedKeyHex$.get()).toBe('a'.repeat(64))
+    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
@@ -502,5 +508,92 @@ describe('encryption setup orchestration', () => {
 
     expect(keyringPrompt$.isVisible.get()).toBe(false)
     expect(mockPersistMasterKeyToKeyring).not.toHaveBeenCalled()
+  })
+
+  it('retryFetchManagedKey refetches the key and enables sync', async () => {
+    store$.session.userId.set('user-1')
+    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+      data: 'a'.repeat(64),
+      error: null,
+    })
+
+    const result = await retryFetchManagedKey()
+
+    expect(result).toBe(true)
+    expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
+    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+    expect(encryptionSetup$.error.get()).toBeNull()
+  })
+
+  it('retryFetchManagedKey returns false and updates error state on failure', async () => {
+    store$.session.userId.set('user-1')
+    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Network error', code: 'fetch_failed' },
+    })
+
+    const result = await retryFetchManagedKey()
+
+    expect(result).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({ message: 'Network error', code: 'fetch_failed' })
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
+    expect(store$.session.syncEnabled.get()).toBe(false)
+  })
+
+  it('retryWithE2EPassword derives local E2E key and stores it in memory without changing mode', async () => {
+    store$.session.userId.set('user-1')
+    encryptionSetup$.currentModeSalt.set('somesalt')
+    mockUnlockE2EEncryptionOnDevice.mockResolvedValueOnce({
+      error: null,
+      masterKey: new Uint8Array(32).fill(7),
+    })
+
+    const result = await retryWithE2EPassword('mypassword')
+
+    expect(result).toBe(true)
+    expect(mockUnlockE2EEncryptionOnDevice).toHaveBeenCalledWith({
+      userId: 'user-1',
+      password: 'mypassword',
+      salt: 'somesalt',
+    })
+    expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(true)
+    expect(encryptionSetup$.error.get()).toBeNull()
+  })
+
+  it('retryWithE2EPassword handles failures correctly', async () => {
+    store$.session.userId.set('user-1')
+    encryptionSetup$.currentModeSalt.set('somesalt')
+    mockUnlockE2EEncryptionOnDevice.mockResolvedValueOnce({
+      error: { message: 'Wrong password', code: 'invalid_password' },
+      masterKey: null,
+    })
+
+    const result = await retryWithE2EPassword('wrongpassword')
+
+    expect(result).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({ message: 'Wrong password', code: 'invalid_password' })
+  })
+
+  it('keeps sync enabled when managed mode encounters legacy E2E unlock requirement', async () => {
+    store$.session.syncEnabled.set(true)
+    isEncryptionReadyForSync$.set(true)
+    encryptionSetup$.assign({
+      currentMode: 'managed',
+      currentModeSalt: 'somesalt',
+      hasLoadedMode: true,
+    })
+
+    syncEncryptionError$.set({
+      message: 'Encryption password required on this device before encrypted flows can sync.',
+      code: 'e2e_password_required',
+    })
+
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Encryption password required on this device before encrypted flows can sync.',
+      code: 'e2e_password_required',
+    })
   })
 })

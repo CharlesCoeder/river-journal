@@ -75,12 +75,15 @@ import {
   unlockE2EEncryptionOnDevice,
   persistMasterKeyToKeyring,
   bootstrapManagedEncryption,
+  clearManagedEncryptionKeyCache,
   fetchManagedEncryptionKey,
+  getManagedKeyHex,
 } from '../userEncryption'
 
 describe('startE2EEncryptionBootstrap', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearManagedEncryptionKeyCache()
     mockUsersSingle.mockResolvedValue({
       data: { encryption_mode: 'e2e', encryption_salt: 'abc123' },
       error: null,
@@ -141,6 +144,7 @@ describe('startE2EEncryptionBootstrap', () => {
 describe('unlockE2EEncryptionOnDevice', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearManagedEncryptionKeyCache()
     mockFlowsLimit.mockResolvedValue({
       data: [],
       error: null,
@@ -194,6 +198,7 @@ describe('unlockE2EEncryptionOnDevice', () => {
 describe('persistMasterKeyToKeyring', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearManagedEncryptionKeyCache()
     mockStoreMasterKey.mockResolvedValue(undefined)
   })
 
@@ -221,6 +226,7 @@ describe('persistMasterKeyToKeyring', () => {
 describe('bootstrapManagedEncryption', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearManagedEncryptionKeyCache()
     mockUsersSingle.mockResolvedValue({
       data: { encryption_mode: 'managed', managed_encryption_key: 'abc123' },
       error: null,
@@ -244,6 +250,16 @@ describe('bootstrapManagedEncryption', () => {
     expect(payload.managed_encryption_key).toMatch(/^[0-9a-f]{64}$/)
   })
 
+  it('caches the managed key in memory for subsequent reads', async () => {
+    const result = await bootstrapManagedEncryption({ userId: 'user-1' })
+    expect(result.error).toBeNull()
+
+    const cached = await getManagedKeyHex('user-1')
+    expect(cached.error).toBeNull()
+    expect(cached.data).toBe(result.managedKeyHex)
+    expect(mockUsersSelectRead).not.toHaveBeenCalled()
+  })
+
   it('returns a structured error when upsert fails', async () => {
     mockUsersSingle.mockResolvedValueOnce({
       data: null,
@@ -263,6 +279,7 @@ describe('bootstrapManagedEncryption', () => {
 describe('fetchManagedEncryptionKey', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearManagedEncryptionKeyCache()
   })
 
   it('reads managed_encryption_key from Supabase', async () => {
@@ -293,6 +310,21 @@ describe('fetchManagedEncryptionKey', () => {
     })
   })
 
+  it('returns error when managed key is invalid', async () => {
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: { managed_encryption_key: 'not-hex' },
+      error: null,
+    })
+
+    const result = await fetchManagedEncryptionKey('user-1')
+
+    expect(result.data).toBeNull()
+    expect(result.error).toEqual({
+      message: 'Managed encryption key is invalid. Expected a 64-character hex string (32 bytes).',
+      code: 'managed_key_invalid',
+    })
+  })
+
   it('returns error on DB failure', async () => {
     mockUsersMaybeSingle.mockResolvedValueOnce({
       data: null,
@@ -306,5 +338,25 @@ describe('fetchManagedEncryptionKey', () => {
       message: 'Connection lost',
       code: 'network_error',
     })
+  })
+})
+
+describe('getManagedKeyHex', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    clearManagedEncryptionKeyCache()
+  })
+
+  it('fetches from Supabase when cache is empty', async () => {
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: { managed_encryption_key: 'a'.repeat(64) },
+      error: null,
+    })
+
+    const result = await getManagedKeyHex('user-1')
+
+    expect(result.error).toBeNull()
+    expect(result.data).toBe('a'.repeat(64))
+    expect(mockUsersSelectRead).toHaveBeenCalledWith('managed_encryption_key')
   })
 })

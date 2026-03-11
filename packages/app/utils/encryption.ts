@@ -34,6 +34,11 @@ const throwEncryptionError = (message: string, code: string): never => {
   throw new EncryptionError(message, code)
 }
 
+export const isHexString = (value: string): boolean => {
+  if (!value) return false
+  return HEX_PATTERN.test(value.toLowerCase())
+}
+
 const installReactNativeRandomValuesFallback = () => {
   const isReactNativeRuntime =
     typeof navigator !== 'undefined' &&
@@ -80,7 +85,7 @@ const installReactNativeRandomValuesFallback = () => {
   }
 }
 
-const assertCryptoGetRandomValues = () => {
+export const assertCryptoGetRandomValues = () => {
   if (typeof globalThis.crypto?.getRandomValues === 'function') return
   installReactNativeRandomValuesFallback()
   if (typeof globalThis.crypto?.getRandomValues === 'function') return
@@ -354,4 +359,3 @@ export function generateManagedEncryptionKey(): string {
   assertCryptoGetRandomValues()
   return bytesToHex(randomBytes(KEY_BYTES))
 }
-

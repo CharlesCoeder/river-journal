@@ -19,6 +19,7 @@ import type { EncryptionMode } from '../types/index'
 import { v4 as uuidv4 } from 'uuid'
 import {
   EncryptionError,
+  assertCryptoGetRandomValues,
   decryptFlowContent,
   decryptFlowContentManaged,
   encryptFlowContent,
@@ -26,8 +27,9 @@ import {
   isEncryptedFlowPayload,
   isManagedEncryptedPayload,
 } from '../utils/encryption'
-import { getCachedMasterKey } from '../utils/encryptionKeyStore'
 import { hexToBytes } from '@noble/ciphers/utils.js'
+import { getCachedMasterKey } from '../utils/encryptionKeyStore'
+import { getManagedKeyHex } from '../utils/userEncryption'
 
 // =================================================================
 // UUID GENERATION
@@ -37,7 +39,9 @@ export function generateUUID(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
-  // Fallback for environments without crypto.randomUUID
+  // Ensure crypto.getRandomValues is available before uuidv4 uses it,
+  // preventing a silent Math.random() fallback on React Native.
+  assertCryptoGetRandomValues()
   return uuidv4()
 }
 
@@ -67,7 +71,7 @@ export const orphanFlowsPending$ = observable<{
   userId: string
 } | null>(null)
 export const syncEncryptionMode$ = observable<EncryptionMode | null>(null)
-export const syncManagedKeyHex$ = observable<string | null>(null)
+export const syncManagedKeyBytes$ = observable<Uint8Array | null>(null)
 
 export interface SyncEncryptionError {
   message: string
@@ -85,6 +89,27 @@ const setSyncEncryptionError = (message: string, code: string): never => {
   const syncError = toSyncEncryptionError(message, code)
   syncEncryptionError$.set(syncError)
   throw new EncryptionError(`${syncError.code}: ${syncError.message}`, code)
+}
+
+export const getManagedKeyBytes = async (userId?: string): Promise<Uint8Array> => {
+  const cached = syncManagedKeyBytes$.peek()
+  if (cached) return cached
+
+  if (!userId) {
+    return setSyncEncryptionError(
+      'Managed encryption key is unavailable because no authenticated user is present.',
+      'missing_sync_user'
+    )
+  }
+
+  const result = await getManagedKeyHex(userId)
+  if (result.error) {
+    return setSyncEncryptionError(result.error.message, result.error.code)
+  }
+
+  const keyBytes = hexToBytes(result.data)
+  syncManagedKeyBytes$.set(keyBytes)
+  return keyBytes
 }
 
 // =================================================================
@@ -143,8 +168,8 @@ interface DbFlowRow {
 const decryptFlowContentFromDb = (content: string): string => {
   // Dispatch on payload prefix (self-describing) — not on user’s current mode
   if (isManagedEncryptedPayload(content)) {
-    const keyHex = syncManagedKeyHex$.peek()
-    if (!keyHex) {
+    const managedKey = syncManagedKeyBytes$.peek()
+    if (!managedKey) {
       return setSyncEncryptionError(
         'Managed encryption key is not available. Please sign in again.',
         'managed_key_missing'
@@ -152,8 +177,7 @@ const decryptFlowContentFromDb = (content: string): string => {
     }
 
     try {
-      const managedKey = hexToBytes(keyHex)
-      const plaintext = decryptFlowContentManaged(content, managedKey)
+      const plaintext = decryptFlowContentManaged(content, managedKey as Uint8Array)
       syncEncryptionError$.set(null)
       return plaintext
     } catch (error) {
@@ -201,8 +225,8 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
   const mode = syncEncryptionMode$.peek()
 
   if (mode === 'managed') {
-    const keyHex = syncManagedKeyHex$.peek()
-    if (!keyHex) {
+    const managedKey = syncManagedKeyBytes$.peek()
+    if (!managedKey) {
       return setSyncEncryptionError(
         'Managed encryption key is not available. Please sign in again.',
         'managed_key_missing'
@@ -210,8 +234,7 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
     }
 
     try {
-      const managedKey = hexToBytes(keyHex)
-      const encryptedContent = encryptFlowContentManaged(content, managedKey)
+      const encryptedContent = encryptFlowContentManaged(content, managedKey as Uint8Array)
       syncEncryptionError$.set(null)
       return encryptedContent
     } catch (error) {
@@ -223,7 +246,12 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
     }
   }
 
-  if (mode !== 'e2e') return content
+  if (mode !== 'e2e') {
+    return setSyncEncryptionError(
+      'Encryption mode is not initialized. Cloud Sync cannot upload until encryption is configured.',
+      'sync_encryption_mode_uninitialized'
+    )
+  }
 
   const key = getCachedMasterKey(userId)
   if (!key) {

@@ -9,6 +9,8 @@ const mockReadUserEncryptionSettings = vi.fn()
 const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
 const mockUnlockE2EEncryptionOnDevice = vi.fn()
+const mockFetchManagedEncryptionKey = vi.fn()
+const mockClearManagedEncryptionKeyCache = vi.fn()
 
 vi.mock('../../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
@@ -18,7 +20,8 @@ vi.mock('../../../utils/userEncryption', () => ({
   validateE2EMasterKeyForUser: vi.fn().mockResolvedValue({ isValid: true, error: null }),
   persistMasterKeyToKeyring: vi.fn().mockResolvedValue({ error: null }),
   bootstrapManagedEncryption: vi.fn().mockResolvedValue({ error: null, managedKeyHex: 'a'.repeat(64) }),
-  fetchManagedEncryptionKey: vi.fn().mockResolvedValue({ data: 'a'.repeat(64), error: null }),
+  fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
+  clearManagedEncryptionKeyCache: (...args: unknown[]) => mockClearManagedEncryptionKeyCache(...args),
 }))
 
 vi.mock('../../../utils/supabase', () => ({
@@ -218,6 +221,7 @@ describe('HomeScreen encryption flow', () => {
     mockUnlockE2EEncryptionOnDevice.mockResolvedValue({
       error: null,
     })
+    mockFetchManagedEncryptionKey.mockResolvedValue({ data: 'a'.repeat(64), error: null })
   })
 
   it('opens the chooser from the authenticated home sync toggle', async () => {
@@ -338,5 +342,62 @@ describe('HomeScreen encryption flow', () => {
     expect(screen.getByText('Enter your encryption password')).toBeTruthy()
     expect(screen.queryByText('Confirm encryption password')).toBeNull()
     expect(screen.queryByTestId('e2e-confirm-password-input')).toBeNull()
+  })
+
+  it('offers a retry when managed key fetch fails', async () => {
+    render(React.createElement(HomeScreen))
+
+    await act(async () => {
+      encryptionSetup$.assign({
+        hasLoadedMode: true,
+        currentMode: 'managed',
+        currentModeSalt: null,
+        hasLocalE2EKey: false,
+        error: {
+          message: 'Managed key missing',
+          code: 'managed_key_missing',
+        },
+      })
+    })
+
+    const retryButton = screen.getByTestId('managed-key-retry')
+    expect(retryButton).toBeTruthy()
+
+    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+      data: 'a'.repeat(64),
+      error: null,
+    })
+
+    fireEvent.click(retryButton)
+
+    await waitFor(() => {
+      expect(encryptionSetup$.error.get()).toBeNull()
+    })
+  })
+
+  it('offers legacy E2E unlock when managed mode hits an old E2E payload', async () => {
+    render(React.createElement(HomeScreen))
+
+    await act(async () => {
+      encryptionSetup$.assign({
+        hasLoadedMode: true,
+        currentMode: 'managed',
+        currentModeSalt: 'somesalt',
+        hasLocalE2EKey: false,
+        error: {
+          message: 'Encryption password required on this device before encrypted flows can sync.',
+          code: 'e2e_password_required',
+        },
+      })
+    })
+
+    const unlockButton = screen.getByTestId('managed-e2e-unlock')
+    expect(unlockButton).toBeTruthy()
+
+    fireEvent.click(unlockButton)
+
+    await waitFor(() => {
+      expect(encryptionSetup$.isOpen.get()).toBe(true)
+    })
   })
 })
