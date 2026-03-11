@@ -98,7 +98,7 @@ export const getManagedKeyBytes = async (
   | { data: null; error: SyncEncryptionError }
 > => {
   const cached = syncManagedKeyBytes$.peek()
-  if (cached) return { data: cached, error: null }
+  if (cached) return { data: cached as Uint8Array, error: null }
 
   if (!userId) {
     return {
@@ -317,11 +317,14 @@ export function localFlowToDb(value: Partial<Flow> & { id?: string }): Record<st
   if (value.id !== undefined) result.id = value.id
   if (value.dailyEntryId !== undefined) result.daily_entry_id = value.dailyEntryId
   if (value.content !== undefined) {
-    if (value.user_id) {
-      result.content = encryptFlowContentForDb(value.content, value.user_id)
-    } else {
-      result.content = value.content
+    const userId = value.user_id || syncUserId$.peek()
+    if (!userId) {
+      return setSyncEncryptionError(
+        'Cannot upload flow content: no authenticated user available for encryption.',
+        'missing_sync_user',
+      )
     }
+    result.content = encryptFlowContentForDb(value.content, userId)
   }
   if (value.wordCount !== undefined) result.word_count = value.wordCount
   if (value.timestamp !== undefined) result.created_at = value.timestamp
