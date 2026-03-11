@@ -4,6 +4,7 @@ import {
   cancelEncryptionSetup,
   confirmEncryptionModeSelection,
   encryptionSetup$,
+  retryWithE2EPassword,
   returnToEncryptionChoice,
   setSelectedEncryptionMode,
   submitE2EPassword,
@@ -71,7 +72,9 @@ export function EncryptionModeDialog() {
 
   if (!isOpen) return null
 
+  const isLegacyE2EUnlock = step === 'legacy-e2e-password'
   const isUnlockingExistingE2E = isModeLocked && !!currentModeSalt
+  const showLegacyUnlock = isLegacyE2EUnlock || isUnlockingExistingE2E
 
   return (
     <AlertDialog open={isOpen} onOpenChange={() => {}}>
@@ -101,9 +104,11 @@ export function EncryptionModeDialog() {
           <YStack gap="$4">
             <YStack gap="$1.5">
               <AlertDialog.Title fontFamily="$body" fontSize="$6" fontWeight="700">
-                {step === 'e2e-password' || step === 'saving'
-                  ? 'Finish end-to-end setup'
-                  : 'Choose your encryption mode'}
+                {isLegacyE2EUnlock
+                  ? 'Unlock legacy E2E flows'
+                  : step === 'e2e-password' || step === 'saving'
+                    ? 'Finish end-to-end setup'
+                    : 'Choose your encryption mode'}
               </AlertDialog.Title>
 
               <AlertDialog.Description fontFamily="$body" fontSize="$4" color="$color">
@@ -164,25 +169,27 @@ export function EncryptionModeDialog() {
               <E2EPasswordForm
                 errorMessage={error?.message}
                 isSaving={step === 'saving'}
-                onBack={returnToEncryptionChoice}
+                onBack={isLegacyE2EUnlock ? cancelEncryptionSetup : returnToEncryptionChoice}
                 onCancel={cancelEncryptionSetup}
-                showBackButton={!isModeLocked}
-                requireConfirmation={!isUnlockingExistingE2E}
+                showBackButton={!isModeLocked && !isLegacyE2EUnlock}
+                requireConfirmation={!showLegacyUnlock}
                 submitLabel={
-                  isUnlockingExistingE2E ? 'Unlock Cloud Sync on this device' : 'Save and continue'
+                  showLegacyUnlock ? 'Unlock legacy E2E flows' : 'Save and continue'
                 }
                 title={
-                  isUnlockingExistingE2E
-                    ? 'Enter your encryption password'
-                    : 'Create an encryption password'
+                  showLegacyUnlock ? 'Enter your encryption password' : 'Create an encryption password'
                 }
                 description={
-                  isUnlockingExistingE2E
+                  showLegacyUnlock
                     ? 'Use the encryption password you already chose for this account so this device can unlock Cloud Sync.'
                     : 'This password is separate from your account password and cannot be recovered for you.'
                 }
                 onSubmit={(password, confirmPassword) => {
-                  void submitE2EPassword(password, confirmPassword)
+                  if (showLegacyUnlock) {
+                    void retryWithE2EPassword(password)
+                  } else {
+                    void submitE2EPassword(password, confirmPassword)
+                  }
                 }}
               />
             )}

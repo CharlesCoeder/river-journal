@@ -7,6 +7,7 @@ import {
   deriveMasterKeyFromPassword,
   generateEncryptionSaltHex,
   generateManagedEncryptionKey,
+  isHexString,
   isEncryptedFlowPayload,
 } from './encryption'
 import { cacheOnlyMasterKey, clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
@@ -38,6 +39,20 @@ const INVALID_ENCRYPTION_PASSWORD_ERROR = {
 } satisfies EncryptionSettingsError['error']
 
 type FlowVerificationRow = Pick<Tables<'flows'>, 'id' | 'content'>
+
+let managedKeyHexCache: string | null = null
+
+const normalizeManagedKeyHex = (keyHex: string): string => keyHex.toLowerCase()
+
+export const clearManagedEncryptionKeyCache = (): void => {
+  managedKeyHexCache = null
+}
+
+export const getCachedManagedEncryptionKeyHex = (): string | null => managedKeyHexCache
+
+const cacheManagedEncryptionKeyHex = (keyHex: string): void => {
+  managedKeyHexCache = normalizeManagedKeyHex(keyHex)
+}
 
 export async function readUserEncryptionSettings(
   userId: string
@@ -302,6 +317,7 @@ export async function bootstrapManagedEncryption(input: {
       }
     }
 
+    cacheManagedEncryptionKeyHex(managedKeyHex)
     return { error: null, managedKeyHex }
   } catch (error) {
     if (error instanceof EncryptionError) {
@@ -351,6 +367,35 @@ export async function fetchManagedEncryptionKey(
     }
   }
 
+  // M3: Validate key format before returning — fail early on corrupted data
+  if (keyHex.length !== 64 || !isHexString(keyHex)) {
+    return {
+      data: null,
+      error: toEncryptionError(
+        'Managed encryption key is invalid. Expected a 64-character hex string (32 bytes).',
+        'managed_key_invalid'
+      ).error,
+    }
+  }
+
+  cacheManagedEncryptionKeyHex(keyHex)
   return { data: keyHex, error: null }
 }
 
+export async function getManagedKeyHex(
+  userId: string
+): Promise<
+  | { data: string; error: null }
+  | { data: null; error: EncryptionSettingsError['error'] }
+> {
+  if (managedKeyHexCache) {
+    return { data: managedKeyHexCache, error: null }
+  }
+
+  const fetched = await fetchManagedEncryptionKey(userId)
+  if (fetched.error) {
+    return { data: null, error: fetched.error }
+  }
+
+  return { data: fetched.data, error: null }
+}

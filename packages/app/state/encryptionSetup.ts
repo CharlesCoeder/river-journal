@@ -10,11 +10,13 @@ import {
   validateE2EMasterKeyForUser,
   persistMasterKeyToKeyring,
   bootstrapManagedEncryption,
+  clearManagedEncryptionKeyCache,
   fetchManagedEncryptionKey,
 } from '../utils/userEncryption'
-import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyHex$ } from './syncConfig'
+import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$ } from './syncConfig'
+import { hexToBytes } from '@noble/ciphers/utils.js'
 
-export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'saving'
+export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'legacy-e2e-password' | 'saving'
 
 export interface EncryptionSetupError {
   message: string
@@ -114,6 +116,11 @@ export const keyringPersistResult$ = observable({
 let pendingKeyringMasterKey: Uint8Array | null = null
 let pendingKeyringUserId: string | null = null
 
+const setManagedKeyBytesFromHex = (keyHex: string | null) => {
+  const normalized = keyHex ? keyHex.toLowerCase() : null
+  syncManagedKeyBytes$.set(normalized ? hexToBytes(normalized) : null)
+}
+
 const resetDialogState = () => {
   batch(() => {
     encryptionSetup$.isOpen.set(false)
@@ -200,7 +207,8 @@ export const resetEncryptionSetupState = () => {
     loadCurrentEncryptionModePromise = null
     pendingKeyringMasterKey = null
     pendingKeyringUserId = null
-    syncManagedKeyHex$.set(null)
+    setManagedKeyBytesFromHex(null)
+    clearManagedEncryptionKeyCache()
   })
 }
 
@@ -262,8 +270,21 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
           syncEncryptionMode$.set('managed')
           return 'managed'
         }
-        syncManagedKeyHex$.set(keyResult.data)
-        applyLoadedSettings('managed', null, false)
+        setManagedKeyBytesFromHex(keyResult.data)
+
+        // C1: Also check for E2E local key availability so historical E2E
+        // encrypted flows can still be decrypted even in managed mode.
+        const salt = result.data.salt
+        if (salt) {
+          try {
+            const localKeyState = await resolveLocalE2EKeyAvailability(userId, 'e2e', salt)
+            applyLoadedSettings('managed', salt, localKeyState.hasLocalE2EKey)
+          } catch {
+            applyLoadedSettings('managed', salt, false)
+          }
+        } else {
+          applyLoadedSettings('managed', null, false)
+        }
         return 'managed'
       }
 
@@ -313,6 +334,16 @@ export const continueLockedE2ESetup = () => {
     encryptionSetup$.isOpen.set(true)
     encryptionSetup$.selectedMode.set('e2e')
     encryptionSetup$.step.set('e2e-password')
+    encryptionSetup$.isModeLocked.set(true)
+    encryptionSetup$.error.set(null)
+  })
+}
+
+export const openLegacyE2EUnlock = () => {
+  batch(() => {
+    encryptionSetup$.isOpen.set(true)
+    encryptionSetup$.selectedMode.set('e2e')
+    encryptionSetup$.step.set('legacy-e2e-password')
     encryptionSetup$.isModeLocked.set(true)
     encryptionSetup$.error.set(null)
   })
@@ -427,7 +458,7 @@ export const confirmEncryptionModeSelection = async (): Promise<boolean> => {
     return false
   }
 
-  syncManagedKeyHex$.set(bootstrapResult.managedKeyHex)
+  setManagedKeyBytesFromHex(bootstrapResult.managedKeyHex)
 
   applyLoadedSettings('managed', null, false)
 
@@ -550,8 +581,13 @@ observe(() => {
   if (!runtimeError) return
 
   batch(() => {
-    store$.session.syncEnabled.set(false)
-    isEncryptionReadyForSync$.set(false)
+    const currentMode = encryptionSetup$.currentMode.get()
+    const allowManagedLegacyE2E =
+      currentMode === 'managed' && runtimeError.code === 'e2e_password_required'
+    if (!allowManagedLegacyE2E) {
+      store$.session.syncEnabled.set(false)
+      isEncryptionReadyForSync$.set(false)
+    }
     encryptionSetup$.error.set(runtimeError)
   })
 })
@@ -618,4 +654,93 @@ export const dismissKeyringPrompt = (): void => {
     keyringPrompt$.isPersisting.set(false)
     keyringPrompt$.persistError.set(null)
   })
+}
+
+/**
+ * M1 (AC#6): Retry fetching the managed encryption key from Supabase.
+ * Useful when the initial fetch failed due to a transient network error.
+ */
+export const retryFetchManagedKey = async (): Promise<boolean> => {
+  const userId = store$.session.userId.get()
+  if (!userId) return false
+
+  batch(() => {
+    encryptionSetup$.error.set(null)
+    syncEncryptionError$.set(null)
+  })
+
+  const keyResult = await fetchManagedEncryptionKey(userId)
+  if (keyResult.error) {
+    batch(() => {
+      encryptionSetup$.error.set(keyResult.error)
+      isEncryptionReadyForSync$.set(false)
+      store$.session.syncEnabled.set(false)
+    })
+    return false
+  }
+
+  setManagedKeyBytesFromHex(keyResult.data)
+
+  batch(() => {
+    encryptionSetup$.error.set(null)
+    isEncryptionReadyForSync$.set(true)
+  })
+  return true
+}
+
+/**
+ * C1: Allow managed-mode users to supply their old E2E password so historical
+ * E2E-encrypted flows can be decrypted. This derives the E2E master key and
+ * caches it in memory without changing the user's current encryption mode.
+ */
+export const retryWithE2EPassword = async (password: string): Promise<boolean> => {
+  const normalizedPassword = password.trim()
+  if (!normalizedPassword) {
+    encryptionSetup$.error.set({
+      message: 'Encryption password is required.',
+      code: 'missing_password',
+    })
+    return false
+  }
+
+  const userId = store$.session.userId.get()
+  if (!userId) {
+    encryptionSetup$.error.set({
+      message: 'You must be signed in.',
+      code: 'missing_user',
+    })
+    return false
+  }
+
+  const salt = encryptionSetup$.currentModeSalt.get()
+  if (!salt) {
+    encryptionSetup$.error.set({
+      message: 'No E2E encryption salt on file for this account.',
+      code: 'e2e_salt_missing',
+    })
+    return false
+  }
+
+  batch(() => {
+    encryptionSetup$.error.set(null)
+    syncEncryptionError$.set(null)
+  })
+
+  const result = await unlockE2EEncryptionOnDevice({
+    userId,
+    password: normalizedPassword,
+    salt,
+  })
+
+  if (result.error) {
+    encryptionSetup$.error.set(result.error)
+    return false
+  }
+
+  batch(() => {
+    encryptionSetup$.hasLocalE2EKey.set(true)
+    encryptionSetup$.error.set(null)
+    syncEncryptionError$.set(null)
+  })
+  return true
 }

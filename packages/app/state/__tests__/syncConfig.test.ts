@@ -13,7 +13,7 @@ import {
   mapDbFlowToLocalOrKeepExisting,
   syncEncryptionError$,
   syncEncryptionMode$,
-  syncManagedKeyHex$,
+  syncManagedKeyBytes$,
   syncUserId$,
 } from '../syncConfig'
 import {
@@ -88,7 +88,7 @@ describe('Flow transforms', () => {
   beforeEach(async () => {
     syncEncryptionError$.set(null)
     syncEncryptionMode$.set(null)
-    syncManagedKeyHex$.set(null)
+    syncManagedKeyBytes$.set(null)
     syncUserId$.set('user-1')
     await clearStoredMasterKey('user-1')
   })
@@ -313,7 +313,7 @@ describe('Flow transforms', () => {
 
   it('encrypts flow content with managed prefix in managed mode', () => {
     const keyHex = generateManagedEncryptionKey()
-    syncManagedKeyHex$.set(keyHex)
+    syncManagedKeyBytes$.set(hexToBytes(keyHex))
     syncEncryptionMode$.set('managed')
 
     const plaintext = 'Managed encryption content'
@@ -336,7 +336,7 @@ describe('Flow transforms', () => {
   it('decrypts managed-prefix content from DB using the managed key', () => {
     const keyHex = generateManagedEncryptionKey()
     const managedKey = hexToBytes(keyHex)
-    syncManagedKeyHex$.set(keyHex)
+    syncManagedKeyBytes$.set(hexToBytes(keyHex))
 
     const plaintext = 'Managed round-trip test'
     const encrypted = encryptFlowContentManaged(plaintext, managedKey)
@@ -352,7 +352,7 @@ describe('Flow transforms', () => {
 
   it('managed encrypt/decrypt round-trips through sync transforms', () => {
     const keyHex = generateManagedEncryptionKey()
-    syncManagedKeyHex$.set(keyHex)
+    syncManagedKeyBytes$.set(hexToBytes(keyHex))
     syncEncryptionMode$.set('managed')
 
     const plaintext = 'Full managed round-trip through sync transforms'
@@ -376,7 +376,7 @@ describe('Flow transforms', () => {
 
   it('fails loudly when managed mode has no cached key', () => {
     syncEncryptionMode$.set('managed')
-    syncManagedKeyHex$.set(null)
+    syncManagedKeyBytes$.set(null)
 
     expect(() =>
       localFlowToDb({
@@ -394,6 +394,26 @@ describe('Flow transforms', () => {
     })
   })
 
+  it('blocks upload when encryption mode is uninitialized', () => {
+    syncEncryptionMode$.set(null)
+
+    expect(() =>
+      localFlowToDb({
+        id: 'f1',
+        dailyEntryId: 'e1',
+        content: 'should not upload',
+        user_id: 'user-1',
+        local_session_id: 'sess1',
+      })
+    ).toThrowError(/sync_encryption_mode_uninitialized/)
+
+    expect(syncEncryptionError$.get()).toEqual({
+      message:
+        'Encryption mode is not initialized. Cloud Sync cannot upload until encryption is configured.',
+      code: 'sync_encryption_mode_uninitialized',
+    })
+  })
+
   it('E2E payloads still use the E2E decrypt path even when managed key is available', async () => {
     const e2eKey = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
@@ -403,7 +423,7 @@ describe('Flow transforms', () => {
     syncEncryptionMode$.set('e2e')
 
     // Also set a managed key to prove it doesn't interfere
-    syncManagedKeyHex$.set(generateManagedEncryptionKey())
+    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
 
     const plaintext = 'E2E content still works'
     const db = localFlowToDb({

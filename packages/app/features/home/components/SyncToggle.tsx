@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Switch, Label, XStack, YStack, Text, Card, Separator, Button } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -6,7 +6,9 @@ import {
   clearEncryptionSetupError,
   continueLockedE2ESetup,
   encryptionSetup$,
+  openLegacyE2EUnlock,
   requestSyncEnable,
+  retryFetchManagedKey,
 } from 'app/state/encryptionSetup'
 
 const EXPLANATIONS = {
@@ -41,10 +43,12 @@ export function SyncToggle() {
   const currentModeSalt = use$(encryptionSetup$.currentModeSalt)
   const hasLocalE2EKey = use$(encryptionSetup$.hasLocalE2EKey)
   const error = use$(encryptionSetup$.error)
+  const [isRetryingManagedKey, setIsRetryingManagedKey] = useState(false)
 
   const isE2EReadyOnDevice = currentMode === 'e2e' && !!currentModeSalt && hasLocalE2EKey
   const isE2EKeyRequiredOnDevice = currentMode === 'e2e' && !!currentModeSalt && !hasLocalE2EKey
   const isE2ESetupIncomplete = currentMode === 'e2e' && !currentModeSalt
+  const isManagedReadyOnDevice = currentMode === 'managed' && !error
   const isSwitchDisabled = isLoadingMode || isE2EKeyRequiredOnDevice || isE2ESetupIncomplete
   const canContinueE2ESetup = isE2EKeyRequiredOnDevice || isE2ESetupIncomplete
 
@@ -60,6 +64,19 @@ export function SyncToggle() {
 
   const handleContinueE2ESetup = useCallback(() => {
     continueLockedE2ESetup()
+  }, [])
+
+  const handleRetryManagedKey = useCallback(async () => {
+    setIsRetryingManagedKey(true)
+    try {
+      await retryFetchManagedKey()
+    } finally {
+      setIsRetryingManagedKey(false)
+    }
+  }, [])
+
+  const handleLegacyE2EUnlock = useCallback(() => {
+    openLegacyE2EUnlock()
   }, [])
 
   const description = isLoadingMode
@@ -106,8 +123,14 @@ export function SyncToggle() {
                 {MODE_LABELS[currentMode]}
               </Text>
               {currentMode === 'managed' && (
-                <Text fontSize="$2" fontFamily="$body" color="$green10">
-                  Ready on this device
+                <Text
+                  fontSize="$2"
+                  fontFamily="$body"
+                  color={isManagedReadyOnDevice ? '$green10' : '$orange10'}
+                >
+                  {isManagedReadyOnDevice
+                    ? 'Ready on this device'
+                    : 'Managed key required on this device'}
                 </Text>
               )}
               {currentMode === 'e2e' && (
@@ -135,6 +158,31 @@ export function SyncToggle() {
         <Text fontSize="$3" fontFamily="$body" color="$color11">
           {description}
         </Text>
+
+        {currentMode === 'managed' && error && (
+          <XStack justifyContent="flex-start">
+            {error.code === 'e2e_password_required' ? (
+              <Button
+                testID="managed-e2e-unlock"
+                size="$3"
+                variant="outlined"
+                onPress={handleLegacyE2EUnlock}
+              >
+                Enter old E2E password
+              </Button>
+            ) : (
+              <Button
+                testID="managed-key-retry"
+                size="$3"
+                variant="outlined"
+                onPress={handleRetryManagedKey}
+                disabled={isRetryingManagedKey}
+              >
+                {isRetryingManagedKey ? 'Retrying key fetch...' : 'Retry key fetch'}
+              </Button>
+            )}
+          </XStack>
+        )}
 
         {canContinueE2ESetup && (
           <XStack justifyContent="flex-start">
