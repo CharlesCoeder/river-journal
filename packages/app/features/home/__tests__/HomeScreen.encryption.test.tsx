@@ -10,6 +10,7 @@ const mockUpsertUserEncryptionMode = vi.fn()
 const mockStartE2EEncryptionBootstrap = vi.fn()
 const mockUnlockE2EEncryptionOnDevice = vi.fn()
 const mockFetchManagedEncryptionKey = vi.fn()
+const mockGetManagedKeyHex = vi.fn()
 const mockClearManagedEncryptionKeyCache = vi.fn()
 
 vi.mock('../../../utils/userEncryption', () => ({
@@ -21,6 +22,7 @@ vi.mock('../../../utils/userEncryption', () => ({
   persistMasterKeyToKeyring: vi.fn().mockResolvedValue({ error: null }),
   bootstrapManagedEncryption: vi.fn().mockResolvedValue({ error: null, managedKeyHex: 'a'.repeat(64) }),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
+  getManagedKeyHex: (...args: unknown[]) => mockGetManagedKeyHex(...args),
   clearManagedEncryptionKeyCache: (...args: unknown[]) => mockClearManagedEncryptionKeyCache(...args),
 }))
 
@@ -222,6 +224,7 @@ describe('HomeScreen encryption flow', () => {
       error: null,
     })
     mockFetchManagedEncryptionKey.mockResolvedValue({ data: 'a'.repeat(64), error: null })
+    mockGetManagedKeyHex.mockResolvedValue({ data: 'a'.repeat(64), error: null })
   })
 
   it('opens the chooser from the authenticated home sync toggle', async () => {
@@ -363,7 +366,7 @@ describe('HomeScreen encryption flow', () => {
     const retryButton = screen.getByTestId('managed-key-retry')
     expect(retryButton).toBeTruthy()
 
-    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+    mockGetManagedKeyHex.mockResolvedValueOnce({
       data: 'a'.repeat(64),
       error: null,
     })
