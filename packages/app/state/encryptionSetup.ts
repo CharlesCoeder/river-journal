@@ -10,7 +10,6 @@ import {
   validateE2EMasterKeyForUser,
   persistMasterKeyToKeyring,
   bootstrapManagedEncryption,
-  clearManagedEncryptionKeyCache,
 } from '../utils/userEncryption'
 import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getManagedKeyBytes } from './syncConfig'
 import { hexToBytes } from '@noble/ciphers/utils.js'
@@ -207,7 +206,6 @@ export const resetEncryptionSetupState = () => {
     pendingKeyringMasterKey = null
     pendingKeyringUserId = null
     setManagedKeyBytesFromHex(null)
-    clearManagedEncryptionKeyCache()
   })
 }
 
@@ -255,7 +253,19 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
         return null
       }
 
-      // Managed mode: fetch the managed key from Supabase and cache it
+      // Pre-cache managed key from the initial query when available.
+      // This eliminates a second round-trip and ensures both managed-mode
+      // and E2E-mode users can decrypt historical managed payloads.
+      const rawManagedKeyHex = result.data.managedKeyHex
+      if (rawManagedKeyHex && rawManagedKeyHex.length === 64) {
+        try {
+          setManagedKeyBytesFromHex(rawManagedKeyHex)
+        } catch {
+          // Invalid key format — getManagedKeyBytes will re-fetch as fallback
+        }
+      }
+
+      // Managed mode: ensure the managed key is available before sync opens
       if (result.data.mode === 'managed') {
         const keyResult = await getManagedKeyBytes(userId)
         if (keyResult.error) {

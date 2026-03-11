@@ -11,7 +11,6 @@ const mockStartE2EEncryptionBootstrap = vi.fn()
 const mockUnlockE2EEncryptionOnDevice = vi.fn()
 const mockFetchManagedEncryptionKey = vi.fn()
 const mockGetManagedKeyHex = vi.fn()
-const mockClearManagedEncryptionKeyCache = vi.fn()
 
 vi.mock('../../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
@@ -23,7 +22,6 @@ vi.mock('../../../utils/userEncryption', () => ({
   bootstrapManagedEncryption: vi.fn().mockResolvedValue({ error: null, managedKeyHex: 'a'.repeat(64) }),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
   getManagedKeyHex: (...args: unknown[]) => mockGetManagedKeyHex(...args),
-  clearManagedEncryptionKeyCache: (...args: unknown[]) => mockClearManagedEncryptionKeyCache(...args),
 }))
 
 vi.mock('../../../utils/supabase', () => ({
@@ -210,11 +208,11 @@ describe('HomeScreen encryption flow', () => {
     })
 
     mockReadUserEncryptionSettings.mockResolvedValue({
-      data: { mode: null, salt: null },
+      data: { mode: null, salt: null, managedKeyHex: null },
       error: null,
     })
     mockUpsertUserEncryptionMode.mockResolvedValue({
-      data: { mode: 'managed', salt: null },
+      data: { mode: 'managed', salt: null, managedKeyHex: null },
       error: null,
     })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
@@ -260,7 +258,7 @@ describe('HomeScreen encryption flow', () => {
 
   it('shows the current encryption mode as read-only on the home screen', async () => {
     mockReadUserEncryptionSettings.mockResolvedValue({
-      data: { mode: 'managed', salt: null },
+      data: { mode: 'managed', salt: null, managedKeyHex: 'a'.repeat(64) },
       error: null,
     })
 
