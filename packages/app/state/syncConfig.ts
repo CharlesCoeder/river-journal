@@ -91,25 +91,33 @@ const setSyncEncryptionError = (message: string, code: string): never => {
   throw new EncryptionError(`${syncError.code}: ${syncError.message}`, code)
 }
 
-export const getManagedKeyBytes = async (userId?: string): Promise<Uint8Array> => {
+export const getManagedKeyBytes = async (
+  userId?: string
+): Promise<
+  | { data: Uint8Array; error: null }
+  | { data: null; error: SyncEncryptionError }
+> => {
   const cached = syncManagedKeyBytes$.peek()
-  if (cached) return cached
+  if (cached) return { data: cached, error: null }
 
   if (!userId) {
-    return setSyncEncryptionError(
-      'Managed encryption key is unavailable because no authenticated user is present.',
-      'missing_sync_user'
-    )
+    return {
+      data: null,
+      error: toSyncEncryptionError(
+        'Managed encryption key is unavailable because no authenticated user is present.',
+        'missing_sync_user',
+      ),
+    }
   }
 
   const result = await getManagedKeyHex(userId)
   if (result.error) {
-    return setSyncEncryptionError(result.error.message, result.error.code)
+    return { data: null, error: toSyncEncryptionError(result.error.message, result.error.code) }
   }
 
   const keyBytes = hexToBytes(result.data)
   syncManagedKeyBytes$.set(keyBytes)
-  return keyBytes
+  return { data: keyBytes, error: null }
 }
 
 // =================================================================
@@ -168,6 +176,8 @@ interface DbFlowRow {
 const decryptFlowContentFromDb = (content: string): string => {
   // Dispatch on payload prefix (self-describing) — not on user’s current mode
   if (isManagedEncryptedPayload(content)) {
+    // Synchronous .peek() is safe: isSyncReady$ gate (via isEncryptionReadyForSync$)
+    // ensures the managed key is cached before any sync transforms execute.
     const managedKey = syncManagedKeyBytes$.peek()
     if (!managedKey) {
       return setSyncEncryptionError(
@@ -184,7 +194,8 @@ const decryptFlowContentFromDb = (content: string): string => {
       if (error instanceof EncryptionError) {
         return setSyncEncryptionError(error.message, error.code)
       }
-      const fallbackMessage = (error as Error).message || 'Failed to decrypt managed-mode flow content.'
+      const fallbackMessage =
+        (error as Error).message || 'Failed to decrypt managed-mode flow content.'
       return setSyncEncryptionError(fallbackMessage, 'flow_decrypt_failed')
     }
   }
@@ -225,6 +236,8 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
   const mode = syncEncryptionMode$.peek()
 
   if (mode === 'managed') {
+    // Synchronous .peek() is safe: isSyncReady$ gate (via isEncryptionReadyForSync$)
+    // ensures the managed key is cached before any sync transforms execute.
     const managedKey = syncManagedKeyBytes$.peek()
     if (!managedKey) {
       return setSyncEncryptionError(

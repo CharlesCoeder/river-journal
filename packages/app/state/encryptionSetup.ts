@@ -11,9 +11,8 @@ import {
   persistMasterKeyToKeyring,
   bootstrapManagedEncryption,
   clearManagedEncryptionKeyCache,
-  fetchManagedEncryptionKey,
 } from '../utils/userEncryption'
-import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$ } from './syncConfig'
+import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getManagedKeyBytes } from './syncConfig'
 import { hexToBytes } from '@noble/ciphers/utils.js'
 
 export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'legacy-e2e-password' | 'saving'
@@ -258,7 +257,7 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
 
       // Managed mode: fetch the managed key from Supabase and cache it
       if (result.data.mode === 'managed') {
-        const keyResult = await fetchManagedEncryptionKey(userId)
+        const keyResult = await getManagedKeyBytes(userId)
         if (keyResult.error) {
           batch(() => {
             encryptionSetup$.error.set(keyResult.error)
@@ -270,7 +269,6 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
           syncEncryptionMode$.set('managed')
           return 'managed'
         }
-        setManagedKeyBytesFromHex(keyResult.data)
 
         // C1: Also check for E2E local key availability so historical E2E
         // encrypted flows can still be decrypted even in managed mode.
@@ -669,7 +667,9 @@ export const retryFetchManagedKey = async (): Promise<boolean> => {
     syncEncryptionError$.set(null)
   })
 
-  const keyResult = await fetchManagedEncryptionKey(userId)
+  syncManagedKeyBytes$.set(null)
+
+  const keyResult = await getManagedKeyBytes(userId)
   if (keyResult.error) {
     batch(() => {
       encryptionSetup$.error.set(keyResult.error)
@@ -678,8 +678,6 @@ export const retryFetchManagedKey = async (): Promise<boolean> => {
     })
     return false
   }
-
-  setManagedKeyBytesFromHex(keyResult.data)
 
   batch(() => {
     encryptionSetup$.error.set(null)

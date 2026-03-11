@@ -8,6 +8,7 @@ const mockValidateE2EMasterKeyForUser = vi.fn()
 const mockPersistMasterKeyToKeyring = vi.fn()
 const mockBootstrapManagedEncryption = vi.fn()
 const mockFetchManagedEncryptionKey = vi.fn()
+const mockGetManagedKeyHex = vi.fn()
 const mockClearManagedEncryptionKeyCache = vi.fn()
 const mockLoadMasterKey = vi.fn()
 const mockClearStoredMasterKey = vi.fn()
@@ -22,6 +23,7 @@ vi.mock('../../utils/userEncryption', () => ({
   persistMasterKeyToKeyring: (...args: unknown[]) => mockPersistMasterKeyToKeyring(...args),
   bootstrapManagedEncryption: (...args: unknown[]) => mockBootstrapManagedEncryption(...args),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
+  getManagedKeyHex: (...args: unknown[]) => mockGetManagedKeyHex(...args),
   clearManagedEncryptionKeyCache: (...args: unknown[]) => mockClearManagedEncryptionKeyCache(...args),
 }))
 
@@ -127,6 +129,10 @@ describe('encryption setup orchestration', () => {
       data: 'a'.repeat(64),
       error: null,
     })
+    mockGetManagedKeyHex.mockResolvedValue({
+      data: 'a'.repeat(64),
+      error: null,
+    })
   })
 
   it('first-time enable opens the chooser instead of enabling sync', async () => {
@@ -220,7 +226,7 @@ describe('encryption setup orchestration', () => {
     const mode = await loadCurrentEncryptionMode()
 
     expect(mode).toBe('managed')
-    expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
+    expect(mockGetManagedKeyHex).toHaveBeenCalledWith('user-1')
     expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
@@ -231,7 +237,7 @@ describe('encryption setup orchestration', () => {
       data: { mode: 'managed', salt: null },
       error: null,
     })
-    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+    mockGetManagedKeyHex.mockResolvedValueOnce({
       data: null,
       error: { message: 'Managed key missing', code: 'managed_key_missing' },
     })
@@ -512,7 +518,7 @@ describe('encryption setup orchestration', () => {
 
   it('retryFetchManagedKey refetches the key and enables sync', async () => {
     store$.session.userId.set('user-1')
-    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+    mockGetManagedKeyHex.mockResolvedValueOnce({
       data: 'a'.repeat(64),
       error: null,
     })
@@ -520,7 +526,7 @@ describe('encryption setup orchestration', () => {
     const result = await retryFetchManagedKey()
 
     expect(result).toBe(true)
-    expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
+    expect(mockGetManagedKeyHex).toHaveBeenCalledWith('user-1')
     expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
     expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.error.get()).toBeNull()
@@ -528,7 +534,7 @@ describe('encryption setup orchestration', () => {
 
   it('retryFetchManagedKey returns false and updates error state on failure', async () => {
     store$.session.userId.set('user-1')
-    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+    mockGetManagedKeyHex.mockResolvedValueOnce({
       data: null,
       error: { message: 'Network error', code: 'fetch_failed' },
     })
