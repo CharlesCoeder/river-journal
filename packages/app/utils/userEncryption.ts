@@ -15,6 +15,7 @@ import { cacheOnlyMasterKey, clearStoredMasterKey, storeMasterKey } from './encr
 export interface EncryptionSettings {
   mode: EncryptionMode | null
   salt: string | null
+  managedKeyHex: string | null
 }
 
 export interface EncryptionSettingsError {
@@ -40,20 +41,6 @@ const INVALID_ENCRYPTION_PASSWORD_ERROR = {
 
 type FlowVerificationRow = Pick<Tables<'flows'>, 'id' | 'content'>
 
-let managedKeyHexCache: string | null = null
-
-const normalizeManagedKeyHex = (keyHex: string): string => keyHex.toLowerCase()
-
-export const clearManagedEncryptionKeyCache = (): void => {
-  managedKeyHexCache = null
-}
-
-export const getCachedManagedEncryptionKeyHex = (): string | null => managedKeyHexCache
-
-const cacheManagedEncryptionKeyHex = (keyHex: string): void => {
-  managedKeyHexCache = normalizeManagedKeyHex(keyHex)
-}
-
 export async function readUserEncryptionSettings(
   userId: string
 ): Promise<
@@ -62,7 +49,7 @@ export async function readUserEncryptionSettings(
 > {
   const { data, error } = await supabase
     .from('users')
-    .select('encryption_mode, encryption_salt')
+    .select('encryption_mode, encryption_salt, managed_encryption_key')
     .eq('id', userId)
     .maybeSingle()
 
@@ -77,6 +64,7 @@ export async function readUserEncryptionSettings(
     data: {
       mode: normalizeEncryptionMode(data?.encryption_mode),
       salt: data?.encryption_salt ?? null,
+      managedKeyHex: data?.managed_encryption_key ?? null,
     },
     error: null,
   }
@@ -97,7 +85,7 @@ export async function upsertUserEncryptionMode(input: {
   const { data, error } = await supabase
     .from('users')
     .upsert(payload, { onConflict: 'id' })
-    .select('encryption_mode, encryption_salt')
+    .select('encryption_mode, encryption_salt, managed_encryption_key')
     .single()
 
   if (error) {
@@ -111,6 +99,7 @@ export async function upsertUserEncryptionMode(input: {
     data: {
       mode: normalizeEncryptionMode(data.encryption_mode),
       salt: data.encryption_salt ?? null,
+      managedKeyHex: data.managed_encryption_key ?? null,
     },
     error: null,
   }
@@ -317,7 +306,6 @@ export async function bootstrapManagedEncryption(input: {
       }
     }
 
-    cacheManagedEncryptionKeyHex(managedKeyHex)
     return { error: null, managedKeyHex }
   } catch (error) {
     if (error instanceof EncryptionError) {
@@ -378,7 +366,6 @@ export async function fetchManagedEncryptionKey(
     }
   }
 
-  cacheManagedEncryptionKeyHex(keyHex)
   return { data: keyHex, error: null }
 }
 
@@ -388,14 +375,5 @@ export async function getManagedKeyHex(
   | { data: string; error: null }
   | { data: null; error: EncryptionSettingsError['error'] }
 > {
-  if (managedKeyHexCache) {
-    return { data: managedKeyHexCache, error: null }
-  }
-
-  const fetched = await fetchManagedEncryptionKey(userId)
-  if (fetched.error) {
-    return { data: null, error: fetched.error }
-  }
-
-  return { data: fetched.data, error: null }
+  return fetchManagedEncryptionKey(userId)
 }

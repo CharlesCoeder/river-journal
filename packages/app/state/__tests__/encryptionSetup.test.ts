@@ -9,7 +9,6 @@ const mockPersistMasterKeyToKeyring = vi.fn()
 const mockBootstrapManagedEncryption = vi.fn()
 const mockFetchManagedEncryptionKey = vi.fn()
 const mockGetManagedKeyHex = vi.fn()
-const mockClearManagedEncryptionKeyCache = vi.fn()
 const mockLoadMasterKey = vi.fn()
 const mockClearStoredMasterKey = vi.fn()
 const mockHasPlatformKeyring = vi.fn()
@@ -24,7 +23,6 @@ vi.mock('../../utils/userEncryption', () => ({
   bootstrapManagedEncryption: (...args: unknown[]) => mockBootstrapManagedEncryption(...args),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
   getManagedKeyHex: (...args: unknown[]) => mockGetManagedKeyHex(...args),
-  clearManagedEncryptionKeyCache: (...args: unknown[]) => mockClearManagedEncryptionKeyCache(...args),
 }))
 
 vi.mock('../../utils/encryptionKeyStore', () => ({
@@ -98,11 +96,11 @@ describe('encryption setup orchestration', () => {
     })
 
     mockReadUserEncryptionSettings.mockResolvedValue({
-      data: { mode: null, salt: null },
+      data: { mode: null, salt: null, managedKeyHex: null },
       error: null,
     })
     mockUpsertUserEncryptionMode.mockResolvedValue({
-      data: { mode: 'managed', salt: null },
+      data: { mode: 'managed', salt: null, managedKeyHex: null },
       error: null,
     })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
@@ -217,16 +215,16 @@ describe('encryption setup orchestration', () => {
     })
   })
 
-  it('loadCurrentEncryptionMode fetches and caches managed key', async () => {
+  it('loadCurrentEncryptionMode pre-caches managed key from initial query (no N+1)', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
-      data: { mode: 'managed', salt: null },
+      data: { mode: 'managed', salt: null, managedKeyHex: 'a'.repeat(64) },
       error: null,
     })
 
     const mode = await loadCurrentEncryptionMode()
 
     expect(mode).toBe('managed')
-    expect(mockGetManagedKeyHex).toHaveBeenCalledWith('user-1')
+    expect(mockGetManagedKeyHex).not.toHaveBeenCalled()
     expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
@@ -234,7 +232,7 @@ describe('encryption setup orchestration', () => {
 
   it('blocks sync when managed key cannot be fetched', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
-      data: { mode: 'managed', salt: null },
+      data: { mode: 'managed', salt: null, managedKeyHex: null },
       error: null,
     })
     mockGetManagedKeyHex.mockResolvedValueOnce({
@@ -279,6 +277,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -303,6 +302,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -326,6 +326,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -358,6 +359,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -392,6 +394,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -444,6 +447,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -464,6 +468,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -483,6 +488,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -504,6 +510,7 @@ describe('encryption setup orchestration', () => {
       data: {
         mode: 'e2e',
         salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: null,
       },
       error: null,
     })
@@ -579,6 +586,25 @@ describe('encryption setup orchestration', () => {
 
     expect(result).toBe(false)
     expect(encryptionSetup$.error.get()).toEqual({ message: 'Wrong password', code: 'invalid_password' })
+  })
+
+  it('E2E mode pre-caches managed key for historical managed payloads', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: {
+        mode: 'e2e',
+        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+        managedKeyHex: 'b'.repeat(64),
+      },
+      error: null,
+    })
+    mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('e2e')
+    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('b'.repeat(64)))
+    expect(encryptionSetup$.currentMode.get()).toBe('e2e')
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
 
   it('keeps sync enabled when managed mode encounters legacy E2E unlock requirement', async () => {
