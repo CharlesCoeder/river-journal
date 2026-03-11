@@ -486,7 +486,7 @@ export const submitE2EPassword = async (
   const normalizedConfirmPassword = confirmPassword.trim()
   const currentMode = encryptionSetup$.currentMode.get()
   const currentModeSalt = encryptionSetup$.currentModeSalt.get()
-  const isUnlockingExistingE2E = currentMode === 'e2e' && !!currentModeSalt
+  const isUnlockingExistingE2E = !!currentModeSalt
 
   if (!normalizedPassword) {
     encryptionSetup$.error.set({
@@ -545,6 +545,18 @@ export const submitE2EPassword = async (
       store$.session.syncEnabled.set(false)
     })
     return false
+  }
+
+  if (isUnlockingExistingE2E && currentMode !== 'e2e') {
+    const modeResult = await upsertUserEncryptionMode({ userId, mode: 'e2e' })
+    if (modeResult.error) {
+      batch(() => {
+        encryptionSetup$.step.set('e2e-password')
+        encryptionSetup$.error.set(modeResult.error)
+        store$.session.syncEnabled.set(false)
+      })
+      return false
+    }
   }
 
   await loadCurrentEncryptionMode()

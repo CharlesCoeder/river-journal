@@ -222,6 +222,10 @@ describe('persistMasterKeyToKeyring', () => {
 describe('bootstrapManagedEncryption', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUsersMaybeSingle.mockResolvedValue({
+      data: { managed_encryption_key: null },
+      error: null,
+    })
     mockUsersSingle.mockResolvedValue({
       data: { encryption_mode: 'managed', managed_encryption_key: 'abc123' },
       error: null,
@@ -243,6 +247,41 @@ describe('bootstrapManagedEncryption', () => {
     expect(payload.id).toBe('user-1')
     expect(payload.encryption_mode).toBe('managed')
     expect(payload.managed_encryption_key).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('reuses existing managed key instead of generating a new one', async () => {
+    const existingKey = 'b'.repeat(64)
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: { managed_encryption_key: existingKey },
+      error: null,
+    })
+
+    const result = await bootstrapManagedEncryption({ userId: 'user-1' })
+
+    expect(result.error).toBeNull()
+    expect(result.managedKeyHex).toBe(existingKey)
+    expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
+
+    const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
+    const payload = upsertCalls[0][0]
+    expect(payload.encryption_mode).toBe('managed')
+    expect(payload).not.toHaveProperty('managed_encryption_key')
+  })
+
+  it('propagates fetch errors instead of blindly generating a new key', async () => {
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Connection lost', code: 'network_error' },
+    })
+
+    const result = await bootstrapManagedEncryption({ userId: 'user-1' })
+
+    expect(result.error).toEqual({
+      message: 'Connection lost',
+      code: 'network_error',
+    })
+    expect(result.managedKeyHex).toBeNull()
+    expect(mockUsersUpsert).not.toHaveBeenCalled()
   })
 
   it('getManagedKeyHex fetches from Supabase (no local hex cache)', async () => {
