@@ -219,7 +219,6 @@ describe('HomeScreen encryption flow', () => {
       error: null,
     })
     mockFetchManagedEncryptionKey.mockResolvedValue({ data: 'a'.repeat(64), error: null })
-    mockFetchManagedEncryptionKey.mockResolvedValue({ data: 'a'.repeat(64), error: null })
   })
 
   it('opens the chooser from the authenticated home sync toggle', async () => {

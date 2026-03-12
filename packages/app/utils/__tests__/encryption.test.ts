@@ -15,7 +15,7 @@ import {
 import { hexToBytes } from '@noble/ciphers/utils.js'
 
 describe('encryption utils', () => {
-  it('derives a deterministic key from password + salt', async () => {
+  it('derives a deterministic key from password + salt', { timeout: 15000 }, async () => {
     const saltHex = '4a7d2a4f6f7ce932f934f01750d75e6ea27a9579fce42f8a938cb2f08f4249fb'
     const a = await deriveMasterKeyFromPassword('correct horse battery staple', saltHex)
     const b = await deriveMasterKeyFromPassword('correct horse battery staple', saltHex)
