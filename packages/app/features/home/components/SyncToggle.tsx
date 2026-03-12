@@ -159,28 +159,30 @@ export function SyncToggle() {
           {description}
         </Text>
 
-        {currentMode === 'managed' && error && (
+        {currentMode === 'managed' && error && error.code === 'e2e_password_required' && (
           <XStack justifyContent="flex-start">
-            {error.code === 'e2e_password_required' ? (
-              <Button
-                testID="managed-e2e-unlock"
-                size="$3"
-                variant="outlined"
-                onPress={handleLegacyE2EUnlock}
-              >
-                Enter old E2E password
-              </Button>
-            ) : (
-              <Button
-                testID="managed-key-retry"
-                size="$3"
-                variant="outlined"
-                onPress={handleRetryManagedKey}
-                disabled={isRetryingManagedKey}
-              >
-                {isRetryingManagedKey ? 'Retrying key fetch...' : 'Retry key fetch'}
-              </Button>
-            )}
+            <Button
+              testID="managed-e2e-unlock"
+              size="$3"
+              variant="outlined"
+              onPress={handleLegacyE2EUnlock}
+            >
+              Enter old E2E password
+            </Button>
+          </XStack>
+        )}
+
+        {currentMode === 'managed' && error && (error.code === 'managed_key_missing' || error.code === 'managed_key_invalid') && (
+          <XStack justifyContent="flex-start">
+            <Button
+              testID="managed-key-retry"
+              size="$3"
+              variant="outlined"
+              onPress={handleRetryManagedKey}
+              disabled={isRetryingManagedKey}
+            >
+              {isRetryingManagedKey ? 'Retrying key fetch...' : 'Retry key fetch'}
+            </Button>
           </XStack>
         )}
 

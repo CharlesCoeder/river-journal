@@ -76,7 +76,6 @@ import {
   persistMasterKeyToKeyring,
   bootstrapManagedEncryption,
   fetchManagedEncryptionKey,
-  getManagedKeyHex,
 } from '../userEncryption'
 
 describe('startE2EEncryptionBootstrap', () => {
@@ -284,21 +283,6 @@ describe('bootstrapManagedEncryption', () => {
     expect(mockUsersUpsert).not.toHaveBeenCalled()
   })
 
-  it('getManagedKeyHex fetches from Supabase (no local hex cache)', async () => {
-    const result = await bootstrapManagedEncryption({ userId: 'user-1' })
-    expect(result.error).toBeNull()
-
-    mockUsersMaybeSingle.mockResolvedValueOnce({
-      data: { managed_encryption_key: result.managedKeyHex },
-      error: null,
-    })
-
-    const fetched = await getManagedKeyHex('user-1')
-    expect(fetched.error).toBeNull()
-    expect(fetched.data).toBe(result.managedKeyHex)
-    expect(mockUsersSelectRead).toHaveBeenCalledWith('managed_encryption_key')
-  })
-
   it('returns a structured error when upsert fails', async () => {
     mockUsersSingle.mockResolvedValueOnce({
       data: null,
@@ -379,21 +363,3 @@ describe('fetchManagedEncryptionKey', () => {
   })
 })
 
-describe('getManagedKeyHex', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('fetches from Supabase when cache is empty', async () => {
-    mockUsersMaybeSingle.mockResolvedValueOnce({
-      data: { managed_encryption_key: 'a'.repeat(64) },
-      error: null,
-    })
-
-    const result = await getManagedKeyHex('user-1')
-
-    expect(result.error).toBeNull()
-    expect(result.data).toBe('a'.repeat(64))
-    expect(mockUsersSelectRead).toHaveBeenCalledWith('managed_encryption_key')
-  })
-})

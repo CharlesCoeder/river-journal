@@ -29,7 +29,7 @@ import {
 } from '../utils/encryption'
 import { hexToBytes } from '@noble/ciphers/utils.js'
 import { getCachedMasterKey } from '../utils/encryptionKeyStore'
-import { getManagedKeyHex } from '../utils/userEncryption'
+import { fetchManagedEncryptionKey } from '../utils/userEncryption'
 
 // =================================================================
 // UUID GENERATION
@@ -110,7 +110,7 @@ export const getManagedKeyBytes = async (
     }
   }
 
-  const result = await getManagedKeyHex(userId)
+  const result = await fetchManagedEncryptionKey(userId)
   if (result.error) {
     return { data: null, error: toSyncEncryptionError(result.error.message, result.error.code) }
   }
@@ -188,7 +188,6 @@ const decryptFlowContentFromDb = (content: string): string => {
 
     try {
       const plaintext = decryptFlowContentManaged(content, managedKey as Uint8Array)
-      syncEncryptionError$.set(null)
       return plaintext
     } catch (error) {
       if (error instanceof EncryptionError) {
@@ -220,7 +219,6 @@ const decryptFlowContentFromDb = (content: string): string => {
 
   try {
     const plaintext = decryptFlowContent(content, key)
-    syncEncryptionError$.set(null)
     return plaintext
   } catch (error) {
     if (error instanceof EncryptionError) {
@@ -248,7 +246,6 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
 
     try {
       const encryptedContent = encryptFlowContentManaged(content, managedKey as Uint8Array)
-      syncEncryptionError$.set(null)
       return encryptedContent
     } catch (error) {
       if (error instanceof EncryptionError) {
@@ -276,7 +273,6 @@ const encryptFlowContentForDb = (content: string, userId: string): string => {
 
   try {
     const encryptedContent = encryptFlowContent(content, key)
-    syncEncryptionError$.set(null)
     return encryptedContent
   } catch (error) {
     if (error instanceof EncryptionError) {

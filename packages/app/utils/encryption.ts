@@ -258,15 +258,19 @@ export function decodeEncryptedPayload(serialized: string): EncryptedFlowPayload
   }
 }
 
-export function encryptFlowContent(plaintext: string, masterKey: Uint8Array): string {
-  assertMasterKey(masterKey)
+const encryptWithKey = (
+  plaintext: string,
+  key: Uint8Array,
+  encodePayload: (payload: EncryptedFlowPayload) => string
+): string => {
+  assertMasterKey(key)
   assertCryptoGetRandomValues()
 
   const nonce = randomBytes(NONCE_BYTES)
-  const cipher = xchacha20poly1305(masterKey, nonce)
+  const cipher = xchacha20poly1305(key, nonce)
   const ciphertext = cipher.encrypt(utf8ToBytes(plaintext))
 
-  return encodeEncryptedPayload({
+  return encodePayload({
     version: ENCRYPTION_VERSION,
     algorithm: ENCRYPTION_ALGORITHM,
     nonce: bytesToHex(nonce),
@@ -274,23 +278,36 @@ export function encryptFlowContent(plaintext: string, masterKey: Uint8Array): st
   })
 }
 
-export function decryptFlowContent(serialized: string, masterKey: Uint8Array): string {
-  assertMasterKey(masterKey)
-  const payload = decodeEncryptedPayload(serialized)
+const decryptWithKey = (
+  decodePayload: (serialized: string) => EncryptedFlowPayload,
+  serialized: string,
+  key: Uint8Array,
+  errorLabel: string
+): string => {
+  assertMasterKey(key)
+  const payload = decodePayload(serialized)
 
   const nonce = hexToBytes(payload.nonce)
   const ciphertext = hexToBytes(payload.ciphertext)
 
   try {
-    const cipher = xchacha20poly1305(masterKey, nonce)
+    const cipher = xchacha20poly1305(key, nonce)
     const plaintext = cipher.decrypt(ciphertext)
     return bytesToUtf8(plaintext)
   } catch (error) {
     return throwEncryptionError(
-      `Failed to decrypt encrypted flow content: ${(error as Error).message}`,
+      `Failed to decrypt ${errorLabel} flow content: ${(error as Error).message}`,
       'flow_decrypt_failed'
     )
   }
+}
+
+export function encryptFlowContent(plaintext: string, masterKey: Uint8Array): string {
+  return encryptWithKey(plaintext, masterKey, encodeEncryptedPayload)
+}
+
+export function decryptFlowContent(serialized: string, masterKey: Uint8Array): string {
+  return decryptWithKey(decodeEncryptedPayload, serialized, masterKey, 'encrypted')
 }
 
 // =================================================================
@@ -321,38 +338,11 @@ export function decodeManagedPayload(serialized: string): EncryptedFlowPayload {
 }
 
 export function encryptFlowContentManaged(plaintext: string, managedKey: Uint8Array): string {
-  assertMasterKey(managedKey)
-  assertCryptoGetRandomValues()
-
-  const nonce = randomBytes(NONCE_BYTES)
-  const cipher = xchacha20poly1305(managedKey, nonce)
-  const ciphertext = cipher.encrypt(utf8ToBytes(plaintext))
-
-  return encodeManagedPayload({
-    version: ENCRYPTION_VERSION,
-    algorithm: ENCRYPTION_ALGORITHM,
-    nonce: bytesToHex(nonce),
-    ciphertext: bytesToHex(ciphertext),
-  })
+  return encryptWithKey(plaintext, managedKey, encodeManagedPayload)
 }
 
 export function decryptFlowContentManaged(serialized: string, managedKey: Uint8Array): string {
-  assertMasterKey(managedKey)
-  const payload = decodeManagedPayload(serialized)
-
-  const nonce = hexToBytes(payload.nonce)
-  const ciphertext = hexToBytes(payload.ciphertext)
-
-  try {
-    const cipher = xchacha20poly1305(managedKey, nonce)
-    const plaintext = cipher.decrypt(ciphertext)
-    return bytesToUtf8(plaintext)
-  } catch (error) {
-    return throwEncryptionError(
-      `Failed to decrypt managed-mode flow content: ${(error as Error).message}`,
-      'flow_decrypt_failed'
-    )
-  }
+  return decryptWithKey(decodeManagedPayload, serialized, managedKey, 'managed-mode')
 }
 
 export function generateManagedEncryptionKey(): string {
