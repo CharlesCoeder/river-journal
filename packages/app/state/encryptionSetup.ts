@@ -11,7 +11,8 @@ import {
   persistMasterKeyToKeyring,
   bootstrapManagedEncryption,
 } from '../utils/userEncryption'
-import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getManagedKeyBytes } from './syncConfig'
+import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getManagedKeyBytes, supabase, dbFlowToLocal } from './syncConfig'
+import { flows$ } from './flows'
 import { hexToBytes } from '@noble/ciphers/utils.js'
 
 export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'legacy-e2e-password' | 'saving'
@@ -761,6 +762,46 @@ export const retryWithE2EPassword = async (password: string): Promise<boolean> =
     encryptionSetup$.hasLocalE2EKey.set(true)
     encryptionSetup$.error.set(null)
     syncEncryptionError$.set(null)
+    resetDialogState()
   })
+
+  // Re-fetch flows that Legend-State already downloaded but couldn't decrypt
+  // (they were dropped as null before the E2E key was available).
+  void refetchUndecryptedFlows()
+
   return true
+}
+
+/**
+ * Re-fetches all flows from Supabase and merges any that are missing from
+ * local state. Called after the E2E key becomes available to recover flows
+ * that were dropped during the initial sync (decryption failed without the key).
+ */
+const refetchUndecryptedFlows = async (): Promise<void> => {
+  const { data, error } = await supabase
+    .from('flows')
+    .select('id, daily_entry_id, content, word_count, created_at, updated_at, is_deleted')
+
+  if (error || !data) return
+
+  const localFlows = flows$.peek() ?? {}
+  let recovered = 0
+
+  for (const row of data) {
+    if (localFlows[row.id]) continue
+    if (row.is_deleted) continue
+
+    try {
+      const flow = dbFlowToLocal(row)
+      flows$[flow.id].set(flow)
+      recovered++
+    } catch {
+      // Still can't decrypt — skip silently
+    }
+  }
+
+  if (process.env.NODE_ENV === 'development' && recovered > 0) {
+    // eslint-disable-next-line no-console
+    console.log(`🔓 [retryWithE2EPassword] recovered ${recovered} previously undecryptable flows`)
+  }
 }

@@ -156,6 +156,19 @@ export function localEntryToDb(value: Partial<Entry> & { id?: string }): Record<
   if (value.user_id !== undefined) result.user_id = value.user_id
   // lastModified → updated_at is handled by DB trigger, don't send it
   // local_session_id is local-only, never sent
+
+  if (process.env.NODE_ENV === 'development') {
+    const authUserId = syncUserId$.peek()
+    // eslint-disable-next-line no-console
+    console.log('🔍 [entries] localEntryToDb payload', {
+      id: result.id,
+      entry_date: result.entry_date,
+      user_id: result.user_id,
+      authUserId,
+      match: result.user_id === authUserId,
+    })
+  }
+
   return result
 }
 
@@ -314,6 +327,18 @@ export function localFlowToDb(value: Partial<Flow> & { id?: string }): Record<st
   if (value.dailyEntryId !== undefined) result.daily_entry_id = value.dailyEntryId
   if (value.content !== undefined) {
     const userId = value.user_id || syncUserId$.peek()
+
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('🔍 [flows] localFlowToDb payload', {
+        id: result.id,
+        daily_entry_id: result.daily_entry_id,
+        userId,
+        encryptionMode: syncEncryptionMode$.peek(),
+        hasManagedKey: !!syncManagedKeyBytes$.peek(),
+      })
+    }
+
     if (!userId) {
       return setSyncEncryptionError(
         'Cannot upload flow content: no authenticated user available for encryption.',
