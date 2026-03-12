@@ -106,13 +106,21 @@ export function EncryptionModeDialog() {
               <AlertDialog.Title fontFamily="$body" fontSize="$6" fontWeight="700">
                 {isLegacyE2EUnlock
                   ? 'Unlock legacy E2E flows'
-                  : step === 'e2e-password' || step === 'saving'
+                  : step === 'e2e-password'
                     ? 'Finish end-to-end setup'
-                    : 'Choose your encryption mode'}
+                    : step === 'saving'
+                      ? selectedMode === 'e2e'
+                        ? 'Finish end-to-end setup'
+                        : 'Setting up managed encryption'
+                      : 'Choose your encryption mode'}
               </AlertDialog.Title>
 
               <AlertDialog.Description fontFamily="$body" fontSize="$4" color="$color">
-                Choose how Cloud Sync protects your journal before anything is uploaded.
+                {isLegacyE2EUnlock
+                  ? 'Enter your old E2E password so this device can read historical encrypted flows.'
+                  : step === 'e2e-password'
+                    ? 'This password is separate from your account password and cannot be recovered for you.'
+                    : 'Choose how Cloud Sync protects your journal before anything is uploaded.'}
               </AlertDialog.Description>
             </YStack>
 

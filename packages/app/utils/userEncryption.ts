@@ -396,11 +396,3 @@ export async function fetchManagedEncryptionKey(
   return { data: keyHex, error: null }
 }
 
-export async function getManagedKeyHex(
-  userId: string
-): Promise<
-  | { data: string; error: null }
-  | { data: null; error: EncryptionSettingsError['error'] }
-> {
-  return fetchManagedEncryptionKey(userId)
-}
