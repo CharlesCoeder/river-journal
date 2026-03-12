@@ -6,7 +6,7 @@
 import type { Session, AuthError, User } from '@supabase/supabase-js'
 import { Platform } from 'react-native'
 import { supabase } from './supabase'
-import { store$ } from '../state/store'
+import { store$, clearUserData } from '../state/store'
 import { batch } from '@legendapp/state'
 import { loadCurrentEncryptionMode, resetEncryptionSetupState } from '../state/encryptionSetup'
 
@@ -66,6 +66,21 @@ export const getAuthErrorMessage = (error: AuthError): string => {
  * Updates Legend-State store with auth session data
  */
 const updateSessionState = (session: Session | null) => {
+  const previousUserId = store$.session.userId.peek()
+
+  // When a different user signs in, clear the previous user's synced data
+  // from local persistence to prevent RLS 403s from stale user_id mismatches.
+  if (session?.user && previousUserId && previousUserId !== session.user.id) {
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('🔄 [auth] user changed, clearing previous user data', {
+        previous: previousUserId.slice(0, 8),
+        current: session.user.id.slice(0, 8),
+      })
+    }
+    clearUserData()
+  }
+
   batch(() => {
     if (session?.user) {
       store$.session.assign({

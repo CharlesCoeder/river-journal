@@ -73,6 +73,20 @@ export const entries$ = observable<Record<string, Entry>>(
         // Skip syncing entries with no user_id (anonymous/orphan data).
         // adoptOrphanFlows() will stamp the user_id, then the item will sync.
         if (!value.user_id) return undefined
+        // Skip entries belonging to a different user — prevents RLS 403 from
+        // stale data left in local persistence after a user switch.
+        const currentUserId = syncUserId$.peek()
+        if (currentUserId && value.user_id !== currentUserId) {
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.warn('⚠️ [entries] skipping stale entry (user mismatch)', {
+              entryId: value.id?.slice(0, 8),
+              entryUserId: value.user_id?.slice(0, 8),
+              currentUserId: currentUserId.slice(0, 8),
+            })
+          }
+          return undefined
+        }
         if (process.env.NODE_ENV === 'development') {
           // eslint-disable-next-line no-console
           console.log('📤 [entries] outgoing create/update', value.id ?? '(new)')

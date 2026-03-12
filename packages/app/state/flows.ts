@@ -16,6 +16,7 @@ import {
   supabase,
   persistPlugin,
   isSyncReady$,
+  syncUserId$,
   dbFlowToLocal,
   localFlowToDb,
   mapDbFlowToLocalOrKeepExisting,
@@ -75,10 +76,33 @@ export const flows$ = observable<Record<string, Flow>>(
         return value
       },
       save: (value: any) => {
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.log('🔬 [flows] save transform called', {
+            hasValue: !!value,
+            keys: value ? Object.keys(value) : [],
+            user_id: value?.user_id?.slice?.(0, 8) ?? value?.user_id,
+            id: value?.id?.slice?.(0, 8) ?? value?.id,
+          })
+        }
         if (!value) return value
         // Skip syncing flows with no user_id (anonymous/orphan data).
         // adoptOrphanFlows() will stamp the user_id, then the item will sync.
         if (!value.user_id) return undefined
+        // Skip flows belonging to a different user — prevents RLS 403 from
+        // stale data left in local persistence after a user switch.
+        const currentUserId = syncUserId$.peek()
+        if (currentUserId && value.user_id !== currentUserId) {
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.warn('⚠️ [flows] skipping stale flow (user mismatch)', {
+              flowId: value.id?.slice(0, 8),
+              flowUserId: value.user_id?.slice(0, 8),
+              currentUserId: currentUserId.slice(0, 8),
+            })
+          }
+          return undefined
+        }
         if (process.env.NODE_ENV === 'development') {
           // eslint-disable-next-line no-console
           console.log('📤 [flows] outgoing create/update', value.id ?? '(new)')
