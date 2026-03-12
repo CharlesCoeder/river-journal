@@ -74,7 +74,7 @@ export function EncryptionModeDialog() {
 
   const isLegacyE2EUnlock = step === 'legacy-e2e-password'
   const isUnlockingExistingE2E = isModeLocked && !!currentModeSalt
-  const showLegacyUnlock = isLegacyE2EUnlock || isUnlockingExistingE2E
+  const isSinglePasswordUnlock = isLegacyE2EUnlock || isUnlockingExistingE2E
 
   return (
     <AlertDialog open={isOpen} onOpenChange={() => {}}>
@@ -180,20 +180,24 @@ export function EncryptionModeDialog() {
                 onBack={isLegacyE2EUnlock ? cancelEncryptionSetup : returnToEncryptionChoice}
                 onCancel={cancelEncryptionSetup}
                 showBackButton={!isModeLocked && !isLegacyE2EUnlock}
-                requireConfirmation={!showLegacyUnlock}
+                requireConfirmation={!isSinglePasswordUnlock}
                 submitLabel={
-                  showLegacyUnlock ? 'Unlock legacy E2E flows' : 'Save and continue'
+                  isLegacyE2EUnlock
+                    ? 'Unlock legacy E2E flows'
+                    : isSinglePasswordUnlock
+                      ? 'Unlock encryption'
+                      : 'Save and continue'
                 }
                 title={
-                  showLegacyUnlock ? 'Enter your encryption password' : 'Create an encryption password'
+                  isSinglePasswordUnlock ? 'Enter your encryption password' : 'Create an encryption password'
                 }
                 description={
-                  showLegacyUnlock
+                  isSinglePasswordUnlock
                     ? 'Use the encryption password you already chose for this account so this device can unlock Cloud Sync.'
                     : 'This password is separate from your account password and cannot be recovered for you.'
                 }
                 onSubmit={(password, confirmPassword) => {
-                  if (showLegacyUnlock) {
+                  if (isLegacyE2EUnlock) {
                     void retryWithE2EPassword(password)
                   } else {
                     void submitE2EPassword(password, confirmPassword)

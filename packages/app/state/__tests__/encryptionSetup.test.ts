@@ -125,10 +125,6 @@ describe('encryption setup orchestration', () => {
       data: 'a'.repeat(64),
       error: null,
     })
-    mockFetchManagedEncryptionKey.mockResolvedValue({
-      data: 'a'.repeat(64),
-      error: null,
-    })
   })
 
   it('first-time enable opens the chooser instead of enabling sync', async () => {
