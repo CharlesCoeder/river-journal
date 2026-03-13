@@ -297,19 +297,3 @@ export async function hasPlatformKeyring(): Promise<boolean> {
   }
 }
 
-/**
- * Loads the master key from web trust (IndexedDB + Web Crypto unwrap).
- * No network I/O — called by the state layer AFTER server-side token verification.
- * Returns null if no entry or unwrap fails.
- */
-export async function loadMasterKeyFromWebTrust(userId: string): Promise<Uint8Array | null> {
-  try {
-    const result = await loadWrappedKey(userId)
-    if (!result) return null
-
-    inMemoryMasterKeyCache.set(userId, cloneBytes(result.masterKey))
-    return cloneBytes(result.masterKey)
-  } catch {
-    return null
-  }
-}

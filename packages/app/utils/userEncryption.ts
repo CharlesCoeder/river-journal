@@ -403,7 +403,6 @@ export async function fetchManagedEncryptionKey(
 export interface TrustedBrowser {
   id: string
   label: string
-  platform: string
   createdAt: string
   lastUsedAt: string
   deviceTokenHash: string
@@ -449,7 +448,6 @@ export async function registerTrustedBrowser(
     user_id: userId,
     device_token_hash: deviceTokenHash,
     label,
-    platform: 'web',
   }
 
   try {
@@ -478,13 +476,19 @@ export async function registerTrustedBrowser(
   }
 }
 
+export type TrustedBrowserVerification =
+  | { status: 'valid'; id: string }
+  | { status: 'revoked' }
+  | { status: 'network_error' }
+
 /**
  * Verifies a trusted browser by matching user_id AND device_token_hash.
+ * Returns a three-state result to distinguish revocation from network errors.
  */
 export async function verifyTrustedBrowser(
   userId: string,
   deviceTokenHash: string
-): Promise<{ valid: boolean; id?: string }> {
+): Promise<TrustedBrowserVerification> {
   const { data, error } = await supabase
     .from('trusted_browsers')
     .select('id')
@@ -492,11 +496,15 @@ export async function verifyTrustedBrowser(
     .eq('device_token_hash', deviceTokenHash)
     .maybeSingle()
 
-  if (error || !data) {
-    return { valid: false }
+  if (error) {
+    return { status: 'network_error' }
   }
 
-  return { valid: true, id: data.id }
+  if (!data) {
+    return { status: 'revoked' }
+  }
+
+  return { status: 'valid', id: data.id }
 }
 
 /**
@@ -526,7 +534,7 @@ export async function revokeTrustedBrowser(
 export async function fetchTrustedBrowsers(userId: string): Promise<TrustedBrowser[]> {
   const { data, error } = await supabase
     .from('trusted_browsers')
-    .select('id, label, platform, created_at, last_used_at, device_token_hash')
+    .select('id, label, created_at, last_used_at, device_token_hash')
     .eq('user_id', userId)
     .order('last_used_at', { ascending: false })
 
@@ -535,7 +543,6 @@ export async function fetchTrustedBrowsers(userId: string): Promise<TrustedBrows
   return data.map((row) => ({
     id: row.id,
     label: row.label,
-    platform: row.platform,
     createdAt: row.created_at,
     lastUsedAt: row.last_used_at,
     deviceTokenHash: row.device_token_hash,

@@ -24,6 +24,7 @@ describe('webKeyStore', () => {
         crypto: { subtle: crypto.subtle },
         indexedDB,
       })
+      vi.stubGlobal('document', {})
 
       const { hasWebTrustCapability } = await import('../webKeyStore')
       expect(hasWebTrustCapability()).toBe(true)
@@ -245,6 +246,73 @@ describe('webKeyStore', () => {
 
       const result = await mod.wrapAndStoreKey('user-readback', TEST_KEY)
       expect(result.deviceToken).toBeTruthy()
+    })
+
+    it('rejects when read-back verification fails (private/incognito detection)', async () => {
+      // Simulate private browsing: IndexedDB add() succeeds but data is not persisted.
+      // We delete the entry between the add and the verification read-back by
+      // patching the DB transaction to intercept the get after add.
+      // Since internal mocking is fragile, we verify the contract: wrapAndStoreKey
+      // throws when the read-back returns undefined.
+
+      // Use a custom DB wrapper that returns undefined on get after add
+      const fakeDb = {
+        transaction: vi.fn(() => {
+          const store: Record<string, unknown> = {
+            add: vi.fn(() => {
+              const req = { onsuccess: null as (() => void) | null, onerror: null as (() => void) | null }
+              setTimeout(() => req.onsuccess?.(), 0)
+              return req
+            }),
+            get: vi.fn(() => {
+              // Return undefined to simulate ephemeral storage
+              const req = {
+                result: undefined,
+                onsuccess: null as (() => void) | null,
+                onerror: null as (() => void) | null,
+              }
+              setTimeout(() => req.onsuccess?.(), 0)
+              return req
+            }),
+          }
+          return {
+            objectStore: vi.fn(() => store),
+            oncomplete: null,
+          }
+        }),
+        close: vi.fn(),
+      }
+
+      const openReq = {
+        result: fakeDb,
+        onsuccess: null as (() => void) | null,
+        onerror: null as (() => void) | null,
+        onupgradeneeded: null as (() => void) | null,
+      }
+      vi.stubGlobal('indexedDB', {
+        open: vi.fn(() => {
+          setTimeout(() => openReq.onsuccess?.(), 0)
+          return openReq
+        }),
+      })
+
+      const mod = await import('../webKeyStore')
+      await expect(mod.wrapAndStoreKey('user-incognito', TEST_KEY)).rejects.toThrow(
+        'IndexedDB write-read verification failed'
+      )
+    })
+  })
+
+  describe('hasWebTrustCapability React Native guard', () => {
+    it('returns false when document is undefined (React Native has window but not document)', async () => {
+      vi.stubGlobal('window', {
+        crypto: { subtle: crypto.subtle },
+        indexedDB,
+      })
+      vi.stubGlobal('document', undefined)
+
+      const { hasWebTrustCapability } = await import('../webKeyStore')
+      expect(hasWebTrustCapability()).toBe(false)
     })
   })
 })

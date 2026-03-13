@@ -11,6 +11,27 @@ const mockFetchManagedEncryptionKey = vi.fn()
 const mockLoadMasterKey = vi.fn()
 const mockClearStoredMasterKey = vi.fn()
 const mockHasPlatformKeyring = vi.fn()
+const mockRegisterTrustedBrowser = vi.fn()
+const mockVerifyTrustedBrowser = vi.fn()
+const mockUpdateTrustedBrowserLastUsed = vi.fn()
+
+const mockHasWebTrustCapability = vi.fn()
+const mockWrapAndStoreKey = vi.fn()
+const mockLoadWrappedKey = vi.fn()
+const mockGetStoredDeviceToken = vi.fn()
+const mockHashDeviceToken = vi.fn()
+const mockGetBrowserLabel = vi.fn()
+const mockClearWebTrustData = vi.fn()
+
+vi.mock('../../utils/webKeyStore', () => ({
+  hasWebTrustCapability: (...args: unknown[]) => mockHasWebTrustCapability(...args),
+  wrapAndStoreKey: (...args: unknown[]) => mockWrapAndStoreKey(...args),
+  loadWrappedKey: (...args: unknown[]) => mockLoadWrappedKey(...args),
+  getStoredDeviceToken: (...args: unknown[]) => mockGetStoredDeviceToken(...args),
+  hashDeviceToken: (...args: unknown[]) => mockHashDeviceToken(...args),
+  getBrowserLabel: (...args: unknown[]) => mockGetBrowserLabel(...args),
+  clearWebTrustData: (...args: unknown[]) => mockClearWebTrustData(...args),
+}))
 
 vi.mock('../../utils/userEncryption', () => ({
   readUserEncryptionSettings: (...args: unknown[]) => mockReadUserEncryptionSettings(...args),
@@ -21,6 +42,9 @@ vi.mock('../../utils/userEncryption', () => ({
   persistMasterKeyToKeyring: (...args: unknown[]) => mockPersistMasterKeyToKeyring(...args),
   bootstrapManagedEncryption: (...args: unknown[]) => mockBootstrapManagedEncryption(...args),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
+  registerTrustedBrowser: (...args: unknown[]) => mockRegisterTrustedBrowser(...args),
+  verifyTrustedBrowser: (...args: unknown[]) => mockVerifyTrustedBrowser(...args),
+  updateTrustedBrowserLastUsed: (...args: unknown[]) => mockUpdateTrustedBrowserLastUsed(...args),
 }))
 
 vi.mock('../../utils/encryptionKeyStore', () => ({
@@ -76,6 +100,11 @@ import {
   retryWithE2EPassword,
   setSelectedEncryptionMode,
   submitE2EPassword,
+  acceptBrowserTrust,
+  declineBrowserTrust,
+  dismissTrustBrowserPrompt,
+  trustBrowserPrompt$,
+  trustBrowserResult$,
 } from '../encryptionSetup'
 import { syncManagedKeyBytes$ } from '../syncConfig'
 import { syncEncryptionError$ } from '../syncConfig'
@@ -125,6 +154,16 @@ describe('encryption setup orchestration', () => {
       data: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=',
       error: null,
     })
+    mockHasWebTrustCapability.mockReturnValue(false)
+    mockWrapAndStoreKey.mockResolvedValue({ deviceToken: 'test-token', persistGranted: true })
+    mockLoadWrappedKey.mockResolvedValue(null)
+    mockGetStoredDeviceToken.mockResolvedValue(null)
+    mockHashDeviceToken.mockResolvedValue('hashed-token')
+    mockGetBrowserLabel.mockReturnValue('Chrome 124 on macOS')
+    mockClearWebTrustData.mockResolvedValue(undefined)
+    mockRegisterTrustedBrowser.mockResolvedValue({ error: null })
+    mockVerifyTrustedBrowser.mockResolvedValue({ status: 'valid', id: 'browser-1' })
+    mockUpdateTrustedBrowserLastUsed.mockResolvedValue(undefined)
   })
 
   it('first-time enable opens the chooser instead of enabling sync', async () => {
@@ -675,6 +714,263 @@ describe('encryption setup orchestration', () => {
     expect(encryptionSetup$.error.get()).toEqual({
       message: 'Encryption password required on this device before encrypted flows can sync.',
       code: 'e2e_password_required',
+    })
+  })
+
+  describe('trust browser (web E2E key persistence)', () => {
+    it('shows trust browser prompt after E2E submit when web trust is available', async () => {
+      mockHasWebTrustCapability.mockReturnValue(true)
+      await requestSyncEnable()
+      await confirmEncryptionModeSelection()
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+      mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+
+      const didEnable = await submitE2EPassword('password123', 'password123')
+
+      expect(didEnable).toBe(true)
+      expect(trustBrowserPrompt$.isVisible.get()).toBe(true)
+      expect(keyringPrompt$.isVisible.get()).toBe(false)
+    })
+
+    it('does not show trust browser prompt when web trust is unavailable', async () => {
+      mockHasWebTrustCapability.mockReturnValue(false)
+      await requestSyncEnable()
+      await confirmEncryptionModeSelection()
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+      mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+
+      await submitE2EPassword('password123', 'password123')
+
+      expect(trustBrowserPrompt$.isVisible.get()).toBe(false)
+      expect(keyringPrompt$.isVisible.get()).toBe(false)
+    })
+
+    it('acceptBrowserTrust wraps key, registers server-side, and reports success', async () => {
+      // Set up trust state by triggering the prompt
+      mockHasWebTrustCapability.mockReturnValue(true)
+      await requestSyncEnable()
+      await confirmEncryptionModeSelection()
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+      mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+      await submitE2EPassword('password123', 'password123')
+
+      expect(trustBrowserPrompt$.isVisible.get()).toBe(true)
+
+      await acceptBrowserTrust()
+
+      expect(mockWrapAndStoreKey).toHaveBeenCalled()
+      expect(mockHashDeviceToken).toHaveBeenCalledWith('test-token')
+      expect(mockGetBrowserLabel).toHaveBeenCalled()
+      expect(mockRegisterTrustedBrowser).toHaveBeenCalledWith('user-1', 'hashed-token', 'Chrome 124 on macOS')
+      expect(trustBrowserPrompt$.isVisible.get()).toBe(false)
+      expect(trustBrowserResult$.success.get()).toBe(true)
+      expect(trustBrowserResult$.persistGranted.get()).toBe(true)
+    })
+
+    it('acceptBrowserTrust rolls back IndexedDB on server failure', async () => {
+      mockHasWebTrustCapability.mockReturnValue(true)
+      mockRegisterTrustedBrowser.mockResolvedValueOnce({
+        error: { message: 'Server error', code: 'server_error' },
+      })
+      await requestSyncEnable()
+      await confirmEncryptionModeSelection()
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+      mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+      await submitE2EPassword('password123', 'password123')
+
+      await acceptBrowserTrust()
+
+      expect(mockClearWebTrustData).toHaveBeenCalledWith('user-1')
+      expect(trustBrowserPrompt$.trustError.get()).toEqual({
+        message: 'Server error',
+        code: 'server_error',
+      })
+    })
+
+    it('acceptBrowserTrust treats timeout as success when verify confirms row exists', async () => {
+      mockHasWebTrustCapability.mockReturnValue(true)
+      mockRegisterTrustedBrowser.mockResolvedValueOnce({
+        error: { message: 'Failed to fetch', code: 'timeout' },
+      })
+      mockVerifyTrustedBrowser.mockResolvedValueOnce({ status: 'valid', id: 'browser-1' })
+
+      await requestSyncEnable()
+      await confirmEncryptionModeSelection()
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+      mockLoadMasterKey.mockResolvedValueOnce(new Uint8Array(32).fill(1))
+      await submitE2EPassword('password123', 'password123')
+
+      await acceptBrowserTrust()
+
+      expect(mockClearWebTrustData).not.toHaveBeenCalled()
+      expect(trustBrowserPrompt$.isVisible.get()).toBe(false)
+      expect(trustBrowserResult$.success.get()).toBe(true)
+    })
+
+    it('declineBrowserTrust hides prompt without storing key', () => {
+      trustBrowserPrompt$.isVisible.set(true)
+
+      declineBrowserTrust()
+
+      expect(trustBrowserPrompt$.isVisible.get()).toBe(false)
+      expect(mockWrapAndStoreKey).not.toHaveBeenCalled()
+    })
+
+    it('dismissTrustBrowserPrompt clears error state', () => {
+      trustBrowserPrompt$.isVisible.set(true)
+      trustBrowserPrompt$.trustError.set({ message: 'Some error', code: 'err' })
+
+      dismissTrustBrowserPrompt()
+
+      expect(trustBrowserPrompt$.isVisible.get()).toBe(false)
+      expect(trustBrowserPrompt$.trustError.get()).toBeNull()
+    })
+
+    it('web trust return visit: caches key when verification succeeds', async () => {
+      mockHasWebTrustCapability.mockReturnValue(true)
+      mockGetStoredDeviceToken.mockResolvedValueOnce('stored-token')
+      mockLoadWrappedKey.mockResolvedValueOnce({
+        masterKey: new Uint8Array(32).fill(5),
+        deviceToken: 'stored-token',
+      })
+      mockHashDeviceToken.mockResolvedValueOnce('hashed-stored-token')
+      mockVerifyTrustedBrowser.mockResolvedValueOnce({ status: 'valid', id: 'browser-1' })
+
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+
+      const mode = await loadCurrentEncryptionMode()
+
+      expect(mode).toBe('e2e')
+      expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(true)
+      expect(isEncryptionReadyForSync$.get()).toBe(true)
+      expect(mockUpdateTrustedBrowserLastUsed).toHaveBeenCalledWith('browser-1')
+    })
+
+    it('web trust return visit: clears trust data when token is revoked', async () => {
+      mockHasWebTrustCapability.mockReturnValue(true)
+      mockGetStoredDeviceToken.mockResolvedValueOnce('stored-token')
+      mockLoadWrappedKey.mockResolvedValueOnce({
+        masterKey: new Uint8Array(32).fill(5),
+        deviceToken: 'stored-token',
+      })
+      mockHashDeviceToken.mockResolvedValueOnce('hashed-stored-token')
+      mockVerifyTrustedBrowser.mockResolvedValueOnce({ status: 'revoked' })
+
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+
+      const mode = await loadCurrentEncryptionMode()
+
+      expect(mode).toBe('e2e')
+      expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(false)
+      expect(mockClearWebTrustData).toHaveBeenCalledWith('user-1')
+    })
+
+    it('web trust return visit: preserves trust data on network error (AC 12)', async () => {
+      mockHasWebTrustCapability.mockReturnValue(true)
+      mockGetStoredDeviceToken.mockResolvedValueOnce('stored-token')
+      mockLoadWrappedKey.mockResolvedValueOnce({
+        masterKey: new Uint8Array(32).fill(5),
+        deviceToken: 'stored-token',
+      })
+      mockHashDeviceToken.mockResolvedValueOnce('hashed-stored-token')
+      // Both initial and retry return network_error
+      mockVerifyTrustedBrowser
+        .mockResolvedValueOnce({ status: 'network_error' })
+        .mockResolvedValueOnce({ status: 'network_error' })
+
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+
+      const mode = await loadCurrentEncryptionMode()
+
+      expect(mode).toBe('e2e')
+      expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(false)
+      // CRITICAL: trust data must NOT be cleared on network error
+      expect(mockClearWebTrustData).not.toHaveBeenCalled()
+    })
+
+    it('web trust return visit: retries once on network error, succeeds on retry', async () => {
+      mockHasWebTrustCapability.mockReturnValue(true)
+      mockGetStoredDeviceToken.mockResolvedValueOnce('stored-token')
+      mockLoadWrappedKey.mockResolvedValueOnce({
+        masterKey: new Uint8Array(32).fill(5),
+        deviceToken: 'stored-token',
+      })
+      mockHashDeviceToken.mockResolvedValueOnce('hashed-stored-token')
+      // First call: network error, second call: valid
+      mockVerifyTrustedBrowser
+        .mockResolvedValueOnce({ status: 'network_error' })
+        .mockResolvedValueOnce({ status: 'valid', id: 'browser-1' })
+
+      mockReadUserEncryptionSettings.mockResolvedValueOnce({
+        data: {
+          mode: 'e2e',
+          salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+          managedKeyB64: null,
+        },
+        error: null,
+      })
+
+      const mode = await loadCurrentEncryptionMode()
+
+      expect(mode).toBe('e2e')
+      expect(encryptionSetup$.hasLocalE2EKey.get()).toBe(true)
+      expect(mockVerifyTrustedBrowser).toHaveBeenCalledTimes(2)
     })
   })
 })
