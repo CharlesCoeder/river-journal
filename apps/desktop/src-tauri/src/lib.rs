@@ -1,10 +1,11 @@
+use base64::{engine::general_purpose::STANDARD, Engine};
 use scrypt::{scrypt, Params as ScryptParams};
 use zeroize::Zeroizing;
 
 const ENCRYPTION_SERVICE_NAME: &str = "River Journal";
 
 #[tauri::command]
-async fn set_encryption_key(user_id: String, key_hex: Zeroizing<String>) -> Result<(), String> {
+async fn set_encryption_key(user_id: String, key_b64: Zeroizing<String>) -> Result<(), String> {
   log::info!("set_encryption_key start user_id={}", user_id);
   tauri::async_runtime::spawn_blocking(move || {
     let entry =
@@ -12,7 +13,7 @@ async fn set_encryption_key(user_id: String, key_hex: Zeroizing<String>) -> Resu
         .map_err(|error| error.to_string())?;
 
     entry
-      .set_password(&key_hex)
+      .set_password(&key_b64)
       .map_err(|error| error.to_string())
   })
   .await
@@ -84,14 +85,14 @@ async fn delete_encryption_key(user_id: String) -> Result<(), String> {
   })
 }
 
-/// Derive a 32-byte master key from password + hex-encoded salt using native scrypt.
+/// Derive a 32-byte master key from password + base64-encoded salt using native scrypt.
 /// Parameters match the JS side: N=2^17, r=8, p=1, dkLen=32.
 #[tauri::command]
-async fn derive_encryption_key(password: Zeroizing<String>, salt_hex: String) -> Result<String, String> {
+async fn derive_encryption_key(password: Zeroizing<String>, salt_b64: String) -> Result<String, String> {
   log::info!("derive_encryption_key start");
   tauri::async_runtime::spawn_blocking(move || {
-    let salt = hex::decode(&salt_hex).map_err(|error| {
-      format!("invalid salt hex: {error}")
+    let salt = STANDARD.decode(&salt_b64).map_err(|error| {
+      format!("invalid salt base64: {error}")
     })?;
     // log_n=17 → N=2^17, r=8, p=1, dkLen=32
     let params = ScryptParams::new(17, 8, 1, 32).map_err(|error| {
@@ -101,14 +102,14 @@ async fn derive_encryption_key(password: Zeroizing<String>, salt_hex: String) ->
     scrypt(password.as_bytes(), &salt, &params, &mut key).map_err(|error| {
       format!("scrypt derivation failed: {error}")
     })?;
-    Ok(hex::encode(&*key))
+    Ok(STANDARD.encode(&*key))
   })
   .await
   .map_err(|error| error.to_string())
   .and_then(|result| result)
-  .map(|key_hex| {
+  .map(|key_b64| {
     log::info!("derive_encryption_key success");
-    key_hex
+    key_b64
   })
   .map_err(|error| {
     log::error!("derive_encryption_key failed: {}", error);

@@ -5,9 +5,9 @@ import {
   EncryptionError,
   decryptFlowContent,
   deriveMasterKeyFromPassword,
-  generateEncryptionSaltHex,
+  generateEncryptionSalt,
   generateManagedEncryptionKey,
-  isHexString,
+  isBase64String,
   isEncryptedFlowPayload,
 } from './encryption'
 import { cacheOnlyMasterKey, clearStoredMasterKey, storeMasterKey } from './encryptionKeyStore'
@@ -15,7 +15,7 @@ import { cacheOnlyMasterKey, clearStoredMasterKey, storeMasterKey } from './encr
 export interface EncryptionSettings {
   mode: EncryptionMode | null
   salt: string | null
-  managedKeyHex: string | null
+  managedKeyB64: string | null
 }
 
 export interface EncryptionSettingsError {
@@ -64,7 +64,7 @@ export async function readUserEncryptionSettings(
     data: {
       mode: normalizeEncryptionMode(data?.encryption_mode),
       salt: data?.encryption_salt ?? null,
-      managedKeyHex: data?.managed_encryption_key ?? null,
+      managedKeyB64: data?.managed_encryption_key ?? null,
     },
     error: null,
   }
@@ -99,7 +99,7 @@ export async function upsertUserEncryptionMode(input: {
     data: {
       mode: normalizeEncryptionMode(data.encryption_mode),
       salt: data.encryption_salt ?? null,
-      managedKeyHex: data.managed_encryption_key ?? null,
+      managedKeyB64: data.managed_encryption_key ?? null,
     },
     error: null,
   }
@@ -119,7 +119,7 @@ export async function startE2EEncryptionBootstrap(_input: {
   }
 
   try {
-    const salt = generateEncryptionSaltHex()
+    const salt = generateEncryptionSalt()
     const masterKey = await deriveMasterKeyFromPassword(input.password, salt)
     const payload: TablesInsert<'users'> = {
       id: input.userId,
@@ -281,8 +281,8 @@ export async function persistMasterKeyToKeyring(input: {
 export async function bootstrapManagedEncryption(input: {
   userId: string
 }): Promise<
-  | { error: null; managedKeyHex: string }
-  | { error: EncryptionSettingsError['error']; managedKeyHex: null }
+  | { error: null; managedKeyB64: string }
+  | { error: EncryptionSettingsError['error']; managedKeyB64: null }
 > {
   try {
     const existing = await fetchManagedEncryptionKey(input.userId)
@@ -301,23 +301,23 @@ export async function bootstrapManagedEncryption(input: {
       if (error) {
         return {
           error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
-          managedKeyHex: null,
+          managedKeyB64: null,
         }
       }
 
-      return { error: null, managedKeyHex: existing.data }
+      return { error: null, managedKeyB64: existing.data }
     }
 
     if (existing.error && existing.error.code !== 'managed_key_missing') {
-      return { error: existing.error, managedKeyHex: null }
+      return { error: existing.error, managedKeyB64: null }
     }
 
-    const managedKeyHex = generateManagedEncryptionKey()
+    const managedKeyB64 = generateManagedEncryptionKey()
 
     const payload: TablesInsert<'users'> = {
       id: input.userId,
       encryption_mode: 'managed',
-      managed_encryption_key: managedKeyHex,
+      managed_encryption_key: managedKeyB64,
     }
 
     const { error } = await supabase
@@ -329,16 +329,16 @@ export async function bootstrapManagedEncryption(input: {
     if (error) {
       return {
         error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
-        managedKeyHex: null,
+        managedKeyB64: null,
       }
     }
 
-    return { error: null, managedKeyHex }
+    return { error: null, managedKeyB64 }
   } catch (error) {
     if (error instanceof EncryptionError) {
       return {
         error: toEncryptionError(error.message, error.code).error,
-        managedKeyHex: null,
+        managedKeyB64: null,
       }
     }
 
@@ -347,7 +347,7 @@ export async function bootstrapManagedEncryption(input: {
         (error as Error).message || 'Failed to bootstrap managed encryption.',
         'managed_bootstrap_failed'
       ).error,
-      managedKeyHex: null,
+      managedKeyB64: null,
     }
   }
 }
@@ -371,8 +371,8 @@ export async function fetchManagedEncryptionKey(
     }
   }
 
-  const keyHex = data?.managed_encryption_key
-  if (!keyHex) {
+  const keyB64 = data?.managed_encryption_key
+  if (!keyB64) {
     return {
       data: null,
       error: toEncryptionError(
@@ -383,16 +383,16 @@ export async function fetchManagedEncryptionKey(
   }
 
   // M3: Validate key format before returning — fail early on corrupted data
-  if (keyHex.length !== 64 || !isHexString(keyHex)) {
+  if (keyB64.length !== 44 || !isBase64String(keyB64)) {
     return {
       data: null,
       error: toEncryptionError(
-        'Managed encryption key is invalid. Expected a 64-character hex string (32 bytes).',
+        'Managed encryption key is invalid. Expected a base64-encoded 32-byte key.',
         'managed_key_invalid'
       ).error,
     }
   }
 
-  return { data: keyHex, error: null }
+  return { data: keyB64, error: null }
 }
 

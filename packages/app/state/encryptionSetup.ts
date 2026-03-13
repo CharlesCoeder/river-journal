@@ -13,7 +13,7 @@ import {
 } from '../utils/userEncryption'
 import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getManagedKeyBytes, supabase, dbFlowToLocal } from './syncConfig'
 import { flows$ } from './flows'
-import { hexToBytes } from '@noble/ciphers/utils.js'
+import { base64ToBytes } from '../utils/encryption'
 
 export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'legacy-e2e-password' | 'saving'
 
@@ -115,9 +115,8 @@ export const keyringPersistResult$ = observable({
 let pendingKeyringMasterKey: Uint8Array | null = null
 let pendingKeyringUserId: string | null = null
 
-const setManagedKeyBytesFromHex = (keyHex: string | null) => {
-  const normalized = keyHex ? keyHex.toLowerCase() : null
-  syncManagedKeyBytes$.set(normalized ? hexToBytes(normalized) : null)
+const setManagedKeyBytesFromB64 = (keyB64: string | null) => {
+  syncManagedKeyBytes$.set(keyB64 ? base64ToBytes(keyB64) : null)
 }
 
 const resetDialogState = () => {
@@ -206,7 +205,7 @@ export const resetEncryptionSetupState = () => {
     loadCurrentEncryptionModePromise = null
     pendingKeyringMasterKey = null
     pendingKeyringUserId = null
-    setManagedKeyBytesFromHex(null)
+    setManagedKeyBytesFromB64(null)
   })
 }
 
@@ -257,10 +256,10 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
       // Pre-cache managed key from the initial query when available.
       // This eliminates a second round-trip and ensures both managed-mode
       // and E2E-mode users can decrypt historical managed payloads.
-      const rawManagedKeyHex = result.data.managedKeyHex
-      if (rawManagedKeyHex && rawManagedKeyHex.length === 64) {
+      const rawManagedKeyB64 = result.data.managedKeyB64
+      if (rawManagedKeyB64 && rawManagedKeyB64.length === 44) {
         try {
-          setManagedKeyBytesFromHex(rawManagedKeyHex)
+          setManagedKeyBytesFromB64(rawManagedKeyB64)
         } catch {
           // Invalid key format — getManagedKeyBytes will re-fetch as fallback
         }
@@ -467,7 +466,7 @@ export const confirmEncryptionModeSelection = async (): Promise<boolean> => {
     return false
   }
 
-  setManagedKeyBytesFromHex(bootstrapResult.managedKeyHex)
+  setManagedKeyBytesFromB64(bootstrapResult.managedKeyB64)
 
   applyLoadedSettings('managed', null, false)
 

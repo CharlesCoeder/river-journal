@@ -1,5 +1,5 @@
 import { xchacha20poly1305 } from '@noble/ciphers/chacha.js'
-import { bytesToHex, bytesToUtf8, hexToBytes, randomBytes, utf8ToBytes } from '@noble/ciphers/utils.js'
+import { bytesToUtf8, randomBytes, utf8ToBytes } from '@noble/ciphers/utils.js'
 import { scryptAsync } from '@noble/hashes/scrypt.js'
 
 const ENCRYPTION_ALGORITHM = 'xchacha20poly1305' as const
@@ -9,7 +9,7 @@ const MANAGED_PAYLOAD_PREFIX = 'rj:managed:v1:'
 const NONCE_BYTES = 24
 const KEY_BYTES = 32
 const SALT_BYTES = 32
-const HEX_PATTERN = /^[0-9a-f]+$/
+const BASE64_PATTERN = /^[A-Za-z0-9+/]*={0,2}$/
 
 type EncryptedAlgorithm = typeof ENCRYPTION_ALGORITHM
 
@@ -34,9 +34,25 @@ const throwEncryptionError = (message: string, code: string): never => {
   throw new EncryptionError(message, code)
 }
 
-export const isHexString = (value: string): boolean => {
-  if (!value) return false
-  return HEX_PATTERN.test(value.toLowerCase())
+export const bytesToBase64 = (bytes: Uint8Array): string => {
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary)
+}
+
+export const base64ToBytes = (b64: string): Uint8Array => {
+  if (!b64 || b64.length % 4 !== 0 || !BASE64_PATTERN.test(b64)) {
+    throwEncryptionError(
+      'Invalid base64 string provided for decoding.',
+      'invalid_base64_input'
+    )
+  }
+  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+}
+
+export const isBase64String = (value: string): boolean => {
+  if (!value || value.length % 4 !== 0) return false
+  return BASE64_PATTERN.test(value)
 }
 
 const installReactNativeRandomValuesFallback = () => {
@@ -95,10 +111,8 @@ export const assertCryptoGetRandomValues = () => {
   )
 }
 
-const assertHex = (value: string, fieldName: string) => {
-  const normalized = value.toLowerCase()
-
-  if (!normalized || normalized.length % 2 !== 0 || !HEX_PATTERN.test(normalized)) {
+const assertBase64 = (value: string, fieldName: string) => {
+  if (!value || value.length % 4 !== 0 || !BASE64_PATTERN.test(value)) {
     throwEncryptionError(
       `Encrypted payload contains an invalid ${fieldName} value.`,
       `encrypted_payload_invalid_${fieldName}`
@@ -132,29 +146,29 @@ const normalizePayload = (input: unknown): EncryptedFlowPayload => {
     throwEncryptionError('Encrypted payload algorithm is unsupported.', 'unsupported_payload_algorithm')
   }
 
-  const nonceHex = payload.nonce
-  if (typeof nonceHex !== 'string') {
+  const nonceB64 = payload.nonce
+  if (typeof nonceB64 !== 'string') {
     return throwEncryptionError('Encrypted payload nonce is invalid.', 'encrypted_payload_invalid_nonce')
   }
-  const nonceValue: string = nonceHex
-  assertHex(nonceValue, 'nonce')
+  const nonceValue: string = nonceB64
+  assertBase64(nonceValue, 'nonce')
 
-  const ciphertextHex = payload.ciphertext
-  if (typeof ciphertextHex !== 'string') {
+  const ciphertextB64 = payload.ciphertext
+  if (typeof ciphertextB64 !== 'string') {
     return throwEncryptionError(
       'Encrypted payload ciphertext is invalid.',
       'encrypted_payload_invalid_ciphertext'
     )
   }
-  const ciphertextValue: string = ciphertextHex
-  assertHex(ciphertextValue, 'ciphertext')
+  const ciphertextValue: string = ciphertextB64
+  assertBase64(ciphertextValue, 'ciphertext')
 
-  const nonce = hexToBytes(nonceValue)
+  const nonce = base64ToBytes(nonceValue)
   if (nonce.length !== NONCE_BYTES) {
     throwEncryptionError('Encrypted payload nonce length is invalid.', 'encrypted_payload_invalid_nonce')
   }
 
-  const ciphertext = hexToBytes(ciphertextValue)
+  const ciphertext = base64ToBytes(ciphertextValue)
   if (ciphertext.length === 0) {
     throwEncryptionError('Encrypted payload ciphertext is empty.', 'encrypted_payload_invalid_ciphertext')
   }
@@ -167,9 +181,9 @@ const normalizePayload = (input: unknown): EncryptedFlowPayload => {
   }
 }
 
-export function generateEncryptionSaltHex(): string {
+export function generateEncryptionSalt(): string {
   assertCryptoGetRandomValues()
-  return bytesToHex(randomBytes(SALT_BYTES))
+  return bytesToBase64(randomBytes(SALT_BYTES))
 }
 
 const TAURI_DERIVE_KEY_COMMAND = 'derive_encryption_key'
@@ -177,7 +191,7 @@ const TAURI_DERIVE_KEY_COMMAND = 'derive_encryption_key'
 /**
  * Attempt native scrypt via Tauri Rust backend (desktop).
  */
-const tryTauriScrypt = async (password: string, saltHex: string): Promise<Uint8Array | null> => {
+const tryTauriScrypt = async (password: string, saltB64: string): Promise<Uint8Array | null> => {
   if (typeof window === 'undefined') return null
 
   const hasTauri =
@@ -188,30 +202,30 @@ const tryTauriScrypt = async (password: string, saltHex: string): Promise<Uint8A
 
   try {
     const { invoke } = await import('@tauri-apps/api/core')
-    const keyHex = await invoke<string>(TAURI_DERIVE_KEY_COMMAND, {
+    const keyB64 = await invoke<string>(TAURI_DERIVE_KEY_COMMAND, {
       password,
-      saltHex,
+      saltB64,
     })
-    return hexToBytes(keyHex)
+    return base64ToBytes(keyB64)
   } catch {
     return null
   }
 }
 
-export async function deriveMasterKeyFromPassword(password: string, saltHex: string): Promise<Uint8Array> {
+export async function deriveMasterKeyFromPassword(password: string, saltB64: string): Promise<Uint8Array> {
   if (!password.trim()) {
     throwEncryptionError('Encryption password is required.', 'missing_password')
   }
 
-  assertHex(saltHex, 'salt')
-  const salt = hexToBytes(saltHex)
+  assertBase64(saltB64, 'salt')
+  const salt = base64ToBytes(saltB64)
 
   if (salt.length !== SALT_BYTES) {
     throwEncryptionError('Encryption salt length is invalid.', 'invalid_salt')
   }
 
   // 1. Prefer native Rust scrypt on Tauri desktop
-  const tauriResult = await tryTauriScrypt(password, saltHex)
+  const tauriResult = await tryTauriScrypt(password, saltB64)
   if (tauriResult && tauriResult.length === KEY_BYTES) {
     return tauriResult
   }
@@ -273,8 +287,8 @@ const encryptWithKey = (
   return encodePayload({
     version: ENCRYPTION_VERSION,
     algorithm: ENCRYPTION_ALGORITHM,
-    nonce: bytesToHex(nonce),
-    ciphertext: bytesToHex(ciphertext),
+    nonce: bytesToBase64(nonce),
+    ciphertext: bytesToBase64(ciphertext),
   })
 }
 
@@ -287,8 +301,8 @@ const decryptWithKey = (
   assertMasterKey(key)
   const payload = decodePayload(serialized)
 
-  const nonce = hexToBytes(payload.nonce)
-  const ciphertext = hexToBytes(payload.ciphertext)
+  const nonce = base64ToBytes(payload.nonce)
+  const ciphertext = base64ToBytes(payload.ciphertext)
 
   try {
     const cipher = xchacha20poly1305(key, nonce)
@@ -347,5 +361,5 @@ export function decryptFlowContentManaged(serialized: string, managedKey: Uint8A
 
 export function generateManagedEncryptionKey(): string {
   assertCryptoGetRandomValues()
-  return bytesToHex(randomBytes(KEY_BYTES))
+  return bytesToBase64(randomBytes(KEY_BYTES))
 }

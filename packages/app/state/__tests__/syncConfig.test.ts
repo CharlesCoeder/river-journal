@@ -17,6 +17,7 @@ import {
   syncUserId$,
 } from '../syncConfig'
 import {
+  base64ToBytes,
   deriveMasterKeyFromPassword,
   encryptFlowContentManaged,
   generateManagedEncryptionKey,
@@ -24,7 +25,6 @@ import {
   isManagedEncryptedPayload,
 } from '../../utils/encryption'
 import { clearStoredMasterKey, storeMasterKey } from '../../utils/encryptionKeyStore'
-import { hexToBytes } from '@noble/ciphers/utils.js'
 
 describe('generateUUID', () => {
   it('returns a valid UUID v4 format', () => {
@@ -121,7 +121,7 @@ describe('Flow transforms', () => {
   })
 
   it('localFlowToDb converts camelCase → snake_case', () => {
-    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncManagedKeyBytes$.set(base64ToBytes(generateManagedEncryptionKey()))
     syncEncryptionMode$.set('managed')
 
     const db = localFlowToDb({
@@ -144,7 +144,7 @@ describe('Flow transforms', () => {
   })
 
   it('localFlowToDb handles partial updates', () => {
-    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncManagedKeyBytes$.set(base64ToBytes(generateManagedEncryptionKey()))
     syncEncryptionMode$.set('managed')
 
     const db = localFlowToDb({ id: 'f1', content: 'Updated text', wordCount: 2, user_id: 'user-1' })
@@ -156,7 +156,7 @@ describe('Flow transforms', () => {
   })
 
   it('falls back to syncUserId$ when value has no user_id', () => {
-    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncManagedKeyBytes$.set(base64ToBytes(generateManagedEncryptionKey()))
     syncEncryptionMode$.set('managed')
     syncUserId$.set('user-1')
 
@@ -169,7 +169,7 @@ describe('Flow transforms', () => {
   it('throws when content is provided but no user is available for encryption', () => {
     syncUserId$.set(null)
     syncEncryptionMode$.set('managed')
-    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncManagedKeyBytes$.set(base64ToBytes(generateManagedEncryptionKey()))
 
     expect(() =>
       localFlowToDb({ id: 'f1', content: 'plaintext that must not upload' })
@@ -179,7 +179,7 @@ describe('Flow transforms', () => {
   it('encrypts flow content at the sync boundary for e2e mode and decrypts on load', async () => {
     const key = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', key)
     syncEncryptionMode$.set('e2e')
@@ -231,7 +231,7 @@ describe('Flow transforms', () => {
   it('surfaces explicit errors when encrypted payload cannot be decrypted', async () => {
     const encryptionKey = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', encryptionKey)
     syncEncryptionMode$.set('e2e')
@@ -247,7 +247,7 @@ describe('Flow transforms', () => {
     await clearStoredMasterKey('user-1')
     const wrongKey = await deriveMasterKeyFromPassword(
       'wrong key',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', wrongKey)
 
@@ -264,7 +264,7 @@ describe('Flow transforms', () => {
   it('preserves existing local plaintext when a downloaded encrypted row cannot be decrypted', async () => {
     const encryptionKey = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', encryptionKey)
     syncEncryptionMode$.set('e2e')
@@ -280,7 +280,7 @@ describe('Flow transforms', () => {
     await clearStoredMasterKey('user-1')
     const wrongKey = await deriveMasterKeyFromPassword(
       'wrong key',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', wrongKey)
 
@@ -308,7 +308,7 @@ describe('Flow transforms', () => {
   it('drops unreadable encrypted rows instead of leaking ciphertext into local state', async () => {
     const encryptionKey = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', encryptionKey)
     syncEncryptionMode$.set('e2e')
@@ -324,7 +324,7 @@ describe('Flow transforms', () => {
     await clearStoredMasterKey('user-1')
     const wrongKey = await deriveMasterKeyFromPassword(
       'wrong key',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', wrongKey)
 
@@ -338,8 +338,8 @@ describe('Flow transforms', () => {
   })
 
   it('encrypts flow content with managed prefix in managed mode', () => {
-    const keyHex = generateManagedEncryptionKey()
-    syncManagedKeyBytes$.set(hexToBytes(keyHex))
+    const keyB64 = generateManagedEncryptionKey()
+    syncManagedKeyBytes$.set(base64ToBytes(keyB64))
     syncEncryptionMode$.set('managed')
 
     const plaintext = 'Managed encryption content'
@@ -360,9 +360,9 @@ describe('Flow transforms', () => {
   })
 
   it('decrypts managed-prefix content from DB using the managed key', () => {
-    const keyHex = generateManagedEncryptionKey()
-    const managedKey = hexToBytes(keyHex)
-    syncManagedKeyBytes$.set(hexToBytes(keyHex))
+    const keyB64 = generateManagedEncryptionKey()
+    const managedKey = base64ToBytes(keyB64)
+    syncManagedKeyBytes$.set(base64ToBytes(keyB64))
 
     const plaintext = 'Managed round-trip test'
     const encrypted = encryptFlowContentManaged(plaintext, managedKey)
@@ -377,8 +377,8 @@ describe('Flow transforms', () => {
   })
 
   it('managed encrypt/decrypt round-trips through sync transforms', () => {
-    const keyHex = generateManagedEncryptionKey()
-    syncManagedKeyBytes$.set(hexToBytes(keyHex))
+    const keyB64 = generateManagedEncryptionKey()
+    syncManagedKeyBytes$.set(base64ToBytes(keyB64))
     syncEncryptionMode$.set('managed')
 
     const plaintext = 'Full managed round-trip through sync transforms'
@@ -443,13 +443,13 @@ describe('Flow transforms', () => {
   it('E2E payloads still use the E2E decrypt path even when managed key is available', async () => {
     const e2eKey = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     await storeMasterKey('user-1', e2eKey)
     syncEncryptionMode$.set('e2e')
 
     // Also set a managed key to prove it doesn't interfere
-    syncManagedKeyBytes$.set(hexToBytes(generateManagedEncryptionKey()))
+    syncManagedKeyBytes$.set(base64ToBytes(generateManagedEncryptionKey()))
 
     const plaintext = 'E2E content still works'
     const db = localFlowToDb({
