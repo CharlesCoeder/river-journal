@@ -101,6 +101,44 @@ export type Database = {
           },
         ]
       }
+      trusted_browsers: {
+        Row: {
+          created_at: string
+          device_token_hash: string
+          id: string
+          label: string
+          last_used_at: string
+          platform: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_token_hash: string
+          id?: string
+          label?: string
+          last_used_at?: string
+          platform?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_token_hash?: string
+          id?: string
+          label?: string
+          last_used_at?: string
+          platform?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'trusted_browsers_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
@@ -136,6 +174,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_stale_trusted_browsers: { Args: Record<string, never>; Returns: number }
       user_has_password: { Args: never; Returns: boolean }
     }
     Enums: {

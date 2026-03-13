@@ -22,7 +22,10 @@ import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { SyncToggle } from 'app/features/home/components/SyncToggle'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
+import { TrustBrowserPrompt } from 'app/features/home/components/TrustBrowserPrompt'
+import { TrustedBrowsersList } from 'app/features/home/components/TrustedBrowsersList'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
+import { encryptionSetup$ } from 'app/state/encryptionSetup'
 
 function DevSyncIndicator() {
   if (process.env.NODE_ENV !== 'development') return null
@@ -85,6 +88,8 @@ export function HomeScreen() {
   const router = useRouter()
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const email = use$(store$.session.email)
+  const userId = use$(store$.session.userId)
+  const currentMode = use$(encryptionSetup$.currentMode)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleJournalScreen = () => {
@@ -182,6 +187,14 @@ export function HomeScreen() {
             <Separator width="100%" />
             <SyncToggle />
             <KeyringPrompt />
+            <TrustBrowserPrompt />
+
+            {currentMode === 'e2e' && userId && (
+              <>
+                <Separator width="100%" />
+                <TrustedBrowsersList userId={userId} />
+              </>
+            )}
           </YStack>
         )}
 

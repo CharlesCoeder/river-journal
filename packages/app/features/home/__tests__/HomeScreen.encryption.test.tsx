@@ -19,6 +19,12 @@ vi.mock('../../../utils/userEncryption', () => ({
   persistMasterKeyToKeyring: vi.fn().mockResolvedValue({ error: null }),
   bootstrapManagedEncryption: vi.fn().mockResolvedValue({ error: null, managedKeyHex: 'a'.repeat(64) }),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
+  registerTrustedBrowser: vi.fn().mockResolvedValue({ error: null }),
+  verifyTrustedBrowser: vi.fn().mockResolvedValue({ valid: false }),
+  revokeTrustedBrowser: vi.fn().mockResolvedValue({ error: null }),
+  fetchTrustedBrowsers: vi.fn().mockResolvedValue([]),
+  updateTrustedBrowserLastUsed: vi.fn().mockResolvedValue(undefined),
+  deleteTrustedBrowserByHash: vi.fn().mockResolvedValue({ error: null }),
 }))
 
 vi.mock('../../../utils/supabase', () => ({
@@ -178,6 +184,16 @@ vi.mock('app/features/auth/components/LinkedProviders', () => ({
 
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
   OrphanFlowsDialog: () => null,
+}))
+
+vi.mock('../../../utils/webKeyStore', () => ({
+  hasWebTrustCapability: vi.fn().mockReturnValue(false),
+  wrapAndStoreKey: vi.fn().mockResolvedValue({ deviceToken: 'mock-token', persistGranted: false }),
+  loadWrappedKey: vi.fn().mockResolvedValue(null),
+  clearWebTrustData: vi.fn().mockResolvedValue(undefined),
+  getStoredDeviceToken: vi.fn().mockResolvedValue(null),
+  hashDeviceToken: vi.fn().mockResolvedValue('mock-hash'),
+  getBrowserLabel: vi.fn().mockReturnValue('Web Browser'),
 }))
 
 import { store$ } from '../../../state/store'

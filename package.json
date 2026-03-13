@@ -64,6 +64,7 @@
     "@testing-library/react": "^16.2.0",
     "@testing-library/react-native": "^13.3.3",
     "@vitejs/plugin-react": "^5.1.4",
+    "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.6.1",
     "supabase": "^2.76.13"
   }
