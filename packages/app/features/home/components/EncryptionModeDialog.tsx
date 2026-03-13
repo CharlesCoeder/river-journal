@@ -1,4 +1,4 @@
-import { AlertDialog, Button, Text, XStack, YStack } from '@my/ui'
+import { AlertDialog, Button, ScrollView, Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import {
   cancelEncryptionSetup,
@@ -9,58 +9,8 @@ import {
   setSelectedEncryptionMode,
   submitE2EPassword,
 } from 'app/state/encryptionSetup'
-import type { EncryptionMode } from 'app/types/index'
 import { E2EPasswordForm } from './E2EPasswordForm'
-
-const MODE_COPY: Record<
-  EncryptionMode,
-  {
-    title: string
-    body: string
-  }
-> = {
-  e2e: {
-    title: 'E2E Encryption',
-    body: 'Set an encryption password. We can never see your data.',
-  },
-  managed: {
-    title: 'Managed Encryption',
-    body: 'We manage encryption. Standard password recovery available.',
-  },
-}
-
-function ModeOption({
-  mode,
-  selected,
-  onSelect,
-}: {
-  mode: EncryptionMode
-  selected: boolean
-  onSelect: (mode: EncryptionMode) => void
-}) {
-  const copy = MODE_COPY[mode]
-
-  return (
-    <Button
-      testID={`encryption-mode-${mode}`}
-      size="$5"
-      variant={selected ? undefined : 'outlined'}
-      justifyContent="flex-start"
-      alignItems="flex-start"
-      onPress={() => onSelect(mode)}
-      fontFamily="$body"
-    >
-      <YStack alignItems="flex-start" gap="$1">
-        <Text fontSize="$4" fontFamily="$body" fontWeight="700">
-          {copy.title}
-        </Text>
-        <Text fontSize="$3" fontFamily="$body" color="$color11">
-          {copy.body}
-        </Text>
-      </YStack>
-    </Button>
-  )
-}
+import { PrivacyTierExplainer } from './PrivacyTierExplainer'
 
 export function EncryptionModeDialog() {
   const isOpen = use$(encryptionSetup$.isOpen)
@@ -126,35 +76,31 @@ export function EncryptionModeDialog() {
 
             {step === 'choice' ? (
               <>
-                <YStack gap="$3">
-                  <ModeOption
-                    mode="e2e"
-                    selected={selectedMode === 'e2e'}
-                    onSelect={setSelectedEncryptionMode}
-                  />
-                  <ModeOption
-                    mode="managed"
-                    selected={selectedMode === 'managed'}
-                    onSelect={setSelectedEncryptionMode}
-                  />
-                </YStack>
+                <ScrollView maxHeight="$20" bounces={false}>
+                  <YStack gap="$4" paddingRight="$1">
+                    <PrivacyTierExplainer
+                      selectedMode={selectedMode}
+                      onModeSelect={setSelectedEncryptionMode}
+                    />
 
-                <YStack gap="$2">
-                  <Text fontSize="$3" fontFamily="$body" color="$orange10" fontWeight="700">
-                    This choice cannot be changed later.
-                  </Text>
-                  {selectedMode === 'e2e' && (
-                    <Text fontSize="$3" fontFamily="$body" color="$red10" fontWeight="700">
-                      If you forget this password, your cloud data is unrecoverable.
-                    </Text>
-                  )}
-                </YStack>
+                    <YStack gap="$2">
+                      <Text fontSize="$3" fontFamily="$body" color="$orange10" fontWeight="700">
+                        This choice cannot be changed later.
+                      </Text>
+                      {selectedMode === 'e2e' && (
+                        <Text fontSize="$3" fontFamily="$body" color="$red10" fontWeight="700">
+                          If you forget this password, your cloud data is unrecoverable.
+                        </Text>
+                      )}
+                    </YStack>
 
-                {error && (
-                  <Text fontSize="$3" fontFamily="$body" color="$red10">
-                    {error.message}
-                  </Text>
-                )}
+                    {error && (
+                      <Text fontSize="$3" fontFamily="$body" color="$red10">
+                        {error.message}
+                      </Text>
+                    )}
+                  </YStack>
+                </ScrollView>
 
                 <XStack gap="$3" justifyContent="flex-end">
                   <Button variant="outlined" onPress={cancelEncryptionSetup} fontFamily="$body">
@@ -168,8 +114,8 @@ export function EncryptionModeDialog() {
                     fontFamily="$body"
                   >
                     {selectedMode === 'e2e'
-                      ? 'Confirm End-to-End Encryption'
-                      : 'Confirm Managed Encryption'}
+                      ? 'Confirm Strict Privacy Mode'
+                      : 'Confirm Cloud Backup Mode'}
                   </Button>
                 </XStack>
               </>
