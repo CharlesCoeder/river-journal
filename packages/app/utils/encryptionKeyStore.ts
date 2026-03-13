@@ -1,4 +1,5 @@
 import { bytesToBase64, base64ToBytes } from './encryption'
+import { loadWrappedKey, getStoredDeviceToken, clearWebTrustData, hasWebTrustCapability } from './webKeyStore'
 
 const inMemoryMasterKeyCache = new Map<string, Uint8Array>()
 const TAURI_SET_ENCRYPTION_KEY_COMMAND = 'set_encryption_key'
@@ -122,8 +123,8 @@ const toKeyStoreError = (error: unknown, fallbackMessage: string, fallbackCode: 
 }
 
 /**
- * Web stays session-only until a future explicit "Trust this browser" flow exists.
- * Desktop requires the Tauri keychain bridge to persist across app restarts.
+ * Stores the master key in memory and (on desktop) in the Tauri keychain.
+ * Web trust persistence is handled separately via webKeyStore.ts.
  */
 export async function storeMasterKey(userId: string, masterKey: Uint8Array): Promise<void> {
   inMemoryMasterKeyCache.set(userId, cloneBytes(masterKey))
@@ -220,14 +221,35 @@ export async function hasStoredMasterKey(userId: string): Promise<boolean> {
   if (inMemoryMasterKeyCache.has(userId)) return true
 
   try {
-    return !!(await loadMasterKey(userId))
+    if (await loadMasterKey(userId)) return true
   } catch {
-    return false
+    // Tauri keychain failed — check web trust below
   }
+
+  // Check web trust (presence check only, no unwrap, no network)
+  if (hasWebTrustCapability()) {
+    try {
+      const token = await getStoredDeviceToken(userId)
+      if (token) return true
+    } catch {
+      // Best-effort
+    }
+  }
+
+  return false
 }
 
 export async function clearStoredMasterKey(userId: string): Promise<void> {
   inMemoryMasterKeyCache.delete(userId)
+
+  // Clear web trust data if on web
+  if (hasWebTrustCapability()) {
+    try {
+      await clearWebTrustData(userId)
+    } catch {
+      // Best-effort
+    }
+  }
 
   let invoke: TauriInvoke | null = null
   try {
@@ -272,5 +294,22 @@ export async function hasPlatformKeyring(): Promise<boolean> {
     return invoke !== null
   } catch {
     return false
+  }
+}
+
+/**
+ * Loads the master key from web trust (IndexedDB + Web Crypto unwrap).
+ * No network I/O — called by the state layer AFTER server-side token verification.
+ * Returns null if no entry or unwrap fails.
+ */
+export async function loadMasterKeyFromWebTrust(userId: string): Promise<Uint8Array | null> {
+  try {
+    const result = await loadWrappedKey(userId)
+    if (!result) return null
+
+    inMemoryMasterKeyCache.set(userId, cloneBytes(result.masterKey))
+    return cloneBytes(result.masterKey)
+  } catch {
+    return null
   }
 }

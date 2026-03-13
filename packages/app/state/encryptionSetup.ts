@@ -1,7 +1,7 @@
 import { batch, observable, observe } from '@legendapp/state'
 import type { EncryptionMode } from '../types/index'
 import { store$ } from './store'
-import { clearStoredMasterKey, hasPlatformKeyring, loadMasterKey } from '../utils/encryptionKeyStore'
+import { clearStoredMasterKey, hasPlatformKeyring, loadMasterKey, cacheOnlyMasterKey } from '../utils/encryptionKeyStore'
 import {
   readUserEncryptionSettings,
   unlockE2EEncryptionOnDevice,
@@ -10,7 +10,19 @@ import {
   validateE2EMasterKeyForUser,
   persistMasterKeyToKeyring,
   bootstrapManagedEncryption,
+  registerTrustedBrowser,
+  verifyTrustedBrowser,
+  updateTrustedBrowserLastUsed,
 } from '../utils/userEncryption'
+import {
+  hasWebTrustCapability,
+  wrapAndStoreKey,
+  loadWrappedKey,
+  getStoredDeviceToken,
+  hashDeviceToken,
+  getBrowserLabel,
+  clearWebTrustData,
+} from '../utils/webKeyStore'
 import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getManagedKeyBytes, supabase, dbFlowToLocal } from './syncConfig'
 import { flows$ } from './flows'
 import { base64ToBytes } from '../utils/encryption'
@@ -115,6 +127,22 @@ export const keyringPersistResult$ = observable({
 let pendingKeyringMasterKey: Uint8Array | null = null
 let pendingKeyringUserId: string | null = null
 
+// Trust Browser (web E2E key persistence) observables
+export const trustBrowserPrompt$ = observable({
+  isVisible: false,
+  isTrusting: false,
+  trustError: null as EncryptionSetupError | null,
+})
+
+export const trustBrowserResult$ = observable({
+  success: false,
+  persistGranted: false,
+  error: null as EncryptionSetupError | null,
+})
+
+let pendingTrustMasterKey: Uint8Array | null = null
+let pendingTrustUserId: string | null = null
+
 const setManagedKeyBytesFromB64 = (keyB64: string | null) => {
   syncManagedKeyBytes$.set(keyB64 ? base64ToBytes(keyB64) : null)
 }
@@ -150,6 +178,18 @@ const applyLoadedSettings = (
   })
 }
 
+const isTimeoutOrNetworkError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false
+  const message = 'message' in error && typeof error.message === 'string' ? error.message : ''
+  return (
+    message.includes('timeout') ||
+    message.includes('network') ||
+    message.includes('fetch') ||
+    message.includes('Failed to fetch') ||
+    message.includes('NetworkError')
+  )
+}
+
 const resolveLocalE2EKeyAvailability = async (
   userId: string,
   mode: EncryptionMode | null,
@@ -159,30 +199,99 @@ const resolveLocalE2EKeyAvailability = async (
     return { hasLocalE2EKey: false, error: null }
   }
 
+  // First try platform keyring / in-memory cache
   const key = await loadMasterKey(userId)
-  if (!key) {
+  if (key) {
+    const validation = await validateE2EMasterKeyForUser({
+      masterKey: key,
+      invalidKeyMessage:
+        'The stored encryption key on this device could not unlock your journal. Enter your encryption password again.',
+      invalidKeyCode: 'invalid_local_encryption_key',
+    })
+
+    if (!validation.error) {
+      return { hasLocalE2EKey: true, error: null }
+    }
+
+    if (validation.error.code === 'invalid_local_encryption_key') {
+      await clearStoredMasterKey(userId)
+    }
+
+    return {
+      hasLocalE2EKey: false,
+      error: validation.error,
+    }
+  }
+
+  // Web trust return-visit: try IndexedDB-wrapped key with server verification
+  if (hasWebTrustCapability()) {
+    const webTrustResult = await resolveWebTrustKey(userId)
+    if (webTrustResult) return webTrustResult
+  }
+
+  return { hasLocalE2EKey: false, error: null }
+}
+
+/**
+ * Web trust return-visit flow:
+ * 1. Attempt local unwrap first (proves KEK is present in this browser)
+ * 2. Hash token and verify server-side (proves not revoked)
+ * 3. Cache key in memory on success
+ */
+const resolveWebTrustKey = async (
+  userId: string
+): Promise<{ hasLocalE2EKey: boolean; error: EncryptionSetupError | null } | null> => {
+  // Step 1: Check for stored device token (presence check without unwrap)
+  const storedToken = await getStoredDeviceToken(userId)
+  if (!storedToken) return null
+
+  // Step 2: Attempt local unwrap first
+  const unwrapResult = await loadWrappedKey(userId)
+  if (!unwrapResult) {
+    // Missing, schema mismatch, or tampered — fall back to password re-entry
+    return null
+  }
+
+  // Step 3: Hash the token and verify server-side
+  let hashedToken: string
+  try {
+    hashedToken = await hashDeviceToken(storedToken)
+  } catch {
+    return null
+  }
+
+  // Verify with retry-once on network error
+  let verification: { valid: boolean; id?: string }
+  try {
+    verification = await verifyTrustedBrowser(userId, hashedToken)
+  } catch (error) {
+    if (isTimeoutOrNetworkError(error)) {
+      try {
+        verification = await verifyTrustedBrowser(userId, hashedToken)
+      } catch {
+        // Network error after retry: discard unwrapped key, don't clear trust data
+        return { hasLocalE2EKey: false, error: null }
+      }
+    } else {
+      return { hasLocalE2EKey: false, error: null }
+    }
+  }
+
+  if (!verification.valid) {
+    // Token revoked: clear local trust data
+    await clearWebTrustData(userId)
     return { hasLocalE2EKey: false, error: null }
   }
 
-  const validation = await validateE2EMasterKeyForUser({
-    masterKey: key,
-    invalidKeyMessage:
-      'The stored encryption key on this device could not unlock your journal. Enter your encryption password again.',
-    invalidKeyCode: 'invalid_local_encryption_key',
-  })
+  // Valid: cache key in memory
+  cacheOnlyMasterKey(userId, unwrapResult.masterKey)
 
-  if (!validation.error) {
-    return { hasLocalE2EKey: true, error: null }
+  // Update last_used_at (fire-and-forget)
+  if (verification.id) {
+    void updateTrustedBrowserLastUsed(verification.id)
   }
 
-  if (validation.error.code === 'invalid_local_encryption_key') {
-    await clearStoredMasterKey(userId)
-  }
-
-  return {
-    hasLocalE2EKey: false,
-    error: validation.error,
-  }
+  return { hasLocalE2EKey: true, error: null }
 }
 
 export const resetEncryptionSetupState = () => {
@@ -202,9 +311,17 @@ export const resetEncryptionSetupState = () => {
     keyringPrompt$.persistError.set(null)
     keyringPersistResult$.success.set(false)
     keyringPersistResult$.error.set(null)
+    trustBrowserPrompt$.isVisible.set(false)
+    trustBrowserPrompt$.isTrusting.set(false)
+    trustBrowserPrompt$.trustError.set(null)
+    trustBrowserResult$.success.set(false)
+    trustBrowserResult$.persistGranted.set(false)
+    trustBrowserResult$.error.set(null)
     loadCurrentEncryptionModePromise = null
     pendingKeyringMasterKey = null
     pendingKeyringUserId = null
+    pendingTrustMasterKey = null
+    pendingTrustUserId = null
     setManagedKeyBytesFromB64(null)
   })
 }
@@ -590,6 +707,10 @@ export const submitE2EPassword = async (
       pendingKeyringMasterKey = bootstrapResult.masterKey
       pendingKeyringUserId = userId
       keyringPrompt$.isVisible.set(true)
+    } else if (hasWebTrustCapability()) {
+      pendingTrustMasterKey = bootstrapResult.masterKey
+      pendingTrustUserId = userId
+      trustBrowserPrompt$.isVisible.set(true)
     }
   }
 
@@ -673,6 +794,134 @@ export const dismissKeyringPrompt = (): void => {
     keyringPrompt$.isVisible.set(false)
     keyringPrompt$.isPersisting.set(false)
     keyringPrompt$.persistError.set(null)
+  })
+}
+
+// =================================================================
+// TRUST BROWSER (Web E2E Key Persistence)
+// =================================================================
+
+/**
+ * User accepted browser trust — atomic dual-write flow:
+ * 1. IndexedDB first, then server registration, with rollback on failure.
+ */
+export const acceptBrowserTrust = async (): Promise<void> => {
+  if (!pendingTrustMasterKey || !pendingTrustUserId) {
+    trustBrowserPrompt$.isVisible.set(false)
+    return
+  }
+
+  const masterKey = pendingTrustMasterKey
+  const userId = pendingTrustUserId
+
+  batch(() => {
+    trustBrowserPrompt$.isTrusting.set(true)
+    trustBrowserPrompt$.trustError.set(null)
+    trustBrowserResult$.success.set(false)
+    trustBrowserResult$.error.set(null)
+  })
+
+  try {
+    // Step 1: Write to IndexedDB
+    const { deviceToken, persistGranted } = await wrapAndStoreKey(userId, masterKey)
+
+    // Step 2: Hash token for server-side storage
+    const hashedToken = await hashDeviceToken(deviceToken)
+
+    // Step 3: Derive browser label
+    const label = getBrowserLabel()
+
+    // Step 4: Register server-side
+    const registerResult = await registerTrustedBrowser(userId, hashedToken, label)
+
+    if (registerResult.error) {
+      // Step 5: Handle server failure
+      if (isTimeoutOrNetworkError(registerResult.error)) {
+        // Lost-response edge case: check if server row was actually created
+        try {
+          const verification = await verifyTrustedBrowser(userId, hashedToken)
+          if (verification.valid) {
+            // Server row exists — treat as success
+            pendingTrustMasterKey = null
+            pendingTrustUserId = null
+            batch(() => {
+              trustBrowserPrompt$.isVisible.set(false)
+              trustBrowserPrompt$.isTrusting.set(false)
+              trustBrowserPrompt$.trustError.set(null)
+              trustBrowserResult$.success.set(true)
+              trustBrowserResult$.persistGranted.set(persistGranted)
+            })
+            return
+          }
+        } catch {
+          // Verification also failed — proceed with rollback
+        }
+      }
+
+      // Rollback: clear IndexedDB entry
+      try {
+        await clearWebTrustData(userId)
+      } catch {
+        // Retry rollback once
+        try {
+          await clearWebTrustData(userId)
+        } catch {
+          // Orphaned IndexedDB entry is harmless — will self-heal on next visit
+        }
+      }
+
+      batch(() => {
+        trustBrowserPrompt$.isTrusting.set(false)
+        trustBrowserPrompt$.trustError.set(registerResult.error)
+        trustBrowserResult$.error.set(registerResult.error)
+      })
+      return
+    }
+
+    // Full success
+    pendingTrustMasterKey = null
+    pendingTrustUserId = null
+    batch(() => {
+      trustBrowserPrompt$.isVisible.set(false)
+      trustBrowserPrompt$.isTrusting.set(false)
+      trustBrowserPrompt$.trustError.set(null)
+      trustBrowserResult$.success.set(true)
+      trustBrowserResult$.persistGranted.set(persistGranted)
+    })
+  } catch (error) {
+    const setupError = toEncryptionSetupError(
+      error,
+      'Failed to trust this browser.',
+      'trust_browser_failed'
+    )
+
+    batch(() => {
+      trustBrowserPrompt$.isTrusting.set(false)
+      trustBrowserPrompt$.trustError.set(setupError)
+      trustBrowserResult$.error.set(setupError)
+    })
+  }
+}
+
+/** User declined browser trust — key remains in memory only. */
+export const declineBrowserTrust = (): void => {
+  pendingTrustMasterKey = null
+  pendingTrustUserId = null
+  batch(() => {
+    trustBrowserPrompt$.isVisible.set(false)
+    trustBrowserPrompt$.isTrusting.set(false)
+    trustBrowserPrompt$.trustError.set(null)
+  })
+}
+
+/** Dismiss a trust browser error — hides the prompt. */
+export const dismissTrustBrowserPrompt = (): void => {
+  pendingTrustMasterKey = null
+  pendingTrustUserId = null
+  batch(() => {
+    trustBrowserPrompt$.isVisible.set(false)
+    trustBrowserPrompt$.isTrusting.set(false)
+    trustBrowserPrompt$.trustError.set(null)
   })
 }
 

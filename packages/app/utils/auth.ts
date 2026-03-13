@@ -9,6 +9,8 @@ import { supabase } from './supabase'
 import { store$, clearUserData } from '../state/store'
 import { batch } from '@legendapp/state'
 import { loadCurrentEncryptionMode, resetEncryptionSetupState } from '../state/encryptionSetup'
+import { hasWebTrustCapability, getStoredDeviceToken, hashDeviceToken, clearWebTrustData } from './webKeyStore'
+import { deleteTrustedBrowserByHash } from './userEncryption'
 
 /**
  * Common Supabase auth error codes mapped to user-friendly messages
@@ -200,6 +202,25 @@ export const signInWithGoogle = async (): Promise<{ error: string | null }> => {
  * Signs out the current user
  */
 export const signOut = async (): Promise<{ error: string | null }> => {
+  // Revoke web trust data before clearing session (best-effort, don't block sign-out)
+  if (hasWebTrustCapability()) {
+    const userId = store$.session.userId.peek()
+    if (userId) {
+      try {
+        const localToken = await getStoredDeviceToken(userId).catch(() => null)
+        if (localToken) {
+          const hash = await hashDeviceToken(localToken).catch(() => null)
+          if (hash) {
+            await deleteTrustedBrowserByHash(userId, hash).catch(() => {})
+          }
+        }
+        await clearWebTrustData(userId).catch(() => {})
+      } catch {
+        // Best-effort — sign-out must always complete
+      }
+    }
+  }
+
   const { error } = await supabase.auth.signOut()
 
   if (error) {

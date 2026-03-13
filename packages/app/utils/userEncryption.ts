@@ -396,3 +396,183 @@ export async function fetchManagedEncryptionKey(
   return { data: keyB64, error: null }
 }
 
+// =================================================================
+// TRUSTED BROWSERS (Web E2E Key Persistence)
+// =================================================================
+
+export interface TrustedBrowser {
+  id: string
+  label: string
+  platform: string
+  createdAt: string
+  lastUsedAt: string
+  deviceTokenHash: string
+}
+
+/**
+ * Registers a trusted browser server-side.
+ * Enforces max 10 browsers per user and rate limiting (3/hour).
+ */
+export async function registerTrustedBrowser(
+  userId: string,
+  deviceTokenHash: string,
+  label: string
+): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+  // Rate limiting: max 3 registrations per user per hour
+  const { count: recentCount, error: countError } = await supabase
+    .from('trusted_browsers')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+
+  if (!countError && (recentCount ?? 0) >= 3) {
+    return toEncryptionError(
+      'Too many browsers trusted recently. Please wait before trusting another browser.',
+      'rate_limited'
+    )
+  }
+
+  // App-side max browsers check
+  const { count: totalCount, error: totalError } = await supabase
+    .from('trusted_browsers')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+
+  if (!totalError && (totalCount ?? 0) >= 10) {
+    return toEncryptionError(
+      'Maximum of 10 trusted browsers reached. Revoke an existing browser first.',
+      'max_trusted_browsers'
+    )
+  }
+
+  const payload: TablesInsert<'trusted_browsers'> = {
+    user_id: userId,
+    device_token_hash: deviceTokenHash,
+    label,
+    platform: 'web',
+  }
+
+  try {
+    const { error } = await supabase.from('trusted_browsers').insert(payload)
+
+    if (error) {
+      // Map Postgres trigger exception to friendly error code (TOCTOU race)
+      if (error.message?.includes('Maximum of 10 trusted browsers per user')) {
+        return toEncryptionError(
+          'Maximum of 10 trusted browsers reached. Revoke an existing browser first.',
+          'max_trusted_browsers'
+        )
+      }
+      return toEncryptionError(
+        error.message,
+        error.code ?? 'trusted_browser_register_failed'
+      )
+    }
+
+    return { error: null }
+  } catch (error) {
+    return toEncryptionError(
+      (error as Error).message || 'Failed to register trusted browser.',
+      'trusted_browser_register_failed'
+    )
+  }
+}
+
+/**
+ * Verifies a trusted browser by matching user_id AND device_token_hash.
+ */
+export async function verifyTrustedBrowser(
+  userId: string,
+  deviceTokenHash: string
+): Promise<{ valid: boolean; id?: string }> {
+  const { data, error } = await supabase
+    .from('trusted_browsers')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('device_token_hash', deviceTokenHash)
+    .maybeSingle()
+
+  if (error || !data) {
+    return { valid: false }
+  }
+
+  return { valid: true, id: data.id }
+}
+
+/**
+ * Revokes (deletes) a trusted browser by id.
+ */
+export async function revokeTrustedBrowser(
+  browserId: string
+): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+  const { error } = await supabase
+    .from('trusted_browsers')
+    .delete()
+    .eq('id', browserId)
+
+  if (error) {
+    return toEncryptionError(
+      error.message,
+      error.code ?? 'trusted_browser_revoke_failed'
+    )
+  }
+
+  return { error: null }
+}
+
+/**
+ * Fetches all trusted browsers for a user, ordered by last_used_at desc.
+ */
+export async function fetchTrustedBrowsers(userId: string): Promise<TrustedBrowser[]> {
+  const { data, error } = await supabase
+    .from('trusted_browsers')
+    .select('id, label, platform, created_at, last_used_at, device_token_hash')
+    .eq('user_id', userId)
+    .order('last_used_at', { ascending: false })
+
+  if (error || !data) return []
+
+  return data.map((row) => ({
+    id: row.id,
+    label: row.label,
+    platform: row.platform,
+    createdAt: row.created_at,
+    lastUsedAt: row.last_used_at,
+    deviceTokenHash: row.device_token_hash,
+  }))
+}
+
+/**
+ * Updates last_used_at to now. Fire-and-forget.
+ */
+export async function updateTrustedBrowserLastUsed(browserId: string): Promise<void> {
+  await supabase
+    .from('trusted_browsers')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', browserId)
+}
+
+/**
+ * Deletes a trusted browser by (user_id, device_token_hash).
+ * Used during sign-out to revoke the current browser's server-side row.
+ */
+export async function deleteTrustedBrowserByHash(
+  userId: string,
+  deviceTokenHash: string
+): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+  const { error } = await supabase
+    .from('trusted_browsers')
+    .delete()
+    .eq('user_id', userId)
+    .eq('device_token_hash', deviceTokenHash)
+
+  if (error) {
+    return toEncryptionError(
+      error.message,
+      error.code ?? 'trusted_browser_delete_failed'
+    )
+  }
+
+  return { error: null }
+}
+
