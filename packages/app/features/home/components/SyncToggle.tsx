@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Switch, Label, XStack, YStack, Text, Card, Separator, Button } from '@my/ui'
+import { AnimatePresence, Switch, Label, XStack, YStack, Text, Card, Separator, Button } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import {
@@ -32,6 +32,19 @@ const MODE_DESCRIPTIONS = {
   managed: 'Managed encryption is active for this account. This choice is read-only here.',
 } as const
 
+const PRIVACY_SUMMARIES = {
+  e2e: [
+    'Your data is encrypted with a password only you know',
+    'We can never read your journal entries',
+    'If you forget your password, cloud data is unrecoverable',
+  ],
+  managed: [
+    'Your data is encrypted with a key we manage',
+    'We could access your data for support or recovery',
+    'Standard password recovery is available',
+  ],
+} as const
+
 /**
  * SyncToggle — lets the authenticated user enable/disable cloud sync.
  * First-time enablement is intercepted by the shared encryption setup state.
@@ -44,6 +57,7 @@ export function SyncToggle() {
   const hasLocalE2EKey = use$(encryptionSetup$.hasLocalE2EKey)
   const error = use$(encryptionSetup$.error)
   const [isRetryingManagedKey, setIsRetryingManagedKey] = useState(false)
+  const [privacySummaryOpen, setPrivacySummaryOpen] = useState(false)
 
   const isE2EReadyOnDevice = currentMode === 'e2e' && !!currentModeSalt && hasLocalE2EKey
   const isE2EKeyRequiredOnDevice = currentMode === 'e2e' && !!currentModeSalt && !hasLocalE2EKey
@@ -149,6 +163,42 @@ export function SyncToggle() {
               <Text fontSize="$2" fontFamily="$body" color="$color11">
                 This choice is read-only for now.
               </Text>
+              <Text
+                testID="privacy-summary-toggle"
+                fontSize="$2"
+                fontFamily="$body"
+                color="$accentColor"
+                cursor="pointer"
+                onPress={() => setPrivacySummaryOpen((prev) => !prev)}
+                paddingTop="$1"
+              >
+                {privacySummaryOpen ? 'Hide details' : 'What does this mean?'}
+              </Text>
+              <AnimatePresence>
+                {privacySummaryOpen && (
+                  <YStack
+                    key="privacy-summary"
+                    animation="quick"
+                    enterStyle={{ opacity: 0, scale: 0.97 }}
+                    exitStyle={{ opacity: 0, scale: 0.97 }}
+                    opacity={1}
+                    scale={1}
+                    gap="$1"
+                    paddingTop="$1"
+                  >
+                    {PRIVACY_SUMMARIES[currentMode].map((bullet) => (
+                      <XStack key={bullet} gap="$2" alignItems="flex-start">
+                        <Text fontSize="$2" fontFamily="$body" color="$color11">
+                          •
+                        </Text>
+                        <Text fontSize="$2" fontFamily="$body" color="$color11" flexShrink={1}>
+                          {bullet}
+                        </Text>
+                      </XStack>
+                    ))}
+                  </YStack>
+                )}
+              </AnimatePresence>
             </YStack>
           </>
         )}

@@ -139,10 +139,22 @@ vi.mock('@my/ui', async () => {
   AlertDialog.Action = ({ children }: any) =>
     ReactModule.createElement(ReactModule.Fragment, null, children)
 
+  const AnimatePresence = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
+
   return {
     AlertDialog,
+    AnimatePresence,
     Button,
-    Card: passthrough('section'),
+    Card: ({ children, onPress, testID, ...props }: any) =>
+      ReactModule.createElement(
+        'section',
+        {
+          ...(testID ? { 'data-testid': testID } : {}),
+          ...(onPress ? { onClick: onPress } : {}),
+        },
+        children
+      ),
     H1: passthrough('h1'),
     Input: ({ children, testID, value, onChangeText, secureTextEntry, disabled, placeholder, autoComplete }: any) =>
       ReactModule.createElement('input', {
@@ -184,6 +196,11 @@ vi.mock('app/features/auth/components/LinkedProviders', () => ({
 
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
   OrphanFlowsDialog: () => null,
+}))
+
+vi.mock('@tamagui/lucide-icons', () => ({
+  Shield: (props: any) => React.createElement('svg', { 'data-testid': 'shield-icon' }),
+  Lock: (props: any) => React.createElement('svg', { 'data-testid': 'lock-icon' }),
 }))
 
 vi.mock('../../../utils/webKeyStore', () => ({
@@ -249,7 +266,7 @@ describe('HomeScreen encryption flow', () => {
     })
   })
 
-  it('renders E2E as the default choice with the required warnings', async () => {
+  it('renders E2E as the default choice with privacy tier explanations and warnings', async () => {
     render(React.createElement(HomeScreen))
 
     await act(async () => {
@@ -261,11 +278,48 @@ describe('HomeScreen encryption flow', () => {
       })
     })
 
-    expect(screen.getByText('Confirm End-to-End Encryption')).toBeTruthy()
-    expect(screen.getByText('E2E Encryption')).toBeTruthy()
-    expect(screen.getByText('Managed Encryption')).toBeTruthy()
+    // Privacy tier cards render with new detailed content
+    expect(screen.getByText('Strict Privacy Mode')).toBeTruthy()
+    expect(screen.getByText('Cloud Backup Mode')).toBeTruthy()
+    expect(screen.getByText('You hold the only key to unlock your journal')).toBeTruthy()
+    expect(screen.getByText('We securely handle the encryption behind the scenes')).toBeTruthy()
+
+    // Regression: warnings still render
     expect(screen.getByText('This choice cannot be changed later.')).toBeTruthy()
     expect(screen.getByText('If you forget this password, your cloud data is unrecoverable.')).toBeTruthy()
+
+    // Regression: confirm/cancel buttons still render
+    expect(screen.getByText('Confirm Strict Privacy Mode')).toBeTruthy()
+    expect(screen.getByText('Cancel')).toBeTruthy()
+    expect(screen.getByTestId('confirm-encryption-mode')).toBeTruthy()
+  })
+
+  it('full flow regression: select mode → see warning → confirm still works with new explainer', async () => {
+    render(React.createElement(HomeScreen))
+
+    await act(async () => {
+      encryptionSetup$.assign({
+        isOpen: true,
+        selectedMode: 'e2e',
+        step: 'choice',
+        hasLoadedMode: true,
+      })
+    })
+
+    // Select managed mode via tier card
+    fireEvent.click(screen.getByTestId('privacy-tier-managed'))
+
+    await waitFor(() => {
+      expect(encryptionSetup$.selectedMode.get()).toBe('managed')
+      expect(screen.getByText('Confirm Cloud Backup Mode')).toBeTruthy()
+    })
+
+    // Confirm — triggers async flow, step should advance past 'choice'
+    fireEvent.click(screen.getByTestId('confirm-encryption-mode'))
+
+    await waitFor(() => {
+      expect(encryptionSetup$.step.get()).not.toBe('choice')
+    })
   })
 
   it('shows the current encryption mode as read-only on the home screen', async () => {
@@ -283,6 +337,34 @@ describe('HomeScreen encryption flow', () => {
     expect(screen.getByText('Encryption mode')).toBeTruthy()
     expect(screen.getByText('Managed encryption')).toBeTruthy()
     expect(screen.getByText('This choice is read-only for now.')).toBeTruthy()
+  })
+
+  it('shows "What does this mean?" link for locked mode and expands/collapses', async () => {
+    render(React.createElement(HomeScreen))
+
+    await act(async () => {
+      encryptionSetup$.assign({
+        hasLoadedMode: true,
+        currentMode: 'managed',
+        currentModeSalt: null,
+        hasLocalE2EKey: false,
+      })
+    })
+
+    // Link is visible
+    const toggle = screen.getByTestId('privacy-summary-toggle')
+    expect(toggle).toBeTruthy()
+    expect(screen.getByText('What does this mean?')).toBeTruthy()
+
+    // Expand
+    fireEvent.click(toggle)
+    expect(screen.getByText('Your data is encrypted with a key we manage')).toBeTruthy()
+    expect(screen.getByText('Hide details')).toBeTruthy()
+
+    // Collapse
+    fireEvent.click(screen.getByTestId('privacy-summary-toggle'))
+    expect(screen.queryByText('Your data is encrypted with a key we manage')).toBeNull()
+    expect(screen.getByText('What does this mean?')).toBeTruthy()
   })
 
   it('shows key-required messaging when E2E is selected but local key is missing', async () => {
