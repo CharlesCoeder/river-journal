@@ -108,7 +108,6 @@ export type Database = {
           id: string
           label: string
           last_used_at: string
-          platform: string
           user_id: string
         }
         Insert: {
@@ -117,7 +116,6 @@ export type Database = {
           id?: string
           label?: string
           last_used_at?: string
-          platform?: string
           user_id: string
         }
         Update: {
@@ -126,7 +124,6 @@ export type Database = {
           id?: string
           label?: string
           last_used_at?: string
-          platform?: string
           user_id?: string
         }
         Relationships: [

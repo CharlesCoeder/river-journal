@@ -8,7 +8,6 @@ CREATE TABLE trusted_browsers (
   user_id           UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   device_token_hash TEXT        NOT NULL UNIQUE,
   label             TEXT        NOT NULL DEFAULT 'Web Browser',
-  platform          TEXT        NOT NULL DEFAULT 'web',
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_used_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -87,8 +86,15 @@ REVOKE EXECUTE ON FUNCTION cleanup_stale_trusted_browsers() FROM authenticated;
 GRANT EXECUTE ON FUNCTION cleanup_stale_trusted_browsers() TO service_role;
 
 -- Schedule daily cleanup at 3:00 AM UTC via pg_cron
-SELECT cron.schedule(
-  'cleanup-stale-trusted-browsers',
-  '0 3 * * *',
-  $$SELECT cleanup_stale_trusted_browsers()$$
-);
+-- pg_cron is available on hosted Supabase but not in local dev; skip gracefully
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.schedule(
+      'cleanup-stale-trusted-browsers',
+      '0 3 * * *',
+      'SELECT cleanup_stale_trusted_browsers()'
+    );
+  END IF;
+END
+$$;

@@ -13,6 +13,7 @@ import {
   registerTrustedBrowser,
   verifyTrustedBrowser,
   updateTrustedBrowserLastUsed,
+  type TrustedBrowserVerification,
 } from '../utils/userEncryption'
 import {
   hasWebTrustCapability,
@@ -261,23 +262,19 @@ const resolveWebTrustKey = async (
   }
 
   // Verify with retry-once on network error
-  let verification: { valid: boolean; id?: string }
-  try {
+  let verification: TrustedBrowserVerification = await verifyTrustedBrowser(userId, hashedToken)
+
+  if (verification.status === 'network_error') {
+    // Retry once
     verification = await verifyTrustedBrowser(userId, hashedToken)
-  } catch (error) {
-    if (isTimeoutOrNetworkError(error)) {
-      try {
-        verification = await verifyTrustedBrowser(userId, hashedToken)
-      } catch {
-        // Network error after retry: discard unwrapped key, don't clear trust data
-        return { hasLocalE2EKey: false, error: null }
-      }
-    } else {
-      return { hasLocalE2EKey: false, error: null }
-    }
   }
 
-  if (!verification.valid) {
+  if (verification.status === 'network_error') {
+    // Network error after retry: discard unwrapped key, DON'T clear trust data (AC 12)
+    return { hasLocalE2EKey: false, error: null }
+  }
+
+  if (verification.status === 'revoked') {
     // Token revoked: clear local trust data
     await clearWebTrustData(userId)
     return { hasLocalE2EKey: false, error: null }
@@ -287,9 +284,7 @@ const resolveWebTrustKey = async (
   cacheOnlyMasterKey(userId, unwrapResult.masterKey)
 
   // Update last_used_at (fire-and-forget)
-  if (verification.id) {
-    void updateTrustedBrowserLastUsed(verification.id)
-  }
+  void updateTrustedBrowserLastUsed(verification.id)
 
   return { hasLocalE2EKey: true, error: null }
 }
@@ -838,23 +833,19 @@ export const acceptBrowserTrust = async (): Promise<void> => {
       // Step 5: Handle server failure
       if (isTimeoutOrNetworkError(registerResult.error)) {
         // Lost-response edge case: check if server row was actually created
-        try {
-          const verification = await verifyTrustedBrowser(userId, hashedToken)
-          if (verification.valid) {
-            // Server row exists — treat as success
-            pendingTrustMasterKey = null
-            pendingTrustUserId = null
-            batch(() => {
-              trustBrowserPrompt$.isVisible.set(false)
-              trustBrowserPrompt$.isTrusting.set(false)
-              trustBrowserPrompt$.trustError.set(null)
-              trustBrowserResult$.success.set(true)
-              trustBrowserResult$.persistGranted.set(persistGranted)
-            })
-            return
-          }
-        } catch {
-          // Verification also failed — proceed with rollback
+        const verification = await verifyTrustedBrowser(userId, hashedToken)
+        if (verification.status === 'valid') {
+          // Server row exists — treat as success
+          pendingTrustMasterKey = null
+          pendingTrustUserId = null
+          batch(() => {
+            trustBrowserPrompt$.isVisible.set(false)
+            trustBrowserPrompt$.isTrusting.set(false)
+            trustBrowserPrompt$.trustError.set(null)
+            trustBrowserResult$.success.set(true)
+            trustBrowserResult$.persistGranted.set(persistGranted)
+          })
+          return
         }
       }
 

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, Separator, Text, XStack, YStack } from '@my/ui'
+import { AlertDialog, Button, Card, Text, XStack, YStack } from '@my/ui'
+import { use$ } from '@legendapp/state/react'
 import {
   fetchTrustedBrowsers,
   revokeTrustedBrowser,
   type TrustedBrowser,
 } from 'app/utils/userEncryption'
 import { getStoredDeviceToken, hashDeviceToken, clearWebTrustData } from 'app/utils/webKeyStore'
+import { trustBrowserResult$ } from 'app/state/encryptionSetup'
 
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString)
@@ -31,6 +33,7 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
   const [localTokenHash, setLocalTokenHash] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [confirmRevoke, setConfirmRevoke] = useState<TrustedBrowser | null>(null)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -57,29 +60,37 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
     }
   }, [userId])
 
+  const trustSuccess = use$(trustBrowserResult$.success)
+
   useEffect(() => {
     void loadData()
   }, [loadData])
 
-  const handleRevoke = useCallback(
-    async (browser: TrustedBrowser) => {
-      setRevokingId(browser.id)
-      try {
-        const result = await revokeTrustedBrowser(browser.id)
-        if (!result.error) {
-          // If revoking current browser, also clear local IndexedDB
-          if (localTokenHash && browser.deviceTokenHash === localTokenHash) {
-            await clearWebTrustData(userId)
-            setLocalTokenHash(null)
-          }
-          await loadData()
+  // Re-fetch when a browser is newly trusted
+  useEffect(() => {
+    if (trustSuccess) {
+      void loadData()
+    }
+  }, [trustSuccess, loadData])
+
+  const handleRevoke = useCallback(async () => {
+    if (!confirmRevoke) return
+    const browser = confirmRevoke
+    setConfirmRevoke(null)
+    setRevokingId(browser.id)
+    try {
+      const result = await revokeTrustedBrowser(browser.id)
+      if (!result.error) {
+        if (localTokenHash && browser.deviceTokenHash === localTokenHash) {
+          await clearWebTrustData(userId)
+          setLocalTokenHash(null)
         }
-      } finally {
-        setRevokingId(null)
+        await loadData()
       }
-    },
-    [userId, localTokenHash, loadData]
-  )
+    } finally {
+      setRevokingId(null)
+    }
+  }, [confirmRevoke, userId, localTokenHash, loadData])
 
   if (isLoading) {
     return (
@@ -124,7 +135,7 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
                   testID={`revoke-browser-${browser.id}`}
                   size="$2"
                   theme="red"
-                  onPress={() => void handleRevoke(browser)}
+                  onPress={() => setConfirmRevoke(browser)}
                   disabled={isRevoking}
                   fontFamily="$body"
                 >
@@ -135,6 +146,69 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
           )
         })}
       </YStack>
+      <AlertDialog open={!!confirmRevoke} onOpenChange={() => setConfirmRevoke(null)}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay
+            key="overlay"
+            animation="quick"
+            opacity={0.5}
+            enterStyle={{ opacity: 0 }}
+            exitStyle={{ opacity: 0 }}
+          />
+          <AlertDialog.Content
+            bordered
+            elevate
+            key="content"
+            animation={[
+              'quick',
+              {
+                opacity: {
+                  overshootClamping: true,
+                },
+              },
+            ]}
+            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+            x={0}
+            scale={1}
+            opacity={1}
+            y={0}
+            backgroundColor="$background"
+            padding="$4"
+            gap="$4"
+            maxWidth={400}
+          >
+            <AlertDialog.Title fontFamily="$body" fontWeight="700">
+              Revoke browser trust?
+            </AlertDialog.Title>
+            <AlertDialog.Description fontFamily="$body" color="$color10">
+              {confirmRevoke?.label} will no longer be able to unlock your encryption key
+              automatically. You'll need to enter your password next time you use that browser.
+            </AlertDialog.Description>
+            <XStack gap="$3" justifyContent="flex-end">
+              <AlertDialog.Cancel asChild>
+                <Button chromeless borderWidth={1} borderColor="$borderColor">
+                  <Text fontFamily="$body">Cancel</Text>
+                </Button>
+              </AlertDialog.Cancel>
+              <AlertDialog.Action asChild>
+                <Button
+                  testID="confirm-revoke-browser"
+                  backgroundColor="$red10"
+                  color="white"
+                  onPress={() => void handleRevoke()}
+                  hoverStyle={{ backgroundColor: '$red11' }}
+                  pressStyle={{ backgroundColor: '$red11' }}
+                >
+                  <Text fontFamily="$body" fontWeight="600" color="white">
+                    Revoke
+                  </Text>
+                </Button>
+              </AlertDialog.Action>
+            </XStack>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog>
     </YStack>
   )
 }

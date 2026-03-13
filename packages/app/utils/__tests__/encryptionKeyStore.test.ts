@@ -11,6 +11,14 @@ describe('encryptionKeyStore', () => {
     vi.doUnmock('@tauri-apps/api/core')
     vi.unstubAllGlobals()
     process.env.NEXT_PUBLIC_IS_DESKTOP_APP = originalDesktopFlag
+
+    // Default mock for webKeyStore to avoid @my/ui parse issues in non-web tests
+    vi.doMock('../webKeyStore', () => ({
+      hasWebTrustCapability: () => false,
+      getStoredDeviceToken: vi.fn().mockResolvedValue(null),
+      clearWebTrustData: vi.fn().mockResolvedValue(undefined),
+      loadWrappedKey: vi.fn().mockResolvedValue(null),
+    }))
   })
 
   it('keeps web keys in memory for the current session only', async () => {
@@ -107,6 +115,64 @@ describe('encryptionKeyStore', () => {
       message:
         'Desktop secure storage is unavailable because the Tauri runtime bridge is missing in this renderer.',
       code: 'desktop_runtime_unavailable',
+    })
+  })
+
+  describe('web trust paths', () => {
+    it('hasStoredMasterKey returns true when web trust device token exists', async () => {
+      vi.doMock('../webKeyStore', () => ({
+        hasWebTrustCapability: () => true,
+        getStoredDeviceToken: vi.fn().mockResolvedValue('some-token'),
+        clearWebTrustData: vi.fn(),
+        loadWrappedKey: vi.fn(),
+      }))
+
+      const keyStore = await import('../encryptionKeyStore')
+
+      expect(await keyStore.hasStoredMasterKey('user-web-trust')).toBe(true)
+    })
+
+    it('hasStoredMasterKey returns false when no web trust data', async () => {
+      vi.doMock('../webKeyStore', () => ({
+        hasWebTrustCapability: () => true,
+        getStoredDeviceToken: vi.fn().mockResolvedValue(null),
+        clearWebTrustData: vi.fn(),
+        loadWrappedKey: vi.fn(),
+      }))
+
+      const keyStore = await import('../encryptionKeyStore')
+
+      expect(await keyStore.hasStoredMasterKey('user-no-trust')).toBe(false)
+    })
+
+    it('clearStoredMasterKey calls clearWebTrustData when web trust is available', async () => {
+      const mockClearWebTrust = vi.fn().mockResolvedValue(undefined)
+      vi.doMock('../webKeyStore', () => ({
+        hasWebTrustCapability: () => true,
+        getStoredDeviceToken: vi.fn(),
+        clearWebTrustData: mockClearWebTrust,
+        loadWrappedKey: vi.fn(),
+      }))
+
+      const keyStore = await import('../encryptionKeyStore')
+      await keyStore.clearStoredMasterKey('user-clear-trust')
+
+      expect(mockClearWebTrust).toHaveBeenCalledWith('user-clear-trust')
+    })
+
+    it('clearStoredMasterKey does not call clearWebTrustData when web trust is unavailable', async () => {
+      const mockClearWebTrust = vi.fn().mockResolvedValue(undefined)
+      vi.doMock('../webKeyStore', () => ({
+        hasWebTrustCapability: () => false,
+        getStoredDeviceToken: vi.fn(),
+        clearWebTrustData: mockClearWebTrust,
+        loadWrappedKey: vi.fn(),
+      }))
+
+      const keyStore = await import('../encryptionKeyStore')
+      await keyStore.clearStoredMasterKey('user-no-web')
+
+      expect(mockClearWebTrust).not.toHaveBeenCalled()
     })
   })
 })

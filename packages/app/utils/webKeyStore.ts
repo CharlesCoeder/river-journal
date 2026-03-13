@@ -22,9 +22,11 @@ const isTauriRuntime = (): boolean =>
 /**
  * Returns true if the current platform supports web browser trust
  * (crypto.subtle + indexedDB available, browser context, not Tauri desktop).
+ * Guards against React Native by checking for document (RN has window but not document).
  */
 export function hasWebTrustCapability(): boolean {
   if (typeof window === 'undefined') return false
+  if (typeof document === 'undefined') return false
   if (!window.crypto?.subtle) return false
   if (!window.indexedDB) return false
   if (isTauriRuntime()) return false
@@ -97,19 +99,20 @@ export async function wrapAndStoreKey(
 ): Promise<{ deviceToken: string; persistGranted: boolean }> {
   return withDB(async (db) => {
     // Generate non-extractable KEK
-    const kek = await crypto.subtle.generateKey(
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['wrapKey', 'unwrapKey']
-    )
+    const kek = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
+      'wrapKey',
+      'unwrapKey',
+    ])
 
     // Generate random IV (12 bytes for AES-GCM)
     const iv = crypto.getRandomValues(new Uint8Array(12))
 
     // Import DEK as extractable CryptoKey for wrapping
+    // Note: Uint8Array is a valid BufferSource at runtime; the cast works around
+    // a TS 5.8 type-narrowing issue with Uint8Array<ArrayBufferLike>.
     const importedDEK = await crypto.subtle.importKey(
       'raw',
-      masterKey,
+      masterKey as BufferSource,
       { name: 'AES-GCM' },
       true,
       ['encrypt', 'decrypt']
@@ -118,7 +121,7 @@ export async function wrapAndStoreKey(
     // Wrap DEK with KEK
     const wrappedDek = await crypto.subtle.wrapKey('raw', importedDEK, kek, {
       name: 'AES-GCM',
-      iv,
+      iv: iv as BufferSource,
     })
 
     // Generate device token (32 random bytes, base64)
@@ -191,7 +194,7 @@ export async function loadWrappedKey(
           'raw',
           entry.wrappedDek,
           entry.kek,
-          { name: 'AES-GCM', iv: entry.iv },
+          { name: 'AES-GCM', iv: entry.iv as BufferSource },
           { name: 'AES-GCM' },
           true,
           ['encrypt', 'decrypt']
@@ -264,7 +267,7 @@ export function getBrowserLabel(): string {
     // Primary: User-Agent Client Hints API
     const uaData = (navigator as Navigator & { userAgentData?: NavigatorUAData }).userAgentData
     if (uaData?.brands && uaData.brands.length > 0) {
-      const noisePatterns = /^(chromium|not[_ ]a[_ ;]brand|not\.a\/brand)$/i
+      const noisePatterns = /^(chromium|not.a.brand)$/i
       const realBrand = uaData.brands.find((b) => !noisePatterns.test(b.brand))
       if (realBrand) {
         const platform = uaData.platform || 'Unknown OS'
