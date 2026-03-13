@@ -1,5 +1,6 @@
 import { AlertDialog, Button, ScrollView, Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
+import { useRouter } from 'solito/navigation'
 import {
   cancelEncryptionSetup,
   confirmEncryptionModeSelection,
@@ -13,6 +14,7 @@ import { E2EPasswordForm } from './E2EPasswordForm'
 import { PrivacyTierExplainer } from './PrivacyTierExplainer'
 
 export function EncryptionModeDialog() {
+  const router = useRouter()
   const isOpen = use$(encryptionSetup$.isOpen)
   const selectedMode = use$(encryptionSetup$.selectedMode)
   const step = use$(encryptionSetup$.step)
@@ -81,6 +83,7 @@ export function EncryptionModeDialog() {
                     <PrivacyTierExplainer
                       selectedMode={selectedMode}
                       onModeSelect={setSelectedEncryptionMode}
+                      privacyCenterLink={() => router.push('/privacy')}
                     />
 
                     <YStack gap="$2">
