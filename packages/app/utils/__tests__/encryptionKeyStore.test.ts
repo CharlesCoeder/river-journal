@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { bytesToHex } from '@noble/ciphers/utils.js'
+import { bytesToBase64 } from '../encryption'
 
 const TEST_KEY = new Uint8Array(Array.from({ length: 32 }, (_, index) => index + 1))
 
@@ -29,7 +29,7 @@ describe('encryptionKeyStore', () => {
 
   it('uses the Tauri keychain bridge on desktop when available', async () => {
     const invoke = vi.fn(async (command: string) => {
-      if (command === 'get_encryption_key') return bytesToHex(TEST_KEY)
+      if (command === 'get_encryption_key') return bytesToBase64(TEST_KEY)
       return undefined
     })
 
@@ -41,7 +41,7 @@ describe('encryptionKeyStore', () => {
 
     expect(invoke).toHaveBeenCalledWith('set_encryption_key', {
       userId: 'user-desktop',
-      keyHex: bytesToHex(TEST_KEY),
+      keyB64: bytesToBase64(TEST_KEY),
     })
     expect(invoke).toHaveBeenCalledWith('get_encryption_key', { userId: 'user-desktop' })
 

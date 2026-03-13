@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from 'uuid'
 import {
   EncryptionError,
   assertCryptoGetRandomValues,
+  base64ToBytes,
   decryptFlowContent,
   decryptFlowContentManaged,
   encryptFlowContent,
@@ -27,7 +28,6 @@ import {
   isEncryptedFlowPayload,
   isManagedEncryptedPayload,
 } from '../utils/encryption'
-import { hexToBytes } from '@noble/ciphers/utils.js'
 import { getCachedMasterKey } from '../utils/encryptionKeyStore'
 import { fetchManagedEncryptionKey } from '../utils/userEncryption'
 
@@ -115,7 +115,7 @@ export const getManagedKeyBytes = async (
     return { data: null, error: toSyncEncryptionError(result.error.message, result.error.code) }
   }
 
-  const keyBytes = hexToBytes(result.data)
+  const keyBytes = base64ToBytes(result.data)
   syncManagedKeyBytes$.set(keyBytes)
   return { data: keyBytes, error: null }
 }

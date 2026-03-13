@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store'
-import { bytesToHex, hexToBytes } from '@noble/ciphers/utils.js'
+import { bytesToBase64, base64ToBytes } from './encryption'
 
 const MASTER_KEY_PREFIX = 'river-journal.e2e.master-key.'
 const inMemoryMasterKeyCache = new Map<string, Uint8Array>()
@@ -10,7 +10,7 @@ const getMasterKeyId = (userId: string): string => `${MASTER_KEY_PREFIX}${userId
 export async function storeMasterKey(userId: string, masterKey: Uint8Array): Promise<void> {
   inMemoryMasterKeyCache.set(userId, cloneBytes(masterKey))
 
-  await SecureStore.setItemAsync(getMasterKeyId(userId), bytesToHex(masterKey), {
+  await SecureStore.setItemAsync(getMasterKeyId(userId), bytesToBase64(masterKey), {
     keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
   })
 }
@@ -19,10 +19,10 @@ export async function loadMasterKey(userId: string): Promise<Uint8Array | null> 
   const cachedKey = inMemoryMasterKeyCache.get(userId)
   if (cachedKey) return cloneBytes(cachedKey)
 
-  const hexValue = await SecureStore.getItemAsync(getMasterKeyId(userId))
-  if (!hexValue) return null
+  const b64Value = await SecureStore.getItemAsync(getMasterKeyId(userId))
+  if (!b64Value) return null
 
-  const key = hexToBytes(hexValue)
+  const key = base64ToBytes(b64Value)
   inMemoryMasterKeyCache.set(userId, cloneBytes(key))
   return key
 }

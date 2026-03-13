@@ -1,4 +1,4 @@
-import { bytesToHex, hexToBytes } from '@noble/ciphers/utils.js'
+import { bytesToBase64, base64ToBytes } from './encryption'
 
 const inMemoryMasterKeyCache = new Map<string, Uint8Array>()
 const TAURI_SET_ENCRYPTION_KEY_COMMAND = 'set_encryption_key'
@@ -131,26 +131,26 @@ export async function storeMasterKey(userId: string, masterKey: Uint8Array): Pro
   const invoke = await getTauriInvoke()
   if (!invoke) return
 
-  const expectedKeyHex = bytesToHex(masterKey)
+  const expectedKeyB64 = bytesToBase64(masterKey)
 
   try {
     logKeyStoreDiagnostic('storing master key via Tauri keychain', { userId })
     await withKeychainTimeout(
       invoke<void>(TAURI_SET_ENCRYPTION_KEY_COMMAND, {
         userId,
-        keyHex: expectedKeyHex,
+        keyB64: expectedKeyB64,
       }),
       'Timed out while storing the encryption key in the desktop keychain.',
       'desktop_keychain_store_timeout'
     )
 
-    const persistedKeyHex = await withKeychainTimeout(
+    const persistedKeyB64 = await withKeychainTimeout(
       invoke<string | null>(TAURI_GET_ENCRYPTION_KEY_COMMAND, { userId }),
       'Timed out while verifying the desktop keychain after storing the encryption key.',
       'desktop_keychain_store_verify_timeout'
     )
 
-    if (persistedKeyHex !== expectedKeyHex) {
+    if (persistedKeyB64 !== expectedKeyB64) {
       throw new EncryptionKeyStoreError(
         'Desktop keychain did not return the stored encryption key during verification.',
         'desktop_keychain_store_verification_failed'
@@ -184,17 +184,17 @@ export async function loadMasterKey(userId: string): Promise<Uint8Array | null> 
 
   try {
     logKeyStoreDiagnostic('loading master key via Tauri keychain', { userId })
-    const keyHex = await withKeychainTimeout(
+    const keyB64 = await withKeychainTimeout(
       invoke<string | null>(TAURI_GET_ENCRYPTION_KEY_COMMAND, { userId }),
       'Timed out while accessing the desktop keychain for the encryption key.',
       'desktop_keychain_load_timeout'
     )
-    if (!keyHex) {
+    if (!keyB64) {
       logKeyStoreDiagnostic('no persisted master key returned from Tauri keychain', { userId })
       return null
     }
 
-    const persistedKey = hexToBytes(keyHex)
+    const persistedKey = base64ToBytes(keyB64)
     inMemoryMasterKeyCache.set(userId, cloneBytes(persistedKey))
     logKeyStoreDiagnostic('loaded master key from Tauri keychain', { userId })
     return cloneBytes(persistedKey)

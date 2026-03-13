@@ -79,7 +79,7 @@ import {
 } from '../encryptionSetup'
 import { syncManagedKeyBytes$ } from '../syncConfig'
 import { syncEncryptionError$ } from '../syncConfig'
-import { hexToBytes } from '@noble/ciphers/utils.js'
+import { base64ToBytes } from '../../utils/encryption'
 
 describe('encryption setup orchestration', () => {
   beforeEach(() => {
@@ -94,11 +94,11 @@ describe('encryption setup orchestration', () => {
     })
 
     mockReadUserEncryptionSettings.mockResolvedValue({
-      data: { mode: null, salt: null, managedKeyHex: null },
+      data: { mode: null, salt: null, managedKeyB64: null },
       error: null,
     })
     mockUpsertUserEncryptionMode.mockResolvedValue({
-      data: { mode: 'managed', salt: null, managedKeyHex: null },
+      data: { mode: 'managed', salt: null, managedKeyB64: null },
       error: null,
     })
     mockStartE2EEncryptionBootstrap.mockResolvedValue({
@@ -119,10 +119,10 @@ describe('encryption setup orchestration', () => {
     mockPersistMasterKeyToKeyring.mockResolvedValue({ error: null })
     mockBootstrapManagedEncryption.mockResolvedValue({
       error: null,
-      managedKeyHex: 'a'.repeat(64),
+      managedKeyB64: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=',
     })
     mockFetchManagedEncryptionKey.mockResolvedValue({
-      data: 'a'.repeat(64),
+      data: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=',
       error: null,
     })
   })
@@ -159,7 +159,7 @@ describe('encryption setup orchestration', () => {
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.isOpen.get()).toBe(false)
-    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
+    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo='))
   })
 
   it('E2E selection advances to the password step and keeps sync blocked', async () => {
@@ -196,7 +196,7 @@ describe('encryption setup orchestration', () => {
     setSelectedEncryptionMode('managed')
     mockBootstrapManagedEncryption.mockResolvedValueOnce({
       error: { message: 'Key generation failed.', code: 'managed_bootstrap_failed' },
-      managedKeyHex: null,
+      managedKeyB64: null,
     })
 
     const didEnable = await confirmEncryptionModeSelection()
@@ -211,7 +211,7 @@ describe('encryption setup orchestration', () => {
 
   it('loadCurrentEncryptionMode pre-caches managed key from initial query (no N+1)', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
-      data: { mode: 'managed', salt: null, managedKeyHex: 'a'.repeat(64) },
+      data: { mode: 'managed', salt: null, managedKeyB64: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=' },
       error: null,
     })
 
@@ -219,14 +219,14 @@ describe('encryption setup orchestration', () => {
 
     expect(mode).toBe('managed')
     expect(mockFetchManagedEncryptionKey).not.toHaveBeenCalled()
-    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
+    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo='))
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
 
   it('blocks sync when managed key cannot be fetched', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
-      data: { mode: 'managed', salt: null, managedKeyHex: null },
+      data: { mode: 'managed', salt: null, managedKeyB64: null },
       error: null,
     })
     mockFetchManagedEncryptionKey.mockResolvedValueOnce({
@@ -251,7 +251,7 @@ describe('encryption setup orchestration', () => {
     setSelectedEncryptionMode('managed')
     mockBootstrapManagedEncryption.mockResolvedValueOnce({
       error: { message: 'Could not save encryption mode.', code: 'save_failed' },
-      managedKeyHex: null,
+      managedKeyB64: null,
     })
 
     const didEnable = await confirmEncryptionModeSelection()
@@ -270,8 +270,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -295,8 +295,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -319,8 +319,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -352,8 +352,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -380,15 +380,15 @@ describe('encryption setup orchestration', () => {
       isOpen: true,
       step: 'e2e-password',
       currentMode: 'e2e',
-      currentModeSalt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      currentModeSalt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
       hasLocalE2EKey: false,
       hasLoadedMode: true,
     })
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -400,7 +400,7 @@ describe('encryption setup orchestration', () => {
     expect(mockUnlockE2EEncryptionOnDevice).toHaveBeenCalledWith({
       userId: 'user-1',
       password: 'password123',
-      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
     })
     expect(mockStartE2EEncryptionBootstrap).not.toHaveBeenCalled()
     expect(store$.session.syncEnabled.get()).toBe(true)
@@ -440,8 +440,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -461,8 +461,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -481,8 +481,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -503,8 +503,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -520,7 +520,7 @@ describe('encryption setup orchestration', () => {
   it('retryFetchManagedKey refetches the key and enables sync', async () => {
     store$.session.userId.set('user-1')
     mockFetchManagedEncryptionKey.mockResolvedValueOnce({
-      data: 'a'.repeat(64),
+      data: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=',
       error: null,
     })
 
@@ -528,7 +528,7 @@ describe('encryption setup orchestration', () => {
 
     expect(result).toBe(true)
     expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
-    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('a'.repeat(64)))
+    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo='))
     expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.error.get()).toBeNull()
   })
@@ -536,11 +536,11 @@ describe('encryption setup orchestration', () => {
   it('retryFetchManagedKey clears stale cached bytes so getManagedKeyBytes actually hits Supabase', async () => {
     store$.session.userId.set('user-1')
     // Pre-seed stale cache — without the null-reset, getManagedKeyBytes would return this immediately
-    syncManagedKeyBytes$.set(hexToBytes('b'.repeat(64)))
+    syncManagedKeyBytes$.set(base64ToBytes('u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7s='))
 
-    const freshKeyHex = 'c'.repeat(64)
+    const freshKeyB64 = 'zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMw='
     mockFetchManagedEncryptionKey.mockResolvedValueOnce({
-      data: freshKeyHex,
+      data: freshKeyB64,
       error: null,
     })
 
@@ -548,7 +548,7 @@ describe('encryption setup orchestration', () => {
 
     expect(result).toBe(true)
     expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
-    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes(freshKeyHex))
+    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes(freshKeyB64))
   })
 
   it('retryFetchManagedKey returns false and updates error state on failure', async () => {
@@ -604,8 +604,8 @@ describe('encryption setup orchestration', () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: 'b'.repeat(64),
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: 'u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7s=',
       },
       error: null,
     })
@@ -614,7 +614,7 @@ describe('encryption setup orchestration', () => {
     const mode = await loadCurrentEncryptionMode()
 
     expect(mode).toBe('e2e')
-    expect(syncManagedKeyBytes$.get()).toEqual(hexToBytes('b'.repeat(64)))
+    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7s='))
     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
@@ -624,19 +624,19 @@ describe('encryption setup orchestration', () => {
       isOpen: true,
       step: 'e2e-password',
       currentMode: 'managed',
-      currentModeSalt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      currentModeSalt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
       hasLocalE2EKey: false,
       hasLoadedMode: true,
     })
     mockUpsertUserEncryptionMode.mockResolvedValueOnce({
-      data: { mode: 'e2e', salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df', managedKeyHex: null },
+      data: { mode: 'e2e', salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=', managedKeyB64: null },
       error: null,
     })
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: {
         mode: 'e2e',
-        salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
-        managedKeyHex: null,
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
       },
       error: null,
     })
@@ -648,7 +648,7 @@ describe('encryption setup orchestration', () => {
     expect(mockUnlockE2EEncryptionOnDevice).toHaveBeenCalledWith({
       userId: 'user-1',
       password: 'password123',
-      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
     })
     expect(mockStartE2EEncryptionBootstrap).not.toHaveBeenCalled()
     expect(mockUpsertUserEncryptionMode).toHaveBeenCalledWith({ userId: 'user-1', mode: 'e2e' })

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { encryptFlowContent, deriveMasterKeyFromPassword } from '../encryption'
 
+const BASE64_PATTERN = /^[A-Za-z0-9+/]*={0,2}$/
+
 const {
   mockUsersSingle,
   mockUsersSelect,
@@ -109,7 +111,7 @@ describe('startE2EEncryptionBootstrap', () => {
     expect(payload.id).toBe('user-1')
     expect(payload.encryption_mode).toBe('e2e')
     expect(typeof payload.encryption_salt).toBe('string')
-    expect(payload.encryption_salt).toMatch(/^[0-9a-f]+$/)
+    expect(payload.encryption_salt).toMatch(BASE64_PATTERN)
     expect(payload).not.toHaveProperty('password')
 
     // Key is cached in memory only — not written to keyring
@@ -153,7 +155,7 @@ describe('unlockE2EEncryptionOnDevice', () => {
     const result = await unlockE2EEncryptionOnDevice({
       userId: 'user-1',
       password: 'correct horse battery staple',
-      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
     })
 
     expect(result.error).toBeNull()
@@ -166,7 +168,7 @@ describe('unlockE2EEncryptionOnDevice', () => {
   it('rejects the wrong encryption password when existing encrypted flows cannot be decrypted', async () => {
     const correctKey = await deriveMasterKeyFromPassword(
       'correct horse battery staple',
-      '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df'
+      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
     )
     const encryptedPayload = encryptFlowContent('secret text', correctKey)
 
@@ -178,7 +180,7 @@ describe('unlockE2EEncryptionOnDevice', () => {
     const result = await unlockE2EEncryptionOnDevice({
       userId: 'user-1',
       password: 'wrong password',
-      salt: '57b630cf0eb6e04f24229f7db1389d4fc40f83fa9eb7f4fce4b2605f8c2f86df',
+      salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
     })
 
     expect(result.error).toEqual({
@@ -231,13 +233,14 @@ describe('bootstrapManagedEncryption', () => {
     })
   })
 
-  it('generates a managed key, upserts to Supabase, and returns the hex key', async () => {
+  it('generates a managed key, upserts to Supabase, and returns the base64 key', async () => {
     const result = await bootstrapManagedEncryption({ userId: 'user-1' })
 
     expect(result.error).toBeNull()
-    expect(result.managedKeyHex).toBeTruthy()
-    expect(typeof result.managedKeyHex).toBe('string')
-    expect(result.managedKeyHex).toMatch(/^[0-9a-f]{64}$/)
+    expect(result.managedKeyB64).toBeTruthy()
+    expect(typeof result.managedKeyB64).toBe('string')
+    expect(result.managedKeyB64).toMatch(BASE64_PATTERN)
+    expect(result.managedKeyB64).toHaveLength(44)
     expect(mockFrom).toHaveBeenCalledWith('users')
     expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
 
@@ -245,11 +248,11 @@ describe('bootstrapManagedEncryption', () => {
     const payload = upsertCalls[0][0]
     expect(payload.id).toBe('user-1')
     expect(payload.encryption_mode).toBe('managed')
-    expect(payload.managed_encryption_key).toMatch(/^[0-9a-f]{64}$/)
+    expect(payload.managed_encryption_key).toMatch(BASE64_PATTERN)
   })
 
   it('reuses existing managed key instead of generating a new one', async () => {
-    const existingKey = 'b'.repeat(64)
+    const existingKey = 'q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s='
     mockUsersMaybeSingle.mockResolvedValueOnce({
       data: { managed_encryption_key: existingKey },
       error: null,
@@ -258,7 +261,7 @@ describe('bootstrapManagedEncryption', () => {
     const result = await bootstrapManagedEncryption({ userId: 'user-1' })
 
     expect(result.error).toBeNull()
-    expect(result.managedKeyHex).toBe(existingKey)
+    expect(result.managedKeyB64).toBe(existingKey)
     expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
 
     const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
@@ -279,7 +282,7 @@ describe('bootstrapManagedEncryption', () => {
       message: 'Connection lost',
       code: 'network_error',
     })
-    expect(result.managedKeyHex).toBeNull()
+    expect(result.managedKeyB64).toBeNull()
     expect(mockUsersUpsert).not.toHaveBeenCalled()
   })
 
@@ -295,7 +298,7 @@ describe('bootstrapManagedEncryption', () => {
       message: 'DB failed',
       code: 'db_failed',
     })
-    expect(result.managedKeyHex).toBeNull()
+    expect(result.managedKeyB64).toBeNull()
   })
 })
 
@@ -305,15 +308,16 @@ describe('fetchManagedEncryptionKey', () => {
   })
 
   it('reads managed_encryption_key from Supabase', async () => {
+    const validB64Key = 'q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s='
     mockUsersMaybeSingle.mockResolvedValueOnce({
-      data: { managed_encryption_key: 'abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234' },
+      data: { managed_encryption_key: validB64Key },
       error: null,
     })
 
     const result = await fetchManagedEncryptionKey('user-1')
 
     expect(result.error).toBeNull()
-    expect(result.data).toBe('abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234')
+    expect(result.data).toBe(validB64Key)
     expect(mockFrom).toHaveBeenCalledWith('users')
   })
 
@@ -334,7 +338,7 @@ describe('fetchManagedEncryptionKey', () => {
 
   it('returns error when managed key is invalid', async () => {
     mockUsersMaybeSingle.mockResolvedValueOnce({
-      data: { managed_encryption_key: 'not-hex' },
+      data: { managed_encryption_key: 'not-valid-base64!' },
       error: null,
     })
 
@@ -342,7 +346,7 @@ describe('fetchManagedEncryptionKey', () => {
 
     expect(result.data).toBeNull()
     expect(result.error).toEqual({
-      message: 'Managed encryption key is invalid. Expected a 64-character hex string (32 bytes).',
+      message: 'Managed encryption key is invalid. Expected a base64-encoded 32-byte key.',
       code: 'managed_key_invalid',
     })
   })
@@ -362,4 +366,3 @@ describe('fetchManagedEncryptionKey', () => {
     })
   })
 })
-
