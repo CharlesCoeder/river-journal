@@ -108,7 +108,7 @@ export function SyncToggle() {
               : EXPLANATIONS.syncOff
 
   return (
-    <Card bordered padding="$4" backgroundColor="$background" width="100%">
+    <Card padding="$4" backgroundColor="$color2" borderRadius="$4" borderWidth={1} borderColor="$color4" width="100%">
       <YStack gap="$3">
         <XStack alignItems="center" justifyContent="space-between" gap="$3">
           <Label htmlFor="sync-toggle" fontSize="$5" fontFamily="$body" fontWeight="600">

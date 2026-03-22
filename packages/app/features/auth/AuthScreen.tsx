@@ -6,7 +6,8 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { YStack, XStack, Text, H2 } from '@my/ui'
+import { YStack, XStack, Text, Button, ScrollView } from '@my/ui'
+import { ArrowLeft } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { type ObservableObject } from '@legendapp/state'
 import { useObservable, use$ } from '@legendapp/state/react'
@@ -62,65 +63,92 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
   )
 
   const handleAuthSuccess = useCallback(() => {
-    // Clear form and navigate back to home
     actions.clear()
     router.push('/')
   }, [router, actions])
 
+  const handleBack = () => {
+    router.push('/')
+  }
+
   return (
-    <YStack
+    <ScrollView
       flex={1}
       backgroundColor="$background"
-      paddingHorizontal="$4"
-      paddingTop="$8"
-      justifyContent="flex-start"
-      alignItems="center"
+      contentContainerStyle={{ flexGrow: 1 }}
     >
-      <YStack width="100%" maxWidth={400} gap="$6" paddingVertical="$6">
-        {/* Header */}
-        <YStack alignItems="center" gap="$2">
-          <H2 fontFamily="$body" fontWeight="700" color="$color12">
-            {activeTab === 'signup' ? 'Create Account' : 'Welcome Back'}
-          </H2>
-          <Text fontSize="$4" color="$color11" fontFamily="$body" textAlign="center">
-            {activeTab === 'signup'
-              ? 'Sign up to sync your journal across devices'
-              : 'Log in to access your journal'}
-          </Text>
-        </YStack>
-
-        {/* Tab Selector */}
-        <XStack borderRadius="$4" backgroundColor="$color4" padding="$1">
-          <TabButton
-            label="Log In"
-            isActive={activeTab === 'login'}
-            onPress={() => actions.setTab('login')}
-          />
-          <TabButton
-            label="Sign Up"
-            isActive={activeTab === 'signup'}
-            onPress={() => actions.setTab('signup')}
+      <YStack
+        flex={1}
+        paddingHorizontal="$4"
+        paddingTop="$4"
+        paddingBottom="$10"
+        alignItems="center"
+        $sm={{
+          paddingTop: '$6',
+        }}
+      >
+        {/* Back navigation */}
+        <XStack width="100%" maxWidth={400}>
+          <Button
+            size="$3"
+            chromeless
+            onPress={handleBack}
+            icon={ArrowLeft}
+            color="$color9"
+            opacity={0.6}
+            hoverStyle={{ opacity: 1 }}
           />
         </XStack>
 
-        {/* Form */}
-        {activeTab === 'signup' ? (
-          <SignupForm
-            authForm$={authForm$}
-            actions={actions}
-            onSuccess={handleAuthSuccess}
-            onSwitchToLogin={() => actions.setTab('login')}
-          />
-        ) : (
-          <LoginForm
-            authForm$={authForm$}
-            actions={actions}
-            onSuccess={handleAuthSuccess}
-            onSwitchToSignup={() => actions.setTab('signup')}
-          />
-        )}
+        <YStack width="100%" maxWidth={400} gap="$6" paddingTop="$6">
+          {/* Header */}
+          <YStack alignItems="center" gap="$3">
+            <Text fontSize="$8" fontFamily="$body" fontWeight="300" color="$color">
+              {activeTab === 'signup' ? 'Create Account' : 'Welcome Back'}
+            </Text>
+            <Text fontSize="$3" color="$color10" fontFamily="$body" textAlign="center">
+              Accounts are optional. Your journal works perfectly without one.
+            </Text>
+            <Text fontSize="$3" color="$color10" fontFamily="$body" textAlign="center">
+              {activeTab === 'signup'
+                ? 'Sign up to sync your journal across devices.'
+                : 'Log in to access your journal from any device.'}
+            </Text>
+          </YStack>
+
+          {/* Tab Selector */}
+          <XStack borderRadius="$4" backgroundColor="$color3" padding="$1">
+            <TabButton
+              label="Log In"
+              isActive={activeTab === 'login'}
+              onPress={() => actions.setTab('login')}
+            />
+            <TabButton
+              label="Sign Up"
+              isActive={activeTab === 'signup'}
+              onPress={() => actions.setTab('signup')}
+            />
+          </XStack>
+
+          {/* Form */}
+          {activeTab === 'signup' ? (
+            <SignupForm
+              authForm$={authForm$}
+              actions={actions}
+              onSuccess={handleAuthSuccess}
+              onSwitchToLogin={() => actions.setTab('login')}
+            />
+          ) : (
+            <LoginForm
+              authForm$={authForm$}
+              actions={actions}
+              onSuccess={handleAuthSuccess}
+              onSwitchToSignup={() => actions.setTab('signup')}
+            />
+          )}
+        </YStack>
       </YStack>
-    </YStack>
+    </ScrollView>
   )
 }
 
@@ -139,8 +167,8 @@ function TabButton({ label, isActive, onPress }: TabButtonProps) {
       justifyContent="center"
       alignItems="center"
       borderRadius="$3"
-      backgroundColor={isActive ? '$color1' : 'transparent'}
-      hoverStyle={{ backgroundColor: isActive ? '$color1' : '$color3' }}
+      backgroundColor={isActive ? '$background' : 'transparent'}
+      hoverStyle={{ backgroundColor: isActive ? '$background' : '$color4' }}
       pressStyle={{ opacity: 0.8 }}
       onPress={onPress}
       cursor="pointer"
@@ -149,7 +177,7 @@ function TabButton({ label, isActive, onPress }: TabButtonProps) {
         fontSize="$4"
         fontFamily="$body"
         fontWeight={isActive ? '600' : '400'}
-        color={isActive ? '$color12' : '$color11'}
+        color={isActive ? '$color' : '$color10'}
       >
         {label}
       </Text>

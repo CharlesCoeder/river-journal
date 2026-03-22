@@ -13,8 +13,7 @@ import { PersistenceGate } from 'app/provider/PersistenceGate'
 import { PersistentEditor } from 'app/features/journal/components/PersistentEditor'
 
 export const unstable_settings = {
-  // Ensure that reloading on `/user` keeps a back button present.
-  initialRouteName: 'Home',
+  initialRouteName: '(tabs)',
 }
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -62,10 +61,14 @@ function RootLayoutNav() {
           <Provider>
             <TamaguifiedReactNavigationThemeProvider>
               <TamaguifiedSafeAreaView>
-                <Stack>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="journal" options={{ animation: 'none' }} />
+                  <Stack.Screen name="auth" />
+                  <Stack.Screen name="privacy" />
                   <Stack.Screen
                     name="google-auth"
-                    options={{ animation: 'none', headerShown: false }}
+                    options={{ animation: 'none' }}
                   />
                 </Stack>
                 <PersistentEditor />

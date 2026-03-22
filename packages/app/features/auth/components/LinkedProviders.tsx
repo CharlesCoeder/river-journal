@@ -9,13 +9,13 @@
  */
 
 import { useState, useCallback } from 'react'
-import { YStack, XStack, Text, Button, Spinner } from '@my/ui'
+import { YStack, XStack, Text, Separator } from '@my/ui'
 import Svg, { Path } from 'react-native-svg'
-import { Mail, Check } from '@tamagui/lucide-icons'
+import { Mail } from '@tamagui/lucide-icons'
 import { useIdentityLinking } from 'app/hooks/useIdentityLinking'
 import { AddPasswordForm } from './AddPasswordForm'
 
-function GoogleLogo({ size = 18 }: { size?: number }) {
+function GoogleLogo({ size = 16 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path
@@ -38,6 +38,69 @@ function GoogleLogo({ size = 18 }: { size?: number }) {
   )
 }
 
+function ProviderRow({
+  icon,
+  label,
+  status,
+  isConnected,
+  actionLabel,
+  onAction,
+}: {
+  icon: React.ReactNode
+  label: string
+  status: string
+  isConnected: boolean
+  actionLabel?: string
+  onAction?: () => void
+}) {
+  return (
+    <YStack>
+      <XStack
+        paddingVertical="$4"
+        alignItems="center"
+        justifyContent="space-between"
+      >
+        <XStack gap="$3" alignItems="center" flex={1}>
+          {icon}
+          <YStack gap="$1">
+            <Text fontSize="$5" fontFamily="$body" fontWeight={isConnected ? '600' : '400'} color={isConnected ? '$color' : '$color9'}>
+              {label}
+            </Text>
+            <Text fontSize="$2" fontFamily="$body" color="$color8">
+              {status}
+            </Text>
+          </YStack>
+        </XStack>
+        {isConnected && !actionLabel && (
+          <Text
+            fontSize="$1"
+            fontFamily="$body"
+            fontWeight="700"
+            color="$blue10"
+            textTransform="uppercase"
+            letterSpacing={1.5}
+          >
+            Connected
+          </Text>
+        )}
+        {actionLabel && onAction && (
+          <Text
+            fontSize="$2"
+            fontFamily="$body"
+            color="$color9"
+            cursor="pointer"
+            onPress={onAction}
+            hoverStyle={{ color: '$color' }}
+          >
+            {actionLabel}
+          </Text>
+        )}
+      </XStack>
+      <Separator borderColor="$color5" />
+    </YStack>
+  )
+}
+
 export function LinkedProviders() {
   const {
     hasPassword,
@@ -56,14 +119,6 @@ export function LinkedProviders() {
     refresh()
   }, [refresh])
 
-  if (isLoading) {
-    return (
-      <YStack padding="$4" alignItems="center">
-        <Spinner />
-      </YStack>
-    )
-  }
-
   if (showPasswordForm) {
     return (
       <AddPasswordForm
@@ -76,74 +131,33 @@ export function LinkedProviders() {
 
   return (
     <YStack gap="$3" width="100%">
-      <Text fontSize="$5" fontFamily="$body" fontWeight="600">
+      <Text
+        fontSize="$2"
+        fontFamily="$body"
+        color="$color9"
+        textTransform="uppercase"
+        letterSpacing={2}
+      >
         Linked Accounts
       </Text>
 
-      {/* Email / Password row */}
-      <XStack
-        backgroundColor="$color2"
-        borderRadius="$4"
-        padding="$3"
-        alignItems="center"
-        justifyContent="space-between"
-      >
-        <XStack gap="$3" alignItems="center" flex={1}>
-          <Mail size={20} color="$color11" />
-          <YStack>
-            <Text fontFamily="$body" fontWeight="500">
-              Email / Password
-            </Text>
-            <Text fontSize="$2" fontFamily="$body" color="$color10">
-              {hasPassword ? 'Connected' : 'No password set'}
-            </Text>
-          </YStack>
-        </XStack>
-        <Button size="$3" variant="outlined" onPress={() => setShowPasswordForm(true)}>
-          <Text fontSize="$2" fontFamily="$body">
-            {hasPassword ? 'Change Password' : 'Add Password'}
-          </Text>
-        </Button>
-      </XStack>
+      <ProviderRow
+        icon={<Mail size={16} color={isLoading ? '$color8' : hasPassword ? '$color' : '$color8'} />}
+        label="Email / Password"
+        status={isLoading ? 'Checking…' : hasPassword ? 'Password is set' : 'No password set'}
+        isConnected={!isLoading && hasPassword}
+        actionLabel={isLoading ? undefined : hasPassword ? 'Change Password' : 'Add Password'}
+        onAction={isLoading ? undefined : () => setShowPasswordForm(true)}
+      />
 
-      {/* Google row */}
-      <XStack
-        backgroundColor="$color2"
-        borderRadius="$4"
-        padding="$3"
-        alignItems="center"
-        justifyContent="space-between"
-      >
-        <XStack gap="$3" alignItems="center" flex={1}>
-          <GoogleLogo />
-          <YStack>
-            <Text fontFamily="$body" fontWeight="500">
-              Google
-            </Text>
-            <Text fontSize="$2" fontFamily="$body" color="$color10">
-              {isGoogleLinked ? 'Connected' : 'Not connected'}
-            </Text>
-          </YStack>
-        </XStack>
-        {isGoogleLinked ? (
-          <Check size={20} color="$green10" />
-        ) : (
-          <Button
-            size="$3"
-            variant="outlined"
-            onPress={linkGoogle}
-            disabled={isLinkingGoogle}
-          >
-            {isLinkingGoogle ? (
-              <Spinner size="small" />
-            ) : (
-              <Text fontSize="$2" fontFamily="$body">
-                Connect Google
-              </Text>
-            )}
-          </Button>
-        )}
-      </XStack>
+      <ProviderRow
+        icon={<GoogleLogo />}
+        label="Google"
+        status={isLoading ? 'Checking…' : isGoogleLinked ? 'Account linked' : 'Not connected'}
+        isConnected={!isLoading && isGoogleLinked}
+        actionLabel={isLoading ? undefined : isLinkingGoogle ? 'Connecting…' : isGoogleLinked ? undefined : 'Connect'}
+        onAction={isLoading || isLinkingGoogle ? undefined : isGoogleLinked ? undefined : linkGoogle}
+      />
 
       {error && (
         <Text fontSize="$2" color="$red10" fontFamily="$body">

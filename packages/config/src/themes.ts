@@ -13,34 +13,37 @@ const colorsGreen = desat(Colors.green, 0.2) as typeof Colors.green
 
 // Themes are from tamagui src
 
+// Brand palettes — "Modern Sanctuary" aesthetic
+// Light: warm cream #DCC7BE → dark text #232020
+// Dark: deep warm black #232020 → light text #E0E0E0
 const darkPalette = [
-  '#040404',
-  '#090909',
-  '#111',
-  '#151515',
-  '#222',
-  '#282828',
-  '#343434',
-  '#424242',
-  '#515151',
-  '#626262',
-  '#a5a5a5',
-  '#fff',
+  '#232020', // background
+  '#2C2826',
+  '#363230',
+  '#403C3A',
+  '#4D4845',
+  '#5A5451',
+  '#6E6763',
+  '#837B77',
+  '#9E9590',
+  '#B5ACA7',
+  '#CCC3BE',
+  '#E0E0E0', // foreground text
 ]
 
 const lightPalette = [
-  '#fff',
-  '#f2f2f2',
-  'hsl(0, 0%, 93%)',
-  'hsl(0, 0%, 91%)',
-  'hsl(0, 0%, 88%)',
-  'hsl(0, 0%, 85%)',
-  'hsl(0, 0%, 82%)',
-  'hsl(0, 0%, 76%)',
-  'hsl(0, 0%, 56%)',
-  'hsl(0, 0%, 50%)',
-  'hsl(0, 0%, 42%)',
-  'hsl(0, 0%, 9%)',
+  '#DCC7BE', // background — warm cream
+  '#D4BDB3',
+  '#CBB3A8',
+  '#C2A99E',
+  '#B89E93',
+  '#AD9388',
+  '#9A8278',
+  '#877068',
+  '#6B5850',
+  '#504038',
+  '#382C26',
+  '#232020', // foreground text
 ]
 
 const lightShadows = {
@@ -123,7 +126,7 @@ const generatedThemes = createThemes({
         ...blackColors,
         ...whiteColors,
         shadowColor: lightShadows.shadow1,
-        colorBg: '#fff',
+        colorBg: '#DCC7BE',
       },
       dark: {
         ...Colors.blueDark,
@@ -138,7 +141,7 @@ const generatedThemes = createThemes({
         ...blackColors,
         ...whiteColors,
         shadowColor: darkShadows.shadow1,
-        colorBg: '#000',
+        colorBg: '#232020',
       },
     },
   },

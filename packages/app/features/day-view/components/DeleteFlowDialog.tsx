@@ -23,43 +23,35 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
         <AlertDialog.Overlay
           key="overlay"
           animation="quick"
-          opacity={0.5}
+          opacity={0.4}
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
         />
         <AlertDialog.Content
-          bordered
-          elevate
           key="content"
-          animation={[
-            'quick',
-            {
-              opacity: {
-                overshootClamping: true,
-              },
-            },
-          ]}
-          enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-          exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-          x={0}
-          scale={1}
-          opacity={1}
+          animation={['medium', { opacity: { overshootClamping: true } }]}
+          enterStyle={{ y: -10, opacity: 0 }}
+          exitStyle={{ y: 10, opacity: 0 }}
           y={0}
+          opacity={1}
           backgroundColor="$background"
-          padding="$4"
+          borderRadius="$6"
+          borderWidth={1}
+          borderColor="$color5"
+          padding="$5"
           gap="$4"
           maxWidth={400}
         >
-          <AlertDialog.Title fontFamily="$sourceSans3" fontWeight="700">
+          <AlertDialog.Title fontFamily="$body" fontWeight="700">
             Delete Flow?
           </AlertDialog.Title>
-          <AlertDialog.Description fontFamily="$sourceSans3" color="$gray11">
+          <AlertDialog.Description fontFamily="$body" color="$color10">
             {flow && getFlowPreview(flow.content)}
           </AlertDialog.Description>
           <XStack gap="$3" justifyContent="flex-end">
             <AlertDialog.Cancel asChild>
               <Button chromeless borderWidth={1} borderColor="$borderColor">
-                <Text fontFamily="$sourceSans3">Cancel</Text>
+                <Text fontFamily="$body">Cancel</Text>
               </Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
@@ -70,7 +62,7 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
                 hoverStyle={{ backgroundColor: '$red11' }}
                 pressStyle={{ backgroundColor: '$red11' }}
               >
-                <Text fontFamily="$sourceSans3" fontWeight="600" color="white">
+                <Text fontFamily="$body" fontWeight="600" color="white">
                   Delete
                 </Text>
               </Button>

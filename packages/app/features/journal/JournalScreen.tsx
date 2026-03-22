@@ -1,4 +1,4 @@
-import { YStack, XStack, H1, Button, Dialog, Text, Spinner } from '@my/ui'
+import { YStack, XStack, Button, Dialog, Text, Spinner } from '@my/ui'
 import { ArrowLeft, Save } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { useState } from 'react'
@@ -23,21 +23,11 @@ export function JournalScreen() {
   }
 
   const handleSaveFlow = () => {
-    // Set saving state to show loading on button
     setIsSaving(true)
-
-    // Save first to populate lastSavedFlow for celebration screen
     saveActiveFlowSession()
-
-    // Explicitly close the dialog before navigating to prevent ghosting
-    // The dialog state must be cleared because navigation transitions on mobile
-    // can leave the previous screen visible for a moment / keep portals active
     setIsSaving(false)
     setShowSaveDialog(false)
-
-    // Hide the persistent editor before navigating away
     hidePersistentEditor()
-
     router.replace('/journal/celebration')
   }
 
@@ -50,54 +40,64 @@ export function JournalScreen() {
     }
   }
 
+  const hasContent = !!activeFlow?.content
+
   return (
     <YStack
-      width="75%"
-      maxWidth="75%"
-      backgroundColor="$background"
-      gap="$8"
       flex={1}
-      alignItems="flex-start"
-      justifyContent="flex-start"
-      alignSelf="flex-start"
-      marginLeft="12.5%"
-      paddingTop="$8"
+      backgroundColor="$background"
     >
+      {/* Minimal header — back icon left, save icon right */}
       <XStack
-        gap="$4"
-        alignItems="center"
-        justifyContent="space-between"
         width="100%"
-        flexWrap="wrap"
+        justifyContent="space-between"
+        alignItems="center"
+        paddingHorizontal="$4"
+        paddingTop="$2"
+        paddingBottom="$3"
+        zIndex={200}
+        $sm={{
+          maxWidth: 720,
+          alignSelf: 'center',
+          paddingHorizontal: '$2',
+        }}
       >
-        <XStack gap="$4" alignItems="center" flex={1} minWidth={0}>
-          <Button
-            size="$3"
-            circular
-            onPress={handleBackToHome}
-            icon={ArrowLeft}
-            backgroundColor="$background"
-            borderColor="$borderColor"
-          />
-          <YStack flex={1} minWidth={0}>
-            <H1 size="$11" $xs={{ size: '$9' }} fontFamily="$body" numberOfLines={1}>
-              River Journal
-            </H1>
-          </YStack>
-        </XStack>
         <Button
           size="$3"
-          circular
+          chromeless
+          onPress={handleBackToHome}
+          icon={ArrowLeft}
+          color="$color9"
+          opacity={0.6}
+          hoverStyle={{ opacity: 1 }}
+        />
+        <Button
+          size="$3"
+          chromeless
           onPress={handleExitFlow}
           icon={Save}
-          backgroundColor="$background"
-          borderColor="$borderColor"
-          opacity={activeFlow?.content ? 1 : 0.5}
-          marginLeft="$2"
+          color="$color9"
+          opacity={hasContent ? 0.6 : 0.2}
+          hoverStyle={{ opacity: hasContent ? 1 : 0.2 }}
+          disabled={!hasContent}
         />
       </XStack>
-      <Editor />
 
+      {/* Writing surface — maximized */}
+      <YStack
+        flex={1}
+        width="100%"
+        paddingHorizontal="$4"
+        $sm={{
+          maxWidth: 720,
+          alignSelf: 'center',
+          paddingHorizontal: '$2',
+        }}
+      >
+        <Editor />
+      </YStack>
+
+      {/* Save dialog — warm, calm, centered */}
       <Dialog
         open={showSaveDialog || isSaving}
         onOpenChange={(open) => {
@@ -107,68 +107,66 @@ export function JournalScreen() {
         <Dialog.Portal>
           <Dialog.Overlay
             key="overlay"
-            animation="slow"
-            opacity={0.5}
+            animation="quick"
+            opacity={0.4}
             enterStyle={{ opacity: 0 }}
             exitStyle={{ opacity: 0 }}
           />
           <Dialog.Content
-            bordered
-            elevate
             key="content"
             animateOnly={['transform', 'opacity']}
             animation={[
-              'quick',
+              'medium',
               {
                 opacity: {
                   overshootClamping: true,
                 },
               },
             ]}
-            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-            gap="$4"
+            enterStyle={{ y: -10, opacity: 0 }}
+            exitStyle={{ y: 10, opacity: 0 }}
+            backgroundColor="$background"
+            borderRadius="$6"
             padding="$6"
+            gap="$4"
             maxWidth="90%"
             width="100%"
             $sm={{ maxWidth: 400 }}
+            borderWidth={1}
+            borderColor="$color5"
           >
-            <Dialog.Title fontSize="$7" fontFamily="$body" fontWeight="700">
-              Save Flow Session?
+            <Dialog.Title fontSize="$6" fontFamily="$body" fontWeight="600" color="$color">
+              Save this flow?
             </Dialog.Title>
-            <Dialog.Description fontSize="$5" fontFamily="$body">
-              Are you sure you want to save this flow and return to home?
+            <Dialog.Description fontSize="$4" fontFamily="$body" color="$color10">
+              Your words will be saved and you can revisit them anytime.
             </Dialog.Description>
 
-            <XStack gap="$3" justifyContent="flex-end" marginTop="$4">
+            <XStack gap="$3" justifyContent="flex-end" marginTop="$2">
               <Dialog.Close displayWhenAdapted asChild>
                 <Button
                   variant="outlined"
                   onPress={() => setShowSaveDialog(false)}
-                  flexGrow={1}
-                  $sm={{ flexGrow: 0 }}
                   disabled={isSaving}
-                  opacity={isSaving ? 0.5 : 1}
+                  borderColor="$color6"
+                  borderRadius="$4"
                 >
-                  <Text fontSize="$4" fontFamily="$body" fontWeight="600">
+                  <Text fontSize="$4" fontFamily="$body" color="$color10">
                     Cancel
                   </Text>
                 </Button>
               </Dialog.Close>
               <Button
                 onPress={handleSaveFlow}
-                backgroundColor="$color9"
-                color="$color1"
-                flexGrow={1}
-                $sm={{ flexGrow: 0 }}
+                themeInverse
                 disabled={isSaving}
-                opacity={isSaving ? 0.7 : 1}
+                borderRadius="$4"
               >
                 {isSaving ? (
                   <XStack gap="$2" alignItems="center">
-                    <Spinner size="small" color="$color1" />
+                    <Spinner size="small" />
                     <Text fontSize="$4" fontFamily="$body" fontWeight="600">
-                      Saving...
+                      Saving…
                     </Text>
                   </XStack>
                 ) : (

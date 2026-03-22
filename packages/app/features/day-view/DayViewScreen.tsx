@@ -1,5 +1,5 @@
-import { YStack, XStack, H1, H2, Button, Text, Card, ScrollView, Separator } from '@my/ui'
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, Trash2 } from '@tamagui/lucide-icons'
+import { YStack, XStack, Button, Text, Separator, ScrollView } from '@my/ui'
+import { ChevronLeft, ChevronRight, Calendar, Trash2 } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { useState } from 'react'
 import { use$ } from '@legendapp/state/react'
@@ -12,16 +12,10 @@ export function DayViewScreen() {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState<string>(getTodayJournalDayString())
 
-  // Get the daily entry data for the selected date
   const dailyEntry = use$(store$.views.entryByDate(selectedDate))
   const dailyStats = use$(store$.views.statsByDate(selectedDate))
 
-  // State for delete confirmation dialog (Story 1.2)
   const [deleteTarget, setDeleteTarget] = useState<Flow | null>(null)
-
-  const handleBackToHome = () => {
-    router.push('/')
-  }
 
   const handlePreviousDay = () => {
     const date = new Date(selectedDate)
@@ -58,9 +52,6 @@ export function DayViewScreen() {
     })
   }
 
-  /**
-   * Handles confirmed deletion of a flow
-   */
   const handleConfirmDelete = () => {
     if (deleteTarget) {
       deleteFlow(deleteTarget.id)
@@ -68,338 +59,204 @@ export function DayViewScreen() {
     }
   }
 
-  /**
-   * Navigates to journal for writing
-   */
   const handleBeginFlow = () => {
     router.push('/journal')
   }
+
+  const totalWords = dailyStats?.totalWords || 0
+  const flowCount = dailyStats?.flows?.length || 0
+  const progress = dailyStats?.progress || 0
+
+  const today = getTodayJournalDayString()
+  const isToday = selectedDate === today
+  const isFuture = selectedDate > today
 
   return (
     <ScrollView
       flex={1}
       backgroundColor="$background"
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{
-        flexGrow: 1,
-      }}
+      contentContainerStyle={{ flexGrow: 1 }}
     >
       <YStack
         width="100%"
-        maxWidth="100%"
-        marginLeft={0}
-        backgroundColor="$background"
-        gap="$4"
         paddingHorizontal="$4"
         paddingTop="$4"
-        paddingBottom="$8"
+        paddingBottom="$10"
         $sm={{
-          width: '75%',
-          maxWidth: '75%',
-          marginLeft: '12.5%',
-          gap: '$8',
+          maxWidth: 640,
+          alignSelf: 'center',
           paddingHorizontal: 0,
-          paddingTop: '$8',
+          paddingTop: '$6',
         }}
       >
-        {/* Header with back button - Hidden on mobile */}
+        {/* Date navigation — the date IS the header */}
         <XStack
-          gap="$4"
           alignItems="center"
-          justifyContent="space-between"
-          width="100%"
-          display="none"
-          $sm={{ display: 'flex' }}
+          justifyContent="center"
+          gap="$3"
+          paddingBottom="$6"
         >
-          <XStack gap="$4" alignItems="center" flex={1} minWidth={0}>
-            <Button
-              size="$3"
-              circular
-              onPress={handleBackToHome}
-              icon={ArrowLeft}
-              backgroundColor="$background"
-              borderColor="$borderColor"
-            />
-            <YStack flex={1} minWidth={0}>
-              <H1 size="$11" fontFamily="$body" numberOfLines={1}>
-                Day View
-              </H1>
-            </YStack>
-          </XStack>
-        </XStack>
-
-        {/* Date Navigation */}
-        <XStack
-          gap="$4"
-          alignItems="center"
-          justifyContent="space-between"
-          width="100%"
-          flexWrap="wrap"
-        >
-          <XStack
-            gap="$2"
-            alignItems="center"
-            flex={1}
-            justifyContent="center"
-            $sm={{
-              flex: 1,
-              justifyContent: 'center',
-            }}
-          >
-            {/* Back button on mobile only - placed before date navigation */}
-            <Button
-              size="$3"
-              circular
-              onPress={handleBackToHome}
-              icon={ArrowLeft}
-              backgroundColor="$background"
-              borderColor="$borderColor"
-              display="flex"
-              $sm={{ display: 'none' }}
-            />
-            <Button
-              size="$3"
-              circular
-              onPress={handlePreviousDay}
-              icon={ChevronLeft}
-              backgroundColor="$background"
-              borderColor="$borderColor"
-            />
-            <Text
-              fontSize="$5"
-              fontFamily="$sourceSans3"
-              fontWeight="600"
-              textAlign="center"
-              paddingHorizontal="$3"
-              numberOfLines={1}
-              minWidth={200}
-              $sm={{
-                fontSize: '$6',
-                minWidth: 280,
-              }}
-            >
-              {formatDate(selectedDate)}
-            </Text>
-            <Button
-              size="$3"
-              circular
-              onPress={handleNextDay}
-              icon={ChevronRight}
-              backgroundColor="$background"
-              borderColor="$borderColor"
-            />
-          </XStack>
           <Button
             size="$3"
+            chromeless
+            onPress={handlePreviousDay}
+            icon={ChevronLeft}
+            color="$color9"
+          />
+          <Text
+            fontSize="$6"
+            fontFamily="$body"
+            fontWeight="600"
+            color="$color"
+            textAlign="center"
+            minWidth={220}
+            $sm={{ fontSize: '$7', minWidth: 280 }}
+          >
+            {formatDate(selectedDate)}
+          </Text>
+          <Button
+            size="$3"
+            chromeless
+            onPress={handleNextDay}
+            icon={ChevronRight}
+            color="$color9"
+          />
+          <Button
+            size="$2"
+            chromeless
             onPress={handleToday}
             icon={Calendar}
-            backgroundColor="$background"
-            borderColor="$borderColor"
-          >
-            <Text fontSize="$4" fontFamily="$sourceSans3" fontWeight="600">
-              Today
-            </Text>
-          </Button>
+            color="$color9"
+            opacity={0.6}
+            hoverStyle={{ opacity: 1 }}
+          />
         </XStack>
 
-        {/* Daily Stats Card */}
-        <Card
-          bordered
-          elevate
-          width="100%"
-          padding="$3"
-          $sm={{ padding: '$4' }}
-          backgroundColor="$background"
-          borderColor="$borderColor"
+        {/* Daily stats — words as hero metric */}
+        <XStack
+          justifyContent="center"
+          alignItems="baseline"
+          gap="$3"
+          paddingBottom="$2"
         >
-          <YStack gap="$2">
+          <Text
+            fontSize="$9"
+            fontFamily="$body"
+            fontWeight="700"
+            color="$color"
+            $sm={{ fontSize: '$10' }}
+          >
+            {totalWords.toLocaleString()}
+          </Text>
+          <Text fontSize="$4" fontFamily="$body" color="$color10">
+            {totalWords === 1 ? 'word' : 'words'}
+          </Text>
+        </XStack>
+
+        <XStack justifyContent="center" gap="$6" paddingBottom="$6">
+          <Text fontSize="$3" fontFamily="$body" color="$color10">
+            {flowCount} {flowCount === 1 ? 'flow' : 'flows'}
+          </Text>
+          {progress > 0 && (
+            <Text fontSize="$3" fontFamily="$body" color="$color10">
+              {Math.round(progress * 100)}% of goal
+            </Text>
+          )}
+        </XStack>
+
+        <Separator borderColor="$color5" marginBottom="$6" />
+
+        {/* Flow list */}
+        {!dailyEntry || dailyEntry.flows.length === 0 ? (
+          /* Empty state — varies by day */
+          <YStack alignItems="center" gap="$4" paddingTop="$8" paddingBottom="$8">
+            <Text
+              fontSize="$5"
+              fontFamily="$body"
+              fontWeight="400"
+              color="$color"
+              textAlign="center"
+            >
+              {isFuture
+                ? 'Nothing here yet'
+                : isToday
+                  ? 'Ready to write?'
+                  : 'No flows on this day'}
+            </Text>
             <Text
               fontSize="$3"
-              $sm={{ fontSize: '$4' }}
-              fontFamily="$sourceSans3"
-              fontWeight="700"
-              color="$color"
+              fontFamily="$body"
+              color="$color10"
+              textAlign="center"
             >
-              Daily Summary
+              {isFuture
+                ? 'This day hasn\u2019t arrived yet.'
+                : isToday
+                  ? 'Start a flow and let your thoughts take shape.'
+                  : 'You didn\u2019t write anything on this day.'}
             </Text>
-            <XStack gap="$4" $sm={{ gap: '$6' }} flexWrap="wrap">
-              <YStack>
-                <Text
-                  fontSize="$2"
-                  $sm={{ fontSize: '$3' }}
-                  fontFamily="$sourceSans3"
-                  color="$gray11"
-                >
-                  Total Words
+            {isToday && (
+              <Button
+                size="$5"
+                themeInverse
+                onPress={handleBeginFlow}
+                marginTop="$2"
+                paddingHorizontal="$8"
+                borderRadius="$6"
+              >
+                <Text fontSize="$5" fontFamily="$body" fontWeight="600">
+                  Begin Flow
                 </Text>
-                <Text
-                  fontSize="$6"
-                  $sm={{ fontSize: '$7' }}
-                  fontFamily="$sourceSans3"
-                  fontWeight="700"
-                  color="$color"
-                >
-                  {dailyStats?.totalWords || 0}
-                </Text>
-              </YStack>
-              <YStack>
-                <Text
-                  fontSize="$2"
-                  $sm={{ fontSize: '$3' }}
-                  fontFamily="$sourceSans3"
-                  color="$gray11"
-                >
-                  Goal
-                </Text>
-                <Text
-                  fontSize="$6"
-                  $sm={{ fontSize: '$7' }}
-                  fontFamily="$sourceSans3"
-                  fontWeight="700"
-                  color="$color"
-                >
-                  {store$.profile.word_goal.get() || 750}
-                </Text>
-              </YStack>
-              <YStack>
-                <Text
-                  fontSize="$2"
-                  $sm={{ fontSize: '$3' }}
-                  fontFamily="$sourceSans3"
-                  color="$gray11"
-                >
-                  Flow Sessions
-                </Text>
-                <Text
-                  fontSize="$6"
-                  $sm={{ fontSize: '$7' }}
-                  fontFamily="$sourceSans3"
-                  fontWeight="700"
-                  color="$color"
-                >
-                  {dailyStats?.flows?.length || 0}
-                </Text>
-              </YStack>
-              <YStack>
-                <Text
-                  fontSize="$2"
-                  $sm={{ fontSize: '$3' }}
-                  fontFamily="$sourceSans3"
-                  color="$gray11"
-                >
-                  Progress
-                </Text>
-                <Text
-                  fontSize="$6"
-                  $sm={{ fontSize: '$7' }}
-                  fontFamily="$sourceSans3"
-                  fontWeight="700"
-                  color="$color"
-                >
-                  {Math.round((dailyStats?.progress || 0) * 100)}%
-                </Text>
-              </YStack>
-            </XStack>
+              </Button>
+            )}
           </YStack>
-        </Card>
-
-        {/* Flows List */}
-        <YStack gap="$3" $sm={{ gap: '$4' }} width="100%">
-          <H2 size="$7" $sm={{ size: '$8' }} fontFamily="$sourceSans3" fontWeight="700">
-            Flow Sessions
-          </H2>
-
-          {!dailyEntry || dailyEntry.flows.length === 0 ? (
-            <Card
-              bordered
-              padding="$4"
-              $sm={{ padding: '$6' }}
-              backgroundColor="$background"
-              borderColor="$borderColor"
-              width="100%"
-            >
-              <YStack gap="$4" alignItems="center">
-                <Text
-                  fontSize="$5"
-                  $sm={{ fontSize: '$6' }}
-                  fontFamily="$sourceSans3"
-                  fontWeight="600"
-                  color="$color"
-                  textAlign="center"
-                >
-                  Ready to write?
-                </Text>
-                <Text
-                  fontSize="$3"
-                  $sm={{ fontSize: '$4' }}
-                  fontFamily="$sourceSans3"
-                  color="$gray11"
-                  textAlign="center"
-                >
-                  Start a flow session and let your thoughts take shape.
-                </Text>
-                <Button size="$4" themeInverse onPress={handleBeginFlow} marginTop="$2">
-                  <Text fontFamily="$sourceSans3" fontWeight="600">
-                    Begin Flow
-                  </Text>
-                </Button>
-              </YStack>
-            </Card>
-          ) : (
-            <YStack gap="$3" $sm={{ gap: '$4' }}>
-              {dailyEntry.flows
-                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                .map((flow: Flow, index: number) => (
-                  <Card
-                    key={flow.id}
-                    bordered
-                    elevate
-                    padding="$3"
-                    $sm={{ padding: '$4' }}
-                    backgroundColor="$background"
-                    borderColor="$borderColor"
-                    width="100%"
-                  >
-                    <YStack gap="$3">
-                      <XStack justifyContent="space-between" alignItems="center">
-                        <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
-                          Flow #{index + 1}
-                        </Text>
-                        <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
-                          {formatTime(flow.timestamp)}
-                        </Text>
-                      </XStack>
-
-                      <Separator borderColor="$borderColor" />
-
-                      <Text fontSize="$4" fontFamily="$sourceSans3" color="$color">
-                        {flow.content}
-                      </Text>
-
-                      <XStack justifyContent="space-between" alignItems="center" marginTop="$2">
-                        <Text fontSize="$3" fontFamily="$sourceSans3" color="$gray11">
-                          {flow.wordCount} {flow.wordCount === 1 ? 'word' : 'words'}
-                        </Text>
-                        <Button
-                          size="$2"
-                          circular
-                          chromeless
-                          icon={Trash2}
-                          onPress={() => setDeleteTarget(flow)}
-                          opacity={0.6}
-                          hoverStyle={{ opacity: 1 }}
-                          pressStyle={{ opacity: 1 }}
-                        />
-                      </XStack>
+        ) : (
+          <YStack>
+            {dailyEntry.flows
+              .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+              .map((flow: Flow, index: number) => (
+                <YStack key={flow.id} group onLongPress={() => setDeleteTarget(flow)}>
+                  {/* Subtle divider between flows */}
+                  {index > 0 && (
+                    <YStack paddingVertical="$5">
+                      <YStack width={40} height={1} backgroundColor="$color7" />
                     </YStack>
-                  </Card>
-                ))}
-            </YStack>
-          )}
-        </YStack>
+                  )}
+
+                  {/* Flow metadata — minimal, faded, left-aligned */}
+                  <XStack alignItems="center" gap="$2" paddingBottom="$2">
+                    <Text fontSize="$1" fontFamily="$body" color="$color8" opacity={0.6}>
+                      {formatTime(flow.timestamp)} · {flow.wordCount} {flow.wordCount === 1 ? 'word' : 'words'}
+                    </Text>
+                    <Button
+                      size="$2"
+                      chromeless
+                      icon={Trash2}
+                      onPress={() => setDeleteTarget(flow)}
+                      color="$color8"
+                      opacity={0}
+                      $group-hover={{ opacity: 0.5 }}
+                      hoverStyle={{ opacity: 0.7 }}
+                      pressStyle={{ opacity: 1 }}
+                    />
+                  </XStack>
+
+                  {/* Content — Lora serif, the focus */}
+                  <Text
+                    fontSize="$4"
+                    fontFamily="$lora"
+                    color="$color"
+                    lineHeight={28}
+                  >
+                    {flow.content}
+                  </Text>
+                </YStack>
+              ))}
+          </YStack>
+        )}
       </YStack>
 
-      {/* Delete Confirmation Dialog */}
       <DeleteFlowDialog
         flow={deleteTarget}
         onConfirm={handleConfirmDelete}
