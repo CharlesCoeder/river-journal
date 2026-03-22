@@ -28,7 +28,7 @@ import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getMan
 import { flows$ } from './flows'
 import { base64ToBytes } from '../utils/encryption'
 
-export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'legacy-e2e-password' | 'saving'
+export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'legacy-e2e-password' | 'saving' | 'trust-browser'
 
 export interface EncryptionSetupError {
   message: string
@@ -688,25 +688,45 @@ export const submitE2EPassword = async (
     return false
   }
 
-  batch(() => {
-    resetDialogState()
-    encryptionSetup$.error.set(null)
-    store$.session.syncEnabled.set(true)
-    isEncryptionReadyForSync$.set(true)
-  })
-
-  // Phase 2: offer keyring persistence on platforms that support it
+  // Phase 2: offer keyring/browser trust persistence
   if (bootstrapResult.masterKey) {
     const hasKeyring = await hasPlatformKeyring()
     if (hasKeyring) {
+      // Native: close dialog, show inline keyring prompt
+      batch(() => {
+        resetDialogState()
+        encryptionSetup$.error.set(null)
+        store$.session.syncEnabled.set(true)
+        isEncryptionReadyForSync$.set(true)
+      })
       pendingKeyringMasterKey = bootstrapResult.masterKey
       pendingKeyringUserId = userId
       keyringPrompt$.isVisible.set(true)
     } else if (hasWebTrustCapability()) {
+      // Web: keep dialog open, transition to trust-browser step
       pendingTrustMasterKey = bootstrapResult.masterKey
       pendingTrustUserId = userId
-      trustBrowserPrompt$.isVisible.set(true)
+      batch(() => {
+        encryptionSetup$.step.set('trust-browser')
+        encryptionSetup$.error.set(null)
+        store$.session.syncEnabled.set(true)
+        isEncryptionReadyForSync$.set(true)
+      })
+    } else {
+      batch(() => {
+        resetDialogState()
+        encryptionSetup$.error.set(null)
+        store$.session.syncEnabled.set(true)
+        isEncryptionReadyForSync$.set(true)
+      })
     }
+  } else {
+    batch(() => {
+      resetDialogState()
+      encryptionSetup$.error.set(null)
+      store$.session.syncEnabled.set(true)
+      isEncryptionReadyForSync$.set(true)
+    })
   }
 
   return true
@@ -801,8 +821,11 @@ export const dismissKeyringPrompt = (): void => {
  * 1. IndexedDB first, then server registration, with rollback on failure.
  */
 export const acceptBrowserTrust = async (): Promise<void> => {
+  const wasInDialog = encryptionSetup$.step.get() === 'trust-browser'
+
   if (!pendingTrustMasterKey || !pendingTrustUserId) {
     trustBrowserPrompt$.isVisible.set(false)
+    if (wasInDialog) resetDialogState()
     return
   }
 
@@ -844,6 +867,7 @@ export const acceptBrowserTrust = async (): Promise<void> => {
             trustBrowserPrompt$.trustError.set(null)
             trustBrowserResult$.success.set(true)
             trustBrowserResult$.persistGranted.set(persistGranted)
+            if (wasInDialog) resetDialogState()
           })
           return
         }
@@ -878,6 +902,7 @@ export const acceptBrowserTrust = async (): Promise<void> => {
       trustBrowserPrompt$.trustError.set(null)
       trustBrowserResult$.success.set(true)
       trustBrowserResult$.persistGranted.set(persistGranted)
+      if (wasInDialog) resetDialogState()
     })
   } catch (error) {
     const setupError = toEncryptionSetupError(
@@ -896,23 +921,27 @@ export const acceptBrowserTrust = async (): Promise<void> => {
 
 /** User declined browser trust — key remains in memory only. */
 export const declineBrowserTrust = (): void => {
+  const wasInDialog = encryptionSetup$.step.get() === 'trust-browser'
   pendingTrustMasterKey = null
   pendingTrustUserId = null
   batch(() => {
     trustBrowserPrompt$.isVisible.set(false)
     trustBrowserPrompt$.isTrusting.set(false)
     trustBrowserPrompt$.trustError.set(null)
+    if (wasInDialog) resetDialogState()
   })
 }
 
 /** Dismiss a trust browser error — hides the prompt. */
 export const dismissTrustBrowserPrompt = (): void => {
+  const wasInDialog = encryptionSetup$.step.get() === 'trust-browser'
   pendingTrustMasterKey = null
   pendingTrustUserId = null
   batch(() => {
     trustBrowserPrompt$.isVisible.set(false)
     trustBrowserPrompt$.isTrusting.set(false)
     trustBrowserPrompt$.trustError.set(null)
+    if (wasInDialog) resetDialogState()
   })
 }
 

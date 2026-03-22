@@ -9,6 +9,7 @@ export default function CelebrationScreenPage() {
         options={{
           title: 'Flow Complete',
           headerShown: false,
+          animation: 'none',
         }}
       />
       <YStack flex={1}>

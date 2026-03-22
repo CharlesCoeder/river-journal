@@ -2,9 +2,16 @@
  * useIdentityLinking — Mobile (native) implementation
  * Uses expo-web-browser for Google identity linking (same PKCE pattern as useGoogleAuth).
  * After the browser session, exchanges code and refreshes identity data.
+ *
+ * NOTE: This hook intentionally avoids the `isMounted` ref pattern.
+ * React 18 Strict Mode double-mounts components in dev: the first unmount
+ * sets isMounted=false, but the second mount never resets it to true.
+ * This causes every setState after an await to be silently skipped,
+ * leaving the component permanently stuck in its loading state.
+ * React 18 no longer warns on setState after unmount, so the guard is unnecessary.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import * as WebBrowser from 'expo-web-browser'
 import * as Linking from 'expo-linking'
 import { supabase } from 'app/utils/supabase'
@@ -31,25 +38,24 @@ export function useIdentityLinking(): IdentityLinkingState {
   const [isLoading, setIsLoading] = useState(true)
   const [isLinkingGoogle, setIsLinkingGoogle] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // eslint-disable-next-line react-compiler/react-compiler
-  const isMounted = useRef(true)
-
-  useEffect(() => {
-    return () => {
-      isMounted.current = false
-    }
-  }, [])
 
   const fetchProviderData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
+      // The Legend-State store may report isAuthenticated from persisted state
+      // before the Supabase client has restored its session. Bail early if
+      // there's no live session to avoid hanging API calls.
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        setIsLoading(false)
+        return
+      }
+
       const [identitiesResult, passwordResult] = await Promise.allSettled([
         supabase.auth.getUserIdentities(),
         supabase.rpc('user_has_password'),
       ])
-
-      if (!isMounted.current) return
 
       const identitiesOk =
         identitiesResult.status === 'fulfilled' && !identitiesResult.value.error
@@ -67,18 +73,24 @@ export function useIdentityLinking(): IdentityLinkingState {
       setIdentities(identitiesResult.value.data?.identities ?? [])
       setHasPassword(passwordOk ? passwordResult.value.data === true : false)
     } catch (err: any) {
-      if (isMounted.current) {
-        setError(err.message || 'Failed to load account information.')
-      }
+      setError(err.message || 'Failed to load account information.')
     } finally {
-      if (isMounted.current) {
-        setIsLoading(false)
-      }
+      setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
     fetchProviderData()
+
+    // Re-fetch when a real session arrives. Only listen for SIGNED_IN and
+    // INITIAL_SESSION — TOKEN_REFRESHED is excluded because getSession()
+    // above can itself trigger a token refresh, which would create a loop.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        fetchProviderData()
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [fetchProviderData])
 
   const isGoogleLinked = identities.some((i) => i.provider === 'google')
@@ -95,8 +107,6 @@ export function useIdentityLinking(): IdentityLinkingState {
         },
       })
 
-      if (!isMounted.current) return
-
       if (linkError) {
         setError(linkError.message || 'Failed to start Google linking.')
         setIsLinkingGoogle(false)
@@ -111,16 +121,12 @@ export function useIdentityLinking(): IdentityLinkingState {
 
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri)
 
-      if (!isMounted.current) return
-
       if (result.type === 'success' && result.url) {
         const url = new URL(result.url)
         const code = url.searchParams.get('code')
 
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-
-          if (!isMounted.current) return
 
           if (exchangeError) {
             setError(exchangeError.message || 'Failed to link Google account.')
@@ -135,13 +141,9 @@ export function useIdentityLinking(): IdentityLinkingState {
       }
       // Android: deep link may fall through to google-auth.tsx callback route
     } catch {
-      if (isMounted.current) {
-        setError('Could not complete Google linking. Please try again.')
-      }
+      setError('Could not complete Google linking. Please try again.')
     } finally {
-      if (isMounted.current) {
-        setIsLinkingGoogle(false)
-      }
+      setIsLinkingGoogle(false)
     }
   }, [fetchProviderData])
 

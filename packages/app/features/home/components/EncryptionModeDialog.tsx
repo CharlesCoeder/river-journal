@@ -1,14 +1,19 @@
-import { AlertDialog, Button, ScrollView, Text, XStack, YStack } from '@my/ui'
+import { useCallback } from 'react'
+import { AlertDialog, Button, ScrollView, Separator, Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { useRouter } from 'solito/navigation'
 import {
+  acceptBrowserTrust,
   cancelEncryptionSetup,
   confirmEncryptionModeSelection,
+  declineBrowserTrust,
+  dismissTrustBrowserPrompt,
   encryptionSetup$,
   retryWithE2EPassword,
   returnToEncryptionChoice,
   setSelectedEncryptionMode,
   submitE2EPassword,
+  trustBrowserPrompt$,
 } from 'app/state/encryptionSetup'
 import { E2EPasswordForm } from './E2EPasswordForm'
 import { PrivacyTierExplainer } from './PrivacyTierExplainer'
@@ -22,11 +27,40 @@ export function EncryptionModeDialog() {
   const currentModeSalt = use$(encryptionSetup$.currentModeSalt)
   const isModeLocked = use$(encryptionSetup$.isModeLocked)
 
+  const isTrusting = use$(trustBrowserPrompt$.isTrusting)
+  const trustError = use$(trustBrowserPrompt$.trustError)
+
+  const handleAcceptTrust = useCallback(() => {
+    void acceptBrowserTrust()
+  }, [])
+
   if (!isOpen) return null
 
   const isLegacyE2EUnlock = step === 'legacy-e2e-password'
   const isUnlockingExistingE2E = isModeLocked && !!currentModeSalt
   const isSinglePasswordUnlock = isLegacyE2EUnlock || isUnlockingExistingE2E
+  const isTrustBrowserStep = step === 'trust-browser'
+
+  const getTitle = () => {
+    if (isTrustBrowserStep) return 'Trust this browser?'
+    if (isLegacyE2EUnlock) return 'Unlock legacy E2E flows'
+    if (step === 'e2e-password' || step === 'saving') {
+      if (isSinglePasswordUnlock) return 'Unlock encryption'
+      if (selectedMode === 'e2e') return 'Set up end-to-end encryption'
+      return 'Setting up managed encryption'
+    }
+    return 'Choose your encryption mode'
+  }
+
+  const getDescription = () => {
+    if (isTrustBrowserStep) return 'Save your encryption key in this browser so you won\'t need to enter your password next time.'
+    if (isLegacyE2EUnlock) return 'Enter your old E2E password so this device can read historical encrypted flows.'
+    if (step === 'e2e-password' || step === 'saving') {
+      if (isSinglePasswordUnlock) return 'Enter the encryption password you chose for this account to unlock Cloud Sync on this device.'
+      return 'This password is separate from your account password and cannot be recovered for you.'
+    }
+    return 'Choose how Cloud Sync protects your journal before anything is uploaded.'
+  }
 
   return (
     <AlertDialog open={isOpen} onOpenChange={() => {}}>
@@ -34,49 +68,101 @@ export function EncryptionModeDialog() {
         <AlertDialog.Overlay
           key="overlay"
           animation="quick"
-          opacity={0.5}
+          opacity={0.4}
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
         />
         <AlertDialog.Content
           key="content"
-          bordered
-          elevate
-          animation={['quick', { opacity: { overshootClamping: true } }]}
-          enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.96 }}
-          exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.96 }}
-          x={0}
-          scale={1}
-          opacity={1}
+          animation={['medium', { opacity: { overshootClamping: true } }]}
+          enterStyle={{ y: -10, opacity: 0 }}
+          exitStyle={{ y: 10, opacity: 0 }}
           y={0}
+          opacity={1}
           backgroundColor="$background"
+          borderRadius="$6"
+          borderWidth={1}
+          borderColor="$color5"
+          padding="$5"
           maxWidth={520}
           width="92%"
         >
           <YStack gap="$4">
             <YStack gap="$1.5">
               <AlertDialog.Title fontFamily="$body" fontSize="$6" fontWeight="700">
-                {isLegacyE2EUnlock
-                  ? 'Unlock legacy E2E flows'
-                  : step === 'e2e-password'
-                    ? 'Finish end-to-end setup'
-                    : step === 'saving'
-                      ? selectedMode === 'e2e'
-                        ? 'Finish end-to-end setup'
-                        : 'Setting up managed encryption'
-                      : 'Choose your encryption mode'}
+                {getTitle()}
               </AlertDialog.Title>
 
               <AlertDialog.Description fontFamily="$body" fontSize="$4" color="$color">
-                {isLegacyE2EUnlock
-                  ? 'Enter your old E2E password so this device can read historical encrypted flows.'
-                  : step === 'e2e-password'
-                    ? 'This password is separate from your account password and cannot be recovered for you.'
-                    : 'Choose how Cloud Sync protects your journal before anything is uploaded.'}
+                {getDescription()}
               </AlertDialog.Description>
             </YStack>
 
-            {step === 'choice' ? (
+            {isTrustBrowserStep ? (
+              <YStack gap="$3">
+                <Text fontSize="$3" fontFamily="$body" color="$color11">
+                  Your encryption key will be stored securely in this browser.
+                  You can revoke trust at any time from your settings.
+                </Text>
+                <Text fontSize="$2" fontFamily="$body" color="$color10">
+                  If your browser data is cleared — either by you or by the browser
+                  itself under storage pressure — you'll need to re-enter your password.
+                </Text>
+
+                <Separator />
+
+                {isTrusting && (
+                  <Text fontSize="$3" fontFamily="$body" color="$color11">
+                    Securing your key…
+                  </Text>
+                )}
+
+                {trustError && (
+                  <YStack gap="$2">
+                    <Text fontSize="$3" fontFamily="$body" color="$red10">
+                      {trustError.message}
+                    </Text>
+                    <XStack gap="$3" justifyContent="flex-end">
+                      <Button
+                        testID="trust-browser-dismiss"
+                        variant="outlined"
+                        onPress={dismissTrustBrowserPrompt}
+                        fontFamily="$body"
+                      >
+                        Dismiss
+                      </Button>
+                      <Button
+                        testID="trust-browser-retry"
+                        onPress={handleAcceptTrust}
+                        fontFamily="$body"
+                      >
+                        Retry
+                      </Button>
+                    </XStack>
+                  </YStack>
+                )}
+
+                {!isTrusting && !trustError && (
+                  <XStack gap="$3" justifyContent="flex-end">
+                    <Button
+                      testID="trust-browser-decline"
+                      variant="outlined"
+                      onPress={declineBrowserTrust}
+                      fontFamily="$body"
+                    >
+                      Not now
+                    </Button>
+                    <Button
+                      testID="trust-browser-accept"
+                      onPress={handleAcceptTrust}
+                      fontFamily="$body"
+                    >
+                      Trust this browser
+                    </Button>
+                  </XStack>
+                )}
+              </YStack>
+            ) : step === 'choice' ? (
               <>
                 <ScrollView maxHeight="$20" bounces={false}>
                   <YStack gap="$4" paddingRight="$1">

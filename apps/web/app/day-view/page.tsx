@@ -1,12 +1,12 @@
 'use client'
 
 import { DayViewScreen } from 'app/features/day-view'
-import { YStack } from 'tamagui'
+import { NavigationShell } from 'app/features/navigation/NavigationShell'
 
 export default function DayViewPage() {
   return (
-    <YStack flex={1} width="100%" minHeight="100vh">
+    <NavigationShell currentRoute="read">
       <DayViewScreen />
-    </YStack>
+    </NavigationShell>
   )
 }

@@ -189,15 +189,14 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
       <Button
         onPress={handleSubmit}
         disabled={isLoading}
-        backgroundColor="$color10"
-        hoverStyle={{ backgroundColor: '$color9' }}
-        pressStyle={{ backgroundColor: '$color8' }}
+        themeInverse
+        borderRadius="$4"
         marginTop="$2"
       >
         {isLoading ? (
-          <Spinner color="$color1" />
+          <Spinner />
         ) : (
-          <Text fontFamily="$body" fontWeight="600" color="$color1">
+          <Text fontFamily="$body" fontWeight="600">
             Log In
           </Text>
         )}

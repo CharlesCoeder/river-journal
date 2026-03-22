@@ -68,10 +68,11 @@ function TierCard({
   return (
     <Card
       testID={`privacy-tier-${mode}`}
-      bordered
-      padding="$3"
-      backgroundColor={selected ? '$color2' : '$background'}
-      borderColor={selected ? '$accentColor' : '$borderColor'}
+      padding="$4"
+      backgroundColor={selected ? '$color3' : '$color2'}
+      borderWidth={1}
+      borderColor={selected ? '$color8' : '$color4'}
+      borderRadius="$4"
       pressTheme={interactive}
       animation={interactive ? 'quick' : undefined}
       onPress={interactive ? () => onSelect?.(mode) : undefined}
@@ -141,10 +142,11 @@ export function PrivacyTierExplainer({
           <Button
             testID="learn-more-toggle"
             size="$3"
-            variant="outlined"
+            chromeless
             onPress={() => setLearnMoreOpen((prev) => !prev)}
             fontFamily="$body"
             alignSelf="flex-start"
+            color="$color10"
           >
             {learnMoreOpen ? 'Show less' : 'Learn more'}
           </Button>

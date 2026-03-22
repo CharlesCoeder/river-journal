@@ -117,7 +117,7 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
           const isRevoking = revokingId === browser.id
 
           return (
-            <Card key={browser.id} bordered padding="$3" backgroundColor="$background">
+            <Card key={browser.id} padding="$3" backgroundColor="$color2" borderRadius="$4" borderWidth={1} borderColor="$color4">
               <XStack justifyContent="space-between" alignItems="center">
                 <YStack flex={1} gap="$1">
                   <XStack gap="$2" alignItems="center">
@@ -151,30 +151,22 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
           <AlertDialog.Overlay
             key="overlay"
             animation="quick"
-            opacity={0.5}
+            opacity={0.4}
             enterStyle={{ opacity: 0 }}
             exitStyle={{ opacity: 0 }}
           />
           <AlertDialog.Content
-            bordered
-            elevate
             key="content"
-            animation={[
-              'quick',
-              {
-                opacity: {
-                  overshootClamping: true,
-                },
-              },
-            ]}
-            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-            x={0}
-            scale={1}
-            opacity={1}
+            animation={['medium', { opacity: { overshootClamping: true } }]}
+            enterStyle={{ y: -10, opacity: 0 }}
+            exitStyle={{ y: 10, opacity: 0 }}
             y={0}
+            opacity={1}
             backgroundColor="$background"
-            padding="$4"
+            borderRadius="$6"
+            borderWidth={1}
+            borderColor="$color5"
+            padding="$5"
             gap="$4"
             maxWidth={400}
           >

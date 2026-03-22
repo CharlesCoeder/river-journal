@@ -9,6 +9,7 @@ export default function JournalScreenPage() {
         options={{
           title: 'Journal',
           headerShown: false,
+          animation: 'none',
         }}
       />
       <YStack flex={1}>

@@ -59,7 +59,7 @@ export function KeyringPrompt() {
   if (!isVisible) return null
 
   return (
-    <Card bordered padding="$4" backgroundColor="$background" width="100%">
+    <Card padding="$4" backgroundColor="$color2" borderRadius="$4" borderWidth={1} borderColor="$color4" width="100%">
       <YStack gap="$3">
         <YStack gap="$1.5">
           <Text fontSize="$4" fontFamily="$body" fontWeight="700">
