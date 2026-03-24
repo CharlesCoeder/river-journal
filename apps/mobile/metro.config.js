@@ -22,6 +22,10 @@ config.resolver.nodeModulesPaths = [
 // 3. Force Metro to resolve (sub)dependencies only from the `nodeModulesPaths`
 config.resolver.disableHierarchicalLookup = true
 
+// Required for Tamagui v2 subpath imports (e.g., @tamagui/config/v5)
+config.resolver.unstable_enablePackageExports = true
+config.resolver.unstable_conditionNames = ['require', 'react-native', 'import']
+
 config.transformer = { ...config.transformer, unstable_allowRequireContext: true }
 config.transformer.minifierPath = require.resolve('metro-minify-terser')
 

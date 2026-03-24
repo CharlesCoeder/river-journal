@@ -32,6 +32,7 @@ vi.mock('@my/ui', async () => {
     ReactModule.createElement('div', mapProps(props), children)
 
   return {
+    Button: passthrough('div'),
     Card: passthrough('section'),
     ScrollView,
     Separator: () => ReactModule.createElement('hr'),
@@ -63,6 +64,14 @@ vi.mock('app/state/encryptionSetup', () => ({
   encryptionSetup$: {
     currentMode: '__mock_currentMode',
   },
+}))
+
+vi.mock('@tamagui/lucide-icons', () => ({
+  ArrowLeft: () => React.createElement('span', null, 'ArrowLeft'),
+}))
+
+vi.mock('solito/navigation', () => ({
+  useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
 }))
 
 vi.mock('app/features/home/components/PrivacyTierExplainer', () => ({
