@@ -32,7 +32,7 @@ function PrivacyTierRow({ activeTier }: { activeTier: TierKey }) {
   return (
     <XStack
       gap="$3"
-      $maxSm={{ flexDirection: 'column', gap: '$0' }}
+      $max-sm={{ flexDirection: 'column', gap: '$0' }}
     >
       {TIERS.map((tier, index) => {
         const isActive = tier.key === activeTier
@@ -47,7 +47,7 @@ function PrivacyTierRow({ activeTier }: { activeTier: TierKey }) {
             paddingHorizontal="$2"
             borderRightWidth={isLast ? 0 : 1}
             borderColor="$color5"
-            $maxSm={{
+            $max-sm={{
               borderRightWidth: 0,
               borderBottomWidth: isLast ? 0 : 1,
               borderColor: '$color5',

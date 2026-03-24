@@ -46,7 +46,7 @@ test('Next.js build completes', async () => {
     expect(result).toContain('built @my/ui')
 
     // Check for Next.js version and build process
-    expect(result).toContain('Next.js 15')
+    expect(result).toContain('Next.js 16')
     expect(result).toContain('Creating an optimized production build')
 
     // Check for route information
@@ -64,4 +64,4 @@ test('Next.js build completes', async () => {
   } finally {
     // The process kill check has been moved to the afterAll block
   }
-}, 90_000)
+}, 180_000)

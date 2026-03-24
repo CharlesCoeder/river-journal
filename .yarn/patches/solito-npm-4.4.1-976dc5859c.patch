@@ -1,0 +1,166 @@
+diff --git a/build/app/navigation/use-link.d.ts b/build/app/navigation/use-link.d.ts
+index b2f5014ec8831c2bb6cd50ca31606d1f548dc0ed..aefe3b50e68f6cfbb1581f07342212480d28c523 100644
+--- a/build/app/navigation/use-link.d.ts
++++ b/build/app/navigation/use-link.d.ts
+@@ -4,7 +4,7 @@ export declare function useLink({ href, replace, experimental, }: {
+     href: string;
+     replace?: boolean;
+ } & Parameters<ReturnType<typeof useRouter>['replace']>[1]): {
+-    accessibilityRole: "link";
++    role: "link";
+     onPress: (e?: React.MouseEvent<HTMLAnchorElement, MouseEvent> | GestureResponderEvent) => void;
+     href: string;
+ };
+diff --git a/build/app/navigation/use-link.js b/build/app/navigation/use-link.js
+index 47b75d5707c6c68d57dd3046cd62b606b2bec109..9cf86540dd9fb7da57f1d196a2cce2ec675e8f98 100644
+--- a/build/app/navigation/use-link.js
++++ b/build/app/navigation/use-link.js
+@@ -34,7 +34,7 @@ export function useLink({ href, replace, experimental, }) {
+         }
+     };
+     return {
+-        accessibilityRole: 'link',
++        role: 'link',
+         onPress,
+         href,
+     };
+diff --git a/build/link/core.js b/build/link/core.js
+index fd5b765ae0ff1ad30f78d2d43fafe83a4bfe6706..a7967f058e6ba2980cb6c6553e9499b5e5307972 100644
+--- a/build/link/core.js
++++ b/build/link/core.js
+@@ -15,7 +15,7 @@ function LinkCore({ children, href, as, componentProps, Component, replace, expe
+         replace,
+         experimental,
+     });
+-    return (_jsx(Component, { accessibilityRole: "link", style: style, ...componentProps, onPress: (e) => {
++    return (_jsx(Component, { role: "link", style: style, ...componentProps, onPress: (e) => {
+             componentProps?.onPress?.(e);
+             const link = as || href;
+             if (e?.defaultPrevented)
+diff --git a/build/link/use-custom-link.d.ts b/build/link/use-custom-link.d.ts
+index c770050a20fb6dbaee439b65698f73d5ccced895..ae885b4af4e10f78bb4faf038dd8e3df3252dfb7 100644
+--- a/build/link/use-custom-link.d.ts
++++ b/build/link/use-custom-link.d.ts
+@@ -2,7 +2,7 @@ import { GestureResponderEvent } from 'react-native';
+ import { LinkCoreProps } from './LinkCoreProps';
+ export type UseLinkProps = Pick<LinkCoreProps, 'as' | 'shallow' | 'href' | 'scroll' | 'replace' | 'experimental'>;
+ export declare function useLink({ href, as, shallow, scroll, replace, experimental, }: UseLinkProps): {
+-    accessibilityRole: "link";
++    role: "link";
+     onPress: (e?: React.MouseEvent<HTMLAnchorElement, MouseEvent> | GestureResponderEvent) => void;
+     href: string;
+ };
+diff --git a/build/link/use-custom-link.js b/build/link/use-custom-link.js
+index 795bcacf287294c28627f3f67825b02dd5bb4b4d..ee39574e8282e45987e73eb2350a82f29d56463b 100644
+--- a/build/link/use-custom-link.js
++++ b/build/link/use-custom-link.js
+@@ -37,7 +37,7 @@ export function useLink({ href, as, shallow, scroll, replace, experimental, }) {
+         }
+     };
+     return {
+-        accessibilityRole: 'link',
++        role: 'link',
+         onPress,
+         href: router.parseNextPath(as || href),
+     };
+diff --git a/build/moti/app.d.ts b/build/moti/app.d.ts
+index 91f88082f52d0a344e9350bcdcf1919b368a0936..2d3f86b47b7b570af4c578b7524f618fb85cfa69 100644
+--- a/build/moti/app.d.ts
++++ b/build/moti/app.d.ts
+@@ -3,7 +3,7 @@ import { MotiPressableProps } from 'moti/interactions';
+ import type { View } from 'react-native';
+ import { useLink } from '../app/navigation/use-link';
+ type UseLinkProps = Parameters<typeof useLink>[0];
+-export type MotiLinkProps = UseLinkProps & Omit<MotiPressableProps, keyof UseLinkProps | keyof Pick<ReturnType<typeof useLink>, 'href' | 'accessibilityRole'>>;
++export type MotiLinkProps = UseLinkProps & Omit<MotiPressableProps, keyof UseLinkProps | keyof Pick<ReturnType<typeof useLink>, 'href' | 'role'>>;
+ export declare const MotiLink: import("react").ForwardRefExoticComponent<{
+     href: string;
+     replace?: boolean | undefined;
+@@ -14,6 +14,6 @@ export declare const MotiLink: import("react").ForwardRefExoticComponent<{
+         nativeBehavior: "stack-replace";
+         isNestedNavigator: boolean;
+     } | undefined;
+-} & Omit<MotiPressableProps, "replace" | "href" | "experimental" | "accessibilityRole" | "scroll"> & import("react").RefAttributes<View>>;
++} & Omit<MotiPressableProps, "replace" | "href" | "experimental" | "role" | "scroll"> & import("react").RefAttributes<View>>;
+ export {};
+ //# sourceMappingURL=app.d.ts.map
+\ No newline at end of file
+diff --git a/build/moti/link.d.ts b/build/moti/link.d.ts
+index 287924fb10d931c0c5f183fcc11c489559afb152..863b83ea9e83a4502931f8d4f645daaf92738d3a 100644
+--- a/build/moti/link.d.ts
++++ b/build/moti/link.d.ts
+@@ -2,6 +2,6 @@
+ import { MotiPressableProps } from 'moti/interactions';
+ import type { View } from 'react-native';
+ import { useLink, UseLinkProps } from '../link/use-custom-link';
+-export type MotiLinkProps = UseLinkProps & Omit<MotiPressableProps, keyof UseLinkProps | keyof Pick<ReturnType<typeof useLink>, 'href' | 'accessibilityRole'>>;
+-export declare const MotiLink: import("react").ForwardRefExoticComponent<UseLinkProps & Omit<MotiPressableProps, "replace" | "href" | "shallow" | "experimental" | "accessibilityRole" | "scroll" | "as"> & import("react").RefAttributes<View>>;
++export type MotiLinkProps = UseLinkProps & Omit<MotiPressableProps, keyof UseLinkProps | keyof Pick<ReturnType<typeof useLink>, 'href' | 'role'>>;
++export declare const MotiLink: import("react").ForwardRefExoticComponent<UseLinkProps & Omit<MotiPressableProps, "replace" | "href" | "shallow" | "experimental" | "role" | "scroll" | "as"> & import("react").RefAttributes<View>>;
+ //# sourceMappingURL=link.d.ts.map
+\ No newline at end of file
+diff --git a/src/app/navigation/use-link.ts b/src/app/navigation/use-link.ts
+index e11d80da484d0216a9ac8cc6322a091d8a4cc006..4ed69ef67111db3f53eab26ae6e14e91d5c1f435 100644
+--- a/src/app/navigation/use-link.ts
++++ b/src/app/navigation/use-link.ts
+@@ -48,7 +48,7 @@ export function useLink({
+   }
+ 
+   return {
+-    accessibilityRole: 'link' as const,
++    role: 'link' as const,
+     onPress,
+     href,
+   }
+diff --git a/src/link/core.tsx b/src/link/core.tsx
+index 6183248527754919e83a0befe32ee1e4f5682fde..7a1b90b628a37c0a57060846458d442dbc556d5b 100644
+--- a/src/link/core.tsx
++++ b/src/link/core.tsx
+@@ -53,7 +53,7 @@ function LinkCore({
+   })
+   return (
+     <Component
+-      accessibilityRole="link"
++      role="link"
+       style={style}
+       {...componentProps}
+       onPress={(e?: any) => {
+diff --git a/src/link/use-custom-link.tsx b/src/link/use-custom-link.tsx
+index 4ccfba2230ee1520e3abd15f02110a499c6b2b19..96e566e10e2e81ca4c602d54177d361fb67dc4d1 100644
+--- a/src/link/use-custom-link.tsx
++++ b/src/link/use-custom-link.tsx
+@@ -57,7 +57,7 @@ export function useLink({
+   }
+ 
+   return {
+-    accessibilityRole: 'link' as const,
++    role: 'link' as const,
+     onPress,
+     href: router.parseNextPath(as || href),
+   }
+diff --git a/src/moti/app.tsx b/src/moti/app.tsx
+index 9b264c673624e77d456a07cbc6c63223b6cb3370..cffe5efb35997b532a2ce6267d1fa8f39678ee50 100644
+--- a/src/moti/app.tsx
++++ b/src/moti/app.tsx
+@@ -12,7 +12,7 @@ export type MotiLinkProps = UseLinkProps &
+     MotiPressableProps,
+     // you can't pass any props that will be overridden by useLink
+     | keyof UseLinkProps
+-    | keyof Pick<ReturnType<typeof useLink>, 'href' | 'accessibilityRole'>
++    | keyof Pick<ReturnType<typeof useLink>, 'href' | 'role'>
+   >
+ 
+ export const MotiLink = forwardRef<View, MotiLinkProps>((props, ref) => {
+diff --git a/src/moti/link.tsx b/src/moti/link.tsx
+index a9e0482f491dae2a9ec80d2a204d09450c653d0f..4e9398671c6cbd08a570373892153d1f1e3be192 100644
+--- a/src/moti/link.tsx
++++ b/src/moti/link.tsx
+@@ -10,7 +10,7 @@ export type MotiLinkProps = UseLinkProps &
+     MotiPressableProps,
+     // you can't pass any props that will be overridden by useLink
+     | keyof UseLinkProps
+-    | keyof Pick<ReturnType<typeof useLink>, 'href' | 'accessibilityRole'>
++    | keyof Pick<ReturnType<typeof useLink>, 'href' | 'role'>
+   >
+ 
+ export const MotiLink = forwardRef<View, MotiLinkProps>((props, ref) => {

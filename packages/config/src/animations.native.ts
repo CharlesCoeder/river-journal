@@ -1,42 +1,36 @@
-import { createAnimations } from '@tamagui/animations-motion'
-import { animationsMotion } from '@tamagui/config/v5-motion'
+import { createAnimations } from '@tamagui/animations-react-native'
+import { animationsReactNative } from '@tamagui/config/v5-rn'
 
 export const animations = createAnimations({
-  ...animationsMotion.animations,
+  ...animationsReactNative.animations,
   '100ms': {
-    type: 'tween',
-    duration: 0.1,
+    type: 'timing',
+    duration: 100,
   },
   bouncy: {
-    type: 'spring',
     damping: 9,
     mass: 0.9,
     stiffness: 150,
   },
   lazy: {
-    type: 'spring',
     damping: 18,
     stiffness: 50,
   },
   medium: {
-    type: 'spring',
     damping: 15,
     stiffness: 120,
     mass: 1,
   },
   slow: {
-    type: 'spring',
     damping: 15,
     stiffness: 40,
   },
   quick: {
-    type: 'spring',
     damping: 20,
     mass: 1.2,
     stiffness: 250,
   },
   tooltip: {
-    type: 'spring',
     damping: 10,
     mass: 0.9,
     stiffness: 100,
