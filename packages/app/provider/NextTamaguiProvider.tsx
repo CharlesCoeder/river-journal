@@ -12,9 +12,7 @@ import { config, useTheme } from '@my/ui'
 import { Provider } from 'app/provider'
 import { StyleSheet } from 'react-native'
 import { setBaseTheme } from 'app/state/store'
-import { use$ } from '@legendapp/state/react'
-import { syncState } from '@legendapp/state'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
   useServerInsertedHTML(() => {
@@ -22,7 +20,7 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
     const rnwStyle = StyleSheet.getSheet()
     return (
       <>
-        <link rel="stylesheet" href="/tamagui.css" />
+        <link rel="stylesheet" href="/tamagui.generated.css" />
         <style dangerouslySetInnerHTML={{ __html: rnwStyle.textContent }} id={rnwStyle.id} />
         <style
           dangerouslySetInnerHTML={{

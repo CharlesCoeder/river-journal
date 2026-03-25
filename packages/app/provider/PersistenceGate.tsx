@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffectOnce, use$ } from '@legendapp/state/react'
-import { appStatus$ } from 'app/state/initializeApp'
+import { useState, useEffect } from 'react'
 import { initializePersistence } from 'app/state/initializeApp'
 import { Text } from '@my/ui'
 
 export function PersistenceGate({ children }: { children: React.ReactNode }) {
-  const isLoaded = use$(appStatus$.isPersistenceLoaded)
-  const error = use$(appStatus$.error)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [error, setError] = useState(false)
 
-  useEffectOnce(() => {
+  useEffect(() => {
     initializePersistence()
+      .then(() => setIsLoaded(true))
+      .catch(() => setError(true))
   }, [])
 
   if (error) {

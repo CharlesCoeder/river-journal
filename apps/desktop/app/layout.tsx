@@ -1,7 +1,5 @@
-if (process.env.NODE_ENV === 'production') {
-  require('../public/tamagui.css')
-}
 import 'app/features/journal/components/Lexical/lexical-theme.css'
+import '../public/tamagui.generated.css'
 
 import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
@@ -20,9 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // You can use `suppressHydrationWarning` to avoid the warning about mismatched content during hydration in dev mode
     <html lang="en" suppressHydrationWarning>
       <body>
-        <PersistenceGate>
-          <NextTamaguiProvider>{children}</NextTamaguiProvider>
-        </PersistenceGate>
+        <NextTamaguiProvider>
+          <PersistenceGate>{children}</PersistenceGate>
+        </NextTamaguiProvider>
       </body>
     </html>
   )

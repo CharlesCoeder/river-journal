@@ -13,10 +13,12 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",
+    "@lexical/react": "^0.33.1",
     "@my/ui": "0.0.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/native-stack": "^7.3.25",
+    "@tamagui/lucide-icons": "2.0.0-rc.16",
     "app": "0.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "burnt": "^0.12.2",
@@ -34,27 +36,30 @@
     "expo-status-bar": "~3.0.9",
     "expo-updates": "~29.0.16",
     "expo-web-browser": "~15.0.0",
+    "lexical": "^0.33.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-keyboard-controller": "^1.18.5",
-    "react-native-mmkv": "^3.2.0",
+    "react-native-mmkv": "^4.3.0",
     "react-native-nitro-modules": "^0.35.0",
     "react-native-quick-crypto": "^1.0.16",
-    "react-native-reanimated": "~3.17.4",
+    "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
-    "react-native-web": "^0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-web": "0.21.2",
+    "react-native-webview": "13.15.0",
+    "react-native-worklets": "0.5.1",
+    "use-debounce": "^10.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.24.6",
     "@tamagui/babel-plugin": "2.0.0-rc.16",
-    "@types/react": "~19.0.10",
+    "@types/react": "~19.1.10",
     "metro-minify-terser": "^0.81.0",
-    "typescript": "^5.7.3"
+    "typescript": "~5.8.3"
   },
   "expo": {
     "doctor": {
