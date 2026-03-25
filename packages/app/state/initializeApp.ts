@@ -137,5 +137,6 @@ export async function initializePersistence() {
   } catch (e) {
     appStatus$.error.set(e as Error)
     console.error('Failed to initialize persistence', e)
+    throw e
   }
 }
