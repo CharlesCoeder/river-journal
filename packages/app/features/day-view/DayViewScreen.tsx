@@ -199,7 +199,7 @@ export function DayViewScreen() {
             {isToday && (
               <Button
                 size="$5"
-                themeInverse
+                theme="accent"
                 onPress={handleBeginFlow}
                 marginTop="$2"
                 paddingHorizontal="$8"

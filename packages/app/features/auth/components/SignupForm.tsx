@@ -301,7 +301,7 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
       <Button
         onPress={handleSubmit}
         disabled={isLoading}
-        themeInverse
+        theme="accent"
         borderRadius="$4"
         marginTop="$2"
       >

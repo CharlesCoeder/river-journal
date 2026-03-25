@@ -140,7 +140,7 @@ export function HomeScreen() {
           {/* Primary CTA — Begin Flow */}
           <Button
             size="$5"
-            themeInverse
+            theme="accent"
             onPress={handleBeginFlow}
             paddingHorizontal="$10"
             borderRadius="$10"
