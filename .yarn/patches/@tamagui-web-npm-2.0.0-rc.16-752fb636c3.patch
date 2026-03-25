@@ -1,0 +1,91 @@
+diff --git a/dist/cjs/hooks/useThemeState.cjs b/dist/cjs/hooks/useThemeState.cjs
+index 69bd3808b25009b3577426723a74aa9518d80db4..322a8e913dba5a7cd1dcf1585f237e1050e9c01f 100644
+--- a/dist/cjs/hooks/useThemeState.cjs
++++ b/dist/cjs/hooks/useThemeState.cjs
+@@ -33,7 +33,7 @@ var import_constants = require("@tamagui/constants"),
+   import_react = require("react"),
+   import_config = require("../config.cjs"),
+   import_constants3 = require("../constants/constants.cjs");
+-const ThemeStateContext = (0, import_react.createContext)(""),
++const ThemeStateContext = globalThis.__tamaguiThemeStateContext || (globalThis.__tamaguiThemeStateContext = (0, import_react.createContext)("")),
+   allListeners = /* @__PURE__ */new Map(),
+   listenersByParent = {},
+   HasRenderedOnce = /* @__PURE__ */new WeakMap(),
+diff --git a/dist/cjs/hooks/useThemeState.js b/dist/cjs/hooks/useThemeState.js
+index 9bc65fca1ecef3956cbad1c0c2d5a908a8b28402..8a8001d975571cb9afc03761103fe776a7c635fc 100644
+--- a/dist/cjs/hooks/useThemeState.js
++++ b/dist/cjs/hooks/useThemeState.js
+@@ -23,7 +23,7 @@ __export(useThemeState_exports, {
+ });
+ module.exports = __toCommonJS(useThemeState_exports);
+ var import_constants = require("@tamagui/constants"), import_constants2 = require("@tamagui/constants"), import_react = require("react"), import_config = require("../config"), import_constants3 = require("../constants/constants");
+-const ThemeStateContext = (0, import_react.createContext)(""), allListeners = /* @__PURE__ */ new Map(), listenersByParent = {}, HasRenderedOnce = /* @__PURE__ */ new WeakMap(), HadTheme = /* @__PURE__ */ new WeakMap(), PendingUpdate = /* @__PURE__ */ new Map(), states = /* @__PURE__ */ new Map(), localStates = /* @__PURE__ */ new Map();
++const ThemeStateContext = globalThis.__tamaguiThemeStateContext || (globalThis.__tamaguiThemeStateContext = (0, import_react.createContext)("")), allListeners = /* @__PURE__ */ new Map(), listenersByParent = {}, HasRenderedOnce = /* @__PURE__ */ new WeakMap(), HadTheme = /* @__PURE__ */ new WeakMap(), PendingUpdate = /* @__PURE__ */ new Map(), states = /* @__PURE__ */ new Map(), localStates = /* @__PURE__ */ new Map();
+ let shouldForce = !1;
+ const forceUpdateThemes = () => {
+   cacheVersion++, shouldForce = !0, allListeners.forEach((cb) => cb());
+diff --git a/dist/cjs/hooks/useThemeState.native.js b/dist/cjs/hooks/useThemeState.native.js
+index 1958f6bfae3fc3592bbfa5de851f385a4a05b1d0..3130dc553e2da8571bb96e99952c4f82c0e12e79 100644
+--- a/dist/cjs/hooks/useThemeState.native.js
++++ b/dist/cjs/hooks/useThemeState.native.js
+@@ -35,7 +35,7 @@ var import_constants = require("@tamagui/constants"),
+   import_react = require("react"),
+   import_config = require("../config.native.js"),
+   import_constants3 = require("../constants/constants.native.js"),
+-  ThemeStateContext = (0, import_react.createContext)(""),
++  ThemeStateContext = globalThis.__tamaguiThemeStateContext || (globalThis.__tamaguiThemeStateContext = (0, import_react.createContext)("")),
+   allListeners = /* @__PURE__ */new Map(),
+   listenersByParent = {},
+   HasRenderedOnce = /* @__PURE__ */new WeakMap(),
+diff --git a/dist/esm/hooks/useThemeState.js b/dist/esm/hooks/useThemeState.js
+index 30e5d8f7793b175db25609bdcec7c4a2fc991d1f..cf60352f79ac6777f5059868aaed348766e97942 100644
+--- a/dist/esm/hooks/useThemeState.js
++++ b/dist/esm/hooks/useThemeState.js
+@@ -9,7 +9,7 @@ import {
+ } from "react";
+ import { getConfig } from "../config";
+ import { MISSING_THEME_MESSAGE } from "../constants/constants";
+-const ThemeStateContext = createContext(""), allListeners = /* @__PURE__ */ new Map(), listenersByParent = {}, HasRenderedOnce = /* @__PURE__ */ new WeakMap(), HadTheme = /* @__PURE__ */ new WeakMap(), PendingUpdate = /* @__PURE__ */ new Map(), states = /* @__PURE__ */ new Map(), localStates = /* @__PURE__ */ new Map();
++const ThemeStateContext = globalThis.__tamaguiThemeStateContext || (globalThis.__tamaguiThemeStateContext = createContext("")), allListeners = /* @__PURE__ */ new Map(), listenersByParent = {}, HasRenderedOnce = /* @__PURE__ */ new WeakMap(), HadTheme = /* @__PURE__ */ new WeakMap(), PendingUpdate = /* @__PURE__ */ new Map(), states = /* @__PURE__ */ new Map(), localStates = /* @__PURE__ */ new Map();
+ let shouldForce = !1;
+ const forceUpdateThemes = () => {
+   cacheVersion++, shouldForce = !0, allListeners.forEach((cb) => cb());
+diff --git a/dist/esm/hooks/useThemeState.mjs b/dist/esm/hooks/useThemeState.mjs
+index cffe4867d96c8c4df699bf8b07c6c3f79e4c087d..dd1005d4b49efa8667951c6d994901fd6853df06 100644
+--- a/dist/esm/hooks/useThemeState.mjs
++++ b/dist/esm/hooks/useThemeState.mjs
+@@ -3,7 +3,7 @@ import { useIsomorphicLayoutEffect } from "@tamagui/constants";
+ import { createContext, useCallback, useContext, useId, useSyncExternalStore } from "react";
+ import { getConfig } from "../config.mjs";
+ import { MISSING_THEME_MESSAGE } from "../constants/constants.mjs";
+-const ThemeStateContext = createContext(""),
++const ThemeStateContext = globalThis.__tamaguiThemeStateContext || (globalThis.__tamaguiThemeStateContext = createContext("")),
+   allListeners = /* @__PURE__ */new Map(),
+   listenersByParent = {},
+   HasRenderedOnce = /* @__PURE__ */new WeakMap(),
+diff --git a/dist/esm/hooks/useThemeState.native.js b/dist/esm/hooks/useThemeState.native.js
+index a8ce87adc16475f21711b7546ad768a03f433dd8..f5781ba7c8c42ae6a25b65d9c826cc299a6d32db 100644
+--- a/dist/esm/hooks/useThemeState.native.js
++++ b/dist/esm/hooks/useThemeState.native.js
+@@ -3,7 +3,7 @@ import { useIsomorphicLayoutEffect } from "@tamagui/constants";
+ import { createContext, useCallback, useContext, useId, useSyncExternalStore } from "react";
+ import { getConfig, getSetting } from "../config.native.js";
+ import { MISSING_THEME_MESSAGE } from "../constants/constants.native.js";
+-var ThemeStateContext = createContext(""),
++var ThemeStateContext = globalThis.__tamaguiThemeStateContext || (globalThis.__tamaguiThemeStateContext = createContext("")),
+   allListeners = /* @__PURE__ */new Map(),
+   listenersByParent = {},
+   HasRenderedOnce = /* @__PURE__ */new WeakMap(),
+diff --git a/src/hooks/useThemeState.ts b/src/hooks/useThemeState.ts
+index f88d7b70948bf2de77ef3be4986eca99c1306498..b6a1cdee27e9052338307c3815cae26429e6ee98 100644
+--- a/src/hooks/useThemeState.ts
++++ b/src/hooks/useThemeState.ts
+@@ -19,7 +19,7 @@ import type {
+ 
+ type ID = string
+ 
+-export const ThemeStateContext = createContext<ID>('')
++export const ThemeStateContext: React.Context<ID> = (globalThis as any).__tamaguiThemeStateContext || ((globalThis as any).__tamaguiThemeStateContext = createContext<ID>(''))
+ 
+ const allListeners = new Map<ID, Function>()
+ const listenersByParent: Record<ID, Set<ID>> = {}

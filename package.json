@@ -36,7 +36,7 @@
     "react-native-svg": "15.12.1",
     "react-native-web": "0.21.2",
     "@tamagui/core": "2.0.0-rc.16",
-    "@tamagui/web": "2.0.0-rc.16",
+    "@tamagui/web": "patch:@tamagui/web@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-web-npm-2.0.0-rc.16-752fb636c3.patch",
     "tamagui": "2.0.0-rc.16",
     "@react-navigation/native": "7.1.28"
   },
