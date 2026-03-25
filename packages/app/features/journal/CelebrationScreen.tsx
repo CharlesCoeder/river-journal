@@ -115,7 +115,7 @@ export function CelebrationScreen() {
         <YStack alignItems="center" paddingVertical="$6">
           <Button
             size="$5"
-            themeInverse
+            theme="accent"
             onPress={handleDismiss}
             paddingHorizontal="$8"
             borderRadius="$6"

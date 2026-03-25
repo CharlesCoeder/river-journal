@@ -5,10 +5,10 @@
 
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
-import { MMKV } from 'react-native-mmkv'
+import { createMMKV } from 'react-native-mmkv'
 
 // Create a dedicated MMKV instance for Supabase auth storage
-const authStorage = new MMKV({ id: 'supabase-auth' })
+const authStorage = createMMKV({ id: 'supabase-auth' })
 
 // Supabase-compatible storage adapter for MMKV
 const mmkvStorageAdapter = {
@@ -19,7 +19,7 @@ const mmkvStorageAdapter = {
     authStorage.set(key, value)
   },
   removeItem: (key: string): void => {
-    authStorage.delete(key)
+    authStorage.remove(key)
   },
 }
 
