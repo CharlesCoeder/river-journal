@@ -1,13 +1,15 @@
-import { YStack, XStack, Button, Dialog, Text, Spinner } from '@my/ui'
+import { YStack, XStack, Button, Dialog, Text, Spinner, isWeb } from '@my/ui'
 import { ArrowLeft, Save } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import type { LayoutChangeEvent } from 'react-native'
 import { Editor } from './components/Editor'
 import {
   store$,
   saveActiveFlowSession,
   getActiveFlowContent,
   hidePersistentEditor,
+  updatePersistentEditorHeaderHeight,
 } from 'app/state/store'
 import { use$ } from '@legendapp/state/react'
 
@@ -40,6 +42,12 @@ export function JournalScreen() {
     }
   }
 
+  const handleHeaderLayout = useCallback((e: LayoutChangeEvent) => {
+    if (!isWeb) {
+      updatePersistentEditorHeaderHeight(e.nativeEvent.layout.height)
+    }
+  }, [])
+
   const hasContent = !!activeFlow?.content
 
   return (
@@ -56,6 +64,7 @@ export function JournalScreen() {
         paddingTop="$2"
         paddingBottom="$3"
         zIndex={200}
+        onLayout={handleHeaderLayout}
         $sm={{
           maxWidth: 720,
           alignSelf: 'center',
@@ -158,7 +167,7 @@ export function JournalScreen() {
               </Dialog.Close>
               <Button
                 onPress={handleSaveFlow}
-                themeInverse
+                theme="accent"
                 disabled={isSaving}
                 borderRadius="$4"
               >

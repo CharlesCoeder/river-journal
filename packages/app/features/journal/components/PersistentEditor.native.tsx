@@ -2,6 +2,7 @@ import { View, StyleSheet, Animated } from 'react-native'
 import { useTheme } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { useEffect, useRef } from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ephemeral$, updateActiveFlowContent } from 'app/state/store'
 import { useDebouncedCallback } from 'use-debounce'
 import LexicalEditor from './Lexical/LexicalEditor'
@@ -15,9 +16,13 @@ import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
  * WebView instance alive throughout the app lifecycle.
  *
  * Only used on native platforms - web uses per-screen editors.
+ *
+ * Positioning: Uses safe area insets + reported header height instead of
+ * measureInWindow, which returns incorrect coordinates on Android.
  */
 export const PersistentEditor = () => {
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
   const persistentEditor = use$(ephemeral$.persistentEditor)
 
   // Animated value for fade-in effect
@@ -34,6 +39,14 @@ export const PersistentEditor = () => {
     updateActiveFlowContent(markdown)
   }, 300)
 
+  // Cancel any pending debounced writes when the editor hides,
+  // otherwise a stale keystroke can overwrite the cleared activeFlow.
+  useEffect(() => {
+    if (!persistentEditor.isVisible) {
+      debouncedUpdateStore.cancel()
+    }
+  }, [persistentEditor.isVisible, debouncedUpdateStore])
+
   // Handle content changes from the editor
   const handleContentChange = (markdown: string) => {
     if (persistentEditor.readOnly) return
@@ -43,11 +56,8 @@ export const PersistentEditor = () => {
   // Cast to universal props to handle platform differences
   const UniversalLexicalEditor = LexicalEditor as React.FC<LexicalEditorUniversalProps>
 
-  // Calculate positioning based on layout bounds from the placeholder
-  const layout = persistentEditor.layout
-
-  // Only show when visible AND we have layout measurements to prevent flash at top
-  const shouldShow = persistentEditor.isVisible && layout !== null
+  // Show when visible AND we know the header height (to prevent flash at top)
+  const shouldShow = persistentEditor.isVisible && persistentEditor.headerHeight > 0
 
   // Animate opacity when shouldShow changes
   useEffect(() => {
@@ -69,16 +79,24 @@ export const PersistentEditor = () => {
     }
   }, [shouldShow, fadeAnim])
 
-  const containerStyle = layout
-    ? {
-        position: 'absolute' as const,
-        top: layout.top,
-        left: layout.left,
-        width: layout.width,
-        height: layout.height,
-        zIndex: 100,
-      }
-    : styles.containerFallback
+  // Position below the header using safe area insets + header height.
+  // This is inside a SafeAreaView at root layout level.
+  // Absolute children position from SafeAreaView's bounds (y=0 = screen top),
+  // so we add insets.top (status bar) + headerHeight to start below the header.
+  //
+  // When hidden, move offscreen instead of relying on opacity alone —
+  // Expo DOM WebViews render in a separate native layer and ignore
+  // parent opacity on Android.
+  const containerStyle = {
+    position: 'absolute' as const,
+    top: shouldShow ? insets.top + persistentEditor.headerHeight : -9999,
+    left: 0,
+    right: 0,
+    bottom: shouldShow ? 0 : undefined,
+    height: shouldShow ? undefined : 0,
+    zIndex: 100,
+    overflow: 'hidden' as const,
+  }
 
   return (
     <Animated.View
@@ -103,11 +121,6 @@ export const PersistentEditor = () => {
 }
 
 const styles = StyleSheet.create({
-  // Fallback when no layout bounds are available (full screen)
-  containerFallback: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-  },
   editorWrapper: {
     flex: 1,
     width: '100%',
