@@ -34,6 +34,7 @@ class MMKVPersistPlugin {
         this.data[table] = value ? safeParse(value) : init
       } catch (e) {
         console.error('[legend-state] MMKV failed to parse', table)
+        this.data[table] = init
       }
     }
     return this.data[table]
