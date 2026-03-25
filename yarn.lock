@@ -7629,7 +7629,7 @@ __metadata:
 
 "@tamagui/web@patch:@tamagui/web@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-web-npm-2.0.0-rc.16-752fb636c3.patch":
   version: 2.0.0-rc.16
-  resolution: "@tamagui/web@patch:@tamagui/web@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-web-npm-2.0.0-rc.16-752fb636c3.patch::version=2.0.0-rc.16&hash=a3e4f7"
+  resolution: "@tamagui/web@patch:@tamagui/web@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-web-npm-2.0.0-rc.16-752fb636c3.patch::version=2.0.0-rc.16&hash=31381f"
   dependencies:
     "@tamagui/compose-refs": "npm:2.0.0-rc.16"
     "@tamagui/constants": "npm:2.0.0-rc.16"
@@ -7646,7 +7646,7 @@ __metadata:
     react: ">=19"
     react-dom: "*"
     react-native: "*"
-  checksum: 10/cc82f36689dbb0abf558b46b583a4dc2103d0521c6beb0fa4e9d1c9f6d665a6c8080f9a17255a10cead357f7a6d42f4718a7bf951d4dbc9bc41945b5cd081920
+  checksum: 10/beee85094d79557a781165c9a22e06c6557cdf2fe5f451f781301399404aa6ee1dbea7f70423e5595b7cecd42a0dd70c92a5ac4f08226587a43ccfd59dc4e2f6
   languageName: node
   linkType: hard
 

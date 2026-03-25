@@ -38,7 +38,8 @@
     "@tamagui/core": "2.0.0-rc.16",
     "@tamagui/web": "patch:@tamagui/web@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-web-npm-2.0.0-rc.16-752fb636c3.patch",
     "tamagui": "2.0.0-rc.16",
-    "@react-navigation/native": "7.1.28"
+    "@react-navigation/native": "7.1.28",
+    "@tamagui/web@npm:2.0.0-rc.16": "patch:@tamagui/web@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-web-npm-2.0.0-rc.16-752fb636c3.patch"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.6",
