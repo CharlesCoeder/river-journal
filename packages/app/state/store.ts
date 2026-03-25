@@ -62,14 +62,14 @@ export { flows$, entries$ }
 // =================================================================
 // UI state that should reset on app restart - separate from persisted store$
 
-import type { PersistentEditorState, EditorLayoutBounds } from './types'
+import type { PersistentEditorState } from './types'
 
 export const ephemeral$ = observable<{ persistentEditor: PersistentEditorState }>({
   persistentEditor: {
     isVisible: false,
     readOnly: false,
     content: '',
-    layout: null,
+    headerHeight: 0,
   },
 })
 
@@ -548,32 +548,30 @@ export const debugActiveFlow = () => {
  * On native, the editor is always mounted at root but visibility is controlled here.
  */
 export const showPersistentEditor = (
-  options: { readOnly?: boolean; content?: string; layout?: EditorLayoutBounds } = {}
+  options: { readOnly?: boolean; content?: string } = {}
 ): void => {
   ephemeral$.persistentEditor.assign({
     isVisible: true,
     readOnly: options.readOnly ?? false,
     content: options.content ?? '',
-    layout: options.layout ?? null,
   })
 }
 
 /**
- * Updates the layout bounds of the persistent editor.
- * Called when the placeholder View measures its position.
- */
-export const updatePersistentEditorLayout = (layout: EditorLayoutBounds): void => {
-  ephemeral$.persistentEditor.layout.set(layout)
-}
-
-/**
- * Hides the persistent editor and clears layout bounds.
+ * Hides the persistent editor and resets content.
+ * Content must be cleared here so the DOM WebView receives the empty
+ * string while still visible, before opacity fades out.
  */
 export const hidePersistentEditor = (): void => {
-  ephemeral$.persistentEditor.assign({
-    isVisible: false,
-    layout: null,
-  })
+  ephemeral$.persistentEditor.content.set('')
+  ephemeral$.persistentEditor.isVisible.set(false)
+}
+
+/**
+ * Updates the header height so the persistent editor can position below it.
+ */
+export const updatePersistentEditorHeaderHeight = (height: number): void => {
+  ephemeral$.persistentEditor.headerHeight.set(height)
 }
 
 /**

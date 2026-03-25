@@ -70,16 +70,6 @@ export interface LastSavedFlow {
 }
 
 /**
- * Layout bounds for positioning the persistent editor.
- */
-export interface EditorLayoutBounds {
-  top: number
-  left: number
-  width: number
-  height: number
-}
-
-/**
  * Controls the persistent editor (native only).
  * The editor is always mounted at root layout but visibility is controlled via this state.
  */
@@ -87,7 +77,8 @@ export interface PersistentEditorState {
   isVisible: boolean
   readOnly: boolean
   content: string
-  layout: EditorLayoutBounds | null
+  /** Height of the screen header, used to position editor below it on Android */
+  headerHeight: number
 }
 
 // =================================================================
