@@ -35,4 +35,36 @@ export const animations = createAnimations({
     mass: 0.9,
     stiffness: 100,
   },
+  designEnter: {
+    damping: 20,
+    stiffness: 80,
+    mass: 1,
+  },
+  designEnterSlow: {
+    damping: 22,
+    stiffness: 50,
+    mass: 1,
+  },
+  designEnterVerySlow: {
+    damping: 24,
+    stiffness: 35,
+    mass: 1,
+  },
+  designModal: {
+    damping: 20,
+    stiffness: 100,
+    mass: 1,
+  },
+  designModalExit: {
+    type: 'timing',
+    duration: 400,
+  },
+  ctaSpring: {
+    stiffness: 400,
+    damping: 30,
+  },
+  celebrationSpring: {
+    stiffness: 40,
+    damping: 20,
+  },
 })

@@ -21,22 +21,13 @@ SplashScreen.preventAutoHideAsync()
 
 export default function App() {
   const [fontsLoaded, fontsError] = useFonts({
-    Inter: require('@tamagui/font-inter/otf/Inter-Medium.otf'),
-    InterBold: require('@tamagui/font-inter/otf/Inter-Bold.otf'),
-    SourceSans3: require('../public/fonts/SourceSans3/SourceSans3-Regular.ttf'),
-    SourceSans3Italic: require('../public/fonts/SourceSans3/SourceSans3-Italic.ttf'),
-    SourceSans3Bold: require('../public/fonts/SourceSans3/SourceSans3-Bold.ttf'),
-    SourceSans3BoldItalic: require('../public/fonts/SourceSans3/SourceSans3-BoldItalic.ttf'),
-    PatrickHand: require('../public/fonts/PatrickHand.ttf'),
-    // Lato - UI Font
-    Lato: require('../public/fonts/Lato/Lato-Regular.ttf'),
-    LatoItalic: require('../public/fonts/Lato/Lato-Italic.ttf'),
-    LatoBold: require('../public/fonts/Lato/Lato-Bold.ttf'),
-    // Lora - Journal Font
-    Lora: require('../public/fonts/Lora/Lora-Regular.ttf'),
-    LoraItalic: require('../public/fonts/Lora/Lora-Italic.ttf'),
-    LoraBold: require('../public/fonts/Lora/Lora-Bold.ttf'),
-    LoraBoldItalic: require('../public/fonts/Lora/Lora-BoldItalic.ttf'),
+    // Outfit — UI sans-serif
+    Outfit: require('../public/fonts/Outfit/Outfit-Regular.ttf'),
+    'Outfit-Medium': require('../public/fonts/Outfit/Outfit-Medium.ttf'),
+    // Newsreader — Journal serif
+    Newsreader: require('../public/fonts/Newsreader/Newsreader-Regular.ttf'),
+    'Newsreader-Italic': require('../public/fonts/Newsreader/Newsreader-Italic.ttf'),
+    'Newsreader-Medium': require('../public/fonts/Newsreader/Newsreader-Medium.ttf'),
   })
 
   useEffect(() => {
@@ -86,11 +77,12 @@ function RootLayoutNav() {
 // But, we tamaguified it (has this been coined yet??) so that we get all of Tamagui's themes and subthemes!
 function TamaguifiedReactNavigationThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useTheme()
-  const baseTheme = use$(store$.profile.baseTheme) ?? 'light'
+  const themeName = use$(store$.profile.themeName) ?? 'ink'
+  const isDark = ['night', 'forest-night', 'fireside'].includes(themeName)
 
   const navigationTheme = {
     ...DefaultTheme,
-    dark: baseTheme === 'dark',
+    dark: isDark,
     colors: {
       ...DefaultTheme.colors,
       primary: theme.color?.val ?? DefaultTheme.colors.primary,

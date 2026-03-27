@@ -14,26 +14,21 @@ import type {
   Entry,
   DailyEntryView,
   DailyStatsView,
-  BaseThemeName,
-  ColorThemeName,
+  ThemeName,
 } from './types'
-import { DEFAULT_COLOR_THEMES } from './types'
+import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES } from './types'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 
 import { getTodayJournalDayString } from './date-utils'
 import { generateUUID, isSyncReady$, orphanFlowsPending$ } from './syncConfig'
 
-// Default theme values when no profile exists
-const DEFAULT_BASE_THEME: BaseThemeName = 'light'
-const DEFAULT_COLOR_THEME: ColorThemeName = 'blue'
-
 // Re-export theme constants for convenience
-export { DEFAULT_COLOR_THEMES }
+export { THEME_NAMES, DEFAULT_THEME, DARK_THEMES }
 
 // Theme validation helper
-export const isValidColorTheme = (theme: string): theme is ColorThemeName => {
-  return DEFAULT_COLOR_THEMES.includes(theme as ColorThemeName)
+export const isValidTheme = (theme: string): theme is ThemeName => {
+  return THEME_NAMES.includes(theme as ThemeName)
 }
 
 // =================================================================
@@ -587,65 +582,35 @@ export const updatePersistentEditorContent = (content: string): void => {
 // -----------------------------------------------------------------
 
 /**
- * Sets the base theme (light/dark) with automatic profile creation
+ * Creates a default profile if none exists.
  */
-export const setBaseTheme = (baseTheme: BaseThemeName) => {
-  // Create a default profile if none exists
+const ensureProfile = () => {
   if (!store$.profile.get()) {
     store$.profile.set({
       word_goal: 750,
-      baseTheme: DEFAULT_BASE_THEME,
-      colorTheme: DEFAULT_COLOR_THEME,
+      themeName: DEFAULT_THEME,
       sync: {
         word_goal: true,
-        baseTheme: true,
-        colorTheme: true,
+        themeName: true,
       },
     })
   }
-  store$.profile.baseTheme.set(baseTheme)
 }
 
 /**
- * Sets the color theme with validation and automatic profile creation
+ * Sets the named theme with validation and automatic profile creation
  */
-export const setColorTheme = (colorTheme: ColorThemeName) => {
-  // Validate the theme name
-  if (!DEFAULT_COLOR_THEMES.includes(colorTheme)) {
-    console.warn(`Invalid color theme: ${colorTheme}. Using default: ${DEFAULT_COLOR_THEME}`)
-    colorTheme = DEFAULT_COLOR_THEME
+export const setTheme = (themeName: ThemeName) => {
+  if (!THEME_NAMES.includes(themeName)) {
+    console.warn(`Invalid theme: ${themeName}. Using default: ${DEFAULT_THEME}`)
+    themeName = DEFAULT_THEME
   }
-
-  // Create a default profile if none exists
-  if (!store$.profile.get()) {
-    store$.profile.set({
-      word_goal: 750,
-      baseTheme: DEFAULT_BASE_THEME,
-      colorTheme: DEFAULT_COLOR_THEME,
-      sync: {
-        word_goal: true,
-        baseTheme: true,
-        colorTheme: true,
-      },
-    })
-  }
-  store$.profile.colorTheme.set(colorTheme)
+  ensureProfile()
+  store$.profile.themeName.set(themeName)
 }
 
 export const setWordGoal = (goal: number) => {
-  // Create a default profile if none exists
-  if (!store$.profile.get()) {
-    store$.profile.set({
-      word_goal: 750,
-      baseTheme: DEFAULT_BASE_THEME,
-      colorTheme: DEFAULT_COLOR_THEME,
-      sync: {
-        word_goal: true,
-        baseTheme: true,
-        colorTheme: true,
-      },
-    })
-  }
+  ensureProfile()
   store$.profile.word_goal.set(goal)
 }
 
@@ -654,17 +619,17 @@ export const setWordGoal = (goal: number) => {
 // =================================================================
 
 /**
- * Gets the current base theme, with fallback to default
+ * Gets the current theme name, with fallback to default
  */
-export const getCurrentBaseTheme = (): BaseThemeName => {
-  return store$.profile.baseTheme.get() ?? DEFAULT_BASE_THEME
+export const getCurrentTheme = (): ThemeName => {
+  return store$.profile.themeName.get() ?? DEFAULT_THEME
 }
 
 /**
- * Gets the current color theme, with fallback to default
+ * Derives light/dark from the theme name
  */
-export const getCurrentColorTheme = (): ColorThemeName => {
-  return store$.profile.colorTheme.get() ?? DEFAULT_COLOR_THEME
+export const isDarkTheme = (themeName: ThemeName): boolean => {
+  return DARK_THEMES.includes(themeName)
 }
 
 // =================================================================

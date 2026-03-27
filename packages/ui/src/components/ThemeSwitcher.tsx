@@ -1,66 +1,38 @@
-import { XStack, YStack, Circle, Button } from 'tamagui'
+import { Text, YStack } from 'tamagui'
 import { use$ } from '@legendapp/state/react'
-import { store$, setColorTheme, setBaseTheme } from 'app/state/store'
-import type { ColorThemeName } from 'app/state/types'
+import { store$, setTheme } from 'app/state/store'
+import type { ThemeName } from 'app/state/types'
+import { THEME_NAMES } from 'app/state/types'
 
-const DEFAULT_COLOR_THEMES: ColorThemeName[] = [
-  'red',
-  'orange',
-  'yellow',
-  'green',
-  'blue',
-  'purple',
-  'pink',
-  'gray',
-]
+const THEME_LABELS: Record<ThemeName, string> = {
+  ink: 'Ink & Paper',
+  night: 'Night Study',
+  'forest-morning': 'Forest Morning',
+  'forest-night': 'Forest Night',
+  leather: 'Worn Leather',
+  fireside: 'Fireside',
+}
 
-const themes = DEFAULT_COLOR_THEMES.map(
-  (themeName) =>
-    ({
-      name: themeName,
-      color: themeName,
-    }) as const
-)
-
-interface ThemeSwitcherProps {}
-
-export const ThemeSwitcher = function ThemeSwitcher(_props: ThemeSwitcherProps) {
-  const currentColorTheme = use$(store$.profile.colorTheme) ?? 'blue'
-  const currentBaseTheme = use$(store$.profile.baseTheme) ?? 'light'
-
-  const handleThemeChange = (theme: ColorThemeName) => {
-    setColorTheme(theme)
-  }
+export const ThemeSwitcher = function ThemeSwitcher() {
+  const currentTheme = use$(store$.profile.themeName) ?? 'ink'
 
   return (
     <YStack gap="$3" alignItems="flex-start" maxWidth="100%">
-      <XStack gap="$2" alignItems="center" flexWrap="wrap">
-        {themes.map((theme) => (
-          <Circle
-            key={theme.name}
-            size="$2"
-            $md={{ size: '$3' }}
-            backgroundColor={theme.color}
-            borderWidth={currentColorTheme === theme.name ? 3 : 1}
-            borderColor={currentColorTheme === theme.name ? '$borderColor' : 'gray'}
-            pressStyle={{
-              scale: 0.9,
-              borderColor: '$borderColor',
-            }}
-            hoverStyle={{
-              scale: 1.1,
-              borderColor: '$borderColor',
-            }}
-            cursor="pointer"
-            onPress={() => handleThemeChange(theme.name)}
-          />
-        ))}
-      </XStack>
-      <Button onPress={() => setBaseTheme(currentBaseTheme === 'light' ? 'dark' : 'light')}>
-        {currentBaseTheme === 'light' ? '☀️' : '🌙'} {currentBaseTheme}
-      </Button>
+      {THEME_NAMES.map((name) => (
+        <Text
+          key={name}
+          fontFamily="$journal"
+          fontSize={20}
+          color={currentTheme === name ? '$color' : '$color8'}
+          cursor="pointer"
+          hoverStyle={{ color: '$color' }}
+          onPress={() => setTheme(name)}
+        >
+          {THEME_LABELS[name]}
+        </Text>
+      ))}
     </YStack>
   )
 }
 
-export type { ColorThemeName }
+export type { ThemeName }

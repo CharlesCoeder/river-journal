@@ -9,10 +9,8 @@ import { createBaseLexicalConfig } from './lexical-config'
 export const injectFontCSS = (): (() => void) => {
   const styleId = 'expo-dom-fonts'
 
-  // Check if styles already injected
   const existingStyle = document.getElementById(styleId)
   if (existingStyle) {
-    // Return a cleanup function that removes the existing style
     return () => {
       existingStyle.remove()
     }
@@ -22,37 +20,37 @@ export const injectFontCSS = (): (() => void) => {
 
   const fontCSS = `
     @font-face {
-      font-family: "SourceSans3";
-      src: url("${baseUrl}fonts/SourceSans3/SourceSans3-Regular.ttf") format("truetype");
+      font-family: "Outfit";
+      src: url("${baseUrl}fonts/Outfit/Outfit-Regular.ttf") format("truetype");
       font-weight: 400;
       font-style: normal;
     }
-    
+
     @font-face {
-      font-family: "SourceSans3";
-      src: url("${baseUrl}fonts/SourceSans3/SourceSans3-Bold.ttf") format("truetype");
-      font-weight: 700;
+      font-family: "Outfit-Medium";
+      src: url("${baseUrl}fonts/Outfit/Outfit-Medium.ttf") format("truetype");
+      font-weight: 500;
       font-style: normal;
     }
-    
+
     @font-face {
-      font-family: "SourceSans3";
-      src: url("${baseUrl}fonts/SourceSans3/SourceSans3-Italic.ttf") format("truetype");
+      font-family: "Newsreader";
+      src: url("${baseUrl}fonts/Newsreader/Newsreader-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: "Newsreader-Italic";
+      src: url("${baseUrl}fonts/Newsreader/Newsreader-Italic.ttf") format("truetype");
       font-weight: 400;
       font-style: italic;
     }
-    
+
     @font-face {
-      font-family: "SourceSans3";
-      src: url("${baseUrl}fonts/SourceSans3/SourceSans3-BoldItalic.ttf") format("truetype");
-      font-weight: 700;
-      font-style: italic;
-    }
-    
-    @font-face {
-      font-family: "PatrickHand";
-      src: url("${baseUrl}fonts/PatrickHand.ttf") format("truetype");
-      font-weight: 400;
+      font-family: "Newsreader-Medium";
+      src: url("${baseUrl}fonts/Newsreader/Newsreader-Medium.ttf") format("truetype");
+      font-weight: 500;
       font-style: normal;
     }
   `
@@ -62,7 +60,6 @@ export const injectFontCSS = (): (() => void) => {
   style.textContent = fontCSS
   document.head.appendChild(style)
 
-  // Return cleanup function
   return () => {
     const injectedStyle = document.getElementById(styleId)
     if (injectedStyle) {
@@ -79,7 +76,6 @@ export const createMobileLexicalConfig = (): InitialConfigType => {
   const baseConfig = createBaseLexicalConfig()
   return {
     ...baseConfig,
-    // Remove theme class mappings for mobile - we'll use inline styles instead
     theme: {},
   }
 }

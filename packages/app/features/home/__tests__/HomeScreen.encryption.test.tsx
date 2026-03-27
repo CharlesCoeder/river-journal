@@ -175,6 +175,7 @@ vi.mock('@my/ui', async () => {
     Switch,
     Text: passthrough('span'),
     ThemeSwitcher: passthrough('div'),
+    View: passthrough('div'),
     XStack: passthrough('div'),
     YStack: passthrough('div'),
   }

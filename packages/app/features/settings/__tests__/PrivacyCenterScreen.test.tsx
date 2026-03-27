@@ -32,11 +32,9 @@ vi.mock('@my/ui', async () => {
     ReactModule.createElement('div', mapProps(props), children)
 
   return {
-    Button: passthrough('div'),
-    Card: passthrough('section'),
     ScrollView,
-    Separator: () => ReactModule.createElement('hr'),
     Text: passthrough('span'),
+    View: passthrough('div'),
     XStack: passthrough('div'),
     YStack: passthrough('div'),
   }
@@ -66,22 +64,8 @@ vi.mock('app/state/encryptionSetup', () => ({
   },
 }))
 
-vi.mock('@tamagui/lucide-icons', () => ({
-  ArrowLeft: () => React.createElement('span', null, 'ArrowLeft'),
-}))
-
 vi.mock('solito/navigation', () => ({
   useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
-}))
-
-vi.mock('app/features/home/components/PrivacyTierExplainer', () => ({
-  PrivacyTierExplainer: ({ selectedMode, onModeSelect, showLearnMore }: any) =>
-    React.createElement('div', {
-      'data-testid': 'privacy-tier-explainer',
-      'data-selected-mode': selectedMode ?? 'none',
-      'data-interactive': String(!!onModeSelect),
-      'data-show-learn-more': String(showLearnMore ?? true),
-    }),
 }))
 
 import { PrivacyCenterScreen } from '../PrivacyCenterScreen'
@@ -92,12 +76,8 @@ afterEach(() => {
 })
 
 describe('PrivacyCenterScreen', () => {
-  describe('unauthenticated visitor', () => {
-    it('renders correctly with no session', () => {
-      mockIsAuthenticated.mockReturnValue(false)
-      mockSyncEnabled.mockReturnValue(false)
-      mockCurrentMode.mockReturnValue(null)
-
+  describe('renders all content sections', () => {
+    it('renders header and description', () => {
       render(React.createElement(PrivacyCenterScreen))
 
       expect(screen.getByTestId('privacy-center-screen')).toBeTruthy()
@@ -105,101 +85,30 @@ describe('PrivacyCenterScreen', () => {
       expect(screen.getByText('How River Journal handles your data and encryption.')).toBeTruthy()
     })
 
-    it('renders PrivacyTierExplainer without mode highlight', () => {
-      mockIsAuthenticated.mockReturnValue(false)
-      mockSyncEnabled.mockReturnValue(false)
-      mockCurrentMode.mockReturnValue(null)
-
+    it('renders privacy mode cards', () => {
       render(React.createElement(PrivacyCenterScreen))
 
-      const explainer = screen.getByTestId('privacy-tier-explainer')
-      expect(explainer.getAttribute('data-selected-mode')).toBe('none')
-      expect(explainer.getAttribute('data-interactive')).toBe('false')
-      expect(explainer.getAttribute('data-show-learn-more')).toBe('false')
+      expect(screen.getAllByText('Strict Privacy Mode').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Cloud Backup Mode').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('You hold the only key to unlock your journal.')).toBeTruthy()
+      expect(screen.getByText('We securely handle the encryption behind the scenes.')).toBeTruthy()
     })
 
-    it('renders data handling section', () => {
-      mockIsAuthenticated.mockReturnValue(false)
-      mockSyncEnabled.mockReturnValue(false)
-      mockCurrentMode.mockReturnValue(null)
-
+    it('renders what we can and cannot access section', () => {
       render(React.createElement(PrivacyCenterScreen))
 
-      expect(screen.getByTestId('data-handling-section')).toBeTruthy()
-      expect(screen.getByText('What we can and cannot access')).toBeTruthy()
-      expect(screen.getByText('Local only (no sync)')).toBeTruthy()
+      expect(screen.getByText('What We Can & Cannot Access')).toBeTruthy()
+      expect(screen.getByText('Local Only (No Sync)')).toBeTruthy()
+      expect(screen.getByText('Synced Metadata')).toBeTruthy()
     })
 
-    it('renders retention and deletion policies', () => {
-      mockIsAuthenticated.mockReturnValue(false)
-      mockSyncEnabled.mockReturnValue(false)
-      mockCurrentMode.mockReturnValue(null)
-
+    it('renders retention and deletion section', () => {
       render(React.createElement(PrivacyCenterScreen))
 
-      expect(screen.getByText('Data retention and deletion')).toBeTruthy()
-      expect(screen.getByText('Cloud data')).toBeTruthy()
-      expect(screen.getByText('Account deletion')).toBeTruthy()
-      expect(screen.getByText('Local data')).toBeTruthy()
-    })
-  })
-
-  describe('authenticated modes', () => {
-    it('highlights e2e mode when authenticated with e2e encryption and sync enabled', () => {
-      mockIsAuthenticated.mockReturnValue(true)
-      mockSyncEnabled.mockReturnValue(true)
-      mockCurrentMode.mockReturnValue('e2e')
-
-      render(React.createElement(PrivacyCenterScreen))
-
-      const explainer = screen.getByTestId('privacy-tier-explainer')
-      expect(explainer.getAttribute('data-selected-mode')).toBe('e2e')
-    })
-
-    it('highlights managed mode when authenticated with managed encryption and sync enabled', () => {
-      mockIsAuthenticated.mockReturnValue(true)
-      mockSyncEnabled.mockReturnValue(true)
-      mockCurrentMode.mockReturnValue('managed')
-
-      render(React.createElement(PrivacyCenterScreen))
-
-      const explainer = screen.getByTestId('privacy-tier-explainer')
-      expect(explainer.getAttribute('data-selected-mode')).toBe('managed')
-    })
-
-    it('does not highlight a mode when authenticated but sync is disabled (local-only)', () => {
-      mockIsAuthenticated.mockReturnValue(true)
-      mockSyncEnabled.mockReturnValue(false)
-      mockCurrentMode.mockReturnValue(null)
-
-      render(React.createElement(PrivacyCenterScreen))
-
-      const explainer = screen.getByTestId('privacy-tier-explainer')
-      expect(explainer.getAttribute('data-selected-mode')).toBe('none')
-    })
-
-    it('does not highlight a mode when authenticated with sync on but no encryption mode set', () => {
-      mockIsAuthenticated.mockReturnValue(true)
-      mockSyncEnabled.mockReturnValue(true)
-      mockCurrentMode.mockReturnValue(null)
-
-      render(React.createElement(PrivacyCenterScreen))
-
-      const explainer = screen.getByTestId('privacy-tier-explainer')
-      expect(explainer.getAttribute('data-selected-mode')).toBe('none')
-    })
-  })
-
-  describe('no actionable controls', () => {
-    it('does not render any buttons or destructive actions', () => {
-      mockIsAuthenticated.mockReturnValue(true)
-      mockSyncEnabled.mockReturnValue(true)
-      mockCurrentMode.mockReturnValue('e2e')
-
-      render(React.createElement(PrivacyCenterScreen))
-
-      const buttons = screen.queryAllByRole('button')
-      expect(buttons).toHaveLength(0)
+      expect(screen.getByText('Data Retention & Deletion')).toBeTruthy()
+      expect(screen.getByText('Cloud Data')).toBeTruthy()
+      expect(screen.getByText('Account Deletion')).toBeTruthy()
+      expect(screen.getByText('Local Data')).toBeTruthy()
     })
   })
 })

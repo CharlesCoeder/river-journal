@@ -61,30 +61,38 @@ export function GoogleSignInButton(_props: GoogleSignInButtonProps) {
 
   return (
     <>
-      <Button
+      <XStack
         onPress={handlePress}
         disabled={isLoading}
-        backgroundColor="#FFFFFF"
-        borderColor="#747775"
+        backgroundColor="transparent"
+        borderColor="$color3"
         borderWidth={1}
-        hoverStyle={{ backgroundColor: '#F2F2F2' }}
-        pressStyle={{ backgroundColor: '#E8E8E8', opacity: 0.9 }}
-        height="$5"
-        borderRadius="$4"
+        hoverStyle={{ borderColor: '$color' }}
+        pressStyle={{ opacity: 0.8 }}
+        paddingVertical="$3"
+        justifyContent="center"
+        alignItems="center"
+        gap="$3"
+        cursor={isLoading ? 'not-allowed' : 'pointer'}
+        opacity={isLoading ? 0.5 : 1}
       >
-        <XStack alignItems="center" gap="$3">
-          {isLoading ? (
-            <Spinner size="small" color="#1F1F1F" />
-          ) : (
-            <>
-              <GoogleLogo size={20} />
-              <Text fontFamily="$body" fontWeight="500" fontSize="$4" color="#1F1F1F">
-                Continue with Google
-              </Text>
-            </>
-          )}
-        </XStack>
-      </Button>
+        {isLoading ? (
+          <Spinner size="small" />
+        ) : (
+          <>
+            <GoogleLogo size={16} />
+            <Text
+              fontFamily="$body"
+              fontSize={12}
+              letterSpacing={3}
+              textTransform="uppercase"
+              color="$color"
+            >
+              Continue with Google
+            </Text>
+          </>
+        )}
+      </XStack>
       {error && (
         <Text fontSize="$2" color="$red10" fontFamily="$body" textAlign="center" marginTop="$1">
           {error}

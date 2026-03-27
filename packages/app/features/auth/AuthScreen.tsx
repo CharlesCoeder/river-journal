@@ -1,13 +1,11 @@
 /**
  * AuthScreen - Main entry point for authentication
- * Provides tabs/toggle between Login and Signup forms
- * Uses Legend State useObservable for component-scoped form state
- * Form values are cleared when navigating away for privacy
+ * Design: full-screen modal with tab-based login/signup, bottom-border inputs,
+ * uppercase micro labels, "or" divider, Google button.
  */
 
 import { useCallback, useMemo } from 'react'
-import { YStack, XStack, Text, Button, ScrollView } from '@my/ui'
-import { ArrowLeft } from '@tamagui/lucide-icons'
+import { YStack, XStack, Text, ScrollView, View } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { type ObservableObject } from '@legendapp/state'
 import { useObservable, use$ } from '@legendapp/state/react'
@@ -16,7 +14,6 @@ import { LoginForm } from './components/LoginForm'
 
 type AuthTab = 'login' | 'signup'
 
-// Type for the auth form state
 export interface AuthFormState {
   activeTab: AuthTab
   email: string
@@ -24,7 +21,6 @@ export interface AuthFormState {
   confirmPassword: string
 }
 
-// Type for the observable auth form (exported for child components)
 export type AuthFormObservable = ObservableObject<AuthFormState>
 
 interface AuthScreenProps {
@@ -32,7 +28,6 @@ interface AuthScreenProps {
 }
 
 export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
-  // Component-scoped observable - resets when AuthScreen unmounts
   const authForm$ = useObservable<AuthFormState>({
     activeTab: initialTab,
     email: '',
@@ -43,7 +38,6 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
   const activeTab = use$(authForm$.activeTab)
   const router = useRouter()
 
-  // Memoized actions to avoid recreating on each render
   const actions = useMemo(
     () => ({
       setTab: (tab: AuthTab) => authForm$.activeTab.set(tab),
@@ -81,43 +75,56 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
         flex={1}
         paddingHorizontal="$4"
         paddingTop="$4"
-        paddingBottom="$10"
+        paddingBottom={96}
         alignItems="center"
-        $sm={{
-          paddingTop: '$6',
-        }}
+        $sm={{ paddingHorizontal: '$6' }}
+        $md={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
-        {/* Back navigation */}
-        <XStack width="100%" maxWidth={400}>
-          <Button
-            size="$3"
-            chromeless
+        {/* Cancel button — top right, wider than form */}
+        <XStack width="100%" maxWidth={576} justifyContent="flex-end">
+          <Text
+            fontFamily="$body"
+            fontSize={12}
+            letterSpacing={3}
+            textTransform="uppercase"
+            color="$color8"
+            cursor="pointer"
+            hoverStyle={{ color: '$color' }}
             onPress={handleBack}
-            icon={ArrowLeft}
-            color="$color9"
-            opacity={0.6}
-            hoverStyle={{ opacity: 1 }}
-          />
+          >
+            Cancel
+          </Text>
         </XStack>
 
-        <YStack width="100%" maxWidth={400} gap="$6" paddingTop="$6">
-          {/* Header */}
-          <YStack alignItems="center" gap="$3">
-            <Text fontSize="$8" fontFamily="$body" fontWeight="300" color="$color">
-              {activeTab === 'signup' ? 'Create Account' : 'Welcome Back'}
-            </Text>
-            <Text fontSize="$3" color="$color10" fontFamily="$body" textAlign="center">
-              Accounts are optional. Your journal works perfectly without one.
-            </Text>
-            <Text fontSize="$3" color="$color10" fontFamily="$body" textAlign="center">
-              {activeTab === 'signup'
-                ? 'Sign up to sync your journal across devices.'
-                : 'Log in to access your journal from any device.'}
-            </Text>
-          </YStack>
+        {/* Header — wider than form so text fits one line */}
+        <YStack alignItems="center" gap="$3" paddingTop={48} marginBottom={48}>
+          <Text
+            fontFamily="$journal"
+            fontSize={30}
+            $md={{ fontSize: 36 }}
+            color="$color"
+            letterSpacing={-0.5}
+          >
+            Your Journal
+          </Text>
+          <Text
+            fontFamily="$body"
+            fontSize={16}
+            color="$color6"
+            textAlign="center"
+          >
+            Accounts are optional. Your journal works perfectly without one.
+          </Text>
+        </YStack>
 
-          {/* Tab Selector */}
-          <XStack borderRadius="$4" backgroundColor="$color3" padding="$1">
+        <YStack width="100%" maxWidth={384} gap="$6" alignItems="center">
+          {/* Tab bar */}
+          <XStack
+            width="100%"
+            borderBottomWidth={1}
+            borderColor="$color4"
+            marginBottom="$4"
+          >
             <TabButton
               label="Log In"
               isActive={activeTab === 'login'}
@@ -152,32 +159,26 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
   )
 }
 
-// Tab Button Component
-interface TabButtonProps {
-  label: string
-  isActive: boolean
-  onPress: () => void
-}
-
-function TabButton({ label, isActive, onPress }: TabButtonProps) {
+function TabButton({ label, isActive, onPress }: { label: string; isActive: boolean; onPress: () => void }) {
   return (
     <XStack
       flex={1}
-      paddingVertical="$2.5"
+      paddingBottom="$2"
       justifyContent="center"
       alignItems="center"
-      borderRadius="$3"
-      backgroundColor={isActive ? '$background' : 'transparent'}
-      hoverStyle={{ backgroundColor: isActive ? '$background' : '$color4' }}
-      pressStyle={{ opacity: 0.8 }}
-      onPress={onPress}
+      borderBottomWidth={isActive ? 2 : 0}
+      borderColor="$color"
       cursor="pointer"
+      onPress={onPress}
     >
       <Text
-        fontSize="$4"
         fontFamily="$body"
-        fontWeight={isActive ? '600' : '400'}
-        color={isActive ? '$color' : '$color10'}
+        fontSize={12}
+        letterSpacing={3}
+        textTransform="uppercase"
+        fontWeight={isActive ? '500' : '400'}
+        color={isActive ? '$color' : '$color8'}
+        hoverStyle={{ color: '$color' }}
       >
         {label}
       </Text>

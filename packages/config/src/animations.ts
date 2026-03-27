@@ -41,4 +41,38 @@ export const animations = createAnimations({
     mass: 0.9,
     stiffness: 100,
   },
+  designEnter: {
+    type: 'tween',
+    duration: 0.8,
+    ease: [0.16, 1, 0.3, 1],
+  },
+  designEnterSlow: {
+    type: 'tween',
+    duration: 1.2,
+    ease: [0.16, 1, 0.3, 1],
+  },
+  designEnterVerySlow: {
+    type: 'tween',
+    duration: 1.5,
+    ease: [0.16, 1, 0.3, 1],
+  },
+  designModal: {
+    type: 'tween',
+    duration: 0.6,
+    ease: [0.16, 1, 0.3, 1],
+  },
+  designModalExit: {
+    type: 'tween',
+    duration: 0.4,
+  },
+  ctaSpring: {
+    type: 'spring',
+    stiffness: 400,
+    damping: 30,
+  },
+  celebrationSpring: {
+    type: 'spring',
+    stiffness: 40,
+    damping: 20,
+  },
 })

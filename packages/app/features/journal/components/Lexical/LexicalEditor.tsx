@@ -47,7 +47,7 @@ function InitialContentPlugin({ content }: { content: string }) {
 
 const LexicalEditor: React.FC<LexicalEditorProps> = ({
   children,
-  placeholder = 'Begin your stream-of-consciousness writing here...',
+  placeholder = 'Start flowing...',
   className,
   themeValues, // Accepted but unused on web
   fontFamilies, // Accepted but unused on web
@@ -61,17 +61,17 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <div className={className} style={{ position: 'relative', minHeight: '200px' }}>
+      <div className={className} style={{ position: 'relative', minHeight: '300px' }}>
         <RichTextPlugin
           contentEditable={
-            <div style={{ minHeight: '200px' }}>
+            <div style={{ minHeight: '300px' }}>
               <ContentEditable
                 style={{
                   outline: 'none',
-                  minHeight: '200px',
-                  fontSize: '16px',
-                  lineHeight: '1.5',
-                  fontFamily: 'Lora',
+                  minHeight: '300px',
+                  fontSize: '30px',
+                  lineHeight: '1.625',
+                  fontFamily: 'Newsreader, Georgia, "Times New Roman", serif',
                 }}
               />
             </div>
@@ -83,10 +83,12 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
                   position: 'absolute',
                   top: '0px',
                   left: '0px',
-                  fontSize: '16px',
+                  fontSize: '30px',
+                  lineHeight: '1.625',
                   pointerEvents: 'none',
                   userSelect: 'none',
-                  fontFamily: 'Lora',
+                  fontFamily: 'Newsreader, Georgia, "Times New Roman", serif',
+                  opacity: 0.35,
                 }}
               >
                 {placeholderText}
