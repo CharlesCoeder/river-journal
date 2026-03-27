@@ -1,5 +1,4 @@
-import { YStack, XStack, Button, Dialog, Text, Spinner, isWeb } from '@my/ui'
-import { ArrowLeft, Save } from '@tamagui/lucide-icons'
+import { YStack, XStack, Dialog, Text, Spinner, View, isWeb } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
@@ -8,6 +7,7 @@ import {
   store$,
   saveActiveFlowSession,
   getActiveFlowContent,
+  getActiveFlowWordCount,
   hidePersistentEditor,
   updatePersistentEditorHeaderHeight,
 } from 'app/state/store'
@@ -36,7 +36,8 @@ export function JournalScreen() {
   const handleExitFlow = () => {
     const content = getActiveFlowContent()
     if (content.trim()) {
-      setShowSaveDialog(true)
+      // Save directly and go to celebration — no confirmation dialog needed
+      handleSaveFlow()
     } else {
       handleBackToHome()
     }
@@ -49,64 +50,89 @@ export function JournalScreen() {
   }, [])
 
   const hasContent = !!activeFlow?.content
+  const wordCount = activeFlow?.wordCount ?? 0
 
   return (
     <YStack
       flex={1}
       backgroundColor="$background"
     >
-      {/* Minimal header — back icon left, save icon right */}
-      <XStack
-        width="100%"
-        justifyContent="space-between"
-        alignItems="center"
-        paddingHorizontal="$4"
-        paddingTop="$2"
-        paddingBottom="$3"
-        zIndex={200}
-        onLayout={handleHeaderLayout}
-        $sm={{
-          maxWidth: 720,
-          alignSelf: 'center',
-          paddingHorizontal: '$2',
-        }}
-      >
-        <Button
-          size="$3"
-          chromeless
-          onPress={handleBackToHome}
-          icon={ArrowLeft}
-          color="$color9"
-          opacity={0.6}
-          hoverStyle={{ opacity: 1 }}
-        />
-        <Button
-          size="$3"
-          chromeless
-          onPress={handleExitFlow}
-          icon={Save}
-          color="$color9"
-          opacity={hasContent ? 0.6 : 0.2}
-          hoverStyle={{ opacity: hasContent ? 1 : 0.2 }}
-          disabled={!hasContent}
-        />
-      </XStack>
-
-      {/* Writing surface — maximized */}
+      {/* Writing surface — maximized, full-screen feel */}
       <YStack
         flex={1}
         width="100%"
+        maxWidth={896}
+        alignSelf="center"
         paddingHorizontal="$4"
-        $sm={{
-          maxWidth: 720,
-          alignSelf: 'center',
-          paddingHorizontal: '$2',
-        }}
+        paddingTop="$4"
+        $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
+        $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
+        onLayout={handleHeaderLayout}
       >
         <Editor />
       </YStack>
 
-      {/* Save dialog — warm, calm, centered */}
+      {/* Bottom bar — word count + finish button */}
+      {hasContent && (
+        <XStack
+          position={isWeb ? 'fixed' as any : 'absolute'}
+          bottom={0}
+          left={0}
+          right={0}
+          paddingHorizontal="$4"
+          paddingVertical="$5"
+          $md={{ paddingHorizontal: '$8' }}
+          $lg={{ paddingHorizontal: '$12' }}
+          paddingBottom="$6"
+          justifyContent="center"
+          zIndex={100}
+        >
+          <XStack
+            width="100%"
+            maxWidth={768}
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Text
+              fontFamily="$body"
+              fontSize={14}
+              color="$color8"
+              letterSpacing={0.5}
+            >
+              {wordCount} {wordCount === 1 ? 'word' : 'words'}
+            </Text>
+
+            <XStack
+              cursor="pointer"
+              alignItems="center"
+              gap="$2"
+              group="finishBtn"
+              onPress={handleExitFlow}
+              flexShrink={0}
+            >
+              <Text
+                fontFamily="$body"
+                fontSize={14}
+                color="$color"
+                letterSpacing={0.5}
+                hoverStyle={{ color: '$color' }}
+                whiteSpace="nowrap"
+              >
+                Finish Session
+              </Text>
+              <View
+                width={16}
+                height={1}
+                backgroundColor="$color"
+                $group-finishBtn-hover={{ width: 24 }}
+                flexShrink={0}
+              />
+            </XStack>
+          </XStack>
+        </XStack>
+      )}
+
+      {/* Save dialog */}
       <Dialog
         open={showSaveDialog || isSaving}
         onOpenChange={(open) => {
@@ -124,66 +150,56 @@ export function JournalScreen() {
           <Dialog.Content
             key="content"
             animateOnly={['transform', 'opacity']}
-            animation={[
-              'medium',
-              {
-                opacity: {
-                  overshootClamping: true,
-                },
-              },
-            ]}
+            animation="designModal"
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: 10, opacity: 0 }}
             backgroundColor="$background"
-            borderRadius="$6"
+            borderRadius={2}
             padding="$6"
             gap="$4"
             maxWidth="90%"
             width="100%"
             $sm={{ maxWidth: 400 }}
             borderWidth={1}
-            borderColor="$color5"
+            borderColor="$color4"
           >
-            <Dialog.Title fontSize="$6" fontFamily="$body" fontWeight="600" color="$color">
+            <Dialog.Title fontFamily="$journal" fontSize={24} color="$color">
               Save this flow?
             </Dialog.Title>
-            <Dialog.Description fontSize="$4" fontFamily="$body" color="$color10">
+            <Dialog.Description fontFamily="$body" fontSize={14} color="$color8">
               Your words will be saved and you can revisit them anytime.
             </Dialog.Description>
 
-            <XStack gap="$3" justifyContent="flex-end" marginTop="$2">
+            <XStack gap="$4" justifyContent="flex-end" marginTop="$3">
               <Dialog.Close displayWhenAdapted asChild>
-                <Button
-                  variant="outlined"
+                <Text
+                  fontFamily="$body"
+                  fontSize={12}
+                  letterSpacing={3}
+                  textTransform="uppercase"
+                  color="$color8"
+                  cursor="pointer"
+                  hoverStyle={{ color: '$color' }}
                   onPress={() => setShowSaveDialog(false)}
-                  disabled={isSaving}
-                  borderColor="$color6"
-                  borderRadius="$4"
                 >
-                  <Text fontSize="$4" fontFamily="$body" color="$color10">
-                    Cancel
-                  </Text>
-                </Button>
+                  Cancel
+                </Text>
               </Dialog.Close>
-              <Button
+              <Text
+                fontFamily="$body"
+                fontSize={12}
+                letterSpacing={3}
+                textTransform="uppercase"
+                color="$color"
+                cursor="pointer"
+                hoverStyle={{ opacity: 0.7 }}
                 onPress={handleSaveFlow}
-                theme="accent"
-                disabled={isSaving}
-                borderRadius="$4"
+                borderBottomWidth={1}
+                borderColor="$color5"
+                paddingBottom={2}
               >
-                {isSaving ? (
-                  <XStack gap="$2" alignItems="center">
-                    <Spinner size="small" />
-                    <Text fontSize="$4" fontFamily="$body" fontWeight="600">
-                      Saving…
-                    </Text>
-                  </XStack>
-                ) : (
-                  <Text fontSize="$4" fontFamily="$body" fontWeight="600">
-                    Save Flow
-                  </Text>
-                )}
-              </Button>
+                {isSaving ? 'Saving...' : 'Save Flow'}
+              </Text>
             </XStack>
           </Dialog.Content>
         </Dialog.Portal>

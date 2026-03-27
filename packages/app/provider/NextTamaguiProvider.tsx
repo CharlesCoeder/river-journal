@@ -1,17 +1,14 @@
 'use client'
 
 import '@tamagui/core/reset.css'
-import '@tamagui/font-inter/css/400.css'
-import '@tamagui/font-inter/css/700.css'
 import '@tamagui/polyfill-dev'
 
 import type { ReactNode } from 'react'
 import { useServerInsertedHTML } from 'next/navigation'
-import { NextThemeProvider, useRootTheme } from '@tamagui/next-theme'
+import { NextThemeProvider } from '@tamagui/next-theme'
 import { config, useTheme } from '@my/ui'
 import { Provider } from 'app/provider'
 import { StyleSheet } from 'react-native'
-import { setBaseTheme } from 'app/state/store'
 import { useEffect } from 'react'
 
 export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
@@ -24,8 +21,6 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
         <style dangerouslySetInnerHTML={{ __html: rnwStyle.textContent }} id={rnwStyle.id} />
         <style
           dangerouslySetInnerHTML={{
-            // the first time this runs you'll get the full CSS including all themes
-            // after that, it will only return CSS generated since the last call
             __html: config.getNewCSS(),
           }}
         />
@@ -40,7 +35,6 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
 
         <script
           dangerouslySetInnerHTML={{
-            // avoid flash of animated things on enter:
             __html: `document.documentElement.classList.add('t_unmounted')`,
           }}
         />
@@ -49,15 +43,7 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
   })
 
   return (
-    <NextThemeProvider
-      skipNextHead
-      // investigate: using forceTheme={baseTheme} and onChangeTheme={setBaseTheme}
-      // curious on if legend state persistence will negatively affect any SSR benefits of NextThemeProvider
-      defaultTheme="light"
-      onChangeTheme={(next) => {
-        setBaseTheme(next as any)
-      }}
-    >
+    <NextThemeProvider skipNextHead defaultTheme="light">
       <Provider>
         <SetHTMLBackgroundColor />
         {children}
@@ -66,16 +52,12 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
   )
 }
 
-// Component to sync HTML background color with Tamagui theme
 function SetHTMLBackgroundColor() {
   const theme = useTheme()
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      // Get the actual background color from the current Tamagui theme
       const backgroundColor = theme.background.val
-
-      // Update the HTML element's background color
       document.documentElement.style.backgroundColor = backgroundColor
       document.body.style.backgroundColor = backgroundColor
     }

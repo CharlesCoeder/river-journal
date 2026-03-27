@@ -1,25 +1,27 @@
-import { ScrollView, Separator, Switch, Text, XStack, YStack } from '@my/ui'
-import { Smartphone, Lock, Shield } from '@tamagui/lucide-icons'
+import { ScrollView, Text, XStack, YStack, View } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
+import { signOut } from 'app/utils'
+import { useCallback, useState } from 'react'
 import { SyncToggle } from 'app/features/home/components/SyncToggle'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { TrustedBrowsersList } from 'app/features/home/components/TrustedBrowsersList'
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
+import { ThemePicker } from './components/ThemePicker'
 
 // ---------------------------------------------------------------------------
-// Privacy Tier — compact 3-column display matching Settings design
+// Privacy Tier — stacked vertical list matching design
 // ---------------------------------------------------------------------------
 
 type TierKey = 'local' | 'managed' | 'e2e'
 
-const TIERS: { key: TierKey; label: string; description: string; icon: typeof Smartphone }[] = [
-  { key: 'local', label: 'Local Only', description: 'Entries never leave this device', icon: Smartphone },
-  { key: 'managed', label: 'Managed Encryption', description: 'We handle encryption for you', icon: Lock },
-  { key: 'e2e', label: 'E2E Encryption', description: 'Only you hold the key', icon: Shield },
+const TIERS: { key: TierKey; label: string; description: string }[] = [
+  { key: 'local', label: 'Local Only', description: 'Entries never leave this device.' },
+  { key: 'managed', label: 'Managed Encryption', description: 'We handle encryption for you.' },
+  { key: 'e2e', label: 'E2E Encryption', description: 'Only you hold the key.' },
 ]
 
 function getActiveTier(isAuthenticated: boolean, currentMode: string | null): TierKey {
@@ -28,111 +30,51 @@ function getActiveTier(isAuthenticated: boolean, currentMode: string | null): Ti
   return 'managed'
 }
 
-function PrivacyTierRow({ activeTier }: { activeTier: TierKey }) {
+function PrivacyTierList({ activeTier }: { activeTier: TierKey }) {
   return (
-    <XStack
-      gap="$3"
-      $max-sm={{ flexDirection: 'column', gap: '$0' }}
-    >
-      {TIERS.map((tier, index) => {
+    <YStack gap="$2">
+      {TIERS.map((tier) => {
         const isActive = tier.key === activeTier
-        const Icon = tier.icon
-        const isLast = index === TIERS.length - 1
         return (
-          <YStack
-            key={tier.key}
-            flex={1}
-            gap="$2"
-            paddingVertical="$3"
-            paddingHorizontal="$2"
-            borderRightWidth={isLast ? 0 : 1}
-            borderColor="$color5"
-            $max-sm={{
-              borderRightWidth: 0,
-              borderBottomWidth: isLast ? 0 : 1,
-              borderColor: '$color5',
-            }}
-          >
-            <XStack gap="$2" alignItems="center">
-              <Icon size={16} color={isActive ? '$color' : '$color8'} />
-              {isActive && (
-                <Text
-                  fontSize="$1"
-                  fontFamily="$body"
-                  fontWeight="700"
-                  color="$blue10"
-                  textTransform="uppercase"
-                  letterSpacing={1}
-                >
-                  Active
-                </Text>
-              )}
-            </XStack>
+          <YStack key={tier.key} opacity={isActive ? 1 : 0.4}>
             <Text
-              fontSize="$5"
-              fontFamily="$body"
-              fontWeight={isActive ? '600' : '400'}
-              color={isActive ? '$color' : '$color9'}
+              fontFamily="$journal"
+              fontSize={24}
+              fontWeight={isActive ? '500' : '400'}
+              color="$color"
             >
               {tier.label}
             </Text>
-            <Text fontSize="$2" fontFamily="$body" color={isActive ? '$color10' : '$color8'}>
+            <Text
+              fontFamily="$body"
+              fontSize={13}
+              color="$color7"
+              marginTop={2}
+            >
               {tier.description}
             </Text>
           </YStack>
         )
       })}
-    </XStack>
+    </YStack>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Theme placeholder
+// Section header — all-caps micro label
 // ---------------------------------------------------------------------------
 
-const THEME_OPTIONS = [
-  { name: 'Ink & Paper', id: 'light' },
-  { name: 'Night Study', id: 'dark' },
-  { name: 'Pure White', id: 'pure-white' },
-]
-
-function ThemeRow({
-  name,
-  isCurrent,
-}: {
-  name: string
-  isCurrent: boolean
-}) {
+function SectionHeader({ children }: { children: string }) {
   return (
-    <YStack>
-      <XStack
-        paddingVertical="$4"
-        alignItems="center"
-        justifyContent="space-between"
-      >
-        <Text
-          fontSize="$5"
-          fontFamily="$body"
-          fontWeight={isCurrent ? '600' : '400'}
-          color={isCurrent ? '$color' : '$color9'}
-        >
-          {name}
-        </Text>
-        {isCurrent && (
-          <Text
-            fontSize="$1"
-            fontFamily="$body"
-            fontWeight="700"
-            color="$blue10"
-            textTransform="uppercase"
-            letterSpacing={1.5}
-          >
-            Current
-          </Text>
-        )}
-      </XStack>
-      <Separator borderColor="$color5" />
-    </YStack>
+    <Text
+      fontFamily="$body"
+      fontSize={11}
+      textTransform="uppercase"
+      letterSpacing={2}
+      color="$color8"
+    >
+      {children}
+    </Text>
   )
 }
 
@@ -146,9 +88,19 @@ export function SettingsScreen() {
   const userId = use$(store$.session.userId)
   const syncEnabled = use$(store$.session.syncEnabled)
   const currentMode = use$(encryptionSetup$.currentMode)
-  const baseTheme = use$(store$.profile.baseTheme) ?? 'light'
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const activeTier = getActiveTier(isAuthenticated, currentMode)
+
+  const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true)
+    try {
+      await signOut()
+      router.push('/')
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }, [router])
 
   return (
     <ScrollView
@@ -159,154 +111,192 @@ export function SettingsScreen() {
       <YStack
         testID="settings-screen"
         width="100%"
+        maxWidth={768}
+        alignSelf="center"
         paddingHorizontal="$4"
         paddingTop="$4"
-        paddingBottom="$10"
-        gap="$6"
-        $sm={{
-          maxWidth: 640,
-          alignSelf: 'center',
-          paddingHorizontal: 0,
-          paddingTop: '$6',
-        }}
+        paddingBottom={96}
+        $sm={{ paddingHorizontal: '$6' }}
+        $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
+        $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
         {/* Header */}
-        <YStack gap="$2">
-          <Text fontSize="$10" fontFamily="$body" fontWeight="300" color="$color">
+        <XStack justifyContent="space-between" alignItems="center" marginBottom={64} $md={{ marginBottom: 96 }}>
+          <Text
+            fontFamily="$journalItalic"
+            fontStyle="italic"
+            fontSize={30}
+            color="$color"
+            letterSpacing={-0.5}
+          >
             Settings
           </Text>
           <Text
-            fontSize="$2"
             fontFamily="$body"
-            color="$color9"
-            textTransform="uppercase"
-            letterSpacing={2}
+            fontSize={14}
+            color="$color8"
+            letterSpacing={0.5}
+            cursor="pointer"
+            hoverStyle={{ color: '$color' }}
+            onPress={() => router.push('/')}
           >
-            Preferences & Privacy
+            Back to Home
           </Text>
-        </YStack>
+        </XStack>
 
-        <Separator borderColor="$color5" />
+        {/* Sections container */}
+        <YStack gap={80}>
 
-        {/* Privacy Tier */}
-        <YStack gap="$4">
-          <Text
-            fontSize="$2"
-            fontFamily="$body"
-            color="$color9"
-            textTransform="uppercase"
-            letterSpacing={2}
-          >
-            Privacy Tier
-          </Text>
-          <PrivacyTierRow activeTier={activeTier} />
-        </YStack>
-
-        <Separator borderColor="$color5" />
-
-        {/* Cloud Sync — reuse existing SyncToggle for authenticated users,
-            or show a simpler inline toggle for unauthenticated */}
-        {isAuthenticated ? (
-          <SyncToggle />
-        ) : (
-          <XStack
-            alignItems="center"
-            justifyContent="space-between"
-            paddingVertical="$2"
-          >
-            <YStack gap="$1">
-              <Text fontSize="$5" fontFamily="$body" fontWeight="600" color="$color">
-                Cloud sync
+          {/* Secure Your Words (unauthenticated) */}
+          {!isAuthenticated && (
+            <YStack gap="$3">
+              <Text fontFamily="$journal" fontSize={24} color="$color">
+                Secure Your Words
               </Text>
-              <Text fontSize="$3" fontFamily="$body" color="$color10">
-                Entries remain on this device only
+              <Text
+                fontFamily="$body"
+                fontSize={14}
+                color="$color8"
+                lineHeight={22}
+                maxWidth={512}
+              >
+                Create an account or log in to enable end-to-end encrypted backup and sync your journal across all your devices.
+              </Text>
+              <Text
+                fontFamily="$body"
+                fontSize={11}
+                letterSpacing={3}
+                fontWeight="500"
+                textTransform="uppercase"
+                color="$color"
+                borderBottomWidth={2}
+                borderColor="$color10"
+                paddingBottom={6}
+                alignSelf="flex-start"
+                marginTop="$2"
+                cursor="pointer"
+                hoverStyle={{ opacity: 0.7 }}
+                onPress={() => router.push('/auth')}
+              >
+                Log In / Create Account
               </Text>
             </YStack>
-            <Switch
-              size="$4"
-              checked={false}
-              disabled
-            >
-              <Switch.Thumb animation="quick" />
-            </Switch>
-          </XStack>
-        )}
+          )}
 
-        {/* Keyring prompt — shown after password entry on native platforms */}
-        <KeyringPrompt />
+          {/* Privacy Tier (authenticated) */}
+          {isAuthenticated && (
+            <YStack gap="$4">
+              <SectionHeader>Privacy Tier</SectionHeader>
+              <PrivacyTierList activeTier={activeTier} />
+            </YStack>
+          )}
 
-        {/* Trusted browsers — E2E authenticated users only */}
-        {isAuthenticated && userId && currentMode === 'e2e' && (
-          <>
-            <Separator borderColor="$color5" />
-            <TrustedBrowsersList userId={userId} />
-          </>
-        )}
+          {/* Data & Sync */}
+          {isAuthenticated ? (
+            <YStack gap="$4">
+              <SectionHeader>Data & Sync</SectionHeader>
+              <SyncToggle />
+            </YStack>
+          ) : (
+            <YStack gap="$4">
+              <SectionHeader>Data & Sync</SectionHeader>
+              <YStack gap="$2">
+                <Text
+                  fontFamily="$journal"
+                  fontSize={20}
+                  color="$color8"
+                  borderBottomWidth={1}
+                  borderColor="$color5"
+                  paddingBottom={4}
+                  alignSelf="flex-start"
+                  cursor="pointer"
+                  hoverStyle={{ color: '$color' }}
+                  onPress={() => router.push('/auth')}
+                >
+                  Enable Cloud Sync
+                </Text>
+                <Text fontFamily="$body" fontSize={13} color="$color8">
+                  Entries remain on this device only.
+                </Text>
+              </YStack>
+            </YStack>
+          )}
 
-        {/* Linked accounts — authenticated users only */}
-        {isAuthenticated && (
-          <>
-            <Separator borderColor="$color5" />
-            <LinkedProviders />
-          </>
-        )}
+          {/* Keyring prompt */}
+          <KeyringPrompt />
 
-        <Separator borderColor="$color5" />
+          {/* Trusted Browsers (E2E authenticated) */}
+          {isAuthenticated && userId && currentMode === 'e2e' && (
+            <YStack gap="$4">
+              <SectionHeader>Trusted Browsers</SectionHeader>
+              <TrustedBrowsersList userId={userId} />
+            </YStack>
+          )}
 
-        {/* Theme — placeholder */}
-        <YStack gap="$3">
-          <Text
-            fontSize="$2"
-            fontFamily="$body"
-            color="$color9"
-            textTransform="uppercase"
-            letterSpacing={2}
-          >
-            Theme
-          </Text>
+          {/* Theme */}
+          <YStack gap="$4">
+            <SectionHeader>Theme</SectionHeader>
+            <ThemePicker />
+          </YStack>
 
-          {THEME_OPTIONS.map((theme) => (
-            <ThemeRow
-              key={theme.id}
-              name={theme.name}
-              isCurrent={theme.id === baseTheme}
-            />
-          ))}
+          {/* Linked Accounts (authenticated) */}
+          {isAuthenticated && (
+            <YStack gap="$4">
+              <SectionHeader>Linked Accounts</SectionHeader>
+              <LinkedProviders />
+
+              {/* Log Out */}
+              <Text
+                fontFamily="$body"
+                fontSize={11}
+                letterSpacing={2}
+                textTransform="uppercase"
+                color="$color8"
+                cursor="pointer"
+                hoverStyle={{ color: '$color' }}
+                onPress={handleLogout}
+                alignSelf="flex-start"
+                marginTop="$2"
+                opacity={isLoggingOut ? 0.4 : 1}
+              >
+                {isLoggingOut ? 'Logging out...' : 'Log Out'}
+              </Text>
+            </YStack>
+          )}
         </YStack>
 
         {/* Footer */}
         <XStack
           justifyContent="space-between"
           alignItems="center"
-          paddingTop="$6"
+          marginTop={96}
         >
           <Text
-            fontSize="$1"
-            fontFamily="$body"
-            color="$color8"
-            textTransform="uppercase"
-            letterSpacing={1.5}
+            fontFamily="$journal"
+            fontSize={13}
+            color="$color"
+            opacity={0.6}
+            letterSpacing={0.5}
           >
-            River Journal · v1.0.0
+            River Journal{'  '}
+            <Text fontFamily="$body" fontSize={13} color="$color8">
+              · v1.0.0
+            </Text>
           </Text>
           <Text
-            fontSize="$1"
             fontFamily="$body"
-            color="$color8"
-            textTransform="uppercase"
-            letterSpacing={1.5}
+            fontSize={12}
+            color="$color7"
             cursor="pointer"
-            onPress={() => router.push('/privacy')}
             hoverStyle={{ color: '$color' }}
+            onPress={() => router.push('/privacy')}
           >
-            About
+            Privacy Center
           </Text>
         </XStack>
       </YStack>
 
-      {/* Dialog — must be mounted here so SyncToggle's "Enter encryption password" works */}
       <EncryptionModeDialog />
     </ScrollView>
   )
 }
-

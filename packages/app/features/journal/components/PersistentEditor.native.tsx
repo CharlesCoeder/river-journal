@@ -1,12 +1,12 @@
-import { View, StyleSheet, Animated } from 'react-native'
-import { useTheme } from '@my/ui'
-import { use$ } from '@legendapp/state/react'
-import { useEffect, useRef } from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ephemeral$, updateActiveFlowContent } from 'app/state/store'
-import { useDebouncedCallback } from 'use-debounce'
-import LexicalEditor from './Lexical/LexicalEditor'
-import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
+import { View, StyleSheet, Animated } from 'react-native';
+import { useTheme } from '@my/ui';
+import { use$ } from '@legendapp/state/react';
+import { useEffect, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ephemeral$, updateActiveFlowContent } from 'app/state/store';
+import { useDebouncedCallback } from 'use-debounce';
+import LexicalEditor from './Lexical/LexicalEditor';
+import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types';
 
 /**
  * Persistent Lexical editor that remains mounted at root layout level.
@@ -21,43 +21,42 @@ import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
  * measureInWindow, which returns incorrect coordinates on Android.
  */
 export const PersistentEditor = () => {
-  const theme = useTheme()
-  const insets = useSafeAreaInsets()
-  const persistentEditor = use$(ephemeral$.persistentEditor)
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const persistentEditor = use$(ephemeral$.persistentEditor);
 
   // Animated value for fade-in effect
-  const fadeAnim = useRef(new Animated.Value(0)).current
-
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const themeValues = {
     textColor: theme.color.val,
-    placeholderColor: theme.placeholderColor.val,
-  }
+    placeholderColor: theme.placeholderColor.val
+  };
 
   // Debounced function to update Legend State from editor changes
   const debouncedUpdateStore = useDebouncedCallback((markdown: string) => {
-    if (persistentEditor.readOnly) return
-    updateActiveFlowContent(markdown)
-  }, 300)
+    if (persistentEditor.readOnly) return;
+    updateActiveFlowContent(markdown);
+  }, 300);
 
   // Cancel any pending debounced writes when the editor hides,
   // otherwise a stale keystroke can overwrite the cleared activeFlow.
   useEffect(() => {
     if (!persistentEditor.isVisible) {
-      debouncedUpdateStore.cancel()
+      debouncedUpdateStore.cancel();
     }
-  }, [persistentEditor.isVisible, debouncedUpdateStore])
+  }, [persistentEditor.isVisible, debouncedUpdateStore]);
 
   // Handle content changes from the editor
   const handleContentChange = (markdown: string) => {
-    if (persistentEditor.readOnly) return
-    debouncedUpdateStore(markdown)
-  }
+    if (persistentEditor.readOnly) return;
+    debouncedUpdateStore(markdown);
+  };
 
   // Cast to universal props to handle platform differences
-  const UniversalLexicalEditor = LexicalEditor as React.FC<LexicalEditorUniversalProps>
+  const UniversalLexicalEditor = LexicalEditor as React.FC<LexicalEditorUniversalProps>;
 
   // Show when visible AND we know the header height (to prevent flash at top)
-  const shouldShow = persistentEditor.isVisible && persistentEditor.headerHeight > 0
+  const shouldShow = persistentEditor.isVisible && persistentEditor.headerHeight > 0;
 
   // Animate opacity when shouldShow changes
   useEffect(() => {
@@ -66,18 +65,19 @@ export const PersistentEditor = () => {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 250,
-        delay: 50, // Small delay to let the screen transition start
-        useNativeDriver: true,
-      }).start()
+        delay: 50,
+        // Small delay to let the screen transition start
+        useNativeDriver: true
+      }).start();
     } else {
       // Immediately hide (no animation needed for hiding)
-      fadeAnim.setValue(0)
+      fadeAnim.setValue(0);
     }
     // Cleanup animation on unmount
     return () => {
-      fadeAnim.stopAnimation()
-    }
-  }, [shouldShow, fadeAnim])
+      fadeAnim.stopAnimation();
+    };
+  }, [shouldShow, fadeAnim]);
 
   // Position below the header using safe area insets + header height.
   // This is inside a SafeAreaView at root layout level.
@@ -95,34 +95,20 @@ export const PersistentEditor = () => {
     bottom: shouldShow ? 0 : undefined,
     height: shouldShow ? undefined : 0,
     zIndex: 100,
-    overflow: 'hidden' as const,
-  }
-
-  return (
-    <Animated.View
-      style={[
-        containerStyle,
-        {
-          opacity: fadeAnim,
-          pointerEvents: shouldShow ? 'auto' : 'none',
-        },
-      ]}
-    >
+    overflow: 'hidden' as const
+  };
+  return <Animated.View style={[containerStyle, {
+    opacity: fadeAnim,
+    pointerEvents: shouldShow ? 'auto' : 'none'
+  }]}>
       <View style={styles.editorWrapper}>
-        <UniversalLexicalEditor
-          themeValues={themeValues}
-          onContentChange={persistentEditor.readOnly ? undefined : handleContentChange}
-          initialContent={persistentEditor.content}
-          readOnly={persistentEditor.readOnly}
-        />
+        <UniversalLexicalEditor themeValues={themeValues} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} initialContent={persistentEditor.content} readOnly={persistentEditor.readOnly} />
       </View>
-    </Animated.View>
-  )
-}
-
+    </Animated.View>;
+};
 const styles = StyleSheet.create({
   editorWrapper: {
     flex: 1,
-    width: '100%',
-  },
-})
+    width: '100%'
+  }
+});

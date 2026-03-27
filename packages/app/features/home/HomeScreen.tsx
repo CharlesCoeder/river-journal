@@ -1,7 +1,6 @@
 import {
   YStack,
   Text,
-  Button,
   XStack,
   ScrollView,
 } from '@my/ui'
@@ -21,17 +20,18 @@ export function HomeScreen() {
   const email = use$(store$.session.email)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  // Today's writing progress
   const todayStats = use$(store$.views.statsByDate(getTodayJournalDayString()))
   const todayWords = todayStats?.totalWords || 0
-  const flowCount = todayStats?.flows?.length || 0
+  const hasHistory = todayWords > 0 || (todayStats?.flows?.length || 0) > 0
+
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
 
   const handleBeginFlow = () => {
     router.push('/journal')
-  }
-
-  const handleReadJournal = () => {
-    router.push('/day-view')
   }
 
   const handleLogin = () => {
@@ -48,143 +48,138 @@ export function HomeScreen() {
   }, [])
 
   return (
-    <ScrollView
-      flex={1}
-      backgroundColor="$background"
-      contentContainerStyle={{ flexGrow: 1 }}
-    >
-      <YStack
+    <YStack flex={1} backgroundColor="$background" position="relative">
+      {/* Auth indicator — positioned relative to full viewport */}
+      <XStack
+        position="absolute"
+        top={48}
+        right={48}
+        zIndex={10}
+        $sm={{ top: 32, right: 32 }}
+      >
+        {isAuthenticated ? (
+          <Text
+            fontFamily="$body"
+            fontSize={10}
+            letterSpacing={3}
+            color="$color7"
+            textTransform="uppercase"
+          >
+            {email}
+          </Text>
+        ) : (
+          <Text
+            fontFamily="$body"
+            fontSize={10}
+            letterSpacing={3}
+            color="$color7"
+            textTransform="uppercase"
+            cursor="pointer"
+            hoverStyle={{ color: '$color' }}
+            onPress={handleLogin}
+          >
+            Log in
+          </Text>
+        )}
+      </XStack>
+
+      <ScrollView
+        flex={1}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <YStack
         width="100%"
         flex={1}
+        maxWidth={1024}
+        alignSelf="center"
         paddingHorizontal="$4"
         justifyContent="center"
-        alignItems="center"
-        $sm={{
-          maxWidth: 640,
-          alignSelf: 'center',
-          paddingHorizontal: 0,
-        }}
+        alignItems="flex-start"
+        $sm={{ paddingHorizontal: '$6' }}
+        $md={{ paddingHorizontal: '$8' }}
+        $lg={{ paddingHorizontal: '$12' }}
       >
-        {/* Auth — quiet, top-right, absolute so it doesn't affect center layout */}
-        <XStack
-          position="absolute"
-          top="$4"
-          right="$4"
-          $sm={{ top: '$6', right: 0 }}
-        >
-          {isAuthenticated ? (
-            <XStack gap="$3" alignItems="center">
-              <Text fontSize="$2" fontFamily="$body" color="$color9">
-                {email}
+        {/* Content — left-aligned, generous spacing */}
+        <YStack gap={96} width="100%">
+
+          {/* Date display */}
+          <YStack gap="$5">
+            <Text
+              fontFamily="$body"
+              fontSize={14}
+              color="$color8"
+              letterSpacing={1}
+              textTransform="uppercase"
+            >
+              Today
+            </Text>
+            <Text
+              fontFamily="$journal"
+              fontSize={60}
+              $sm={{ fontSize: 48 }}
+              color="$color"
+              letterSpacing={-1}
+              lineHeight={68}
+              $sm={{ lineHeight: 56 }}
+            >
+              {today}.
+            </Text>
+          </YStack>
+
+          {/* Action area */}
+          <XStack
+            flexWrap="wrap"
+            alignItems="baseline"
+            gap="$6"
+          >
+            {/* Primary CTA — serif italic underline */}
+            <Text
+              fontFamily="$journalItalic"
+              fontStyle="italic"
+              fontSize={36}
+              $sm={{ fontSize: 30 }}
+              color="$color"
+              cursor="pointer"
+              hoverStyle={{ opacity: 0.8 }}
+              pressStyle={{ opacity: 0.7 }}
+              onPress={handleBeginFlow}
+            >
+              Begin writing
+            </Text>
+
+            {/* Secondary links */}
+            <XStack gap="$4">
+              <Text
+                fontFamily="$body"
+                fontSize={14}
+                color="$color8"
+                letterSpacing={0.5}
+                cursor="pointer"
+                hoverStyle={{ color: '$color' }}
+                onPress={() => router.push('/day-view')}
+              >
+                Past Entries
               </Text>
               <Text
-                fontSize="$2"
                 fontFamily="$body"
+                fontSize={14}
                 color="$color8"
+                letterSpacing={0.5}
                 cursor="pointer"
-                onPress={handleLogout}
-                opacity={isLoggingOut ? 0.4 : 0.6}
-                hoverStyle={{ opacity: 1 }}
+                hoverStyle={{ color: '$color' }}
+                onPress={() => router.push('/settings')}
               >
-                {isLoggingOut ? 'Logging out…' : 'Log out'}
+                Preferences
               </Text>
             </XStack>
-          ) : (
-            <Text
-              fontSize="$2"
-              fontFamily="$body"
-              color="$color8"
-              cursor="pointer"
-              onPress={handleLogin}
-              opacity={0.6}
-              hoverStyle={{ opacity: 1 }}
-            >
-              Log in
-            </Text>
-          )}
-        </XStack>
-
-        {/* Hero — vertically centered, breathing, sanctuary */}
-        <YStack
-          alignItems="center"
-          gap="$3"
-          paddingBottom="$8"
-        >
-          {/* Title */}
-          <Text
-            fontSize="$11"
-            fontFamily="$body"
-            fontWeight="300"
-            color="$color"
-            textAlign="center"
-            letterSpacing={-1}
-            $sm={{ fontSize: '$12' }}
-          >
-            River Journal
-          </Text>
-
-          {/* Subtle encouragement or today's progress */}
-          <Text
-            fontSize="$4"
-            fontFamily="$lora"
-            fontStyle="italic"
-            color="$color9"
-            textAlign="center"
-            paddingBottom="$6"
-          >
-            {todayWords > 0
-              ? `${todayWords.toLocaleString()} words across ${flowCount} ${flowCount === 1 ? 'flow' : 'flows'} today`
-              : 'Enter a flow. Write freely.'}
-          </Text>
-
-          {/* Primary CTA — Begin Flow */}
-          <Button
-            size="$5"
-            theme="accent"
-            onPress={handleBeginFlow}
-            paddingHorizontal="$10"
-            borderRadius="$10"
-            pressStyle={{ scale: 0.97 }}
-          >
-            <Text fontSize="$5" fontFamily="$body" fontWeight="600">
-              Begin Flow
-            </Text>
-          </Button>
-
-          {/* Secondary links */}
-          <XStack gap="$4" paddingTop="$4">
-            <Text
-              fontSize="$3"
-              fontFamily="$body"
-              color="$color8"
-              cursor="pointer"
-              onPress={handleReadJournal}
-              paddingVertical="$2"
-              opacity={0.7}
-              hoverStyle={{ opacity: 1 }}
-            >
-              Read Journal
-            </Text>
-            <Text
-              fontSize="$3"
-              fontFamily="$body"
-              color="$color8"
-              cursor="pointer"
-              onPress={() => router.push('/settings')}
-              paddingVertical="$2"
-              opacity={0.7}
-              hoverStyle={{ opacity: 1 }}
-            >
-              Settings
-            </Text>
           </XStack>
         </YStack>
       </YStack>
 
-      {/* Inline prompts & dialogs — self-managing, render when needed */}
-      <KeyringPrompt />
-      <EncryptionModeDialog />
-      <OrphanFlowsDialog />
-    </ScrollView>
+        <KeyringPrompt />
+        <EncryptionModeDialog />
+        <OrphanFlowsDialog />
+      </ScrollView>
+    </YStack>
   )
 }

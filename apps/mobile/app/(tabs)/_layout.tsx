@@ -25,7 +25,7 @@ export default function TabLayout() {
           height: 50,
         },
         tabBarLabelStyle: {
-          fontFamily: 'Lato',
+          fontFamily: 'Outfit',
           fontSize: 11,
         },
       }}

@@ -1,32 +1,26 @@
 /**
  * CelebrationScreen.tsx
  *
- * Displays a warm celebration after completing a flow session.
- * Word count as hero, gentle fade-in, re-read section below.
- * Per UX spec: explicit dismissal only, no auto-dismiss.
+ * Design: centered "Well done." italic serif, word count, "Return" button
+ * with expanding line, auth nudge (if logged out), separator, re-read section.
  */
 
 import { useEffect } from 'react'
-import { YStack, Text, Button, ScrollView, Separator } from '@my/ui'
+import { YStack, Text, XStack, ScrollView, View } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$, clearLastSavedFlow, clearActiveFlow } from 'app/state/store'
 import { Editor } from './components/Editor'
 
-function getWarmMessage(): string {
-  return 'Beautifully done.'
-}
-
 export function CelebrationScreen() {
   const router = useRouter()
   const lastSavedFlow = use$(store$.lastSavedFlow)
+  const isAuthenticated = use$(store$.session.isAuthenticated)
 
-  // Clear the activeFlow on mount to complete the save transition
   useEffect(() => {
     clearActiveFlow()
   }, [])
 
-  // Handle missing flow data
   useEffect(() => {
     if (!lastSavedFlow) {
       router.push('/')
@@ -36,6 +30,12 @@ export function CelebrationScreen() {
   const handleDismiss = () => {
     clearLastSavedFlow()
     router.push('/')
+  }
+
+  const handleCreateAccount = () => {
+    router.push('/auth?tab=signup')
+    // Clear after navigation to avoid the useEffect redirect to '/'
+    setTimeout(() => clearLastSavedFlow(), 100)
   }
 
   if (!lastSavedFlow) {
@@ -48,89 +48,165 @@ export function CelebrationScreen() {
     <ScrollView
       flex={1}
       backgroundColor="$background"
-      contentContainerStyle={{
-        flexGrow: 1,
-      }}
+      contentContainerStyle={{ flexGrow: 1 }}
     >
+      {/* Hero section — takes full viewport height, centers "Well done." */}
       <YStack
         width="100%"
+        maxWidth={672}
+        alignSelf="center"
         paddingHorizontal="$4"
-        paddingTop="$10"
-        paddingBottom="$10"
-        flex={1}
-        $sm={{
-          maxWidth: 640,
-          alignSelf: 'center',
-          paddingHorizontal: 0,
-        }}
+        minHeight="100vh"
+        justifyContent="center"
+        alignItems="center"
+        position="relative"
       >
-        {/* Celebration header — word count as hero */}
+        <YStack alignItems="center" gap="$6">
+          <Text
+            fontFamily="$journalItalic"
+            fontStyle="italic"
+            fontSize={36}
+            $sm={{ fontSize: 48 }}
+            color="$color"
+            letterSpacing={-1}
+          >
+            Well done.
+          </Text>
+
+          <Text
+            fontFamily="$body"
+            fontSize={14}
+            color="$color8"
+            letterSpacing={0.5}
+          >
+            You let{' '}
+            <Text fontFamily="$body" color="$color" fontWeight="500" fontSize={14}>
+              {wordCount}
+            </Text>{' '}
+            words flow today.
+          </Text>
+
+          {/* Return button with expanding line */}
+          <XStack
+            marginTop={48}
+            cursor="pointer"
+            alignItems="center"
+            gap="$2"
+            group="returnBtn"
+            onPress={handleDismiss}
+            hoverStyle={{ x: 5 }}
+          >
+            <Text
+              fontFamily="$body"
+              fontSize={14}
+              color="$color"
+              letterSpacing={0.5}
+              whiteSpace="nowrap"
+            >
+              Return
+            </Text>
+            <View
+              width={16}
+              height={1}
+              backgroundColor="$color"
+              $group-returnBtn-hover={{ width: 32 }}
+              flexShrink={0}
+            />
+          </XStack>
+        </YStack>
+
+        {/* Auth nudge — only when logged out */}
+        {!isAuthenticated && (
+          <YStack
+            marginTop={64}
+            width="100%"
+            maxWidth={384}
+            borderWidth={1}
+            borderColor="$color3"
+            borderRadius="$2"
+            padding="$5"
+            alignItems="center"
+            gap="$3"
+          >
+            <Text
+              fontFamily="$body"
+              fontSize={12}
+              color="$color8"
+              textAlign="center"
+              lineHeight={20}
+            >
+              Your writing is saved on this device. Create an account to sync across devices and keep it safe.
+            </Text>
+            <XStack gap="$5" paddingTop="$2">
+              <Text
+                fontFamily="$body"
+                fontSize={9}
+                letterSpacing={2.5}
+                textTransform="uppercase"
+                color="$color7"
+                cursor="pointer"
+                hoverStyle={{ color: '$color8' }}
+                onPress={handleDismiss}
+              >
+                Dismiss
+              </Text>
+              <Text
+                fontFamily="$body"
+                fontSize={9}
+                letterSpacing={2.5}
+                textTransform="uppercase"
+                color="$color"
+                cursor="pointer"
+                hoverStyle={{ opacity: 0.7 }}
+                borderBottomWidth={1}
+                borderColor="$color5"
+                paddingBottom={1}
+                onPress={handleCreateAccount}
+              >
+                Create Account
+              </Text>
+            </XStack>
+          </YStack>
+        )}
+
+        {/* Scroll indicator — pinned to bottom of hero viewport */}
         <YStack
+          position="absolute"
+          bottom={40}
+          left={0}
+          right={0}
           alignItems="center"
-          paddingTop="$8"
-          paddingBottom="$6"
-          gap="$3"
-          animation="medium"
-          enterStyle={{ opacity: 0, scale: 0.95 }}
-          opacity={1}
-          scale={1}
+          gap="$1"
+          opacity={0.3}
         >
           <Text
-            fontSize="$12"
             fontFamily="$body"
-            fontWeight="700"
-            color="$color"
-            textAlign="center"
-            animation="slow"
-            enterStyle={{ opacity: 0, scale: 0.9 }}
-            opacity={1}
-            scale={1}
+            fontSize={10}
+            letterSpacing={2}
+            textTransform="uppercase"
+            color="$color8"
           >
-            {wordCount.toLocaleString()}
+            Your words
           </Text>
-
-          <Text
-            fontSize="$5"
-            fontFamily="$body"
-            fontWeight="400"
-            color="$color10"
-            textAlign="center"
-          >
-            {wordCount === 1 ? 'word' : 'words'}
-          </Text>
-
-          <Text
-            fontSize="$6"
-            fontFamily="$body"
-            fontWeight="300"
-            color="$color"
-            textAlign="center"
-            paddingTop="$4"
-          >
-            {getWarmMessage()}
+          <Text fontFamily="$body" fontSize={14} color="$color8">
+            {'\u2193'}
           </Text>
         </YStack>
+      </YStack>
 
-        {/* Done button — single primary action */}
-        <YStack alignItems="center" paddingVertical="$6">
-          <Button
-            size="$5"
-            theme="accent"
-            onPress={handleDismiss}
-            paddingHorizontal="$8"
-            borderRadius="$6"
-          >
-            <Text fontSize="$5" fontFamily="$body" fontWeight="600">
-              Done
-            </Text>
-          </Button>
-        </YStack>
-
-        {/* Separator */}
-        <Separator borderColor="$color5" marginVertical="$4" />
-
-        {/* Re-read section — user's words in Lora serif */}
-        <YStack flex={1} minHeight={300} paddingTop="$2">
+      {/* Re-read section — below the fold */}
+      <YStack
+        width="100%"
+        maxWidth={672}
+        alignSelf="center"
+        paddingHorizontal="$4"
+        paddingBottom={96}
+      >
+        <YStack
+          borderTopWidth={1}
+          borderColor="$color2"
+          paddingTop="$6"
+        >
           <Editor readOnly initialContent={content} />
         </YStack>
       </YStack>

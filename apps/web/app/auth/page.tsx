@@ -1,11 +1,12 @@
 'use client'
 
-/**
- * Auth page for Next.js App Router (web)
- */
-
 import { AuthScreen } from 'app/features/auth'
+import { useSearchParams } from 'next/navigation'
 
 export default function AuthPage() {
-  return <AuthScreen />
+  const searchParams = useSearchParams()
+  const tab = searchParams.get('tab')
+  const initialTab = tab === 'signup' ? 'signup' : 'login'
+
+  return <AuthScreen initialTab={initialTab} />
 }

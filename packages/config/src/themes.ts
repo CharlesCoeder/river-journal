@@ -1,51 +1,51 @@
-import * as Colors from '@tamagui/colors'
 import { createThemes, defaultComponentThemes } from '@tamagui/theme-builder'
-import { desaturate } from 'color2k'
 
-const desat = (colors: Record<string, string>, amount: number) => {
-  return Object.fromEntries(
-    Object.entries(colors).map(([key, value]) => [key, desaturate(value, amount)])
-  )
+// -----------------------------------------------------------------
+// Named theme palettes — 12-step gradient from bg → text
+// "stone" (muted) lands at steps 6-7
+// -----------------------------------------------------------------
+
+type ThemeDef = { bg: string; text: string; stone: string; isDark: boolean }
+
+const THEME_DEFS: Record<string, ThemeDef> = {
+  ink: { bg: '#F9F6F0', text: '#2C2A28', stone: '#8A8680', isDark: false },
+  'forest-morning': { bg: '#E8EDE4', text: '#2B3A30', stone: '#819183', isDark: false },
+  leather: { bg: '#F0E7DA', text: '#4A3525', stone: '#9C8B81', isDark: false },
+  night: { bg: '#1C1A18', text: '#E6E2DA', stone: '#8C8B85', isDark: true },
+  'forest-night': { bg: '#1A221C', text: '#DCE3DD', stone: '#788C7D', isDark: true },
+  fireside: { bg: '#2B1D14', text: '#E6DACB', stone: '#8A786B', isDark: true },
 }
 
-const colorsGreenDark = desat(Colors.greenDark, 0.2) as typeof Colors.greenDark
-const colorsGreen = desat(Colors.green, 0.2) as typeof Colors.green
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
 
-// Themes are from tamagui src
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')
+}
 
-// Brand palettes — "Modern Sanctuary" aesthetic
-// Light: warm cream #DCC7BE → dark text #232020
-// Dark: deep warm black #232020 → light text #E0E0E0
-const darkPalette = [
-  '#232020', // background
-  '#2C2826',
-  '#363230',
-  '#403C3A',
-  '#4D4845',
-  '#5A5451',
-  '#6E6763',
-  '#837B77',
-  '#9E9590',
-  '#B5ACA7',
-  '#CCC3BE',
-  '#E0E0E0', // foreground text
-]
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t
+}
 
-const lightPalette = [
-  '#DCC7BE', // background — warm cream
-  '#D4BDB3',
-  '#CBB3A8',
-  '#C2A99E',
-  '#B89E93',
-  '#AD9388',
-  '#9A8278',
-  '#877068',
-  '#6B5850',
-  '#504038',
-  '#382C26',
-  '#232020', // foreground text
-]
+function generatePalette(def: ThemeDef): string[] {
+  const [r0, g0, b0] = hexToRgb(def.bg)
+  const [r1, g1, b1] = hexToRgb(def.text)
+  const palette: string[] = []
+  for (let i = 0; i < 12; i++) {
+    const t = i / 11
+    palette.push(rgbToHex(lerp(r0, r1, t), lerp(g0, g1, t), lerp(b0, b1, t)))
+  }
+  return palette
+}
 
+// Build light and dark base palettes + named child themes
+// The base palette is just "ink" (light default) and "night" (dark default)
+const inkPalette = generatePalette(THEME_DEFS['ink']!)
+const nightPalette = generatePalette(THEME_DEFS['night']!)
+
+// Shadow tokens — kept minimal, flat design doesn't use them prominently
 const lightShadows = {
   shadow1: 'rgba(0,0,0,0.04)',
   shadow2: 'rgba(0,0,0,0.08)',
@@ -72,179 +72,78 @@ const darkShadows = {
   shadow10: 'rgba(0,0,0,0.9)',
 }
 
-const blackColors = {
-  black1: darkPalette[0]!,
-  black2: darkPalette[1]!,
-  black3: darkPalette[2]!,
-  black4: darkPalette[3]!,
-  black5: darkPalette[4]!,
-  black6: darkPalette[5]!,
-  black7: darkPalette[6]!,
-  black8: darkPalette[7]!,
-  black9: darkPalette[8]!,
-  black10: darkPalette[9]!,
-  black11: darkPalette[10]!,
-  black12: darkPalette[11]!,
+function paletteToColors(palette: string[], prefix: 'black' | 'white') {
+  const out: Record<string, string> = {}
+  palette.forEach((c, i) => {
+    out[`${prefix}${i + 1}`] = c
+  })
+  return out
 }
 
-const whiteColors = {
-  white1: lightPalette[0]!,
-  white2: lightPalette[1]!,
-  white3: lightPalette[2]!,
-  white4: lightPalette[3]!,
-  white5: lightPalette[4]!,
-  white6: lightPalette[5]!,
-  white7: lightPalette[6]!,
-  white8: lightPalette[7]!,
-  white9: lightPalette[8]!,
-  white10: lightPalette[9]!,
-  white11: lightPalette[10]!,
-  white12: lightPalette[11]!,
-}
+const blackColors = paletteToColors(nightPalette, 'black')
+const whiteColors = paletteToColors(inkPalette, 'white')
 
 const generatedThemes = createThemes({
   componentThemes: defaultComponentThemes,
 
   base: {
     palette: {
-      dark: darkPalette,
-      light: lightPalette,
+      light: inkPalette,
+      dark: nightPalette,
     },
-
-    // for values we don't want being inherited onto sub-themes
     extra: {
       light: {
-        ...Colors.blue,
-        ...Colors.gray,
-        ...colorsGreen,
-        ...Colors.orange,
-        ...Colors.pink,
-        ...Colors.purple,
-        ...Colors.red,
-        ...Colors.yellow,
         ...lightShadows,
         ...blackColors,
         ...whiteColors,
         shadowColor: lightShadows.shadow1,
-        colorBg: '#DCC7BE',
+        colorBg: THEME_DEFS['ink']!.bg,
       },
       dark: {
-        ...Colors.blueDark,
-        ...Colors.grayDark,
-        ...colorsGreenDark,
-        ...Colors.orangeDark,
-        ...Colors.pinkDark,
-        ...Colors.purpleDark,
-        ...Colors.redDark,
-        ...Colors.yellowDark,
         ...darkShadows,
         ...blackColors,
         ...whiteColors,
         shadowColor: darkShadows.shadow1,
-        colorBg: '#232020',
+        colorBg: THEME_DEFS['night']!.bg,
       },
-    },
-  },
-
-  // inverse accent theme
-  accent: {
-    palette: {
-      dark: lightPalette,
-      light: darkPalette,
     },
   },
 
   childrenThemes: {
-    black: {
+    ink: {
       palette: {
-        dark: Object.values(blackColors) as string[],
-        light: Object.values(blackColors) as string[],
+        light: generatePalette(THEME_DEFS['ink']!),
+        dark: generatePalette(THEME_DEFS['ink']!),
       },
     },
-    white: {
+    night: {
       palette: {
-        dark: Object.values(whiteColors) as string[],
-        light: Object.values(whiteColors) as string[],
+        dark: generatePalette(THEME_DEFS['night']!),
+        light: generatePalette(THEME_DEFS['night']!),
       },
     },
-    gray: {
+    'forest-morning': {
       palette: {
-        dark: Object.values(Colors.grayDark),
-        light: Object.values(Colors.gray),
+        light: generatePalette(THEME_DEFS['forest-morning']!),
+        dark: generatePalette(THEME_DEFS['forest-morning']!),
       },
     },
-    blue: {
+    'forest-night': {
       palette: {
-        dark: Object.values(Colors.blueDark),
-        light: Object.values(Colors.blue),
+        dark: generatePalette(THEME_DEFS['forest-night']!),
+        light: generatePalette(THEME_DEFS['forest-night']!),
       },
     },
-    orange: {
+    leather: {
       palette: {
-        dark: Object.values(Colors.orangeDark),
-        light: Object.values(Colors.orange),
+        light: generatePalette(THEME_DEFS['leather']!),
+        dark: generatePalette(THEME_DEFS['leather']!),
       },
     },
-    red: {
+    fireside: {
       palette: {
-        dark: Object.values(Colors.redDark),
-        light: Object.values(Colors.red),
-      },
-    },
-    yellow: {
-      palette: {
-        dark: Object.values(Colors.yellowDark),
-        light: Object.values(Colors.yellow),
-      },
-    },
-    green: {
-      palette: {
-        dark: Object.values(colorsGreenDark),
-        light: Object.values(colorsGreen),
-      },
-    },
-    purple: {
-      palette: {
-        dark: Object.values(Colors.purpleDark),
-        light: Object.values(Colors.purple),
-      },
-    },
-    pink: {
-      palette: {
-        dark: Object.values(Colors.pinkDark),
-        light: Object.values(Colors.pink),
-      },
-    },
-    tan: {
-      palette: {
-        light: [
-          'hsla(40, 30%, 98%, 1)',
-          'hsla(40, 24%, 94%, 1)',
-          'hsla(38, 23%, 91%, 1)',
-          'hsla(36, 20%, 90%, 1)',
-          'hsla(36, 20%, 88%, 1)',
-          'hsla(35, 20%, 85%, 1)',
-          'hsla(35, 21%, 74%, 1)',
-          'hsla(34, 20%, 70%, 1)',
-          'hsla(35, 20%, 67%, 1)',
-          'hsla(34, 19%, 47%, 1)',
-          'hsla(35, 18%, 37%, 1)',
-          'hsla(35, 17%, 20%, 1)',
-        ],
-        dark: [
-          'hsla(30, 9%, 10%, 1)',
-          'hsla(30, 10%, 12%, 1)',
-          'hsla(31, 11%, 18%, 1)',
-          'hsla(30, 12%, 23%, 1)',
-          'hsla(30, 14%, 28%, 1)',
-          'hsla(30, 16%, 33%, 1)',
-          'hsla(30, 18%, 38%, 1)',
-          'hsla(30, 20%, 45%, 1)',
-          'hsla(30, 21%, 50%, 1)',
-          'hsla(29, 22%, 58%, 1)',
-          'hsla(34, 24%, 70%, 1)',
-          'hsla(11, 12%, 79%, 1)',
-        ],
+        dark: generatePalette(THEME_DEFS['fireside']!),
+        light: generatePalette(THEME_DEFS['fireside']!),
       },
     },
   },
@@ -270,12 +169,10 @@ const generatedThemes = createThemes({
 
 export type TamaguiThemes = typeof generatedThemes
 
-/**
- * This is an optional production optimization: themes JS can get to 20Kb or more.
- * Tamagui has <1Kb of logic to hydrate themes from CSS, so you can remove the JS.
- * So long as you server render your Tamagui CSS, this will save you bundle size:
- */
 export const themes: TamaguiThemes =
   process.env.TAMAGUI_ENVIRONMENT === 'client' && process.env.NODE_ENV === 'production'
     ? ({} as any)
     : (generatedThemes as any)
+
+// Re-export theme definitions for UI (e.g. ThemePicker)
+export { THEME_DEFS }

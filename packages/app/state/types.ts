@@ -25,37 +25,33 @@ export interface SessionState {
 /**
  * Defines all possible theme settings. These will be part of the UserProfile.
  */
-export type BaseThemeName = 'light' | 'dark'
-
-// Single source of truth for color theme names
-export const DEFAULT_COLOR_THEMES = [
-  'red',
-  'orange',
-  'yellow',
-  'green',
-  'blue',
-  'purple',
-  'pink',
-  'gray',
+export const THEME_NAMES = [
+  'ink',
+  'night',
+  'forest-morning',
+  'forest-night',
+  'leather',
+  'fireside',
 ] as const
 
-export type ColorThemeName = (typeof DEFAULT_COLOR_THEMES)[number]
+export type ThemeName = (typeof THEME_NAMES)[number]
+
+export const LIGHT_THEMES: ThemeName[] = ['ink', 'forest-morning', 'leather']
+export const DARK_THEMES: ThemeName[] = ['night', 'forest-night', 'fireside']
+
+export const DEFAULT_THEME: ThemeName = 'ink'
 
 /**
  * For all user-specific settings and preferences. This entire object will be synced
  * to the 'profiles' table in Supabase.
  */
 export interface UserProfile {
-  // Setting values
   word_goal: number
-  baseTheme: BaseThemeName
-  colorTheme: ColorThemeName
+  themeName: ThemeName
 
-  // Granular configuration for which settings to sync
   sync: {
     word_goal: boolean
-    baseTheme: boolean
-    colorTheme: boolean
+    themeName: boolean
   }
 }
 
