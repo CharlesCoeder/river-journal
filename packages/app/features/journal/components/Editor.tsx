@@ -55,15 +55,14 @@ export const Editor = ({ readOnly = false, initialContent }: EditorProps) => {
     }
 
     // ReadOnly: render inline WebView within the normal layout flow
+    // matchContents auto-sizes the WebView to its HTML content height
     return (
-      <View
-        flex={1}
-        width="100%"
-      >
+      <View width="100%">
         <UniversalLexicalEditor
           themeValues={themeValues}
           readOnly
           initialContent={initialContent}
+          dom={{ matchContents: true }}
         />
       </View>
     )

@@ -65,6 +65,7 @@ export const ephemeral$ = observable<{ persistentEditor: PersistentEditorState }
     readOnly: false,
     content: '',
     headerHeight: 0,
+    bottomBarHeight: 0,
   },
 })
 
@@ -560,6 +561,7 @@ export const showPersistentEditor = (
 export const hidePersistentEditor = (): void => {
   ephemeral$.persistentEditor.content.set('')
   ephemeral$.persistentEditor.isVisible.set(false)
+  ephemeral$.persistentEditor.bottomBarHeight.set(0)
 }
 
 /**
@@ -567,6 +569,13 @@ export const hidePersistentEditor = (): void => {
  */
 export const updatePersistentEditorHeaderHeight = (height: number): void => {
   ephemeral$.persistentEditor.headerHeight.set(height)
+}
+
+/**
+ * Updates the bottom bar height so the persistent editor can inset above it.
+ */
+export const updatePersistentEditorBottomBarHeight = (height: number): void => {
+  ephemeral$.persistentEditor.bottomBarHeight.set(height)
 }
 
 /**

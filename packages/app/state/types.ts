@@ -75,6 +75,8 @@ export interface PersistentEditorState {
   content: string
   /** Height of the screen header, used to position editor below it on Android */
   headerHeight: number
+  /** Height of the bottom bar, used to inset editor above it on Android */
+  bottomBarHeight: number
 }
 
 // =================================================================
