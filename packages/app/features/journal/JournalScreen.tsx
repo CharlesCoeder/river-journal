@@ -10,6 +10,7 @@ import {
   getActiveFlowWordCount,
   hidePersistentEditor,
   updatePersistentEditorHeaderHeight,
+  updatePersistentEditorBottomBarHeight,
 } from 'app/state/store'
 import { use$ } from '@legendapp/state/react'
 
@@ -49,6 +50,12 @@ export function JournalScreen() {
     }
   }, [])
 
+  const handleBottomBarLayout = useCallback((e: LayoutChangeEvent) => {
+    if (!isWeb) {
+      updatePersistentEditorBottomBarHeight(e.nativeEvent.layout.height)
+    }
+  }, [])
+
   const hasContent = !!activeFlow?.content
   const wordCount = activeFlow?.wordCount ?? 0
 
@@ -64,11 +71,16 @@ export function JournalScreen() {
         maxWidth={896}
         alignSelf="center"
         paddingHorizontal="$4"
-        paddingTop="$4"
-        $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
-        $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
-        onLayout={handleHeaderLayout}
+        $md={{ paddingHorizontal: '$8' }}
+        $lg={{ paddingHorizontal: '$12' }}
       >
+        {/* Top spacer — measured for persistent editor positioning on native */}
+        <View
+          height="$4"
+          $md={{ height: '$8' }}
+          $lg={{ height: '$12' }}
+          onLayout={handleHeaderLayout}
+        />
         <Editor />
       </YStack>
 
@@ -82,6 +94,7 @@ export function JournalScreen() {
           paddingHorizontal="$4"
           paddingVertical="$5"
           $md={{ paddingHorizontal: '$8' }}
+          onLayout={handleBottomBarLayout}
           $lg={{ paddingHorizontal: '$12' }}
           paddingBottom="$6"
           justifyContent="center"
