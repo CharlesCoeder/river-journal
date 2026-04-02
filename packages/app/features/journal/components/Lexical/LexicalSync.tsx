@@ -12,7 +12,7 @@ import { ALL_TRANSFORMERS } from './transformers'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 
 // Import Legend State store and actions
-import { store$, updateActiveFlowContent } from '../../../../state/store'
+import { store$, ephemeral$, updateActiveFlowContent, setInstantWordCountFromText, calculateWordCount } from '../../../../state/store'
 
 /**
  * A non-rendering component that creates a robust, two-way, debounced
@@ -72,11 +72,24 @@ export function LexicalSync(): React.ReactElement {
     })
   }, 300) // 300ms debounce delay
 
+  // ------------------------------------------------------------------
+  // Flow 3: Instant word count (no debounce, no markdown conversion)
+  // Uses registerTextContentListener which fires on every text mutation
+  // with plain text — much faster than OnChangePlugin + markdown export.
+  // This drives the bottom bar so it appears/updates without the 300ms lag.
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    return editor.registerTextContentListener((text) => {
+      setInstantWordCountFromText(text)
+    })
+  }, [editor])
+
   // Effect to set the initial state of the editor when it first mounts.
   // This is crucial for restoring an unsaved draft from a previous session.
   useEffect(() => {
     const initialContent = store$.activeFlow.content.get()
     if (initialContent) {
+      ephemeral$.instantWordCount.set(calculateWordCount(initialContent))
       editor.update(
         () => {
           $getRoot().clear()

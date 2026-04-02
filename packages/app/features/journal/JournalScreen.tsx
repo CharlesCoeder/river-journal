@@ -5,6 +5,7 @@ import type { LayoutChangeEvent } from 'react-native'
 import { Editor } from './components/Editor'
 import {
   store$,
+  ephemeral$,
   saveActiveFlowSession,
   getActiveFlowContent,
   getActiveFlowWordCount,
@@ -56,8 +57,10 @@ export function JournalScreen() {
     }
   }, [])
 
-  const hasContent = !!activeFlow?.content
-  const wordCount = activeFlow?.wordCount ?? 0
+  // Use instant (non-debounced) word count so the bottom bar appears and
+  // updates immediately as the user types, rather than lagging 300ms behind.
+  const wordCount = use$(ephemeral$.instantWordCount)
+  const hasContent = wordCount > 0 || !!activeFlow?.content
 
   return (
     <YStack
