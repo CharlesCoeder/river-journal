@@ -59,7 +59,16 @@ export { flows$, entries$ }
 
 import type { PersistentEditorState } from './types'
 
-export const ephemeral$ = observable<{ persistentEditor: PersistentEditorState }>({
+export const ephemeral$ = observable<{
+  persistentEditor: PersistentEditorState
+  /**
+   * Word count updated on every keystroke with no debounce.
+   * The canonical word count in store$.activeFlow.wordCount lags behind typing
+   * because editor→store sync is debounced (300ms) to avoid thrashing Supabase.
+   * The bottom bar reads this value instead so it appears/updates instantly.
+   */
+  instantWordCount: number
+}>({
   persistentEditor: {
     isVisible: false,
     readOnly: false,
@@ -67,6 +76,7 @@ export const ephemeral$ = observable<{ persistentEditor: PersistentEditorState }
     headerHeight: 0,
     bottomBarHeight: 0,
   },
+  instantWordCount: 0,
 })
 
 // =================================================================
@@ -474,6 +484,7 @@ export const clearLastSavedFlow = (): void => {
  */
 export const clearActiveFlow = (): void => {
   store$.activeFlow.set(null)
+  ephemeral$.instantWordCount.set(0)
 }
 
 export const discardActiveFlowSession = (): void => {
@@ -481,6 +492,7 @@ export const discardActiveFlowSession = (): void => {
     store$.activeFlow.set(null)
     store$.lastUpdated.set(new Date().toISOString())
   })
+  ephemeral$.instantWordCount.set(0)
 }
 
 /**
@@ -533,6 +545,22 @@ export const debugActiveFlow = () => {
     hasContent: !!activeFlow?.content?.trim(),
     isActive: !!activeFlow,
   }
+}
+
+// -----------------------------------------------------------------
+// Instant Word Count (bypasses debounce for snappy bottom bar UI)
+// -----------------------------------------------------------------
+
+/**
+ * Updates the instant word count from plain text content.
+ * Called on every keystroke (no debounce) via Lexical's
+ * registerTextContentListener, so the bottom bar appears and updates
+ * immediately — bypassing the 300ms debounce on store$.activeFlow
+ * which exists to throttle Supabase sync writes.
+ */
+export const setInstantWordCountFromText = (text: string): void => {
+  const trimmed = text.trim()
+  ephemeral$.instantWordCount.set(trimmed ? trimmed.split(/\s+/).length : 0)
 }
 
 // -----------------------------------------------------------------

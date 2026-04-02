@@ -46,10 +46,16 @@ export const PersistentEditor = () => {
     }
   }, [persistentEditor.isVisible, debouncedUpdateStore]);
 
-  // Handle content changes from the editor
+  // Handle content changes from the editor (debounced for persistence/sync)
   const handleContentChange = (markdown: string) => {
     if (persistentEditor.readOnly) return;
     debouncedUpdateStore(markdown);
+  };
+
+  // Word count is computed inside the WebView and sent as a number,
+  // bypassing both the 300ms debounce and full-content bridge serialization.
+  const handleWordCountChange = (count: number) => {
+    ephemeral$.instantWordCount.set(count);
   };
 
   // Cast to universal props to handle platform differences
@@ -102,7 +108,7 @@ export const PersistentEditor = () => {
     pointerEvents: shouldShow ? 'auto' : 'none'
   }]}>
       <View style={styles.editorWrapper}>
-        <UniversalLexicalEditor themeValues={themeValues} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} initialContent={persistentEditor.content} readOnly={persistentEditor.readOnly} />
+        <UniversalLexicalEditor themeValues={themeValues} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.content} readOnly={persistentEditor.readOnly} />
       </View>
     </Animated.View>;
 };

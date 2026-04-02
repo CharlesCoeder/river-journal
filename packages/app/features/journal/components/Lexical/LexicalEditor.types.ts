@@ -28,6 +28,9 @@ export interface LexicalEditorProps extends LexicalEditorBaseProps {
 export interface LexicalEditorNativeProps extends LexicalEditorBaseProps {
   /** Called when editor content changes - receives markdown content */
   onContentChange?: (markdown: string) => void
+  /** Called on every keystroke with the current word count (no debounce).
+   *  Computed inside the WebView to avoid bridge latency from full content transfer. */
+  onWordCountChange?: (count: number) => void
   /** Initial content to load into editor as markdown */
   initialContent?: string
 }
