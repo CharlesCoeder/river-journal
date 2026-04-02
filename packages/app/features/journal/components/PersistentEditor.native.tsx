@@ -92,7 +92,7 @@ export const PersistentEditor = () => {
     top: shouldShow ? insets.top + persistentEditor.headerHeight : -9999,
     left: 0,
     right: 0,
-    bottom: shouldShow ? persistentEditor.bottomBarHeight : undefined,
+    bottom: shouldShow ? persistentEditor.bottomBarHeight + insets.bottom : undefined,
     height: shouldShow ? undefined : 0,
     zIndex: 100,
     overflow: 'hidden' as const
