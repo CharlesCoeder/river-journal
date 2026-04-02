@@ -87,7 +87,7 @@ export function JournalScreen() {
       {/* Bottom bar — word count + finish button */}
       {hasContent && (
         <XStack
-          position={isWeb ? 'fixed' as any : 'absolute'}
+          position={isWeb ? ('fixed' as any) : 'absolute'}
           bottom={0}
           left={0}
           right={0}
@@ -130,6 +130,7 @@ export function JournalScreen() {
                 letterSpacing={0.5}
                 hoverStyle={{ color: '$color' }}
                 whiteSpace="nowrap"
+                onPress={handleExitFlow}
               >
                 Finish Session
               </Text>
@@ -176,15 +177,30 @@ export function JournalScreen() {
             borderWidth={1}
             borderColor="$color4"
           >
-            <Dialog.Title fontFamily="$journal" fontSize={24} color="$color">
+            <Dialog.Title
+              fontFamily="$journal"
+              fontSize={24}
+              color="$color"
+            >
               Save this flow?
             </Dialog.Title>
-            <Dialog.Description fontFamily="$body" fontSize={14} color="$color8">
+            <Dialog.Description
+              fontFamily="$body"
+              fontSize={14}
+              color="$color8"
+            >
               Your words will be saved and you can revisit them anytime.
             </Dialog.Description>
 
-            <XStack gap="$4" justifyContent="flex-end" marginTop="$3">
-              <Dialog.Close displayWhenAdapted asChild>
+            <XStack
+              gap="$4"
+              justifyContent="flex-end"
+              marginTop="$3"
+            >
+              <Dialog.Close
+                displayWhenAdapted
+                asChild
+              >
                 <Text
                   fontFamily="$body"
                   fontSize={12}
