@@ -133,7 +133,9 @@ export function JournalScreen() {
                 letterSpacing={0.5}
                 hoverStyle={{ color: '$color' }}
                 whiteSpace="nowrap"
-                onPress={handleExitFlow}
+                // RN doesn't bubble press from Text to parent XStack, so both need onPress.
+                // stopPropagation prevents double-fire on web.
+                onPress={(e) => { e.stopPropagation(); handleExitFlow(); }}
               >
                 Finish Session
               </Text>
