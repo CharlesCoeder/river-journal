@@ -54,10 +54,31 @@ const ContentSyncer: React.FC<{
   }, [editor, content]);
   return null;
 };
+/**
+ * Plugin that fires onWordCountChange on every text mutation,
+ * computed inside the WebView so only a small number crosses the bridge
+ * (avoids serializing the full markdown string for word counting).
+ */
+const WordCountPlugin: React.FC<{
+  onWordCountChange: (count: number) => void;
+}> = ({ onWordCountChange }) => {
+  const [editor] = useLexicalComposerContext();
+  const callbackRef = useRef(onWordCountChange);
+  callbackRef.current = onWordCountChange;
+  useEffect(() => {
+    return editor.registerTextContentListener((text) => {
+      const trimmed = text.trim();
+      callbackRef.current(trimmed ? trimmed.split(/\s+/).length : 0);
+    });
+  }, [editor]);
+  return null;
+};
+
 const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   placeholder = 'Start flowing...',
   className,
   onContentChange,
+  onWordCountChange,
   initialContent,
   themeValues,
   readOnly = false
@@ -97,6 +118,9 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         const markdown = editorState.read(() => $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true));
         onContentChange(markdown);
       }} /> : null}
+
+        {/* Instant word count — computed inside WebView, only a number crosses the bridge */}
+        {!readOnly && onWordCountChange ? <WordCountPlugin onWordCountChange={onWordCountChange} /> : null}
 
         {/* Sync content with Legend State */}
         <ContentSyncer content={initialContent || ''} />
