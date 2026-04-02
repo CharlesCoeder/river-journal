@@ -1,0 +1,6 @@
+.env
+.env.local
+tamagui.generated.css
+_bmad/
+docs/
+_bmad-output/
