@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { Circle, Text, XStack, YStack, View } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$, setTheme } from 'app/state/store'
-import { THEME_NAMES, LIGHT_THEMES, DARK_THEMES } from 'app/state/types'
+import { LIGHT_THEMES, DARK_THEMES } from 'app/state/types'
 import type { ThemeName } from 'app/state/types'
 import { THEME_DEFS } from '@my/config/src/themes'
+import { CustomThemeEditor } from './CustomThemeEditor'
 
 const THEME_LABELS: Record<ThemeName, string> = {
   ink: 'Ink & Paper',
@@ -54,6 +56,10 @@ function ThemeRow({
 
 export function ThemePicker() {
   const currentTheme = use$(store$.profile.themeName) ?? 'ink'
+  const customTheme = use$(store$.profile.customTheme)
+  const [editorOpen, setEditorOpen] = useState(false)
+
+  const isCustomSelected = currentTheme === 'custom'
 
   return (
     <YStack gap="$3">
@@ -76,6 +82,78 @@ export function ThemePicker() {
           onSelect={() => setTheme(name)}
         />
       ))}
+
+      <View height={16} />
+
+      {/* Custom Theme Row */}
+      {customTheme ? (
+        <XStack
+          testID={`theme-option-custom${isCustomSelected ? '-selected' : ''}`}
+          alignItems="center"
+          gap="$3"
+          cursor="pointer"
+          onPress={() => setTheme('custom')}
+          hoverStyle={{ opacity: 0.8 }}
+          pressStyle={{ opacity: 0.7 }}
+        >
+          <Circle
+            size={12}
+            borderWidth={1}
+            borderColor="$color5"
+            backgroundColor={customTheme.bg}
+          />
+          <Text
+            fontFamily="$journal"
+            fontSize={20}
+            color={isCustomSelected ? '$color' : '$color8'}
+            hoverStyle={{ color: '$color' }}
+            flex={1}
+          >
+            My Theme
+          </Text>
+          <Text
+            testID="edit-custom-theme"
+            fontFamily="$body"
+            fontSize={13}
+            color="$color8"
+            cursor="pointer"
+            onPress={(e: any) => {
+              e.stopPropagation?.()
+              setEditorOpen(true)
+            }}
+            hoverStyle={{ color: '$color' }}
+          >
+            Edit
+          </Text>
+        </XStack>
+      ) : (
+        <XStack
+          testID="create-custom-theme"
+          alignItems="center"
+          gap="$3"
+          cursor="pointer"
+          onPress={() => setEditorOpen(true)}
+          hoverStyle={{ opacity: 0.8 }}
+          pressStyle={{ opacity: 0.7 }}
+        >
+          <Circle
+            size={12}
+            borderWidth={1}
+            borderColor="$color5"
+            borderStyle="dashed"
+          />
+          <Text
+            fontFamily="$journal"
+            fontSize={20}
+            color="$color8"
+            hoverStyle={{ color: '$color' }}
+          >
+            Create Custom Theme
+          </Text>
+        </XStack>
+      )}
+
+      {editorOpen && <CustomThemeEditor onClose={() => setEditorOpen(false)} />}
     </YStack>
   )
 }

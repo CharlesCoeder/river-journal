@@ -15,6 +15,7 @@ import type {
   DailyEntryView,
   DailyStatsView,
   ThemeName,
+  CustomThemeDef,
 } from './types'
 import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES } from './types'
 import { flows$ } from './flows'
@@ -29,6 +30,16 @@ export { THEME_NAMES, DEFAULT_THEME, DARK_THEMES }
 // Theme validation helper
 export const isValidTheme = (theme: string): theme is ThemeName => {
   return THEME_NAMES.includes(theme as ThemeName)
+}
+
+// Check if a hex color is dark based on luminance
+export const isDarkColor = (hex: string): boolean => {
+  const n = Number.parseInt(hex.slice(1), 16)
+  const r = (n >> 16) & 255
+  const g = (n >> 8) & 255
+  const b = n & 255
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance < 0.5
 }
 
 // =================================================================
@@ -117,10 +128,7 @@ const isUndecidedOrphanEntry = (entry: Entry): boolean =>
   // orphan-consent dialog before opening cloud sync.
   !entry.user_id && !entry.sync_excluded && !!entry.local_session_id
 
-const isUndecidedOrphanFlow = (
-  flow: Flow,
-  allEntries: Record<string, Entry>
-): boolean => {
+const isUndecidedOrphanFlow = (flow: Flow, allEntries: Record<string, Entry>): boolean => {
   if (flow.user_id || flow.sync_excluded) return false
 
   const relatedEntry = allEntries[flow.dailyEntryId]
@@ -626,24 +634,60 @@ const ensureProfile = () => {
     store$.profile.set({
       word_goal: 750,
       themeName: DEFAULT_THEME,
+      customTheme: null,
       sync: {
         word_goal: true,
         themeName: true,
+        customTheme: true,
       },
     })
   }
 }
 
 /**
- * Sets the named theme with validation and automatic profile creation
+ * Sets the named theme with validation and automatic profile creation.
+ * Accepts preset ThemeName values or 'custom' (only when customTheme exists).
  */
-export const setTheme = (themeName: ThemeName) => {
+export const setTheme = (themeName: ThemeName | 'custom') => {
+  if (themeName === 'custom') {
+    ensureProfile()
+    if (!store$.profile.customTheme.get()) {
+      console.warn('Cannot set custom theme: no custom theme defined')
+      return
+    }
+    store$.profile.themeName.set('custom')
+    return
+  }
   if (!THEME_NAMES.includes(themeName)) {
     console.warn(`Invalid theme: ${themeName}. Using default: ${DEFAULT_THEME}`)
     themeName = DEFAULT_THEME
   }
   ensureProfile()
   store$.profile.themeName.set(themeName)
+}
+
+/**
+ * Sets a custom theme definition and activates it.
+ */
+export const setCustomTheme = (def: CustomThemeDef) => {
+  ensureProfile()
+  batch(() => {
+    store$.profile.customTheme.set(def)
+    store$.profile.themeName.set('custom')
+  })
+}
+
+/**
+ * Clears the custom theme and reverts to the default preset.
+ */
+export const clearCustomTheme = () => {
+  ensureProfile()
+  batch(() => {
+    store$.profile.customTheme.set(null)
+    if (store$.profile.themeName.get() === 'custom') {
+      store$.profile.themeName.set(DEFAULT_THEME)
+    }
+  })
 }
 
 export const setWordGoal = (goal: number) => {
@@ -663,9 +707,14 @@ export const getCurrentTheme = (): ThemeName => {
 }
 
 /**
- * Derives light/dark from the theme name
+ * Derives light/dark from the theme name.
+ * For 'custom', checks the custom theme's background luminance.
  */
-export const isDarkTheme = (themeName: ThemeName): boolean => {
+export const isDarkTheme = (themeName: ThemeName | 'custom'): boolean => {
+  if (themeName === 'custom') {
+    const customTheme = store$.profile.customTheme.peek()
+    return customTheme ? isDarkColor(customTheme.bg) : false
+  }
   return DARK_THEMES.includes(themeName)
 }
 
