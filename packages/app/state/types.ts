@@ -42,16 +42,28 @@ export const DARK_THEMES: ThemeName[] = ['night', 'forest-night', 'fireside']
 export const DEFAULT_THEME: ThemeName = 'ink'
 
 /**
+ * Three user-chosen colors that define a custom theme.
+ * A 12-step Tamagui palette is generated from these at runtime.
+ */
+export interface CustomThemeDef {
+  bg: string // hex color for background
+  text: string // hex color for primary text
+  stone: string // hex color for muted/secondary elements
+}
+
+/**
  * For all user-specific settings and preferences. This entire object will be synced
  * to the 'profiles' table in Supabase.
  */
 export interface UserProfile {
   word_goal: number
-  themeName: ThemeName
+  themeName: ThemeName | 'custom'
+  customTheme: CustomThemeDef | null
 
   sync: {
     word_goal: boolean
     themeName: boolean
+    customTheme: boolean
   }
 }
 

@@ -16,8 +16,8 @@ const THEME_DEFS: Record<string, ThemeDef> = {
   fireside: { bg: '#2B1D14', text: '#E6DACB', stone: '#8A786B', isDark: true },
 }
 
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16)
+export function hexToRgb(hex: string): [number, number, number] {
+  const n = Number.parseInt(hex.slice(1), 16)
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
@@ -29,13 +29,21 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t
 }
 
-function generatePalette(def: ThemeDef): string[] {
+export function generatePalette(def: ThemeDef): string[] {
   const [r0, g0, b0] = hexToRgb(def.bg)
+  const [rS, gS, bS] = hexToRgb(def.stone)
   const [r1, g1, b1] = hexToRgb(def.text)
   const palette: string[] = []
   for (let i = 0; i < 12; i++) {
-    const t = i / 11
-    palette.push(rgbToHex(lerp(r0, r1, t), lerp(g0, g1, t), lerp(b0, b1, t)))
+    if (i <= 6) {
+      // bg → stone (steps 0-6)
+      const t = i / 6
+      palette.push(rgbToHex(lerp(r0, rS, t), lerp(g0, gS, t), lerp(b0, bS, t)))
+    } else {
+      // stone → text (steps 7-11)
+      const t = (i - 6) / 5
+      palette.push(rgbToHex(lerp(rS, r1, t), lerp(gS, g1, t), lerp(bS, b1, t)))
+    }
   }
   return palette
 }
