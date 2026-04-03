@@ -74,7 +74,7 @@ function TierCard({
       borderColor={selected ? '$color8' : '$color4'}
       borderRadius="$4"
       pressTheme={interactive}
-      animation={interactive ? 'quick' : undefined}
+      transition={interactive ? 'quick' : null}
       onPress={interactive ? () => onSelect?.(mode) : undefined}
       cursor={interactive ? 'pointer' : 'default'}
     >
@@ -155,7 +155,7 @@ export function PrivacyTierExplainer({
             {learnMoreOpen && (
               <YStack
                 key="learn-more-content"
-                animation="quick"
+                transition="quick"
                 enterStyle={{ opacity: 0, scale: 0.97 }}
                 exitStyle={{ opacity: 0, scale: 0.97 }}
                 opacity={1}

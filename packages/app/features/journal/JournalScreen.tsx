@@ -161,7 +161,7 @@ export function JournalScreen() {
         <Dialog.Portal>
           <Dialog.Overlay
             key="overlay"
-            animation="quick"
+            transition="quick"
             opacity={0.4}
             enterStyle={{ opacity: 0 }}
             exitStyle={{ opacity: 0 }}
@@ -169,7 +169,7 @@ export function JournalScreen() {
           <Dialog.Content
             key="content"
             animateOnly={['transform', 'opacity']}
-            animation="designModal"
+            transition="designModal"
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: 10, opacity: 0 }}
             backgroundColor="$background"

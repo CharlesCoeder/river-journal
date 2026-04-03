@@ -43,14 +43,14 @@ export function OrphanFlowsDialog() {
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"
-          animation="quick"
+          transition="quick"
           opacity={0.4}
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
         />
         <AlertDialog.Content
           key="content"
-          animation={['medium', { opacity: { overshootClamping: true } }]}
+          transition={['medium', { opacity: { overshootClamping: true } }]}
           enterStyle={{ y: -10, opacity: 0 }}
           exitStyle={{ y: 10, opacity: 0 }}
           y={0}
