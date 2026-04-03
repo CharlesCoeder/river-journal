@@ -17,9 +17,11 @@ export function DayViewScreen() {
   const [deleteTarget, setDeleteTarget] = useState<Flow | null>(null)
   const entryCount = allEntries?.length || 0
   const staggerCount = Math.min(entryCount, MAX_STAGGER)
+  const [mounted, setMounted] = useState(false)
   const [visibleCount, setVisibleCount] = useState(0)
 
   useEffect(() => {
+    setMounted(true)
     const count = Math.min(entryCount, MAX_STAGGER)
     const timers = Array.from({ length: count }, (_, i) =>
       setTimeout(() => setVisibleCount(i + 1), i * STAGGER_MS)
@@ -62,7 +64,15 @@ export function DayViewScreen() {
         $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
         {/* Header */}
-        <XStack justifyContent="space-between" alignItems="center" marginBottom={64} $md={{ marginBottom: 96 }}>
+        <XStack
+          justifyContent="space-between"
+          alignItems="center"
+          marginBottom={64}
+          $md={{ marginBottom: 96 }}
+          transition="designEnter"
+          opacity={mounted ? 1 : 0}
+          y={mounted ? 0 : 10}
+        >
           <Text
             fontFamily="$journalItalic"
             fontStyle="italic"

@@ -59,6 +59,9 @@ export function HomeScreen() {
         right={48}
         zIndex={10}
         $sm={{ top: 32, right: 32 }}
+        transition="designEnter"
+        opacity={mounted ? 1 : 0}
+        y={mounted ? 0 : 15}
       >
         {isAuthenticated ? (
           <Text
