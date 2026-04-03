@@ -4,8 +4,8 @@
  * uppercase micro labels, "or" divider, Google button.
  */
 
-import { useCallback, useMemo } from 'react'
-import { YStack, XStack, Text, ScrollView, View } from '@my/ui'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, YStack, XStack, Text, ScrollView, View } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { type ObservableObject } from '@legendapp/state'
 import { useObservable, use$ } from '@legendapp/state/react'
@@ -37,6 +37,8 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
 
   const activeTab = use$(authForm$.activeTab)
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   const actions = useMemo(
     () => ({
@@ -71,15 +73,22 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
       backgroundColor="$background"
       contentContainerStyle={{ flexGrow: 1 }}
     >
-      <YStack
-        flex={1}
-        paddingHorizontal="$4"
-        paddingTop="$4"
-        paddingBottom={96}
-        alignItems="center"
-        $sm={{ paddingHorizontal: '$6' }}
-        $md={{ paddingHorizontal: '$12', paddingTop: '$12' }}
-      >
+      <AnimatePresence>
+        {mounted && (
+          <YStack
+            key="auth-content"
+            transition="designModal"
+            enterStyle={{ opacity: 0, scale: 0.98 }}
+            opacity={1}
+            scale={1}
+            flex={1}
+            paddingHorizontal="$4"
+            paddingTop="$4"
+            paddingBottom={96}
+            alignItems="center"
+            $sm={{ paddingHorizontal: '$6' }}
+            $md={{ paddingHorizontal: '$12', paddingTop: '$12' }}
+          >
         {/* Cancel button — top right, wider than form */}
         <XStack width="100%" maxWidth={576} justifyContent="flex-end">
           <Text
@@ -138,23 +147,31 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
           </XStack>
 
           {/* Form */}
-          {activeTab === 'signup' ? (
-            <SignupForm
-              authForm$={authForm$}
-              actions={actions}
-              onSuccess={handleAuthSuccess}
-              onSwitchToLogin={() => actions.setTab('login')}
-            />
-          ) : (
-            <LoginForm
-              authForm$={authForm$}
-              actions={actions}
-              onSuccess={handleAuthSuccess}
-              onSwitchToSignup={() => actions.setTab('signup')}
-            />
-          )}
+          <AnimatePresence>
+            {activeTab === 'signup' ? (
+              <YStack key="signup-form" transition="quick" enterStyle={{ opacity: 0, y: 10 }} exitStyle={{ opacity: 0, y: -10 }} opacity={1} y={0} width="100%">
+                <SignupForm
+                  authForm$={authForm$}
+                  actions={actions}
+                  onSuccess={handleAuthSuccess}
+                  onSwitchToLogin={() => actions.setTab('login')}
+                />
+              </YStack>
+            ) : (
+              <YStack key="login-form" transition="quick" enterStyle={{ opacity: 0, y: 10 }} exitStyle={{ opacity: 0, y: -10 }} opacity={1} y={0} width="100%">
+                <LoginForm
+                  authForm$={authForm$}
+                  actions={actions}
+                  onSuccess={handleAuthSuccess}
+                  onSwitchToSignup={() => actions.setTab('signup')}
+                />
+              </YStack>
+            )}
+          </AnimatePresence>
         </YStack>
-      </YStack>
+          </YStack>
+        )}
+      </AnimatePresence>
     </ScrollView>
   )
 }

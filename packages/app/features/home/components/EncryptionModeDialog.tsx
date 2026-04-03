@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { AlertDialog, Button, ScrollView, Separator, Text, XStack, YStack } from '@my/ui'
+import { AlertDialog, AnimatePresence, Button, ScrollView, Separator, Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { useRouter } from 'solito/navigation'
 import {
@@ -74,10 +74,10 @@ export function EncryptionModeDialog() {
         />
         <AlertDialog.Content
           key="content"
-          transition={['medium', { opacity: { overshootClamping: true } }]}
-          enterStyle={{ y: -10, opacity: 0 }}
-          exitStyle={{ y: 10, opacity: 0 }}
-          y={0}
+          transition="designModal"
+          enterStyle={{ opacity: 0, scale: 0.98 }}
+          exitStyle={{ opacity: 0, scale: 0.98 }}
+          scale={1}
           opacity={1}
           backgroundColor="$background"
           borderRadius="$6"
@@ -98,148 +98,156 @@ export function EncryptionModeDialog() {
               </AlertDialog.Description>
             </YStack>
 
-            {isTrustBrowserStep ? (
-              <YStack gap="$3">
-                <Text fontSize="$3" fontFamily="$body" color="$color11">
-                  Your encryption key will be stored securely in this browser.
-                  You can revoke trust at any time from your settings.
-                </Text>
-                <Text fontSize="$2" fontFamily="$body" color="$color10">
-                  If your browser data is cleared — either by you or by the browser
-                  itself under storage pressure — you'll need to re-enter your password.
-                </Text>
-
-                <Separator />
-
-                {isTrusting && (
+            <AnimatePresence>
+              {isTrustBrowserStep && (
+                <YStack key="step-trust" transition="quick" enterStyle={{ opacity: 0, y: 10 }} exitStyle={{ opacity: 0, y: -10 }} opacity={1} y={0} gap="$3">
                   <Text fontSize="$3" fontFamily="$body" color="$color11">
-                    Securing your key…
+                    Your encryption key will be stored securely in this browser.
+                    You can revoke trust at any time from your settings.
                   </Text>
-                )}
+                  <Text fontSize="$2" fontFamily="$body" color="$color10">
+                    If your browser data is cleared — either by you or by the browser
+                    itself under storage pressure — you'll need to re-enter your password.
+                  </Text>
 
-                {trustError && (
-                  <YStack gap="$2">
-                    <Text fontSize="$3" fontFamily="$body" color="$red10">
-                      {trustError.message}
+                  <Separator />
+
+                  {isTrusting && (
+                    <Text fontSize="$3" fontFamily="$body" color="$color11">
+                      Securing your key…
                     </Text>
+                  )}
+
+                  {trustError && (
+                    <YStack gap="$2">
+                      <Text fontSize="$3" fontFamily="$body" color="$red10">
+                        {trustError.message}
+                      </Text>
+                      <XStack gap="$3" justifyContent="flex-end">
+                        <Button
+                          testID="trust-browser-dismiss"
+                          variant="outlined"
+                          onPress={dismissTrustBrowserPrompt}
+                          fontFamily="$body"
+                        >
+                          Dismiss
+                        </Button>
+                        <Button
+                          testID="trust-browser-retry"
+                          onPress={handleAcceptTrust}
+                          fontFamily="$body"
+                        >
+                          Retry
+                        </Button>
+                      </XStack>
+                    </YStack>
+                  )}
+
+                  {!isTrusting && !trustError && (
                     <XStack gap="$3" justifyContent="flex-end">
                       <Button
-                        testID="trust-browser-dismiss"
+                        testID="trust-browser-decline"
                         variant="outlined"
-                        onPress={dismissTrustBrowserPrompt}
+                        onPress={declineBrowserTrust}
                         fontFamily="$body"
                       >
-                        Dismiss
+                        Not now
                       </Button>
                       <Button
-                        testID="trust-browser-retry"
+                        testID="trust-browser-accept"
                         onPress={handleAcceptTrust}
                         fontFamily="$body"
                       >
-                        Retry
+                        Trust this browser
                       </Button>
                     </XStack>
-                  </YStack>
-                )}
+                  )}
+                </YStack>
+              )}
 
-                {!isTrusting && !trustError && (
-                  <XStack gap="$3" justifyContent="flex-end">
-                    <Button
-                      testID="trust-browser-decline"
-                      variant="outlined"
-                      onPress={declineBrowserTrust}
-                      fontFamily="$body"
-                    >
-                      Not now
-                    </Button>
-                    <Button
-                      testID="trust-browser-accept"
-                      onPress={handleAcceptTrust}
-                      fontFamily="$body"
-                    >
-                      Trust this browser
-                    </Button>
-                  </XStack>
-                )}
-              </YStack>
-            ) : step === 'choice' ? (
-              <>
-                <ScrollView maxHeight="$20" bounces={false}>
-                  <YStack gap="$4" paddingRight="$1">
-                    <PrivacyTierExplainer
-                      selectedMode={selectedMode}
-                      onModeSelect={setSelectedEncryptionMode}
-                      privacyCenterLink={() => router.push('/privacy')}
-                    />
+              {!isTrustBrowserStep && step === 'choice' && (
+                <YStack key="step-choice" transition="quick" enterStyle={{ opacity: 0, y: 10 }} exitStyle={{ opacity: 0, y: -10 }} opacity={1} y={0} gap="$4">
+                  <ScrollView maxHeight="$20" bounces={false}>
+                    <YStack gap="$4" paddingRight="$1">
+                      <PrivacyTierExplainer
+                        selectedMode={selectedMode}
+                        onModeSelect={setSelectedEncryptionMode}
+                        privacyCenterLink={() => router.push('/privacy')}
+                      />
 
-                    <YStack gap="$2">
-                      <Text fontSize="$3" fontFamily="$body" color="$orange10" fontWeight="700">
-                        This choice cannot be changed later.
-                      </Text>
-                      {selectedMode === 'e2e' && (
-                        <Text fontSize="$3" fontFamily="$body" color="$red10" fontWeight="700">
-                          If you forget this password, your cloud data is unrecoverable.
+                      <YStack gap="$2">
+                        <Text fontSize="$3" fontFamily="$body" color="$orange10" fontWeight="700">
+                          This choice cannot be changed later.
+                        </Text>
+                        {selectedMode === 'e2e' && (
+                          <Text fontSize="$3" fontFamily="$body" color="$red10" fontWeight="700">
+                            If you forget this password, your cloud data is unrecoverable.
+                          </Text>
+                        )}
+                      </YStack>
+
+                      {error && (
+                        <Text fontSize="$3" fontFamily="$body" color="$red10">
+                          {error.message}
                         </Text>
                       )}
                     </YStack>
+                  </ScrollView>
 
-                    {error && (
-                      <Text fontSize="$3" fontFamily="$body" color="$red10">
-                        {error.message}
-                      </Text>
-                    )}
-                  </YStack>
-                </ScrollView>
+                  <XStack gap="$3" justifyContent="flex-end">
+                    <Button variant="outlined" onPress={cancelEncryptionSetup} fontFamily="$body">
+                      Cancel
+                    </Button>
+                    <Button
+                      testID="confirm-encryption-mode"
+                      onPress={() => {
+                        void confirmEncryptionModeSelection()
+                      }}
+                      fontFamily="$body"
+                    >
+                      {selectedMode === 'e2e'
+                        ? 'Confirm Strict Privacy Mode'
+                        : 'Confirm Cloud Backup Mode'}
+                    </Button>
+                  </XStack>
+                </YStack>
+              )}
 
-                <XStack gap="$3" justifyContent="flex-end">
-                  <Button variant="outlined" onPress={cancelEncryptionSetup} fontFamily="$body">
-                    Cancel
-                  </Button>
-                  <Button
-                    testID="confirm-encryption-mode"
-                    onPress={() => {
-                      void confirmEncryptionModeSelection()
+              {!isTrustBrowserStep && step !== 'choice' && (
+                <YStack key="step-password" transition="quick" enterStyle={{ opacity: 0, y: 10 }} exitStyle={{ opacity: 0, y: -10 }} opacity={1} y={0}>
+                  <E2EPasswordForm
+                    errorMessage={error?.message}
+                    isSaving={step === 'saving'}
+                    onBack={isLegacyE2EUnlock ? cancelEncryptionSetup : returnToEncryptionChoice}
+                    onCancel={cancelEncryptionSetup}
+                    showBackButton={!isModeLocked && !isLegacyE2EUnlock}
+                    requireConfirmation={!isSinglePasswordUnlock}
+                    submitLabel={
+                      isLegacyE2EUnlock
+                        ? 'Unlock legacy E2E flows'
+                        : isSinglePasswordUnlock
+                          ? 'Unlock encryption'
+                          : 'Save and continue'
+                    }
+                    title={
+                      isSinglePasswordUnlock ? 'Enter your encryption password' : 'Create an encryption password'
+                    }
+                    description={
+                      isSinglePasswordUnlock
+                        ? 'Use the encryption password you already chose for this account so this device can unlock Cloud Sync.'
+                        : 'This password is separate from your account password and cannot be recovered for you.'
+                    }
+                    onSubmit={(password, confirmPassword) => {
+                      if (isLegacyE2EUnlock) {
+                        void retryWithE2EPassword(password)
+                      } else {
+                        void submitE2EPassword(password, confirmPassword)
+                      }
                     }}
-                    fontFamily="$body"
-                  >
-                    {selectedMode === 'e2e'
-                      ? 'Confirm Strict Privacy Mode'
-                      : 'Confirm Cloud Backup Mode'}
-                  </Button>
-                </XStack>
-              </>
-            ) : (
-              <E2EPasswordForm
-                errorMessage={error?.message}
-                isSaving={step === 'saving'}
-                onBack={isLegacyE2EUnlock ? cancelEncryptionSetup : returnToEncryptionChoice}
-                onCancel={cancelEncryptionSetup}
-                showBackButton={!isModeLocked && !isLegacyE2EUnlock}
-                requireConfirmation={!isSinglePasswordUnlock}
-                submitLabel={
-                  isLegacyE2EUnlock
-                    ? 'Unlock legacy E2E flows'
-                    : isSinglePasswordUnlock
-                      ? 'Unlock encryption'
-                      : 'Save and continue'
-                }
-                title={
-                  isSinglePasswordUnlock ? 'Enter your encryption password' : 'Create an encryption password'
-                }
-                description={
-                  isSinglePasswordUnlock
-                    ? 'Use the encryption password you already chose for this account so this device can unlock Cloud Sync.'
-                    : 'This password is separate from your account password and cannot be recovered for you.'
-                }
-                onSubmit={(password, confirmPassword) => {
-                  if (isLegacyE2EUnlock) {
-                    void retryWithE2EPassword(password)
-                  } else {
-                    void submitE2EPassword(password, confirmPassword)
-                  }
-                }}
-              />
-            )}
+                  />
+                </YStack>
+              )}
+            </AnimatePresence>
           </YStack>
         </AlertDialog.Content>
       </AlertDialog.Portal>

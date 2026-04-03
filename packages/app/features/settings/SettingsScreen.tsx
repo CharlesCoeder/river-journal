@@ -1,10 +1,10 @@
-import { ScrollView, Text, XStack, YStack, View } from '@my/ui'
+import { AnimatePresence, ScrollView, Text, XStack, YStack, View } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
 import { signOut } from 'app/utils'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { SyncToggle } from 'app/features/home/components/SyncToggle'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
@@ -82,6 +82,9 @@ function SectionHeader({ children }: { children: string }) {
 // Settings Screen
 // ---------------------------------------------------------------------------
 
+const STAGGER_MS = 100
+const SECTION_COUNT = 6
+
 export function SettingsScreen() {
   const router = useRouter()
   const isAuthenticated = use$(store$.session.isAuthenticated)
@@ -89,6 +92,14 @@ export function SettingsScreen() {
   const syncEnabled = use$(store$.session.syncEnabled)
   const currentMode = use$(encryptionSetup$.currentMode)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(0)
+
+  useEffect(() => {
+    const timers = Array.from({ length: SECTION_COUNT }, (_, i) =>
+      setTimeout(() => setVisibleCount(i + 1), i * STAGGER_MS)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [])
 
   const activeTier = getActiveTier(isAuthenticated, currentMode)
 
@@ -144,156 +155,169 @@ export function SettingsScreen() {
           </Text>
         </XStack>
 
-        {/* Sections container */}
+        {/* Sections container — staggered reveals */}
         <YStack gap={80}>
+          <AnimatePresence>
+            {/* Section 1: Privacy Tier / Secure Your Words */}
+            {visibleCount >= 1 && (
+              !isAuthenticated ? (
+                <YStack key="secure-words" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$3">
+                  <Text fontFamily="$journal" fontSize={24} color="$color">
+                    Secure Your Words
+                  </Text>
+                  <Text
+                    fontFamily="$body"
+                    fontSize={14}
+                    color="$color8"
+                    lineHeight={22}
+                    maxWidth={512}
+                  >
+                    Create an account or log in to enable end-to-end encrypted backup and sync your journal across all your devices.
+                  </Text>
+                  <Text
+                    fontFamily="$body"
+                    fontSize={11}
+                    letterSpacing={3}
+                    fontWeight="500"
+                    textTransform="uppercase"
+                    color="$color"
+                    borderBottomWidth={2}
+                    borderColor="$color10"
+                    paddingBottom={6}
+                    alignSelf="flex-start"
+                    marginTop="$2"
+                    cursor="pointer"
+                    hoverStyle={{ opacity: 0.7 }}
+                    onPress={() => router.push('/auth')}
+                  >
+                    Log In / Create Account
+                  </Text>
+                </YStack>
+              ) : (
+                <YStack key="privacy-tier" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                  <SectionHeader>Privacy Tier</SectionHeader>
+                  <PrivacyTierList activeTier={activeTier} />
+                </YStack>
+              )
+            )}
 
-          {/* Secure Your Words (unauthenticated) */}
-          {!isAuthenticated && (
-            <YStack gap="$3">
-              <Text fontFamily="$journal" fontSize={24} color="$color">
-                Secure Your Words
-              </Text>
-              <Text
-                fontFamily="$body"
-                fontSize={14}
-                color="$color8"
-                lineHeight={22}
-                maxWidth={512}
-              >
-                Create an account or log in to enable end-to-end encrypted backup and sync your journal across all your devices.
-              </Text>
-              <Text
-                fontFamily="$body"
-                fontSize={11}
-                letterSpacing={3}
-                fontWeight="500"
-                textTransform="uppercase"
-                color="$color"
-                borderBottomWidth={2}
-                borderColor="$color10"
-                paddingBottom={6}
-                alignSelf="flex-start"
-                marginTop="$2"
-                cursor="pointer"
-                hoverStyle={{ opacity: 0.7 }}
-                onPress={() => router.push('/auth')}
-              >
-                Log In / Create Account
-              </Text>
-            </YStack>
-          )}
+            {/* Section 2: Data & Sync */}
+            {visibleCount >= 2 && (
+              isAuthenticated ? (
+                <YStack key="data-sync-auth" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                  <SectionHeader>Data & Sync</SectionHeader>
+                  <SyncToggle />
+                </YStack>
+              ) : (
+                <YStack key="data-sync-unauth" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                  <SectionHeader>Data & Sync</SectionHeader>
+                  <YStack gap="$2">
+                    <Text
+                      fontFamily="$journal"
+                      fontSize={20}
+                      color="$color8"
+                      borderBottomWidth={1}
+                      borderColor="$color5"
+                      paddingBottom={4}
+                      alignSelf="flex-start"
+                      cursor="pointer"
+                      hoverStyle={{ color: '$color' }}
+                      onPress={() => router.push('/auth')}
+                    >
+                      Enable Cloud Sync
+                    </Text>
+                    <Text fontFamily="$body" fontSize={13} color="$color8">
+                      Entries remain on this device only.
+                    </Text>
+                  </YStack>
+                </YStack>
+              )
+            )}
 
-          {/* Privacy Tier (authenticated) */}
-          {isAuthenticated && (
-            <YStack gap="$4">
-              <SectionHeader>Privacy Tier</SectionHeader>
-              <PrivacyTierList activeTier={activeTier} />
-            </YStack>
-          )}
+            {/* Section 3: Keyring prompt + Trusted Browsers */}
+            {visibleCount >= 3 && (
+              <YStack key="keyring-browsers" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap={80}>
+                <KeyringPrompt />
+                {isAuthenticated && userId && currentMode === 'e2e' && (
+                  <YStack gap="$4">
+                    <SectionHeader>Trusted Browsers</SectionHeader>
+                    <TrustedBrowsersList userId={userId} />
+                  </YStack>
+                )}
+              </YStack>
+            )}
 
-          {/* Data & Sync */}
-          {isAuthenticated ? (
-            <YStack gap="$4">
-              <SectionHeader>Data & Sync</SectionHeader>
-              <SyncToggle />
-            </YStack>
-          ) : (
-            <YStack gap="$4">
-              <SectionHeader>Data & Sync</SectionHeader>
-              <YStack gap="$2">
+            {/* Section 4: Theme */}
+            {visibleCount >= 4 && (
+              <YStack key="theme" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <SectionHeader>Theme</SectionHeader>
+                <ThemePicker />
+              </YStack>
+            )}
+
+            {/* Section 5: Linked Accounts (authenticated) */}
+            {visibleCount >= 5 && isAuthenticated && (
+              <YStack key="linked-accounts" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <SectionHeader>Linked Accounts</SectionHeader>
+                <LinkedProviders />
+
+                {/* Log Out */}
                 <Text
-                  fontFamily="$journal"
-                  fontSize={20}
+                  fontFamily="$body"
+                  fontSize={11}
+                  letterSpacing={2}
+                  textTransform="uppercase"
                   color="$color8"
-                  borderBottomWidth={1}
-                  borderColor="$color5"
-                  paddingBottom={4}
-                  alignSelf="flex-start"
                   cursor="pointer"
                   hoverStyle={{ color: '$color' }}
-                  onPress={() => router.push('/auth')}
+                  onPress={handleLogout}
+                  alignSelf="flex-start"
+                  marginTop="$2"
+                  opacity={isLoggingOut ? 0.4 : 1}
                 >
-                  Enable Cloud Sync
-                </Text>
-                <Text fontFamily="$body" fontSize={13} color="$color8">
-                  Entries remain on this device only.
+                  {isLoggingOut ? 'Logging out...' : 'Log Out'}
                 </Text>
               </YStack>
-            </YStack>
-          )}
+            )}
 
-          {/* Keyring prompt */}
-          <KeyringPrompt />
-
-          {/* Trusted Browsers (E2E authenticated) */}
-          {isAuthenticated && userId && currentMode === 'e2e' && (
-            <YStack gap="$4">
-              <SectionHeader>Trusted Browsers</SectionHeader>
-              <TrustedBrowsersList userId={userId} />
-            </YStack>
-          )}
-
-          {/* Theme */}
-          <YStack gap="$4">
-            <SectionHeader>Theme</SectionHeader>
-            <ThemePicker />
-          </YStack>
-
-          {/* Linked Accounts (authenticated) */}
-          {isAuthenticated && (
-            <YStack gap="$4">
-              <SectionHeader>Linked Accounts</SectionHeader>
-              <LinkedProviders />
-
-              {/* Log Out */}
-              <Text
-                fontFamily="$body"
-                fontSize={11}
-                letterSpacing={2}
-                textTransform="uppercase"
-                color="$color8"
-                cursor="pointer"
-                hoverStyle={{ color: '$color' }}
-                onPress={handleLogout}
-                alignSelf="flex-start"
-                marginTop="$2"
-                opacity={isLoggingOut ? 0.4 : 1}
+            {/* Section 6: Footer */}
+            {visibleCount >= 6 && (
+              <XStack
+                key="footer"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                justifyContent="space-between"
+                alignItems="center"
+                marginTop={16}
               >
-                {isLoggingOut ? 'Logging out...' : 'Log Out'}
-              </Text>
-            </YStack>
-          )}
+                <Text
+                  fontFamily="$journal"
+                  fontSize={13}
+                  color="$color"
+                  opacity={0.6}
+                  letterSpacing={0.5}
+                >
+                  River Journal{'  '}
+                  <Text fontFamily="$body" fontSize={13} color="$color8">
+                    · v1.0.0
+                  </Text>
+                </Text>
+                <Text
+                  fontFamily="$body"
+                  fontSize={12}
+                  color="$color7"
+                  cursor="pointer"
+                  hoverStyle={{ color: '$color' }}
+                  onPress={() => router.push('/privacy')}
+                >
+                  Privacy Center
+                </Text>
+              </XStack>
+            )}
+          </AnimatePresence>
         </YStack>
-
-        {/* Footer */}
-        <XStack
-          justifyContent="space-between"
-          alignItems="center"
-          marginTop={96}
-        >
-          <Text
-            fontFamily="$journal"
-            fontSize={13}
-            color="$color"
-            opacity={0.6}
-            letterSpacing={0.5}
-          >
-            River Journal{'  '}
-            <Text fontFamily="$body" fontSize={13} color="$color8">
-              · v1.0.0
-            </Text>
-          </Text>
-          <Text
-            fontFamily="$body"
-            fontSize={12}
-            color="$color7"
-            cursor="pointer"
-            hoverStyle={{ color: '$color' }}
-            onPress={() => router.push('/privacy')}
-          >
-            Privacy Center
-          </Text>
-        </XStack>
       </YStack>
 
       <EncryptionModeDialog />

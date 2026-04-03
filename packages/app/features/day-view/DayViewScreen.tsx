@@ -1,17 +1,31 @@
-import { YStack, XStack, Text, ScrollView, View } from '@my/ui'
+import { AnimatePresence, YStack, XStack, Text, ScrollView, View } from '@my/ui'
 import { useRouter } from 'solito/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { use$ } from '@legendapp/state/react'
 import { store$, deleteFlow } from 'app/state/store'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import type { Flow } from 'app/state/types'
 import { DeleteFlowDialog } from './components/DeleteFlowDialog'
 
+const STAGGER_MS = 100
+const MAX_STAGGER = 10
+
 export function DayViewScreen() {
   const router = useRouter()
   const allEntries = use$(store$.views.allEntriesSorted())
 
   const [deleteTarget, setDeleteTarget] = useState<Flow | null>(null)
+  const entryCount = allEntries?.length || 0
+  const staggerCount = Math.min(entryCount, MAX_STAGGER)
+  const [visibleCount, setVisibleCount] = useState(0)
+
+  useEffect(() => {
+    const count = Math.min(entryCount, MAX_STAGGER)
+    const timers = Array.from({ length: count }, (_, i) =>
+      setTimeout(() => setVisibleCount(i + 1), i * STAGGER_MS)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [entryCount])
 
   const handleConfirmDelete = () => {
     if (deleteTarget) {
@@ -84,56 +98,64 @@ export function DayViewScreen() {
           </YStack>
         ) : (
           <YStack gap={64}>
-            {allEntries.map((entry, index) => (
-              <XStack
-                key={entry.id}
-                flexDirection="column"
-                gap="$3"
-                $md={{ flexDirection: 'row', gap: '$8' }}
-                $lg={{ gap: '$12' }}
-              >
-                {/* Date column */}
-                <YStack $md={{ width: 128 }} flexShrink={0} paddingTop={4}>
-                  <Text
-                    fontFamily="$body"
-                    fontSize={14}
-                    color="$color8"
-                    letterSpacing={0.5}
+            <AnimatePresence>
+              {allEntries.map((entry, index) => (
+                (index < visibleCount || index >= MAX_STAGGER) && (
+                  <XStack
+                    key={entry.id}
+                    transition="designEnter"
+                    enterStyle={{ opacity: 0, y: 20 }}
+                    opacity={1}
+                    y={0}
+                    flexDirection="column"
+                    gap="$3"
+                    $md={{ flexDirection: 'row', gap: '$8' }}
+                    $lg={{ gap: '$12' }}
                   >
-                    {formatDate(entry.entryDate)}
-                  </Text>
-                  <Text
-                    fontFamily="$body"
-                    fontSize={12}
-                    color="$color7"
-                    marginTop="$1"
-                  >
-                    {entry.totalWords} words
-                  </Text>
-                </YStack>
+                    {/* Date column */}
+                    <YStack $md={{ width: 128 }} flexShrink={0} paddingTop={4}>
+                      <Text
+                        fontFamily="$body"
+                        fontSize={14}
+                        color="$color8"
+                        letterSpacing={0.5}
+                      >
+                        {formatDate(entry.entryDate)}
+                      </Text>
+                      <Text
+                        fontFamily="$body"
+                        fontSize={12}
+                        color="$color7"
+                        marginTop="$1"
+                      >
+                        {entry.totalWords} words
+                      </Text>
+                    </YStack>
 
-                {/* Text column */}
-                <YStack flex={1}>
-                  {entry.flows
-                    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                    .map((flow: Flow, fIndex: number) => (
-                      <YStack key={flow.id} group onLongPress={() => setDeleteTarget(flow)}>
-                        {fIndex > 0 && <View height={1} backgroundColor="$color3" marginVertical="$4" width={40} />}
-                        <Text
-                          fontFamily="$journal"
-                          fontSize={20}
-                          $md={{ fontSize: 24 }}
-                          color="$color"
-                          lineHeight={32}
-                          $md={{ lineHeight: 38 }}
-                        >
-                          {flow.content}
-                        </Text>
-                      </YStack>
-                    ))}
-                </YStack>
-              </XStack>
-            ))}
+                    {/* Text column */}
+                    <YStack flex={1}>
+                      {entry.flows
+                        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                        .map((flow: Flow, fIndex: number) => (
+                          <YStack key={flow.id} group onLongPress={() => setDeleteTarget(flow)}>
+                            {fIndex > 0 && <View height={1} backgroundColor="$color3" marginVertical="$4" width={40} />}
+                            <Text
+                              fontFamily="$journal"
+                              fontSize={20}
+                              $md={{ fontSize: 24 }}
+                              color="$color"
+                              lineHeight={32}
+                              $md={{ lineHeight: 38 }}
+                            >
+                              {flow.content}
+                            </Text>
+                          </YStack>
+                        ))}
+                    </YStack>
+                  </XStack>
+                )
+              ))}
+            </AnimatePresence>
           </YStack>
         )}
       </YStack>
