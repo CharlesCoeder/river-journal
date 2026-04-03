@@ -1,10 +1,4 @@
-import {
-  AnimatePresence,
-  YStack,
-  Text,
-  XStack,
-  ScrollView,
-} from '@my/ui'
+import { AnimatePresence, YStack, Text, XStack, ScrollView } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -21,7 +15,9 @@ export function HomeScreen() {
   const email = use$(store$.session.email)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const todayStats = use$(store$.views.statsByDate(getTodayJournalDayString()))
   const todayWords = todayStats?.totalWords || 0
@@ -51,7 +47,11 @@ export function HomeScreen() {
   }, [])
 
   return (
-    <YStack flex={1} backgroundColor="$background" position="relative">
+    <YStack
+      flex={1}
+      backgroundColor="$background"
+      position="relative"
+    >
       {/* Auth indicator — positioned relative to full viewport */}
       <XStack
         position="absolute"
@@ -89,6 +89,7 @@ export function HomeScreen() {
       <ScrollView
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
       >
         <AnimatePresence>
           {mounted && (
@@ -110,8 +111,10 @@ export function HomeScreen() {
               $lg={{ paddingHorizontal: '$12' }}
             >
               {/* Content — left-aligned, generous spacing */}
-              <YStack gap={96} width="100%">
-
+              <YStack
+                gap={96}
+                width="100%"
+              >
                 {/* Date display */}
                 <YStack gap="$5">
                   <Text
