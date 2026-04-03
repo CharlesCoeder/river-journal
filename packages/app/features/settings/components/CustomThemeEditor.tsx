@@ -5,8 +5,18 @@ import { store$, setCustomTheme, clearCustomTheme } from 'app/state/store'
 import { hexToRgb, THEME_DEFS } from '@my/config/src/themes'
 import { DEFAULT_THEME } from 'app/state/types'
 import type { ThemeName } from 'app/state/types'
+import { ColorPickerSwatch } from './ColorPickerSwatch'
+import { InlineColorPicker } from './InlineColorPicker'
 
 const HEX_REGEX = /^#[0-9A-Fa-f]{6}$/
+
+type ColorField = 'bg' | 'text' | 'stone'
+
+const COLOR_LABELS: Record<ColorField, string> = {
+  bg: 'Background',
+  text: 'Text',
+  stone: 'Stone',
+}
 
 function relativeLuminance(hex: string): number {
   const [r, g, b] = hexToRgb(hex).map((c) => {
@@ -27,11 +37,15 @@ function contrastRatio(hex1: string, hex2: string): number {
 function ColorInput({
   label,
   value,
+  isActive,
   onChangeText,
+  onSwatchPress,
 }: {
   label: string
   value: string
+  isActive: boolean
   onChangeText: (v: string) => void
+  onSwatchPress: () => void
 }) {
   const isValid = HEX_REGEX.test(value)
 
@@ -40,13 +54,11 @@ function ColorInput({
       alignItems="center"
       gap="$3"
     >
-      <View
-        width={32}
-        height={32}
-        borderRadius={6}
-        borderWidth={1}
-        borderColor="$color5"
-        backgroundColor={isValid ? value : '$background'}
+      <ColorPickerSwatch
+        color={value}
+        isValid={isValid}
+        isActive={isActive}
+        onPress={onSwatchPress}
       />
       <YStack
         flex={1}
@@ -87,6 +99,10 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
   const [bg, setBg] = useState(seedDef.bg)
   const [text, setText] = useState(seedDef.text)
   const [stone, setStone] = useState(seedDef.stone)
+  const [activeField, setActiveField] = useState<ColorField | null>(null)
+
+  const colors: Record<ColorField, string> = { bg, text, stone }
+  const setters: Record<ColorField, (v: string) => void> = { bg: setBg, text: setText, stone: setStone }
 
   const allValid = HEX_REGEX.test(bg) && HEX_REGEX.test(text) && HEX_REGEX.test(stone)
 
@@ -108,26 +124,38 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
     onClose()
   }
 
+  const handleSwatchPress = (field: ColorField) => {
+    setActiveField((prev) => (prev === field ? null : field))
+  }
+
   return (
     <YStack
       gap="$4"
       paddingVertical="$3"
     >
-      <ColorInput
-        label="Background"
-        value={bg}
-        onChangeText={setBg}
-      />
-      <ColorInput
-        label="Text"
-        value={text}
-        onChangeText={setText}
-      />
-      <ColorInput
-        label="Stone"
-        value={stone}
-        onChangeText={setStone}
-      />
+      {(['bg', 'text', 'stone'] as const).map((field) => (
+        <ColorInput
+          key={field}
+          label={COLOR_LABELS[field]}
+          value={colors[field]}
+          isActive={activeField === field}
+          onChangeText={setters[field]}
+          onSwatchPress={() => handleSwatchPress(field)}
+        />
+      ))}
+
+      {/* Inline color picker — appears between inputs and preview */}
+      {activeField && HEX_REGEX.test(colors[activeField]) && (
+        <YStack gap="$2">
+          <Text fontFamily="$body" fontSize={12} color="$color8">
+            Editing {COLOR_LABELS[activeField].toLowerCase()}
+          </Text>
+          <InlineColorPicker
+            color={colors[activeField]}
+            onChange={setters[activeField]}
+          />
+        </YStack>
+      )}
 
       {/* Live Preview */}
       {allValid && (
