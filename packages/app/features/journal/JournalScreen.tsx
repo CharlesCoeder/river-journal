@@ -1,6 +1,6 @@
-import { YStack, XStack, Dialog, Text, Spinner, View, isWeb } from '@my/ui'
+import { AnimatePresence, YStack, XStack, Dialog, Text, Spinner, View, isWeb } from '@my/ui'
 import { useRouter } from 'solito/navigation'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 import { Editor } from './components/Editor'
 import {
@@ -61,6 +61,8 @@ export function JournalScreen() {
   // updates immediately as the user types, rather than lagging 300ms behind.
   const wordCount = use$(ephemeral$.instantWordCount)
   const hasContent = wordCount > 0 || !!activeFlow?.content
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   return (
     <YStack
@@ -68,15 +70,21 @@ export function JournalScreen() {
       backgroundColor="$background"
     >
       {/* Writing surface — maximized, full-screen feel */}
-      <YStack
-        flex={1}
-        width="100%"
-        maxWidth={896}
-        alignSelf="center"
-        paddingHorizontal="$4"
-        $md={{ paddingHorizontal: '$8' }}
-        $lg={{ paddingHorizontal: '$12' }}
-      >
+      <AnimatePresence>
+        {mounted && (
+          <YStack
+            key="journal-content"
+            transition="designEnterSlow"
+            enterStyle={{ opacity: 0 }}
+            opacity={1}
+            flex={1}
+            width="100%"
+            maxWidth={896}
+            alignSelf="center"
+            paddingHorizontal="$4"
+            $md={{ paddingHorizontal: '$8' }}
+            $lg={{ paddingHorizontal: '$12' }}
+          >
         {/* Top spacer — measured for persistent editor positioning on native */}
         <View
           height="$4"
@@ -85,24 +93,33 @@ export function JournalScreen() {
           onLayout={handleHeaderLayout}
         />
         <Editor />
-      </YStack>
+          </YStack>
+        )}
+      </AnimatePresence>
 
       {/* Bottom bar — word count + finish button */}
-      {hasContent && (
-        <XStack
-          position={isWeb ? ('fixed' as any) : 'absolute'}
-          bottom={0}
-          left={0}
-          right={0}
-          paddingHorizontal="$4"
-          paddingVertical="$5"
-          $md={{ paddingHorizontal: '$8' }}
-          onLayout={handleBottomBarLayout}
-          $lg={{ paddingHorizontal: '$12' }}
-          paddingBottom="$6"
-          justifyContent="center"
-          zIndex={100}
-        >
+      <AnimatePresence>
+        {hasContent && (
+          <XStack
+            key="bottom-bar"
+            transition="designEnter"
+            enterStyle={{ opacity: 0, y: 10 }}
+            exitStyle={{ opacity: 0, y: 10 }}
+            opacity={1}
+            y={0}
+            position={isWeb ? ('fixed' as any) : 'absolute'}
+            bottom={0}
+            left={0}
+            right={0}
+            paddingHorizontal="$4"
+            paddingVertical="$5"
+            $md={{ paddingHorizontal: '$8' }}
+            onLayout={handleBottomBarLayout}
+            $lg={{ paddingHorizontal: '$12' }}
+            paddingBottom="$6"
+            justifyContent="center"
+            zIndex={100}
+          >
           <XStack
             width="100%"
             maxWidth={768}
@@ -148,8 +165,9 @@ export function JournalScreen() {
               />
             </XStack>
           </XStack>
-        </XStack>
-      )}
+          </XStack>
+        )}
+      </AnimatePresence>
 
       {/* Save dialog */}
       <Dialog

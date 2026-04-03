@@ -1,4 +1,5 @@
 import {
+  AnimatePresence,
   YStack,
   Text,
   XStack,
@@ -8,7 +9,7 @@ import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { signOut } from 'app/utils'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
@@ -19,6 +20,8 @@ export function HomeScreen() {
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const email = use$(store$.session.email)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   const todayStats = use$(store$.views.statsByDate(getTodayJournalDayString()))
   const todayWords = todayStats?.totalWords || 0
@@ -87,94 +90,104 @@ export function HomeScreen() {
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
       >
-        <YStack
-        width="100%"
-        flex={1}
-        maxWidth={1024}
-        alignSelf="center"
-        paddingHorizontal="$4"
-        justifyContent="center"
-        alignItems="flex-start"
-        $sm={{ paddingHorizontal: '$6' }}
-        $md={{ paddingHorizontal: '$8' }}
-        $lg={{ paddingHorizontal: '$12' }}
-      >
-        {/* Content — left-aligned, generous spacing */}
-        <YStack gap={96} width="100%">
-
-          {/* Date display */}
-          <YStack gap="$5">
-            <Text
-              fontFamily="$body"
-              fontSize={14}
-              color="$color8"
-              letterSpacing={1}
-              textTransform="uppercase"
+        <AnimatePresence>
+          {mounted && (
+            <YStack
+              key="home-content"
+              transition="designEnter"
+              enterStyle={{ opacity: 0, y: 15 }}
+              opacity={1}
+              y={0}
+              width="100%"
+              flex={1}
+              maxWidth={1024}
+              alignSelf="center"
+              paddingHorizontal="$4"
+              justifyContent="center"
+              alignItems="flex-start"
+              $sm={{ paddingHorizontal: '$6' }}
+              $md={{ paddingHorizontal: '$8' }}
+              $lg={{ paddingHorizontal: '$12' }}
             >
-              Today
-            </Text>
-            <Text
-              fontFamily="$journal"
-              fontSize={60}
-              $sm={{ fontSize: 48 }}
-              color="$color"
-              letterSpacing={-1}
-              lineHeight={68}
-              $sm={{ lineHeight: 56 }}
-            >
-              {today}.
-            </Text>
-          </YStack>
+              {/* Content — left-aligned, generous spacing */}
+              <YStack gap={96} width="100%">
 
-          {/* Action area */}
-          <XStack
-            flexWrap="wrap"
-            alignItems="baseline"
-            gap="$6"
-          >
-            {/* Primary CTA — serif italic underline */}
-            <Text
-              fontFamily="$journalItalic"
-              fontStyle="italic"
-              fontSize={36}
-              $sm={{ fontSize: 30 }}
-              color="$color"
-              cursor="pointer"
-              hoverStyle={{ opacity: 0.8 }}
-              pressStyle={{ opacity: 0.7 }}
-              onPress={handleBeginFlow}
-            >
-              Begin writing
-            </Text>
+                {/* Date display */}
+                <YStack gap="$5">
+                  <Text
+                    fontFamily="$body"
+                    fontSize={14}
+                    color="$color8"
+                    letterSpacing={1}
+                    textTransform="uppercase"
+                  >
+                    Today
+                  </Text>
+                  <Text
+                    fontFamily="$journal"
+                    fontSize={60}
+                    $sm={{ fontSize: 48 }}
+                    color="$color"
+                    letterSpacing={-1}
+                    lineHeight={68}
+                    $sm={{ lineHeight: 56 }}
+                  >
+                    {today}.
+                  </Text>
+                </YStack>
 
-            {/* Secondary links */}
-            <XStack gap="$4">
-              <Text
-                fontFamily="$body"
-                fontSize={14}
-                color="$color8"
-                letterSpacing={0.5}
-                cursor="pointer"
-                hoverStyle={{ color: '$color' }}
-                onPress={() => router.push('/day-view')}
-              >
-                Past Entries
-              </Text>
-              <Text
-                fontFamily="$body"
-                fontSize={14}
-                color="$color8"
-                letterSpacing={0.5}
-                cursor="pointer"
-                hoverStyle={{ color: '$color' }}
-                onPress={() => router.push('/settings')}
-              >
-                Preferences
-              </Text>
-            </XStack>
-          </XStack>
-        </YStack>
-      </YStack>
+                {/* Action area */}
+                <XStack
+                  flexWrap="wrap"
+                  alignItems="baseline"
+                  gap="$6"
+                >
+                  {/* Primary CTA — serif italic underline */}
+                  <Text
+                    fontFamily="$journalItalic"
+                    fontStyle="italic"
+                    fontSize={36}
+                    $sm={{ fontSize: 30 }}
+                    color="$color"
+                    cursor="pointer"
+                    transition="ctaSpring"
+                    hoverStyle={{ scale: 1.02, x: 5 }}
+                    pressStyle={{ scale: 0.98 }}
+                    onPress={handleBeginFlow}
+                  >
+                    Begin writing
+                  </Text>
+
+                  {/* Secondary links */}
+                  <XStack gap="$4">
+                    <Text
+                      fontFamily="$body"
+                      fontSize={14}
+                      color="$color8"
+                      letterSpacing={0.5}
+                      cursor="pointer"
+                      hoverStyle={{ color: '$color' }}
+                      onPress={() => router.push('/day-view')}
+                    >
+                      Past Entries
+                    </Text>
+                    <Text
+                      fontFamily="$body"
+                      fontSize={14}
+                      color="$color8"
+                      letterSpacing={0.5}
+                      cursor="pointer"
+                      hoverStyle={{ color: '$color' }}
+                      onPress={() => router.push('/settings')}
+                    >
+                      Preferences
+                    </Text>
+                  </XStack>
+                </XStack>
+              </YStack>
+            </YStack>
+          )}
+        </AnimatePresence>
 
         <KeyringPrompt />
         <EncryptionModeDialog />
