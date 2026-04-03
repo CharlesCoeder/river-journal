@@ -109,94 +109,86 @@ export function CelebrationScreen() {
 
               {/* Return button with expanding line */}
               <XStack
-            marginTop={48}
-            cursor="pointer"
-            alignItems="center"
-            gap="$2"
-            group="returnBtn"
-            onPress={handleDismiss}
-            transition="ctaSpring"
-            hoverStyle={{ x: 5 }}
-          >
-            <Text
-              fontFamily="$body"
-              fontSize={14}
-              color="$color"
-              letterSpacing={0.5}
-              whiteSpace="nowrap"
-            >
-              Return
-            </Text>
-            <View
-              width={16}
-              height={1}
-              backgroundColor="$color"
-              $group-returnBtn-hover={{ width: 32 }}
-              flexShrink={0}
-            />
-              </XStack>
-            </YStack>
-          )}
-        </AnimatePresence>
-
-        {/* Auth nudge — only when logged out */}
-        <AnimatePresence>
-          {!isAuthenticated && (
-            <YStack
-              key="auth-nudge"
-              transition="quick"
-              enterStyle={{ opacity: 0, y: -10 }}
-              exitStyle={{ opacity: 0, y: -10 }}
-              opacity={1}
-              y={0}
-              marginTop={64}
-              width="100%"
-              maxWidth={384}
-              borderWidth={1}
-              borderColor="$color3"
-              borderRadius="$2"
-              padding="$5"
-              alignItems="center"
-              gap="$3"
-            >
-            <Text
-              fontFamily="$body"
-              fontSize={12}
-              color="$color8"
-              textAlign="center"
-              lineHeight={20}
-            >
-              Your writing is saved on this device. Create an account to sync across devices and keep it safe.
-            </Text>
-            <XStack gap="$5" paddingTop="$2">
-              <Text
-                fontFamily="$body"
-                fontSize={9}
-                letterSpacing={2.5}
-                textTransform="uppercase"
-                color="$color7"
+                marginTop={48}
                 cursor="pointer"
-                hoverStyle={{ color: '$color8' }}
+                alignItems="center"
+                gap="$2"
+                group="returnBtn"
                 onPress={handleDismiss}
+                transition="ctaSpring"
+                hoverStyle={{ x: 5 }}
               >
-                Dismiss
-              </Text>
-              <Text
-                fontFamily="$body"
-                fontSize={9}
-                letterSpacing={2.5}
-                textTransform="uppercase"
-                color="$color"
-                cursor="pointer"
-                hoverStyle={{ opacity: 0.7 }}
-                borderBottomWidth={1}
-                borderColor="$color5"
-                paddingBottom={1}
-                onPress={handleCreateAccount}
-              >
-                Create Account
-              </Text>
-            </XStack>
+                <Text
+                  fontFamily="$body"
+                  fontSize={14}
+                  color="$color"
+                  letterSpacing={0.5}
+                  whiteSpace="nowrap"
+                >
+                  Return
+                </Text>
+                <View
+                  width={16}
+                  height={1}
+                  backgroundColor="$color"
+                  $group-returnBtn-hover={{ width: 32 }}
+                  flexShrink={0}
+                />
+              </XStack>
+
+              {/* Auth nudge — only when logged out */}
+              {!isAuthenticated && (
+                <YStack
+                  marginTop={28}
+                  width="100%"
+                  maxWidth={384}
+                  borderWidth={1}
+                  borderColor="$color3"
+                  borderRadius="$2"
+                  padding="$5"
+                  alignItems="center"
+                  gap="$3"
+                >
+                  <Text
+                    fontFamily="$body"
+                    fontSize={12}
+                    color="$color8"
+                    textAlign="center"
+                    lineHeight={20}
+                  >
+                    Your writing is saved on this device. Create an account to sync across devices and keep it safe.
+                  </Text>
+                  <XStack gap="$5" paddingTop="$2">
+                    <Text
+                      fontFamily="$body"
+                      fontSize={9}
+                      letterSpacing={2.5}
+                      textTransform="uppercase"
+                      color="$color7"
+                      cursor="pointer"
+                      hoverStyle={{ color: '$color8' }}
+                      onPress={handleDismiss}
+                    >
+                      Dismiss
+                    </Text>
+                    <Text
+                      fontFamily="$body"
+                      fontSize={9}
+                      letterSpacing={2.5}
+                      textTransform="uppercase"
+                      color="$color"
+                      cursor="pointer"
+                      hoverStyle={{ opacity: 0.7 }}
+                      borderBottomWidth={1}
+                      borderColor="$color5"
+                      paddingBottom={1}
+                      onPress={handleCreateAccount}
+                    >
+                      Create Account
+                    </Text>
+                  </XStack>
+                </YStack>
+              )}
             </YStack>
           )}
         </AnimatePresence>
