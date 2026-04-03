@@ -122,7 +122,7 @@ export function SyncToggle() {
             size="$4"
             disabled={isSwitchDisabled}
           >
-            <Switch.Thumb animation="quick" />
+            <Switch.Thumb transition="quick" />
           </Switch>
         </XStack>
 
@@ -178,7 +178,7 @@ export function SyncToggle() {
                 {privacySummaryOpen && (
                   <YStack
                     key="privacy-summary"
-                    animation="quick"
+                    transition="quick"
                     enterStyle={{ opacity: 0, scale: 0.97 }}
                     exitStyle={{ opacity: 0, scale: 0.97 }}
                     opacity={1}

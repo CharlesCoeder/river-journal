@@ -60,7 +60,7 @@ function SidebarLayout({
         paddingVertical="$4"
         paddingHorizontal={showLabels ? '$3' : '$0'}
         justifyContent="space-between"
-        animation="quick"
+        transition="quick"
       >
         <YStack gap="$1">
           {/* Collapse toggle */}
