@@ -92,9 +92,11 @@ export function SettingsScreen() {
   const syncEnabled = use$(store$.session.syncEnabled)
   const currentMode = use$(encryptionSetup$.currentMode)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [visibleCount, setVisibleCount] = useState(0)
 
   useEffect(() => {
+    setMounted(true)
     const timers = Array.from({ length: SECTION_COUNT }, (_, i) =>
       setTimeout(() => setVisibleCount(i + 1), i * STAGGER_MS)
     )
@@ -132,7 +134,15 @@ export function SettingsScreen() {
         $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
         {/* Header */}
-        <XStack justifyContent="space-between" alignItems="center" marginBottom={64} $md={{ marginBottom: 96 }}>
+        <XStack
+          justifyContent="space-between"
+          alignItems="center"
+          marginBottom={64}
+          $md={{ marginBottom: 96 }}
+          transition="designEnter"
+          opacity={mounted ? 1 : 0}
+          y={mounted ? 0 : 10}
+        >
           <Text
             fontFamily="$journalItalic"
             fontStyle="italic"

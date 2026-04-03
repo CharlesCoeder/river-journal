@@ -67,4 +67,9 @@ export const animations = createAnimations({
     stiffness: 40,
     damping: 20,
   },
+  smoothCollapse: {
+    stiffness: 400,
+    damping: 35,
+    mass: 0.6,
+  },
 })
