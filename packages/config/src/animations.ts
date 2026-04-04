@@ -78,7 +78,7 @@ export const animations = createAnimations({
   },
   celebrationSpring: {
     type: 'spring',
-    stiffness: 40,
+    stiffness: 80,
     damping: 20,
   },
   smoothCollapse: {

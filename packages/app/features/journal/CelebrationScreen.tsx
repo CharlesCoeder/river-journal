@@ -23,7 +23,7 @@ export function CelebrationScreen() {
   useEffect(() => {
     clearActiveFlow()
     setMounted(true)
-    const t = setTimeout(() => setShowCelebration(true), 500)
+    const t = setTimeout(() => setShowCelebration(true), 200)
     return () => clearTimeout(t)
   }, [])
 
