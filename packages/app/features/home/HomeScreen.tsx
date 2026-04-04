@@ -196,9 +196,9 @@ export function HomeScreen() {
         </AnimatePresence>
 
         <KeyringPrompt />
-        <EncryptionModeDialog />
         <OrphanFlowsDialog />
       </ScrollView>
+      <EncryptionModeDialog />
     </YStack>
   )
 }

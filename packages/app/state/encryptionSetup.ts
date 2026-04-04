@@ -101,7 +101,7 @@ export const isEncryptionReadyForSync$ = observable(false)
 
 export const encryptionSetup$ = observable({
   isOpen: false,
-  selectedMode: DEFAULT_MODE as EncryptionMode,
+  selectedMode: null as EncryptionMode | null,
   step: 'choice' as EncryptionSetupStep,
   isModeLocked: false,
   error: null as EncryptionSetupError | null,
@@ -442,7 +442,7 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
 const openEncryptionSetup = () => {
   batch(() => {
     encryptionSetup$.isOpen.set(true)
-    encryptionSetup$.selectedMode.set(DEFAULT_MODE)
+    encryptionSetup$.selectedMode.set(null)
     encryptionSetup$.step.set('choice')
     encryptionSetup$.isModeLocked.set(false)
     encryptionSetup$.error.set(null)
