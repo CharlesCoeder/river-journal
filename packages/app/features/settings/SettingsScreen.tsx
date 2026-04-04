@@ -116,9 +116,9 @@ export function SettingsScreen() {
   }, [router])
 
   return (
+    <View flex={1} backgroundColor="$background">
     <ScrollView
       flex={1}
-      backgroundColor="$background"
       contentContainerStyle={{ flexGrow: 1 }}
     >
       <YStack
@@ -315,8 +315,8 @@ export function SettingsScreen() {
           </XStack>
         </YStack>
       </YStack>
-
-      <EncryptionModeDialog />
     </ScrollView>
+    <EncryptionModeDialog />
+    </View>
   )
 }
