@@ -135,7 +135,8 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
       try {
         const { user, error } = await signUpWithEmail(email, password)
         if (error) { setErrors({ general: error }); return }
-        if (user) { authForm$.assign({ email: '', password: '', confirmPassword: '' }); router.push('/') }
+        if (!user) { setErrors({ general: 'Something went wrong. Please try again.' }); return }
+        authForm$.assign({ email: '', password: '', confirmPassword: '' }); router.push('/')
       } finally {
         setIsLoading(false)
       }
@@ -146,7 +147,8 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
       try {
         const { user, error } = await signInWithEmail(email, password)
         if (error) { setErrors({ general: error }); return }
-        if (user) { authForm$.assign({ email: '', password: '', confirmPassword: '' }); router.push('/') }
+        if (!user) { setErrors({ general: 'Something went wrong. Please try again.' }); return }
+        authForm$.assign({ email: '', password: '', confirmPassword: '' }); router.push('/')
       } finally {
         setIsLoading(false)
       }
@@ -283,7 +285,7 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
             <YStack
               transition="smoothCollapse"
               overflow="hidden"
-              height={isSignup ? 64 : 0}
+              height={isSignup ? 84 : 0}
               pointerEvents={isSignup ? 'auto' : 'none'}
             >
               <YStack transition="smoothCollapse" opacity={isSignup ? 1 : 0} paddingTop={20}>
