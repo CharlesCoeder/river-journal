@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { AnimatePresence, YStack, Text, XStack, ScrollView, View } from '@my/ui'
+import { ExpandingLineButton } from './components/ExpandingLineButton'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$, clearLastSavedFlow, clearActiveFlow } from 'app/state/store'
@@ -108,33 +109,9 @@ export function CelebrationScreen() {
               </Text>
 
               {/* Return button with expanding line */}
-              <XStack
-                marginTop={48}
-                cursor="pointer"
-                alignItems="center"
-                gap="$2"
-                group="returnBtn"
-                onPress={handleDismiss}
-                transition="ctaSpring"
-                hoverStyle={{ x: 5 }}
-              >
-                <Text
-                  fontFamily="$body"
-                  fontSize={14}
-                  color="$color"
-                  letterSpacing={0.5}
-                  whiteSpace="nowrap"
-                >
-                  Return
-                </Text>
-                <View
-                  width={16}
-                  height={1}
-                  backgroundColor="$color"
-                  $group-returnBtn-hover={{ width: 32 }}
-                  flexShrink={0}
-                />
-              </XStack>
+              <View marginTop={48}>
+                <ExpandingLineButton label="Return" onPress={handleDismiss} lineWidth={16} lineHoverWidth={32} />
+              </View>
 
               {/* Auth nudge — only when logged out */}
               {!isAuthenticated && (

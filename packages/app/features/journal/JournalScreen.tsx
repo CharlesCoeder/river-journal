@@ -3,6 +3,7 @@ import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 import { Editor } from './components/Editor'
+import { ExpandingLineButton } from './components/ExpandingLineButton'
 import {
   store$,
   ephemeral$,
@@ -135,35 +136,7 @@ export function JournalScreen() {
               {wordCount} {wordCount === 1 ? 'word' : 'words'}
             </Text>
 
-            <XStack
-              cursor="pointer"
-              alignItems="center"
-              gap="$2"
-              group="finishBtn"
-              onPress={handleExitFlow}
-              flexShrink={0}
-            >
-              <Text
-                fontFamily="$body"
-                fontSize={14}
-                color="$color"
-                letterSpacing={0.5}
-                hoverStyle={{ color: '$color' }}
-                whiteSpace="nowrap"
-                // RN doesn't bubble press from Text to parent XStack, so both need onPress.
-                // stopPropagation prevents double-fire on web.
-                onPress={(e) => { e.stopPropagation(); handleExitFlow(); }}
-              >
-                Finish Session
-              </Text>
-              <View
-                width={16}
-                height={1}
-                backgroundColor="$color"
-                $group-finishBtn-hover={{ width: 24 }}
-                flexShrink={0}
-              />
-            </XStack>
+            <ExpandingLineButton label="Finish Session" onPress={handleExitFlow} lineWidth={16} lineHoverWidth={24} />
           </XStack>
           </XStack>
         )}
