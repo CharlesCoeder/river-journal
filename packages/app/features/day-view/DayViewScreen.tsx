@@ -22,12 +22,18 @@ export function DayViewScreen() {
 
   useEffect(() => {
     setMounted(true)
-    const count = Math.min(entryCount, MAX_STAGGER)
-    const timers = Array.from({ length: count }, (_, i) =>
-      setTimeout(() => setVisibleCount(i + 1), i * STAGGER_MS)
+  }, [])
+
+  useEffect(() => {
+    if (entryCount <= visibleCount) return
+    const start = visibleCount
+    const end = Math.min(entryCount, MAX_STAGGER)
+    if (start >= end) return
+    const timers = Array.from({ length: end - start }, (_, i) =>
+      setTimeout(() => setVisibleCount(start + i + 1), i * STAGGER_MS)
     )
     return () => timers.forEach(clearTimeout)
-  }, [entryCount])
+  }, [entryCount, visibleCount])
 
   const handleConfirmDelete = () => {
     if (deleteTarget) {
