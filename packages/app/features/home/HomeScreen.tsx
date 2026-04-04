@@ -153,8 +153,28 @@ export function HomeScreen() {
 
                   {/* Secondary links */}
                   <XStack gap="$4">
-                    <NavLink label="Past Entries" onPress={() => router.push('/day-view')} />
-                    <NavLink label="Preferences" onPress={() => router.push('/settings')} />
+                    <Text
+                      fontFamily="$body"
+                      fontSize={14}
+                      color="$color8"
+                      letterSpacing={0.5}
+                      cursor="pointer"
+                      hoverStyle={{ color: '$color' }}
+                      onPress={() => router.push('/day-view')}
+                    >
+                      Past Entries
+                    </Text>
+                    <Text
+                      fontFamily="$body"
+                      fontSize={14}
+                      color="$color8"
+                      letterSpacing={0.5}
+                      cursor="pointer"
+                      hoverStyle={{ color: '$color' }}
+                      onPress={() => router.push('/settings')}
+                    >
+                      Preferences
+                    </Text>
                   </XStack>
                 </XStack>
               </YStack>
@@ -200,23 +220,3 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
   )
 }
 
-/** Secondary nav link with smooth color transition on hover */
-function NavLink({ label, onPress }: { label: string; onPress: () => void }) {
-  const [hovered, setHovered] = useState(false)
-
-  return (
-    <Text
-      fontFamily="$body"
-      fontSize={14}
-      color={hovered ? '$color' : '$color8'}
-      letterSpacing={0.5}
-      cursor="pointer"
-      transition="ctaSpring"
-      onHoverIn={() => setHovered(true)}
-      onHoverOut={() => setHovered(false)}
-      onPress={onPress}
-    >
-      {label}
-    </Text>
-  )
-}

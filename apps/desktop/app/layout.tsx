@@ -1,5 +1,6 @@
 import 'app/features/journal/components/Lexical/lexical-theme.css'
 import '../public/tamagui.generated.css'
+import '../public/hover-transitions.css'
 
 import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
