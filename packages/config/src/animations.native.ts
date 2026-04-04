@@ -64,7 +64,7 @@ export const animations = createAnimations({
     damping: 30,
   },
   celebrationSpring: {
-    stiffness: 40,
+    stiffness: 80,
     damping: 20,
   },
   smoothCollapse: {
