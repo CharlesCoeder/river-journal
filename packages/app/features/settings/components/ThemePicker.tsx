@@ -40,7 +40,7 @@ function ThemeRow({
         size={12}
         borderWidth={1}
         borderColor="$color5"
-        backgroundColor={isSelected ? def?.bg : 'transparent'}
+        backgroundColor={def?.bg ?? 'transparent'}
       />
       <Text
         fontFamily="$journal"
