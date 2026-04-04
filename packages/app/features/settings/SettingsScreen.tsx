@@ -239,16 +239,16 @@ export function SettingsScreen() {
               )
             )}
 
-            {/* Section 3: Keyring prompt + Trusted Browsers */}
+            {/* Section 3a: Keyring prompt (self-gated) */}
             {visibleCount >= 3 && (
-              <YStack key="section-3" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap={80}>
-                <KeyringPrompt />
-                {isAuthenticated && userId && currentMode === 'e2e' && (
-                  <YStack gap="$4">
-                    <SectionHeader>Trusted Browsers</SectionHeader>
-                    <TrustedBrowsersList userId={userId} />
-                  </YStack>
-                )}
+              <KeyringPrompt key="section-3a" />
+            )}
+
+            {/* Section 3b: Trusted Browsers */}
+            {visibleCount >= 3 && isAuthenticated && userId && currentMode === 'e2e' && (
+              <YStack key="section-3b" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <SectionHeader>Trusted Browsers</SectionHeader>
+                <TrustedBrowsersList userId={userId} />
               </YStack>
             )}
 
@@ -263,7 +263,6 @@ export function SettingsScreen() {
             {/* Section 5: Linked Accounts (authenticated) */}
             {visibleCount >= 5 && isAuthenticated && (
               <YStack key="section-5" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
-                <SectionHeader>Linked Accounts</SectionHeader>
                 <LinkedProviders />
 
                 {/* Log Out */}
