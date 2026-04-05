@@ -149,45 +149,12 @@ export function HomeScreen() {
                   gap="$6"
                 >
                   {/* Primary CTA — serif italic underline */}
-                  <Text
-                    fontFamily="$journalItalic"
-                    fontStyle="italic"
-                    fontSize={36}
-                    $sm={{ fontSize: 30 }}
-                    color="$color"
-                    cursor="pointer"
-                    transition="ctaSpring"
-                    hoverStyle={{ scale: 1.02, x: 5 }}
-                    pressStyle={{ scale: 0.98 }}
-                    onPress={handleBeginFlow}
-                  >
-                    Begin writing
-                  </Text>
+                  <BeginWritingCTA onPress={handleBeginFlow} />
 
                   {/* Secondary links */}
                   <XStack gap="$4">
-                    <Text
-                      fontFamily="$body"
-                      fontSize={14}
-                      color="$color8"
-                      letterSpacing={0.5}
-                      cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
-                      onPress={() => router.push('/day-view')}
-                    >
-                      Past Entries
-                    </Text>
-                    <Text
-                      fontFamily="$body"
-                      fontSize={14}
-                      color="$color8"
-                      letterSpacing={0.5}
-                      cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
-                      onPress={() => router.push('/settings')}
-                    >
-                      Preferences
-                    </Text>
+                    <NavLink label="Past Entries" onPress={() => router.push('/day-view')} />
+                    <NavLink label="Preferences" onPress={() => router.push('/settings')} />
                   </XStack>
                 </XStack>
               </YStack>
@@ -200,5 +167,56 @@ export function HomeScreen() {
       </ScrollView>
       <EncryptionModeDialog />
     </YStack>
+  )
+}
+
+/** State-driven CTA so the spring animation works in production (not CSS-extracted) */
+function BeginWritingCTA({ onPress }: { onPress: () => void }) {
+  const [hovered, setHovered] = useState(false)
+  const [pressed, setPressed] = useState(false)
+
+  const scale = pressed ? 0.98 : hovered ? 1.02 : 1
+  const x = hovered ? 5 : 0
+
+  return (
+    <Text
+      fontFamily="$journalItalic"
+      fontStyle="italic"
+      fontSize={36}
+      $sm={{ fontSize: 30 }}
+      color="$color"
+      cursor="pointer"
+      transition="ctaSpring"
+      scale={scale}
+      x={x}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => { setHovered(false); setPressed(false) }}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      onPress={onPress}
+    >
+      Begin writing
+    </Text>
+  )
+}
+
+/** Secondary nav link with smooth color transition on hover */
+function NavLink({ label, onPress }: { label: string; onPress: () => void }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <Text
+      fontFamily="$body"
+      fontSize={14}
+      color={hovered ? '$color' : '$color8'}
+      letterSpacing={0.5}
+      cursor="pointer"
+      transition="ctaSpring"
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onPress={onPress}
+    >
+      {label}
+    </Text>
   )
 }
