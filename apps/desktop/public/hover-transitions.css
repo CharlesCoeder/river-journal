@@ -1,0 +1,15 @@
+/*
+ * Smooth hover transitions for production builds.
+ *
+ * Tamagui extracts hoverStyle to CSS :hover in production but doesn't emit a
+ * CSS transition property, so color/opacity/background changes snap instantly.
+ *
+ * Tamagui also extracts cursor:pointer to an atomic CSS class (not inline
+ * style), so we can't target it with an attribute selector. A wildcard is safe
+ * here — transition properties are inert until the value actually changes, and
+ * framer-motion (the animation driver) overrides via inline style when running
+ * spring animations, so there's no conflict with enterStyle/exitStyle.
+ */
+* {
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+}
