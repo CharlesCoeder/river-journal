@@ -193,10 +193,6 @@ export function HomeScreen() {
 /** State-driven CTA so the spring animation works in production (not CSS-extracted) */
 function BeginWritingCTA({ onPress }: { onPress: () => void }) {
   const [hovered, setHovered] = useState(false)
-  const [pressed, setPressed] = useState(false)
-
-  const scale = pressed ? 0.98 : hovered ? 1.02 : 1
-  const x = hovered ? 5 : 0
 
   return (
     <Text
@@ -207,12 +203,9 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
       color="$color"
       cursor="pointer"
       transition="ctaSpring"
-      scale={scale}
-      x={x}
+      x={hovered ? 5 : 0}
       onHoverIn={() => setHovered(true)}
-      onHoverOut={() => { setHovered(false); setPressed(false) }}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}
+      onHoverOut={() => setHovered(false)}
       onPress={onPress}
     >
       Begin writing
