@@ -76,6 +76,7 @@ export function E2EPasswordForm({
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            type="password"
             autoCapitalize="none"
             autoComplete={requireConfirmation ? 'password-new' : 'current-password'}
             textContentType={requireConfirmation ? 'newPassword' : 'password'}
@@ -90,7 +91,7 @@ export function E2EPasswordForm({
             color="$color"
             paddingHorizontal={0}
             paddingVertical="$2"
-            focusStyle={{ borderColor: '$color' }}
+            focusStyle={{ borderColor: '$color', outlineStyle: 'none' }}
           />
         </YStack>
 
@@ -110,6 +111,7 @@ export function E2EPasswordForm({
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
+              type="password"
               autoCapitalize="none"
               autoComplete="password-new"
               textContentType="newPassword"
@@ -124,7 +126,7 @@ export function E2EPasswordForm({
               color="$color"
               paddingHorizontal={0}
               paddingVertical="$2"
-              focusStyle={{ borderColor: '$color' }}
+              focusStyle={{ borderColor: '$color', outlineStyle: 'none' }}
             />
           </YStack>
         )}
