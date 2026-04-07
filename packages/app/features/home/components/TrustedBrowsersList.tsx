@@ -28,12 +28,10 @@ function formatRelativeTime(dateString: string): string {
 function Collapsible({
   open,
   animation = 'quick',
-  onClosed,
   children,
 }: {
   open: boolean
   animation?: string
-  onClosed?: () => void
   children: React.ReactNode
 }) {
   const measuredHeight = useRef(0)
@@ -71,9 +69,6 @@ function Collapsible({
       transition={hasAnimated.current ? animation as any : undefined}
       height={height}
       opacity={open ? 1 : 0}
-      onTransitionEnd={() => {
-        if (!open && onClosed) onClosed()
-      }}
     >
       <YStack onLayout={onLayout}>
         {children}
@@ -91,9 +86,8 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
   const [localTokenHash, setLocalTokenHash] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [revokingId, setRevokingId] = useState<string | null>(null)
-  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set())
   const [confirmRevoke, setConfirmRevoke] = useState<TrustedBrowser | null>(null)
-  const pendingRefresh = useRef<(() => void) | null>(null)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -145,26 +139,15 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
           await clearWebTrustData(userId)
           setLocalTokenHash(null)
         }
-        // Animate the row out, then refresh
-        setRemovingId(browser.id)
-        pendingRefresh.current = () => {
-          setRemovingId(null)
-          setRevokingId(null)
-          void loadData()
-        }
+        // Animate the row out, then refresh after animation settles
+        setRemovingIds((prev) => new Set(prev).add(browser.id))
+        setTimeout(() => void loadData(), 350)
         return
       }
     } finally {
-      if (!pendingRefresh.current) setRevokingId(null)
+      setRevokingId(null)
     }
   }, [confirmRevoke, userId, localTokenHash, loadData])
-
-  const handleRowClosed = useCallback(() => {
-    if (pendingRefresh.current) {
-      pendingRefresh.current()
-      pendingRefresh.current = null
-    }
-  }, [])
 
   if (isLoading) {
     return (
@@ -187,14 +170,13 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
 
         const isConfirming = confirmRevoke?.id === browser.id
 
-        const isRemoving = removingId === browser.id
+        const isRemoving = removingIds.has(browser.id)
 
         return (
           <Collapsible
             key={browser.id}
             open={!isRemoving}
             animation="smoothCollapse"
-            onClosed={handleRowClosed}
           >
             <YStack
               paddingVertical="$3"
