@@ -246,7 +246,12 @@ export function EncryptionModeDialog() {
                   description={
                     isSinglePasswordUnlock
                       ? 'Enter the encryption password you chose for this account to unlock Cloud Sync on this device.'
-                      : 'Create a minimum 8-character password. If you forget this, your cloud data is permanently lost.'
+                      : 'Create a minimum 8-character password.'
+                  }
+                  descriptionWarning={
+                    isSinglePasswordUnlock
+                      ? undefined
+                      : 'If you forget this, your cloud data is permanently lost.'
                   }
                   onSubmit={(password, confirmPassword) => {
                     if (isLegacyE2EUnlock) {

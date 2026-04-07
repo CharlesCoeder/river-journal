@@ -96,7 +96,7 @@ function ProviderRow({
           </Text>
         )}
       </XStack>
-      <Separator borderColor="$color5" />
+      <Separator borderColor="$color2" />
     </YStack>
   )
 }
