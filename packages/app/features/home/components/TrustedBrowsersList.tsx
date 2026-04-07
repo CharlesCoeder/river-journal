@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { AlertDialog, Button, Card, Text, XStack, YStack } from '@my/ui'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Text, XStack, YStack } from '@my/ui'
+import type { LayoutChangeEvent } from 'react-native'
 import { use$ } from '@legendapp/state/react'
 import {
   fetchTrustedBrowsers,
@@ -24,6 +25,63 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString()
 }
 
+function Collapsible({
+  open,
+  animation = 'quick',
+  onClosed,
+  children,
+}: {
+  open: boolean
+  animation?: string
+  onClosed?: () => void
+  children: React.ReactNode
+}) {
+  const measuredHeight = useRef(0)
+  // If open on mount, start with 'auto' so there's no entrance animation
+  const [height, setHeight] = useState<number | 'auto'>(open ? 'auto' : 0)
+  const hasAnimated = useRef(false)
+
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height
+    if (h > 0) measuredHeight.current = h
+  }, [])
+
+  useEffect(() => {
+    if (open) {
+      // Always use 'auto' when open so content can grow/shrink freely
+      setHeight('auto')
+    } else {
+      // Snap to measured height first so CSS can transition from number → 0
+      if (height === 'auto' && measuredHeight.current > 0) {
+        setHeight(measuredHeight.current)
+        // Let the browser paint at measured height, then collapse
+        requestAnimationFrame(() => setHeight(0))
+        hasAnimated.current = true
+      } else {
+        setHeight(0)
+        hasAnimated.current = true
+      }
+    }
+  }, [open])
+
+  return (
+    <YStack
+      overflow={height === 'auto' ? undefined : 'hidden'}
+      // Only apply transition after the first close — avoids animating on mount
+      transition={hasAnimated.current ? animation as any : undefined}
+      height={height}
+      opacity={open ? 1 : 0}
+      onTransitionEnd={() => {
+        if (!open && onClosed) onClosed()
+      }}
+    >
+      <YStack onLayout={onLayout}>
+        {children}
+      </YStack>
+    </YStack>
+  )
+}
+
 interface TrustedBrowsersListProps {
   userId: string
 }
@@ -33,7 +91,9 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
   const [localTokenHash, setLocalTokenHash] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
   const [confirmRevoke, setConfirmRevoke] = useState<TrustedBrowser | null>(null)
+  const pendingRefresh = useRef<(() => void) | null>(null)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -85,12 +145,26 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
           await clearWebTrustData(userId)
           setLocalTokenHash(null)
         }
-        await loadData()
+        // Animate the row out, then refresh
+        setRemovingId(browser.id)
+        pendingRefresh.current = () => {
+          setRemovingId(null)
+          setRevokingId(null)
+          void loadData()
+        }
+        return
       }
     } finally {
-      setRevokingId(null)
+      if (!pendingRefresh.current) setRevokingId(null)
     }
   }, [confirmRevoke, userId, localTokenHash, loadData])
+
+  const handleRowClosed = useCallback(() => {
+    if (pendingRefresh.current) {
+      pendingRefresh.current()
+      pendingRefresh.current = null
+    }
+  }, [])
 
   if (isLoading) {
     return (
@@ -106,101 +180,106 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
 
   return (
     <YStack testID="trusted-browsers-list" gap="$3">
-      <Text fontSize="$4" fontFamily="$body" fontWeight="700">
-        Trusted browsers
-      </Text>
+      {browsers.map((browser) => {
+        const isCurrentBrowser =
+          localTokenHash !== null && browser.deviceTokenHash === localTokenHash
+        const isRevoking = revokingId === browser.id
 
-      <YStack gap="$2">
-        {browsers.map((browser) => {
-          const isCurrentBrowser =
-            localTokenHash !== null && browser.deviceTokenHash === localTokenHash
-          const isRevoking = revokingId === browser.id
+        const isConfirming = confirmRevoke?.id === browser.id
 
-          return (
-            <Card key={browser.id} padding="$3" backgroundColor="$color2" borderRadius="$4" borderWidth={1} borderColor="$color4">
-              <XStack justifyContent="space-between" alignItems="center">
+        const isRemoving = removingId === browser.id
+
+        return (
+          <Collapsible
+            key={browser.id}
+            open={!isRemoving}
+            animation="smoothCollapse"
+            onClosed={handleRowClosed}
+          >
+            <YStack
+              paddingVertical="$3"
+              borderBottomWidth={1}
+              borderColor="$color2"
+              opacity={isRevoking && !isRemoving ? 0.4 : 1}
+              gap="$3"
+            >
+              <XStack
+                justifyContent="space-between"
+                alignItems="center"
+                gap="$4"
+              >
                 <YStack flex={1} gap="$1">
                   <XStack gap="$2" alignItems="center">
-                    <Text fontSize="$3" fontFamily="$body" fontWeight="600">
+                    <Text fontFamily="$journal" fontSize={20} color="$color">
                       {browser.label}
-                      {isCurrentBrowser ? ' (this browser)' : ''}
                     </Text>
+                    {isCurrentBrowser && (
+                      <Text fontFamily="$journalItalic" fontStyle="italic" fontSize={14} color="$color8">
+                        (this browser)
+                      </Text>
+                    )}
                   </XStack>
-                  <Text fontSize="$2" fontFamily="$body" color="$color10">
+                  <Text fontFamily="$body" fontSize={12} color="$color8" marginTop={2}>
                     Last used: {formatRelativeTime(browser.lastUsedAt)}
                   </Text>
                 </YStack>
 
-                <Button
-                  testID={`revoke-browser-${browser.id}`}
-                  size="$2"
-                  theme="red"
-                  onPress={() => setConfirmRevoke(browser)}
-                  disabled={isRevoking}
-                  fontFamily="$body"
-                >
-                  {isRevoking ? 'Revoking…' : 'Revoke'}
-                </Button>
-              </XStack>
-            </Card>
-          )
-        })}
-      </YStack>
-      <AlertDialog open={!!confirmRevoke} onOpenChange={() => setConfirmRevoke(null)}>
-        <AlertDialog.Portal>
-          <AlertDialog.Overlay
-            key="overlay"
-            transition="quick"
-            opacity={0.4}
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
-          />
-          <AlertDialog.Content
-            key="content"
-            transition={['medium', { opacity: { overshootClamping: true } }]}
-            enterStyle={{ y: -10, opacity: 0 }}
-            exitStyle={{ y: 10, opacity: 0 }}
-            y={0}
-            opacity={1}
-            backgroundColor="$background"
-            borderRadius="$6"
-            borderWidth={1}
-            borderColor="$color5"
-            padding="$5"
-            gap="$4"
-            maxWidth={400}
-          >
-            <AlertDialog.Title fontFamily="$body" fontWeight="700">
-              Revoke browser trust?
-            </AlertDialog.Title>
-            <AlertDialog.Description fontFamily="$body" color="$color10">
-              {confirmRevoke?.label} will no longer be able to unlock your encryption key
-              automatically. You'll need to enter your password next time you use that browser.
-            </AlertDialog.Description>
-            <XStack gap="$3" justifyContent="flex-end">
-              <AlertDialog.Cancel asChild>
-                <Button chromeless borderWidth={1} borderColor="$borderColor">
-                  <Text fontFamily="$body">Cancel</Text>
-                </Button>
-              </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
-                <Button
-                  testID="confirm-revoke-browser"
-                  backgroundColor="$red10"
-                  color="white"
-                  onPress={() => void handleRevoke()}
-                  hoverStyle={{ backgroundColor: '$red11' }}
-                  pressStyle={{ backgroundColor: '$red11' }}
-                >
-                  <Text fontFamily="$body" fontWeight="600" color="white">
-                    Revoke
+                {!isConfirming && (
+                  <Text
+                    testID={`revoke-browser-${browser.id}`}
+                    fontFamily="$body"
+                    fontSize={11}
+                    letterSpacing={2}
+                    textTransform="uppercase"
+                    color="$color8"
+                    cursor="pointer"
+                    hoverStyle={{ color: '$color' }}
+                    onPress={() => setConfirmRevoke(browser)}
+                  >
+                    {isRevoking ? 'Revoking…' : 'Revoke'}
                   </Text>
-                </Button>
-              </AlertDialog.Action>
-            </XStack>
-          </AlertDialog.Content>
-        </AlertDialog.Portal>
-      </AlertDialog>
+                )}
+              </XStack>
+
+              <Collapsible open={isConfirming}>
+                <YStack gap="$3">
+                  <Text fontFamily="$body" fontSize={13} color="$color8" lineHeight={20}>
+                    {browser.label} will no longer unlock your encryption key automatically.
+                    You'll need your password next time.
+                  </Text>
+                  <XStack gap="$5">
+                    <Text
+                      fontFamily="$body"
+                      fontSize={11}
+                      letterSpacing={2}
+                      textTransform="uppercase"
+                      color="$color8"
+                      cursor="pointer"
+                      hoverStyle={{ color: '$color' }}
+                      onPress={() => setConfirmRevoke(null)}
+                    >
+                      Cancel
+                    </Text>
+                    <Text
+                      testID="confirm-revoke-browser"
+                      fontFamily="$body"
+                      fontSize={11}
+                      letterSpacing={2}
+                      textTransform="uppercase"
+                      color="$color"
+                      cursor="pointer"
+                      hoverStyle={{ opacity: 0.7 }}
+                      onPress={() => void handleRevoke()}
+                    >
+                      Revoke
+                    </Text>
+                  </XStack>
+                </YStack>
+              </Collapsible>
+            </YStack>
+          </Collapsible>
+        )
+      })}
     </YStack>
   )
 }
