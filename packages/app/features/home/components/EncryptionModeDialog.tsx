@@ -98,15 +98,16 @@ export function EncryptionModeDialog() {
     void acceptBrowserTrust()
   }, [])
 
-  if (!isOpen) return null
-
   const isLegacyE2EUnlock = step === 'legacy-e2e-password'
   const isUnlockingExistingE2E = isModeLocked && !!currentModeSalt
   const isSinglePasswordUnlock = isLegacyE2EUnlock || isUnlockingExistingE2E
   const isTrustBrowserStep = step === 'trust-browser'
 
   return (
+    <AnimatePresence>
+    {isOpen && (
     <View
+      key="encryption-dialog"
       position="absolute"
       top={0}
       left={0}
@@ -114,6 +115,10 @@ export function EncryptionModeDialog() {
       bottom={0}
       backgroundColor="$background"
       zIndex={100}
+      transition="quick"
+      enterStyle={{ opacity: 0 }}
+      exitStyle={{ opacity: 0 }}
+      opacity={1}
     >
       <ScrollView
         flex={1}
@@ -150,6 +155,7 @@ export function EncryptionModeDialog() {
             </Text>
           </XStack>
 
+          <View flex={1} position="relative">
           <AnimatePresence>
             {/* Step: Mode selection */}
             {!isTrustBrowserStep && step === 'choice' && (
@@ -161,6 +167,10 @@ export function EncryptionModeDialog() {
                 opacity={1}
                 y={0}
                 gap={48}
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
               >
                 <YStack gap="$3">
                   <Text
@@ -223,6 +233,10 @@ export function EncryptionModeDialog() {
                 exitStyle={{ opacity: 0, y: -10 }}
                 opacity={1}
                 y={0}
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
               >
                 <E2EPasswordForm
                   errorMessage={error?.message}
@@ -276,7 +290,11 @@ export function EncryptionModeDialog() {
                 gap={48}
                 alignItems="center"
                 justifyContent="center"
-                flex={1}
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                bottom={0}
               >
                 <YStack gap="$3" maxWidth={448} alignItems="center">
                   <Text
@@ -306,12 +324,6 @@ export function EncryptionModeDialog() {
                     If browser data is cleared, you'll need your password again. You can revoke trust in Settings.
                   </Text>
                 </YStack>
-
-                {isTrusting && (
-                  <Text fontFamily="$journalItalic" fontStyle="italic" fontSize={16} color="$color8">
-                    Securing key...
-                  </Text>
-                )}
 
                 {trustError && (
                   <YStack gap="$3" alignItems="center">
@@ -349,8 +361,8 @@ export function EncryptionModeDialog() {
                   </YStack>
                 )}
 
-                {!isTrusting && !trustError && (
-                  <XStack gap="$6" paddingTop="$4">
+                {!trustError && (
+                  <XStack gap="$6" paddingTop="$4" opacity={isTrusting ? 0.4 : 1}>
                     <Text
                       testID="trust-browser-decline"
                       fontFamily="$body"
@@ -358,9 +370,9 @@ export function EncryptionModeDialog() {
                       letterSpacing={2}
                       textTransform="uppercase"
                       color="$color8"
-                      cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
-                      onPress={declineBrowserTrust}
+                      cursor={isTrusting ? 'default' : 'pointer'}
+                      hoverStyle={isTrusting ? {} : { color: '$color' }}
+                      onPress={isTrusting ? undefined : declineBrowserTrust}
                     >
                       Skip
                     </Text>
@@ -374,9 +386,9 @@ export function EncryptionModeDialog() {
                       borderBottomWidth={1}
                       borderColor="$color5"
                       paddingBottom={2}
-                      cursor="pointer"
-                      hoverStyle={{ opacity: 0.7 }}
-                      onPress={handleAcceptTrust}
+                      cursor={isTrusting ? 'default' : 'pointer'}
+                      hoverStyle={isTrusting ? {} : { opacity: 0.7 }}
+                      onPress={isTrusting ? undefined : handleAcceptTrust}
                     >
                       Trust Browser
                     </Text>
@@ -385,8 +397,11 @@ export function EncryptionModeDialog() {
               </YStack>
             )}
           </AnimatePresence>
+          </View>
         </YStack>
       </ScrollView>
     </View>
+    )}
+    </AnimatePresence>
   )
 }

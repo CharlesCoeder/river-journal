@@ -831,7 +831,6 @@ export const acceptBrowserTrust = async (): Promise<void> => {
 
   const masterKey = pendingTrustMasterKey
   const userId = pendingTrustUserId
-
   batch(() => {
     trustBrowserPrompt$.isTrusting.set(true)
     trustBrowserPrompt$.trustError.set(null)
