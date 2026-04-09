@@ -9175,6 +9175,7 @@ __metadata:
     burnt: "npm:^0.12.2"
     expo-constants: "npm:~18.0.13"
     expo-linking: "npm:~8.0.11"
+    fflate: "npm:^0.8.2"
     lexical: "npm:^0.33.1"
     react-native-safe-area-context: "npm:~5.6.0"
     solito: "patch:solito@npm%3A4.4.1#~/.yarn/patches/solito-npm-4.4.1-976dc5859c.patch"
@@ -12731,6 +12732,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-sharing@npm:~14.0.0":
+  version: 14.0.8
+  resolution: "expo-sharing@npm:14.0.8"
+  peerDependencies:
+    expo: "*"
+  checksum: 10/452334eb00e6b73700fb9f4be0551febc247930bd3c3a0daa4261a6e92666acaca915b6c4c5e0a4c0dd16d4f1551e0c11d94a881c70c678e23e608dd9a8e396c
+  languageName: node
+  linkType: hard
+
 "expo-splash-screen@npm:~31.0.13":
   version: 31.0.13
   resolution: "expo-splash-screen@npm:31.0.13"
@@ -13041,6 +13051,13 @@ __metadata:
     node-domexception: "npm:^1.0.0"
     web-streams-polyfill: "npm:^3.0.3"
   checksum: 10/5264ecceb5fdc19eb51d1d0359921f12730941e333019e673e71eb73921146dceabcb0b8f534582be4497312d656508a439ad0f5edeec2b29ab2e10c72a1f86b
+  languageName: node
+  linkType: hard
+
+"fflate@npm:^0.8.2":
+  version: 0.8.2
+  resolution: "fflate@npm:0.8.2"
+  checksum: 10/2bd26ba6d235d428de793c6a0cd1aaa96a06269ebd4e21b46c8fd1bd136abc631acf27e188d47c3936db090bf3e1ede11d15ce9eae9bffdc4bfe1b9dc66ca9cb
   languageName: node
   linkType: hard
 
@@ -16121,11 +16138,13 @@ __metadata:
     expo-constants: "npm:~18.0.13"
     expo-crypto: "npm:~15.0.0"
     expo-dev-client: "npm:~6.0.20"
+    expo-file-system: "npm:~19.0.21"
     expo-font: "npm:~14.0.10"
     expo-linear-gradient: "npm:~15.0.0"
     expo-linking: "npm:~8.0.11"
     expo-router: "npm:~6.0.21"
     expo-secure-store: "npm:~15.0.0"
+    expo-sharing: "npm:~14.0.0"
     expo-splash-screen: "npm:~31.0.13"
     expo-status-bar: "npm:~3.0.9"
     expo-updates: "npm:~29.0.16"
