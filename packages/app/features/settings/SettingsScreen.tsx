@@ -11,6 +11,7 @@ import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { TrustedBrowsersList } from 'app/features/home/components/TrustedBrowsersList'
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 import { ThemePicker } from './components/ThemePicker'
+import { ExportJournal } from './components/ExportJournal'
 
 // ---------------------------------------------------------------------------
 // Privacy Tier — stacked vertical list matching design
@@ -212,6 +213,7 @@ export function SettingsScreen() {
                 <YStack key="section-2" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
                   <SectionHeader>Data & Sync</SectionHeader>
                   <SyncToggle />
+                  <ExportJournal />
                 </YStack>
               ) : (
                 <YStack key="section-2" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
@@ -235,6 +237,7 @@ export function SettingsScreen() {
                       Entries remain on this device only.
                     </Text>
                   </YStack>
+                  <ExportJournal />
                 </YStack>
               )
             )}

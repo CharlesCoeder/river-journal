@@ -25,6 +25,7 @@
     "burnt": "^0.12.2",
     "expo-constants": "~18.0.13",
     "expo-linking": "~8.0.11",
+    "fflate": "^0.8.2",
     "lexical": "^0.33.1",
     "react-native-safe-area-context": "~5.6.0",
     "solito": "patch:solito@npm%3A4.4.1#~/.yarn/patches/solito-npm-4.4.1-976dc5859c.patch",
