@@ -324,9 +324,11 @@ describe('sanitizeSeparator', () => {
     expect(sanitizeSeparator(long)).toHaveLength(80)
   })
 
-  it('strips control characters except newline', () => {
+  it('strips all control characters including newlines', () => {
     expect(sanitizeSeparator('hello\x00world')).toBe('helloworld')
     expect(sanitizeSeparator('tab\there')).toBe('tabhere')
+    expect(sanitizeSeparator('line\nbreak')).toBe('linebreak')
+    expect(sanitizeSeparator('cr\rhere')).toBe('crhere')
   })
 })
 
