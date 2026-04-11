@@ -18,7 +18,7 @@ export function InlineColorPicker({
     >
       <ColorPicker
         value={color}
-        onComplete={({ hex }) => onChange(hex)}
+        onCompleteJS={({ hex }) => onChange(hex)}
         style={styles.picker}
       >
         <Panel1 style={styles.panel} />
