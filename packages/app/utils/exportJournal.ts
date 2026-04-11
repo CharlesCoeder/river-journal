@@ -26,9 +26,9 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   showFrontmatter: true,
 }
 
-/** Sanitize a custom separator: strip control chars, cap at 80 chars. */
+/** Sanitize a custom separator: strip control chars (including newlines), cap at 80 chars. */
 export function sanitizeSeparator(text: string): string {
-  return text.replace(/[\x00-\x09\x0b\x0c\x0e-\x1f]/g, '').slice(0, 80)
+  return text.replace(/[\x00-\x1f]/g, '').slice(0, 80)
 }
 
 // ---------------------------------------------------------------------------

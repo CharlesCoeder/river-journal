@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { Circle, Input, Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -11,7 +11,7 @@ import {
 import type { ExportOptions } from 'app/utils/exportJournal'
 import { downloadExport } from 'app/utils/downloadExport'
 
-type ExportMode = 'idle' | 'options' | 'select-months' | 'exporting' | 'done'
+type ExportMode = 'idle' | 'options' | 'select-months' | 'exporting' | 'done' | 'error'
 
 // ---------------------------------------------------------------------------
 // Small reusable pieces
@@ -107,6 +107,7 @@ export function ExportJournal() {
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
   const [exportedCount, setExportedCount] = useState(0)
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS)
+  const exportingRef = useRef(false)
 
   const availableMonths = useMemo(() => getAvailableMonths(allEntries), [allEntries])
   const hasEntries = allEntries.length > 0
@@ -142,6 +143,9 @@ export function ExportJournal() {
 
   const runExport = useCallback(
     async (entries: typeof allEntries) => {
+      if (exportingRef.current) return
+      if (entries.length === 0) return
+      exportingRef.current = true
       setMode('exporting')
       try {
         const isZip = options.fileFormat === 'zip'
@@ -155,7 +159,9 @@ export function ExportJournal() {
         setExportedCount(entries.length)
         setMode('done')
       } catch {
-        setMode('idle')
+        setMode('error')
+      } finally {
+        exportingRef.current = false
       }
     },
     [options]
@@ -203,6 +209,33 @@ export function ExportJournal() {
         </Text>
         <Text fontFamily="$body" fontSize={13} color="$color8">
           Preparing export...
+        </Text>
+      </YStack>
+    )
+  }
+
+  if (mode === 'error') {
+    return (
+      <YStack gap="$2">
+        <Text fontFamily="$journal" fontSize={20} color="$color">
+          Export Journal
+        </Text>
+        <Text fontFamily="$body" fontSize={13} color="$color8">
+          Export failed. Please try again.
+        </Text>
+        <Text
+          fontFamily="$body"
+          fontSize={11}
+          letterSpacing={2}
+          textTransform="uppercase"
+          color="$color8"
+          cursor="pointer"
+          hoverStyle={{ color: '$color' }}
+          onPress={handleReset}
+          alignSelf="flex-start"
+          marginTop="$1"
+        >
+          Try Again
         </Text>
       </YStack>
     )
