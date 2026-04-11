@@ -8,12 +8,20 @@ import {
   config,
   isWeb,
 } from '@my/ui'
+import { FontLanguage } from 'tamagui'
 import { addTheme, updateTheme } from '@tamagui/theme'
 import { ToastViewport } from './ToastViewport'
 import { use$ } from '@legendapp/state/react'
 import { store$, isDarkTheme, isDarkColor } from 'app/state/store'
-import { DEFAULT_THEME } from 'app/state/types'
+import { DEFAULT_THEME, DEFAULT_FONT_PAIRING } from 'app/state/types'
+import type { FontPairingId } from 'app/state/types'
 import { generatePalette } from '@my/config/src/themes'
+
+const FONT_VARIANT_MAP = {
+  'outfit-newsreader': 'default',
+  'lato-lora': 'classic',
+  'inter-source-serif': 'clean',
+} as const
 
 function buildCustomThemeTokens(palette: string[]) {
   return {
@@ -55,6 +63,8 @@ export function Provider({
 }: Omit<TamaguiProviderProps, 'config' | 'defaultTheme'>) {
   const themeName = use$(store$.profile.themeName) ?? DEFAULT_THEME
   const customTheme = use$(store$.profile.customTheme)
+  const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING
+  const fontVariant = FONT_VARIANT_MAP[fontPairing] ?? 'default'
   const baseTheme = isDarkTheme(themeName) ? 'dark' : 'light'
   const [customReady, setCustomReady] = useState(customThemeRegistered)
 
@@ -88,15 +98,17 @@ export function Provider({
       {...rest}
     >
       <Theme name={resolvedThemeName}>
-        <ToastProvider
-          swipeDirection="horizontal"
-          duration={6000}
-          native={isWeb ? [] : ['mobile']}
-        >
-          {children}
-          <CustomToast />
-          <ToastViewport />
-        </ToastProvider>
+        <FontLanguage body={fontVariant} heading={fontVariant} journal={fontVariant} journalItalic={fontVariant}>
+          <ToastProvider
+            swipeDirection="horizontal"
+            duration={6000}
+            native={isWeb ? [] : ['mobile']}
+          >
+            {children}
+            <CustomToast />
+            <ToastViewport />
+          </ToastProvider>
+        </FontLanguage>
       </Theme>
     </TamaguiProvider>
   )

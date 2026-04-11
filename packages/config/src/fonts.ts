@@ -26,7 +26,13 @@ const serifWeight = {
   5: '500',
 }
 
-// Outfit — UI / heading sans-serif
+const sansLineHeight = { sizeLineHeight: (size: number) => Math.round(size * 1.4 + (size >= 12 ? 6 : 4)) }
+const serifLineHeight = { sizeLineHeight: (size: number) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)) }
+
+// =================================================================
+// Default pairing: Outfit + Newsreader
+// =================================================================
+
 const outfitFont = createGenericFont(
   isWeb ? 'Outfit, "Helvetica Neue", Helvetica, Arial, sans-serif' : 'Outfit',
   {
@@ -37,12 +43,9 @@ const outfitFont = createGenericFont(
       '500': { normal: 'Outfit-Medium' },
     },
   },
-  {
-    sizeLineHeight: (size) => Math.round(size * 1.4 + (size >= 12 ? 6 : 4)),
-  }
+  sansLineHeight
 )
 
-// Newsreader — journal / content serif
 const newsreaderFont = createGenericFont(
   isWeb ? 'Newsreader, Georgia, "Times New Roman", serif' : 'Newsreader',
   {
@@ -53,12 +56,9 @@ const newsreaderFont = createGenericFont(
       '500': { normal: 'Newsreader-Medium', italic: 'Newsreader-Italic' },
     },
   },
-  {
-    sizeLineHeight: (size) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)),
-  }
+  serifLineHeight
 )
 
-// Newsreader italic variant (for $journalItalic)
 const newsreaderItalicFont = createGenericFont(
   isWeb ? 'Newsreader, Georgia, "Times New Roman", serif' : 'Newsreader',
   {
@@ -69,14 +69,113 @@ const newsreaderItalicFont = createGenericFont(
       '500': { normal: 'Newsreader-Italic' },
     },
   },
-  {
-    sizeLineHeight: (size) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)),
-  }
+  serifLineHeight
 )
 
+// =================================================================
+// Classic pairing: Lato + Lora
+// =================================================================
+
+const latoFont = createGenericFont(
+  isWeb ? 'Lato, "Helvetica Neue", Helvetica, Arial, sans-serif' : 'Lato',
+  {
+    weight: sansWeight,
+    letterSpacing: sansLetterSpacing,
+    face: {
+      '400': { normal: 'Lato' },
+      '500': { normal: 'Lato-Bold' },
+    },
+  },
+  sansLineHeight
+)
+
+const loraFont = createGenericFont(
+  isWeb ? 'Lora, Georgia, "Times New Roman", serif' : 'Lora',
+  {
+    weight: serifWeight,
+    letterSpacing: serifLetterSpacing,
+    face: {
+      '400': { normal: 'Lora', italic: 'Lora-Italic' },
+      '500': { normal: 'Lora', italic: 'Lora-Italic' },
+    },
+  },
+  serifLineHeight
+)
+
+const loraItalicFont = createGenericFont(
+  isWeb ? 'Lora, Georgia, "Times New Roman", serif' : 'Lora',
+  {
+    weight: serifWeight,
+    letterSpacing: serifLetterSpacing,
+    face: {
+      '400': { normal: 'Lora-Italic' },
+      '500': { normal: 'Lora-Italic' },
+    },
+  },
+  serifLineHeight
+)
+
+// =================================================================
+// Clean pairing: Inter + Source Serif 4
+// =================================================================
+
+const interFont = createGenericFont(
+  isWeb ? 'Inter, "Helvetica Neue", Helvetica, Arial, sans-serif' : 'Inter',
+  {
+    weight: sansWeight,
+    letterSpacing: sansLetterSpacing,
+    face: {
+      '400': { normal: 'Inter' },
+      '500': { normal: 'Inter-Medium' },
+    },
+  },
+  sansLineHeight
+)
+
+const sourceSerifFont = createGenericFont(
+  isWeb ? 'SourceSerif4, Georgia, "Times New Roman", serif' : 'SourceSerif4',
+  {
+    weight: serifWeight,
+    letterSpacing: serifLetterSpacing,
+    face: {
+      '400': { normal: 'SourceSerif4', italic: 'SourceSerif4-Italic' },
+      '500': { normal: 'SourceSerif4-Medium', italic: 'SourceSerif4-Italic' },
+    },
+  },
+  serifLineHeight
+)
+
+const sourceSerifItalicFont = createGenericFont(
+  isWeb ? 'SourceSerif4, Georgia, "Times New Roman", serif' : 'SourceSerif4',
+  {
+    weight: serifWeight,
+    letterSpacing: serifLetterSpacing,
+    face: {
+      '400': { normal: 'SourceSerif4-Italic' },
+      '500': { normal: 'SourceSerif4-Italic' },
+    },
+  },
+  serifLineHeight
+)
+
+// =================================================================
+// Export: base fonts + FontLanguage variants (_classic, _clean)
+// =================================================================
+
 export const fonts = {
+  // Base fonts (default pairing: Outfit + Newsreader)
   heading: outfitFont,
   body: outfitFont,
   journal: newsreaderFont,
   journalItalic: newsreaderItalicFont,
+  // "classic" variant (Lato + Lora)
+  body_classic: latoFont,
+  heading_classic: latoFont,
+  journal_classic: loraFont,
+  journalItalic_classic: loraItalicFont,
+  // "clean" variant (Inter + Source Serif 4)
+  body_clean: interFont,
+  heading_clean: interFont,
+  journal_clean: sourceSerifFont,
+  journalItalic_clean: sourceSerifItalicFont,
 }

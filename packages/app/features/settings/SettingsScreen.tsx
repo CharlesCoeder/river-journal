@@ -11,6 +11,7 @@ import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { TrustedBrowsersList } from 'app/features/home/components/TrustedBrowsersList'
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 import { ThemePicker } from './components/ThemePicker'
+import { FontPicker } from './components/FontPicker'
 import { ExportJournal } from './components/ExportJournal'
 
 // ---------------------------------------------------------------------------
@@ -255,11 +256,14 @@ export function SettingsScreen() {
               </YStack>
             )}
 
-            {/* Section 4: Theme */}
+            {/* Section 4: Theme & Font */}
             {visibleCount >= 4 && (
               <YStack key="section-4" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
                 <SectionHeader>Theme</SectionHeader>
                 <ThemePicker />
+                <View height={16} />
+                <SectionHeader>Font</SectionHeader>
+                <FontPicker />
               </YStack>
             )}
 
