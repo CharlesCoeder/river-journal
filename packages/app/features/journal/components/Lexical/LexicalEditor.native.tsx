@@ -61,19 +61,20 @@ const ContentSyncer: React.FC<{
  */
 const WordCountPlugin: React.FC<{
   onWordCountChange: (count: number) => void;
-}> = ({ onWordCountChange }) => {
+}> = ({
+  onWordCountChange
+}) => {
   const [editor] = useLexicalComposerContext();
   const callbackRef = useRef(onWordCountChange);
   callbackRef.current = onWordCountChange;
   useEffect(() => {
-    return editor.registerTextContentListener((text) => {
+    return editor.registerTextContentListener(text => {
       const trimmed = text.trim();
       callbackRef.current(trimmed ? trimmed.split(/\s+/).length : 0);
     });
   }, [editor]);
   return null;
 };
-
 const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   placeholder = 'Start flowing...',
   className,
@@ -81,10 +82,12 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   onWordCountChange,
   initialContent,
   themeValues,
+  fontFamilies,
   readOnly = false
 }) => {
   const initialConfig = createMobileLexicalConfig();
-  const styles = createMobileLexicalStyling(themeValues);
+  const contentFont = fontFamilies?.content || 'Newsreader';
+  const styles = createMobileLexicalStyling(themeValues, contentFont);
 
   // Inject font CSS when component mounts
   useEffect(() => {
@@ -135,7 +138,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
 const createMobileLexicalStyling = (themeValues?: {
   textColor: string;
   placeholderColor: string;
-}) => {
+}, contentFont = 'Newsreader') => {
   const textColor = themeValues?.textColor || '#000000';
   const placeholderColor = themeValues?.placeholderColor || '#999999';
   return {
@@ -143,7 +146,7 @@ const createMobileLexicalStyling = (themeValues?: {
       color: textColor,
       background: 'transparent',
       height: '100%',
-      fontFamily: 'Newsreader'
+      fontFamily: contentFont
     },
     contentEditable: {
       outline: 'none',

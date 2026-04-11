@@ -16,8 +16,9 @@ import type {
   DailyStatsView,
   ThemeName,
   CustomThemeDef,
+  FontPairingId,
 } from './types'
-import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES } from './types'
+import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES, FONT_PAIRING_IDS, DEFAULT_FONT_PAIRING } from './types'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 
@@ -635,10 +636,12 @@ const ensureProfile = () => {
       word_goal: 750,
       themeName: DEFAULT_THEME,
       customTheme: null,
+      fontPairing: DEFAULT_FONT_PAIRING,
       sync: {
         word_goal: true,
         themeName: true,
         customTheme: true,
+        fontPairing: true,
       },
     })
   }
@@ -688,6 +691,18 @@ export const clearCustomTheme = () => {
       store$.profile.themeName.set(DEFAULT_THEME)
     }
   })
+}
+
+/**
+ * Sets the font pairing with validation and automatic profile creation.
+ */
+export const setFontPairing = (id: FontPairingId) => {
+  if (!FONT_PAIRING_IDS.includes(id)) {
+    console.warn(`Invalid font pairing: ${id}`)
+    return
+  }
+  ensureProfile()
+  store$.profile.fontPairing.set(id)
 }
 
 export const setWordGoal = (goal: number) => {

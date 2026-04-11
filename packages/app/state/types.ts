@@ -42,6 +42,32 @@ export const DARK_THEMES: ThemeName[] = ['night', 'forest-night', 'fireside']
 export const DEFAULT_THEME: ThemeName = 'ink'
 
 /**
+ * Curated font pairings: each pairs a sans-serif UI font with a serif content font.
+ */
+export const FONT_PAIRING_IDS = ['outfit-newsreader', 'lato-lora', 'inter-source-serif'] as const
+export type FontPairingId = (typeof FONT_PAIRING_IDS)[number]
+export const DEFAULT_FONT_PAIRING: FontPairingId = 'outfit-newsreader'
+
+/**
+ * Maps each pairing to the journal (content) font-family strings
+ * used by the Lexical editor's inline styles.
+ */
+export const FONT_PAIRING_FAMILIES: Record<FontPairingId, { web: string; native: string }> = {
+  'outfit-newsreader': {
+    web: 'Newsreader, Georgia, "Times New Roman", serif',
+    native: 'Newsreader',
+  },
+  'lato-lora': {
+    web: 'Lora, Georgia, "Times New Roman", serif',
+    native: 'Lora',
+  },
+  'inter-source-serif': {
+    web: 'SourceSerif4, Georgia, "Times New Roman", serif',
+    native: 'SourceSerif4',
+  },
+}
+
+/**
  * Three user-chosen colors that define a custom theme.
  * A 12-step Tamagui palette is generated from these at runtime.
  */
@@ -59,11 +85,13 @@ export interface UserProfile {
   word_goal: number
   themeName: ThemeName | 'custom'
   customTheme: CustomThemeDef | null
+  fontPairing: FontPairingId
 
   sync: {
     word_goal: boolean
     themeName: boolean
     customTheme: boolean
+    fontPairing: boolean
   }
 }
 

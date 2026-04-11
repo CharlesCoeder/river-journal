@@ -21,13 +21,26 @@ SplashScreen.preventAutoHideAsync()
 
 export default function App() {
   const [fontsLoaded, fontsError] = useFonts({
-    // Outfit — UI sans-serif
+    // Outfit — UI sans-serif (default)
     Outfit: require('../public/fonts/Outfit/Outfit-Regular.ttf'),
     'Outfit-Medium': require('../public/fonts/Outfit/Outfit-Medium.ttf'),
-    // Newsreader — Journal serif
+    // Newsreader — Journal serif (default)
     Newsreader: require('../public/fonts/Newsreader/Newsreader-Regular.ttf'),
     'Newsreader-Italic': require('../public/fonts/Newsreader/Newsreader-Italic.ttf'),
     'Newsreader-Medium': require('../public/fonts/Newsreader/Newsreader-Medium.ttf'),
+    // Lato — Classic UI sans-serif
+    Lato: require('../public/fonts/Lato/Lato-Regular.ttf'),
+    'Lato-Bold': require('../public/fonts/Lato/Lato-Bold.ttf'),
+    // Lora — Classic journal serif
+    Lora: require('../public/fonts/Lora/Lora-Regular.ttf'),
+    'Lora-Italic': require('../public/fonts/Lora/Lora-Italic.ttf'),
+    // Inter — Clean UI sans-serif
+    Inter: require('../public/fonts/Inter/Inter-Regular.ttf'),
+    'Inter-Medium': require('../public/fonts/Inter/Inter-Medium.ttf'),
+    // Source Serif 4 — Clean journal serif
+    SourceSerif4: require('../public/fonts/SourceSerif4/SourceSerif4-Regular.ttf'),
+    'SourceSerif4-Italic': require('../public/fonts/SourceSerif4/SourceSerif4-Italic.ttf'),
+    'SourceSerif4-Medium': require('../public/fonts/SourceSerif4/SourceSerif4-Medium.ttf'),
   })
 
   useEffect(() => {

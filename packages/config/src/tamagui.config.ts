@@ -13,6 +13,7 @@ export const config = createTamagui({
   },
   animations,
   fonts,
+  fontLanguages: ['classic', 'clean'] as const,
 })
 
 export type Conf = typeof config

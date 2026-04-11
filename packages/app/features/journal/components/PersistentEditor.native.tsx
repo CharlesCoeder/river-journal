@@ -3,7 +3,8 @@ import { useTheme } from '@my/ui';
 import { use$ } from '@legendapp/state/react';
 import { useEffect, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ephemeral$, updateActiveFlowContent } from 'app/state/store';
+import { ephemeral$, store$, updateActiveFlowContent } from 'app/state/store';
+import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from 'app/state/types';
 import { useDebouncedCallback } from 'use-debounce';
 import LexicalEditor from './Lexical/LexicalEditor';
 import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types';
@@ -27,9 +28,14 @@ export const PersistentEditor = () => {
 
   // Animated value for fade-in effect
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING;
+  const families = FONT_PAIRING_FAMILIES[fontPairing];
   const themeValues = {
     textColor: theme.color.val,
     placeholderColor: theme.placeholderColor.val
+  };
+  const fontFamilies = {
+    content: families.native,
   };
 
   // Debounced function to update Legend State from editor changes
@@ -108,7 +114,7 @@ export const PersistentEditor = () => {
     pointerEvents: shouldShow ? 'auto' : 'none'
   }]}>
       <View style={styles.editorWrapper}>
-        <UniversalLexicalEditor themeValues={themeValues} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.content} readOnly={persistentEditor.readOnly} />
+        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.content} readOnly={persistentEditor.readOnly} />
       </View>
     </Animated.View>;
 };

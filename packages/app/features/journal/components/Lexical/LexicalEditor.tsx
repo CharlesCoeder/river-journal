@@ -50,11 +50,12 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
   placeholder = 'Start flowing...',
   className,
   themeValues, // Accepted but unused on web
-  fontFamilies, // Accepted but unused on web
+  fontFamilies,
   readOnly = false,
   initialContent,
 }) => {
   const initialConfig = createBaseLexicalConfig()
+  const contentFont = fontFamilies?.content || 'Newsreader, Georgia, "Times New Roman", serif'
 
   // Don't show placeholder in readOnly mode
   const placeholderText = readOnly ? '' : placeholder
@@ -71,7 +72,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
                   minHeight: '300px',
                   fontSize: '30px',
                   lineHeight: '1.625',
-                  fontFamily: 'Newsreader, Georgia, "Times New Roman", serif',
+                  fontFamily: contentFont,
                 }}
               />
             </div>
@@ -87,7 +88,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
                   lineHeight: '1.625',
                   pointerEvents: 'none',
                   userSelect: 'none',
-                  fontFamily: 'Newsreader, Georgia, "Times New Roman", serif',
+                  fontFamily: contentFont,
                   opacity: 0.35,
                 }}
               >
