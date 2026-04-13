@@ -113,6 +113,9 @@ export interface PersistentEditorState {
   isVisible: boolean
   readOnly: boolean
   content: string
+  /** Monotonic counter incremented on hide so ContentSyncer always re-fires its
+   *  clear effect, even when content stays '' → '' (typing bypasses this field). */
+  contentRevision: number
   /** Height of the screen header, used to position editor below it on Android */
   headerHeight: number
   /** Height of the bottom bar, used to inset editor above it on Android */

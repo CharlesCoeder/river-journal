@@ -33,15 +33,18 @@ const ReadOnlyPlugin: React.FC<{
 // Helper component to load and sync content
 const ContentSyncer: React.FC<{
   content: string;
+  revision?: number;
 }> = ({
-  content
+  content,
+  revision
 }) => {
   const [editor] = useLexicalComposerContext();
   const lastContent = useRef('');
+  const lastRevision = useRef(revision);
   useEffect(() => {
-    // Only update if content actually changed to avoid unnecessary updates
-    if (content !== lastContent.current) {
+    if (content !== lastContent.current || revision !== lastRevision.current) {
       lastContent.current = content;
+      lastRevision.current = revision;
       editor.update(() => {
         $getRoot().clear();
         if (content) {
@@ -51,7 +54,7 @@ const ContentSyncer: React.FC<{
         tag: 'history-merge' // Prevents this from being part of undo stack
       });
     }
-  }, [editor, content]);
+  }, [editor, content, revision]);
   return null;
 };
 /**
@@ -81,6 +84,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   onContentChange,
   onWordCountChange,
   initialContent,
+  contentRevision,
   themeValues,
   fontFamilies,
   readOnly = false
@@ -126,7 +130,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         {!readOnly && onWordCountChange ? <WordCountPlugin onWordCountChange={onWordCountChange} /> : null}
 
         {/* Sync content with Legend State */}
-        <ContentSyncer content={initialContent || ''} />
+        <ContentSyncer content={initialContent || ''} revision={contentRevision} />
       </div>
     </LexicalComposer>;
 };

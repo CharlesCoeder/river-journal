@@ -33,6 +33,9 @@ export interface LexicalEditorNativeProps extends LexicalEditorBaseProps {
   onWordCountChange?: (count: number) => void
   /** Initial content to load into editor as markdown */
   initialContent?: string
+  /** Monotonic counter — when it changes, ContentSyncer re-applies content even if
+   *  the string value is identical (handles '' → '' clears). */
+  contentRevision?: number
 }
 
 // Union type for platform-specific usage
