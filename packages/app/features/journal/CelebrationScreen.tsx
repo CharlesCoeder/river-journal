@@ -5,7 +5,8 @@
  * with expanding line, auth nudge (if logged out), separator, re-read section.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { LayoutChangeEvent } from 'react-native'
 import { AnimatePresence, YStack, Text, XStack, ScrollView, View } from '@my/ui'
 import { ExpandingLineButton } from './components/ExpandingLineButton'
 import { useRouter } from 'solito/navigation'
@@ -19,6 +20,22 @@ export function CelebrationScreen() {
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const [mounted, setMounted] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
+  const [nudgeDismissed, setNudgeDismissed] = useState(false)
+  const nudgeHeight = useRef(0)
+  const [nudgeCollapsedHeight, setNudgeCollapsedHeight] = useState<number | 'auto'>('auto')
+
+  const onNudgeLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height
+    if (h > 0) nudgeHeight.current = h
+  }, [])
+
+  useEffect(() => {
+    if (nudgeDismissed && nudgeHeight.current > 0) {
+      // Snap to measured height so transition can animate from number → 0
+      setNudgeCollapsedHeight(nudgeHeight.current)
+      requestAnimationFrame(() => setNudgeCollapsedHeight(0))
+    }
+  }, [nudgeDismissed])
 
   useEffect(() => {
     clearActiveFlow()
@@ -116,54 +133,63 @@ export function CelebrationScreen() {
               {/* Auth nudge — only when logged out */}
               {!isAuthenticated && (
                 <YStack
-                  marginTop={28}
+                  overflow={nudgeCollapsedHeight === 'auto' ? undefined : 'hidden'}
+                  transition={nudgeDismissed ? 'smoothCollapse' as any : undefined}
+                  height={nudgeCollapsedHeight}
+                  opacity={nudgeDismissed ? 0 : 1}
+                  marginTop={nudgeDismissed ? 0 : 28}
+                  pointerEvents={nudgeDismissed ? 'none' : 'auto'}
                   width="100%"
                   maxWidth={384}
-                  borderWidth={1}
-                  borderColor="$color3"
-                  borderRadius="$2"
-                  padding="$5"
-                  alignItems="center"
-                  gap="$3"
                 >
-                  <Text
-                    fontFamily="$body"
-                    fontSize={12}
-                    color="$color8"
-                    textAlign="center"
-                    lineHeight={20}
+                  <YStack
+                    onLayout={onNudgeLayout}
+                    borderWidth={1}
+                    borderColor="$color3"
+                    borderRadius="$2"
+                    padding="$5"
+                    alignItems="center"
+                    gap="$3"
                   >
-                    Your writing is saved on this device. Create an account to sync across devices and keep it safe.
-                  </Text>
-                  <XStack gap="$5" paddingTop="$2">
                     <Text
                       fontFamily="$body"
-                      fontSize={9}
-                      letterSpacing={2.5}
-                      textTransform="uppercase"
-                      color="$color7"
-                      cursor="pointer"
-                      hoverStyle={{ color: '$color8' }}
-                      onPress={handleDismiss}
+                      fontSize={12}
+                      color="$color8"
+                      textAlign="center"
+                      lineHeight={20}
                     >
-                      Dismiss
+                      Your writing is saved on this device. Create an account to sync across devices and keep it safe.
                     </Text>
-                    <Text
-                      fontFamily="$body"
-                      fontSize={9}
-                      letterSpacing={2.5}
-                      textTransform="uppercase"
-                      color="$color"
-                      cursor="pointer"
-                      hoverStyle={{ opacity: 0.7 }}
-                      borderBottomWidth={1}
-                      borderColor="$color5"
-                      paddingBottom={1}
-                      onPress={handleCreateAccount}
-                    >
-                      Create Account
-                    </Text>
-                  </XStack>
+                    <XStack gap="$5" paddingTop="$2">
+                      <Text
+                        fontFamily="$body"
+                        fontSize={9}
+                        letterSpacing={2.5}
+                        textTransform="uppercase"
+                        color="$color7"
+                        cursor="pointer"
+                        hoverStyle={{ color: '$color8' }}
+                        onPress={() => setNudgeDismissed(true)}
+                      >
+                        Dismiss
+                      </Text>
+                      <Text
+                        fontFamily="$body"
+                        fontSize={9}
+                        letterSpacing={2.5}
+                        textTransform="uppercase"
+                        color="$color"
+                        cursor="pointer"
+                        hoverStyle={{ opacity: 0.7 }}
+                        borderBottomWidth={1}
+                        borderColor="$color5"
+                        paddingBottom={1}
+                        onPress={handleCreateAccount}
+                      >
+                        Create Account
+                      </Text>
+                    </XStack>
+                  </YStack>
                 </YStack>
               )}
             </YStack>
