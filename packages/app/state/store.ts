@@ -84,8 +84,8 @@ export const ephemeral$ = observable<{
   persistentEditor: {
     isVisible: false,
     readOnly: false,
-    content: '',
-    contentRevision: 0,
+    initialContent: '',
+    initialContentRevision: 0,
     headerHeight: 0,
     bottomBarHeight: 0,
   },
@@ -587,19 +587,19 @@ export const showPersistentEditor = (
   ephemeral$.persistentEditor.assign({
     isVisible: true,
     readOnly: options.readOnly ?? false,
-    content: options.content ?? '',
+    initialContent: options.content ?? '',
   })
 }
 
 /**
- * Hides the persistent editor and resets content.
+ * Hides the persistent editor and resets initial content.
  * Content must be cleared here so the DOM WebView receives the empty
  * string while still visible, before opacity fades out.
  */
 export const hidePersistentEditor = (): void => {
-  ephemeral$.persistentEditor.content.set('')
-  ephemeral$.persistentEditor.contentRevision.set(
-    ephemeral$.persistentEditor.contentRevision.peek() + 1
+  ephemeral$.persistentEditor.initialContent.set('')
+  ephemeral$.persistentEditor.initialContentRevision.set(
+    ephemeral$.persistentEditor.initialContentRevision.peek() + 1
   )
   ephemeral$.persistentEditor.isVisible.set(false)
   ephemeral$.persistentEditor.bottomBarHeight.set(0)
@@ -620,11 +620,11 @@ export const updatePersistentEditorBottomBarHeight = (height: number): void => {
 }
 
 /**
- * Updates the content in the persistent editor.
+ * Updates the initial content in the persistent editor.
  * Used for syncing content from Legend State to the editor.
  */
 export const updatePersistentEditorContent = (content: string): void => {
-  ephemeral$.persistentEditor.content.set(content)
+  ephemeral$.persistentEditor.initialContent.set(content)
 }
 
 // -----------------------------------------------------------------
