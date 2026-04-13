@@ -114,7 +114,7 @@ export const PersistentEditor = () => {
     pointerEvents: shouldShow ? 'auto' : 'none'
   }]}>
       <View style={styles.editorWrapper}>
-        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.initialContent} contentRevision={persistentEditor.initialContentRevision} readOnly={persistentEditor.readOnly} />
+        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.initialContent} contentRevision={persistentEditor.initialContentRevision} readOnly={persistentEditor.readOnly} dom={{ hideKeyboardAccessoryView: true }} />
       </View>
     </Animated.View>;
 };
