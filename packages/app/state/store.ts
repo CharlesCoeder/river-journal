@@ -85,6 +85,7 @@ export const ephemeral$ = observable<{
     isVisible: false,
     readOnly: false,
     content: '',
+    contentRevision: 0,
     headerHeight: 0,
     bottomBarHeight: 0,
   },
@@ -597,6 +598,9 @@ export const showPersistentEditor = (
  */
 export const hidePersistentEditor = (): void => {
   ephemeral$.persistentEditor.content.set('')
+  ephemeral$.persistentEditor.contentRevision.set(
+    ephemeral$.persistentEditor.contentRevision.peek() + 1
+  )
   ephemeral$.persistentEditor.isVisible.set(false)
   ephemeral$.persistentEditor.bottomBarHeight.set(0)
 }
