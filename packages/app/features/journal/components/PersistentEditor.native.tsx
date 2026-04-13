@@ -91,20 +91,26 @@ export const PersistentEditor = () => {
     };
   }, [shouldShow, fadeAnim]);
 
+  const keyboardHeight = use$(ephemeral$.keyboardHeight);
+
   // Position below the header using safe area insets + header height.
   // This is inside a SafeAreaView at root layout level.
   // Absolute children position from SafeAreaView's bounds (y=0 = screen top),
   // so we add insets.top (status bar) + headerHeight to start below the header.
   //
+  // When the keyboard is open its height (from screen bottom) replaces
+  // insets.bottom since the keyboard covers the home indicator area.
+  //
   // When hidden, move offscreen instead of relying on opacity alone —
   // Expo DOM WebViews render in a separate native layer and ignore
   // parent opacity on Android.
+  const bottomInset = keyboardHeight > 0 ? keyboardHeight : insets.bottom;
   const containerStyle = {
     position: 'absolute' as const,
     top: shouldShow ? insets.top + persistentEditor.headerHeight : -9999,
     left: 0,
     right: 0,
-    bottom: shouldShow ? persistentEditor.bottomBarHeight + insets.bottom : undefined,
+    bottom: shouldShow ? persistentEditor.bottomBarHeight + bottomInset : undefined,
     height: shouldShow ? undefined : 0,
     zIndex: 100,
     overflow: 'hidden' as const

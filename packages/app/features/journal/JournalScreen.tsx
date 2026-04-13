@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 import { Editor } from './components/Editor'
 import { ExpandingLineButton } from './components/ExpandingLineButton'
+import { KeyboardOffsetView } from './components/KeyboardOffsetView'
+import { useTrackKeyboardHeight } from './hooks/useTrackKeyboardHeight'
 import {
   store$,
   ephemeral$,
@@ -21,6 +23,7 @@ export function JournalScreen() {
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const activeFlow = use$(store$.activeFlow)
+  useTrackKeyboardHeight()
 
   const handleBackToHome = () => {
     hidePersistentEditor()
@@ -99,6 +102,7 @@ export function JournalScreen() {
       </AnimatePresence>
 
       {/* Bottom bar — word count + finish button */}
+      <KeyboardOffsetView>
       <AnimatePresence>
         {hasContent && (
           <XStack
@@ -141,6 +145,7 @@ export function JournalScreen() {
           </XStack>
         )}
       </AnimatePresence>
+      </KeyboardOffsetView>
 
       {/* Save dialog */}
       <Dialog
