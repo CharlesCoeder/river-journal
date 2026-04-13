@@ -1,4 +1,4 @@
-import { Text, YStack } from '@my/ui'
+import { Text, YStack, isWeb } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$, setFontPairing } from 'app/state/store'
 import { DEFAULT_FONT_PAIRING } from 'app/state/types'
@@ -49,6 +49,7 @@ function FontPairingRow({
       gap="$1"
       cursor="pointer"
       onPress={onSelect}
+      paddingVertical="$1"
       transition="designEnter"
       enterStyle={{ opacity: 0, y: 10 }}
       opacity={1}
@@ -60,7 +61,7 @@ function FontPairingRow({
         fontFamily={pairing.uiFont}
         fontSize={20}
         color={isSelected ? '$color' : '$color8'}
-        hoverStyle={{ color: '$color' }}
+        {...(isWeb && { hoverStyle: { color: '$color' } })}
       >
         {pairing.uiLabel}
       </Text>
@@ -68,7 +69,7 @@ function FontPairingRow({
         fontFamily={pairing.contentFont}
         fontSize={20}
         color={isSelected ? '$color' : '$color8'}
-        hoverStyle={{ color: '$color' }}
+        {...(isWeb && { hoverStyle: { color: '$color' } })}
       >
         {pairing.contentLabel}
       </Text>

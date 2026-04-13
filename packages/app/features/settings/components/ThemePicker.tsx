@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Circle, Text, XStack, YStack, View } from '@my/ui'
+import { Circle, Text, XStack, YStack, View, isWeb } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$, setTheme } from 'app/state/store'
 import { LIGHT_THEMES, DARK_THEMES } from 'app/state/types'
@@ -46,7 +46,7 @@ function ThemeRow({
         fontFamily="$journal"
         fontSize={20}
         color={isSelected ? '$color' : '$color8'}
-        hoverStyle={{ color: '$color' }}
+        {...(isWeb && { hoverStyle: { color: '$color' } })}
       >
         {THEME_LABELS[name]}
       </Text>
@@ -106,7 +106,7 @@ export function ThemePicker() {
             fontFamily="$journal"
             fontSize={20}
             color={isCustomSelected ? '$color' : '$color8'}
-            hoverStyle={{ color: '$color' }}
+            {...(isWeb && { hoverStyle: { color: '$color' } })}
             flex={1}
           >
             My Theme
@@ -121,7 +121,7 @@ export function ThemePicker() {
               e.stopPropagation?.()
               setEditorOpen(true)
             }}
-            hoverStyle={{ color: '$color' }}
+            {...(isWeb ? { hoverStyle: { color: '$color' } } : { pressStyle: { opacity: 0.7 } })}
           >
             Edit
           </Text>
@@ -146,7 +146,7 @@ export function ThemePicker() {
             fontFamily="$journal"
             fontSize={20}
             color="$color8"
-            hoverStyle={{ color: '$color' }}
+            {...(isWeb && { hoverStyle: { color: '$color' } })}
           >
             Create Custom Theme
           </Text>

@@ -32,6 +32,7 @@ vi.mock('@my/ui', async () => {
     XStack: passthrough('div'),
     YStack: passthrough('div'),
     View: passthrough('div'),
+    isWeb: true,
   }
 })
 
