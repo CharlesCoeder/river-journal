@@ -1,4 +1,4 @@
-import { AnimatePresence, YStack, XStack, Dialog, Text, Spinner, View, isWeb } from '@my/ui'
+import { AnimatePresence, YStack, XStack, Dialog, Text, View, isWeb } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
@@ -11,7 +11,6 @@ import {
   ephemeral$,
   saveActiveFlowSession,
   getActiveFlowContent,
-  getActiveFlowWordCount,
   hidePersistentEditor,
   updatePersistentEditorHeaderHeight,
   updatePersistentEditorBottomBarHeight,
