@@ -80,6 +80,8 @@ export const ephemeral$ = observable<{
    * The bottom bar reads this value instead so it appears/updates instantly.
    */
   instantWordCount: number
+  /** Current keyboard height from screen bottom (native only, 0 when closed). */
+  keyboardHeight: number
 }>({
   persistentEditor: {
     isVisible: false,
@@ -90,6 +92,7 @@ export const ephemeral$ = observable<{
     bottomBarHeight: 0,
   },
   instantWordCount: 0,
+  keyboardHeight: 0,
 })
 
 // =================================================================
