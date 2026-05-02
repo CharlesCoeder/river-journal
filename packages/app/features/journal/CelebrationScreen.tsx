@@ -7,8 +7,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
-import { AnimatePresence, YStack, Text, XStack, ScrollView, View } from '@my/ui'
-import { ExpandingLineButton } from './components/ExpandingLineButton'
+import {
+  AnimatePresence,
+  YStack,
+  Text,
+  XStack,
+  ScrollView,
+  View,
+  ExpandingLineButton,
+} from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$, clearLastSavedFlow, clearActiveFlow } from 'app/state/store'
@@ -90,135 +97,153 @@ export function CelebrationScreen() {
             alignItems="center"
             position="relative"
           >
-        <AnimatePresence>
-          {showCelebration && (
+            <AnimatePresence>
+              {showCelebration && (
+                <YStack
+                  key="celebration-center"
+                  transition="celebrationSpring"
+                  enterStyle={{ opacity: 0, y: 30 }}
+                  opacity={1}
+                  y={0}
+                  alignItems="center"
+                  gap="$6"
+                >
+                  <Text
+                    fontFamily="$journalItalic"
+                    fontStyle="italic"
+                    fontSize={36}
+                    $sm={{ fontSize: 48 }}
+                    color="$color"
+                    letterSpacing={-1}
+                  >
+                    Well done.
+                  </Text>
+
+                  <Text
+                    fontFamily="$body"
+                    fontSize={14}
+                    color="$color8"
+                    letterSpacing={0.5}
+                  >
+                    You let{' '}
+                    <Text
+                      fontFamily="$body"
+                      color="$color"
+                      fontWeight="500"
+                      fontSize={14}
+                    >
+                      {wordCount}
+                    </Text>{' '}
+                    words flow today.
+                  </Text>
+
+                  {/* Return button with expanding line */}
+                  <View marginTop={48}>
+                    <ExpandingLineButton
+                      size="default"
+                      onPress={handleDismiss}
+                    >
+                      Return
+                    </ExpandingLineButton>
+                  </View>
+
+                  {/* Auth nudge — only when logged out */}
+                  {!isAuthenticated && (
+                    <YStack
+                      overflow={nudgeCollapsedHeight === 'auto' ? undefined : 'hidden'}
+                      transition={nudgeDismissed ? ('smoothCollapse' as any) : undefined}
+                      height={nudgeCollapsedHeight}
+                      opacity={nudgeDismissed ? 0 : 1}
+                      marginTop={nudgeDismissed ? 0 : 28}
+                      pointerEvents={nudgeDismissed ? 'none' : 'auto'}
+                      width="100%"
+                      maxWidth={384}
+                    >
+                      <YStack
+                        onLayout={onNudgeLayout}
+                        borderWidth={1}
+                        borderColor="$color3"
+                        borderRadius="$2"
+                        padding="$5"
+                        alignItems="center"
+                        gap="$3"
+                      >
+                        <Text
+                          fontFamily="$body"
+                          fontSize={12}
+                          color="$color8"
+                          textAlign="center"
+                          lineHeight={20}
+                        >
+                          Your writing is saved on this device. Create an account to sync across
+                          devices and keep it safe.
+                        </Text>
+                        <XStack
+                          gap="$5"
+                          paddingTop="$2"
+                        >
+                          <Text
+                            fontFamily="$body"
+                            fontSize={9}
+                            letterSpacing={2.5}
+                            textTransform="uppercase"
+                            color="$color7"
+                            cursor="pointer"
+                            hoverStyle={{ color: '$color8' }}
+                            onPress={() => setNudgeDismissed(true)}
+                          >
+                            Dismiss
+                          </Text>
+                          <Text
+                            fontFamily="$body"
+                            fontSize={9}
+                            letterSpacing={2.5}
+                            textTransform="uppercase"
+                            color="$color"
+                            cursor="pointer"
+                            hoverStyle={{ opacity: 0.7 }}
+                            borderBottomWidth={1}
+                            borderColor="$color5"
+                            paddingBottom={1}
+                            onPress={handleCreateAccount}
+                          >
+                            Create Account
+                          </Text>
+                        </XStack>
+                      </YStack>
+                    </YStack>
+                  )}
+                </YStack>
+              )}
+            </AnimatePresence>
+
+            {/* Scroll indicator — pinned to bottom of hero viewport */}
             <YStack
-              key="celebration-center"
-              transition="celebrationSpring"
-              enterStyle={{ opacity: 0, y: 30 }}
-              opacity={1}
-              y={0}
+              position="absolute"
+              bottom={40}
+              left={0}
+              right={0}
               alignItems="center"
-              gap="$6"
+              gap="$1"
+              opacity={0.3}
             >
               <Text
-                fontFamily="$journalItalic"
-                fontStyle="italic"
-                fontSize={36}
-                $sm={{ fontSize: 48 }}
-                color="$color"
-                letterSpacing={-1}
+                fontFamily="$body"
+                fontSize={10}
+                letterSpacing={2}
+                textTransform="uppercase"
+                color="$color8"
               >
-                Well done.
+                Your words
               </Text>
-
               <Text
                 fontFamily="$body"
                 fontSize={14}
                 color="$color8"
-                letterSpacing={0.5}
               >
-                You let{' '}
-                <Text fontFamily="$body" color="$color" fontWeight="500" fontSize={14}>
-                  {wordCount}
-                </Text>{' '}
-                words flow today.
+                {'\u2193'}
               </Text>
-
-              {/* Return button with expanding line */}
-              <View marginTop={48}>
-                <ExpandingLineButton label="Return" onPress={handleDismiss} lineWidth={16} lineHoverWidth={32} />
-              </View>
-
-              {/* Auth nudge — only when logged out */}
-              {!isAuthenticated && (
-                <YStack
-                  overflow={nudgeCollapsedHeight === 'auto' ? undefined : 'hidden'}
-                  transition={nudgeDismissed ? 'smoothCollapse' as any : undefined}
-                  height={nudgeCollapsedHeight}
-                  opacity={nudgeDismissed ? 0 : 1}
-                  marginTop={nudgeDismissed ? 0 : 28}
-                  pointerEvents={nudgeDismissed ? 'none' : 'auto'}
-                  width="100%"
-                  maxWidth={384}
-                >
-                  <YStack
-                    onLayout={onNudgeLayout}
-                    borderWidth={1}
-                    borderColor="$color3"
-                    borderRadius="$2"
-                    padding="$5"
-                    alignItems="center"
-                    gap="$3"
-                  >
-                    <Text
-                      fontFamily="$body"
-                      fontSize={12}
-                      color="$color8"
-                      textAlign="center"
-                      lineHeight={20}
-                    >
-                      Your writing is saved on this device. Create an account to sync across devices and keep it safe.
-                    </Text>
-                    <XStack gap="$5" paddingTop="$2">
-                      <Text
-                        fontFamily="$body"
-                        fontSize={9}
-                        letterSpacing={2.5}
-                        textTransform="uppercase"
-                        color="$color7"
-                        cursor="pointer"
-                        hoverStyle={{ color: '$color8' }}
-                        onPress={() => setNudgeDismissed(true)}
-                      >
-                        Dismiss
-                      </Text>
-                      <Text
-                        fontFamily="$body"
-                        fontSize={9}
-                        letterSpacing={2.5}
-                        textTransform="uppercase"
-                        color="$color"
-                        cursor="pointer"
-                        hoverStyle={{ opacity: 0.7 }}
-                        borderBottomWidth={1}
-                        borderColor="$color5"
-                        paddingBottom={1}
-                        onPress={handleCreateAccount}
-                      >
-                        Create Account
-                      </Text>
-                    </XStack>
-                  </YStack>
-                </YStack>
-              )}
             </YStack>
-          )}
-        </AnimatePresence>
-
-        {/* Scroll indicator — pinned to bottom of hero viewport */}
-        <YStack
-          position="absolute"
-          bottom={40}
-          left={0}
-          right={0}
-          alignItems="center"
-          gap="$1"
-          opacity={0.3}
-        >
-          <Text
-            fontFamily="$body"
-            fontSize={10}
-            letterSpacing={2}
-            textTransform="uppercase"
-            color="$color8"
-          >
-            Your words
-          </Text>
-          <Text fontFamily="$body" fontSize={14} color="$color8">
-            {'\u2193'}
-          </Text>
-        </YStack>
           </YStack>
         )}
       </AnimatePresence>
@@ -236,7 +261,10 @@ export function CelebrationScreen() {
           borderColor="$color2"
           paddingTop="$6"
         >
-          <Editor readOnly initialContent={content} />
+          <Editor
+            readOnly
+            initialContent={content}
+          />
         </YStack>
       </YStack>
     </ScrollView>

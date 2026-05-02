@@ -1,9 +1,17 @@
-import { AnimatePresence, YStack, XStack, Dialog, Text, View, isWeb } from '@my/ui'
+import {
+  AnimatePresence,
+  YStack,
+  XStack,
+  Dialog,
+  Text,
+  View,
+  isWeb,
+  ExpandingLineButton,
+} from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 import { Editor } from './components/Editor'
-import { ExpandingLineButton } from './components/ExpandingLineButton'
 import { KeyboardOffsetView } from './components/KeyboardOffsetView'
 import { useTrackKeyboardHeight } from './hooks/useTrackKeyboardHeight'
 import {
@@ -65,7 +73,9 @@ export function JournalScreen() {
   const wordCount = use$(ephemeral$.instantWordCount)
   const hasContent = wordCount > 0 || !!activeFlow?.content
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <YStack
@@ -88,62 +98,67 @@ export function JournalScreen() {
             $md={{ paddingHorizontal: '$8' }}
             $lg={{ paddingHorizontal: '$12' }}
           >
-        {/* Top spacer — measured for persistent editor positioning on native */}
-        <View
-          height="$4"
-          $md={{ height: '$8' }}
-          $lg={{ height: '$12' }}
-          onLayout={handleHeaderLayout}
-        />
-        <Editor />
+            {/* Top spacer — measured for persistent editor positioning on native */}
+            <View
+              height="$4"
+              $md={{ height: '$8' }}
+              $lg={{ height: '$12' }}
+              onLayout={handleHeaderLayout}
+            />
+            <Editor />
           </YStack>
         )}
       </AnimatePresence>
 
       {/* Bottom bar — word count + finish button */}
       <KeyboardOffsetView>
-      <AnimatePresence>
-        {hasContent && (
-          <XStack
-            key="bottom-bar"
-            transition="designEnter"
-            enterStyle={{ opacity: 0, y: 10 }}
-            exitStyle={{ opacity: 0, y: 10 }}
-            opacity={1}
-            y={0}
-            position={isWeb ? ('fixed' as any) : 'absolute'}
-            bottom={0}
-            left={0}
-            right={0}
-            paddingHorizontal="$4"
-            paddingVertical="$5"
-            $md={{ paddingHorizontal: '$8' }}
-            onLayout={handleBottomBarLayout}
-            $lg={{ paddingHorizontal: '$12' }}
-            paddingBottom="$6"
-            justifyContent="center"
-            zIndex={100}
-          >
-          <XStack
-            width="100%"
-            maxWidth={768}
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Text
-              fontFamily="$body"
-              fontSize={14}
-              color="$color8"
-              letterSpacing={0.5}
+        <AnimatePresence>
+          {hasContent && (
+            <XStack
+              key="bottom-bar"
+              transition="designEnter"
+              enterStyle={{ opacity: 0, y: 10 }}
+              exitStyle={{ opacity: 0, y: 10 }}
+              opacity={1}
+              y={0}
+              position={isWeb ? ('fixed' as any) : 'absolute'}
+              bottom={0}
+              left={0}
+              right={0}
+              paddingHorizontal="$4"
+              paddingVertical="$5"
+              $md={{ paddingHorizontal: '$8' }}
+              onLayout={handleBottomBarLayout}
+              $lg={{ paddingHorizontal: '$12' }}
+              paddingBottom="$6"
+              justifyContent="center"
+              zIndex={100}
             >
-              {wordCount} {wordCount === 1 ? 'word' : 'words'}
-            </Text>
+              <XStack
+                width="100%"
+                maxWidth={768}
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Text
+                  fontFamily="$body"
+                  fontSize={14}
+                  color="$color8"
+                  letterSpacing={0.5}
+                >
+                  {wordCount} {wordCount === 1 ? 'word' : 'words'}
+                </Text>
 
-            <ExpandingLineButton label="Finish Session" onPress={handleExitFlow} lineWidth={16} lineHoverWidth={24} />
-          </XStack>
-          </XStack>
-        )}
-      </AnimatePresence>
+                <ExpandingLineButton
+                  size="default"
+                  onPress={handleExitFlow}
+                >
+                  Finish Session
+                </ExpandingLineButton>
+              </XStack>
+            </XStack>
+          )}
+        </AnimatePresence>
       </KeyboardOffsetView>
 
       {/* Save dialog */}
