@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
 import { SplashScreen, Stack } from 'expo-router'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
 import { NativeToast } from '@my/ui/src/NativeToast'
@@ -60,6 +61,7 @@ export default function App() {
 function RootLayoutNav() {
   return (
     <PersistenceGate>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <MobileKeyboardProvider>
           <Provider>
@@ -82,6 +84,7 @@ function RootLayoutNav() {
           </Provider>
         </MobileKeyboardProvider>
       </SafeAreaProvider>
+      </GestureHandlerRootView>
     </PersistenceGate>
   )
 }

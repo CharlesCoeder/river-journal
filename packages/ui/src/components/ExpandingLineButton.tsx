@@ -1,36 +1,7 @@
 import { useEffect, useState } from 'react'
-import { AccessibilityInfo, Platform } from 'react-native'
 import { Text, View } from 'tamagui'
 import type { ReactNode } from 'react'
-
-// ---------------------------------------------------------------------------
-// useReducedMotion — cross-platform helper
-// ---------------------------------------------------------------------------
-function useReducedMotion(): boolean {
-  const getInitial = (): boolean => {
-    if (Platform.OS !== 'web') return false
-    if (typeof window === 'undefined') return false
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  }
-
-  const [reduceMotion, setReduceMotion] = useState<boolean>(getInitial)
-
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      if (typeof window === 'undefined') return
-      const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-      const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches)
-      mq.addEventListener('change', handler)
-      return () => mq.removeEventListener('change', handler)
-    }
-    // Native path
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion)
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion)
-    return () => sub.remove()
-  }, [])
-
-  return reduceMotion
-}
+import { useReducedMotion } from '../hooks/useReducedMotion'
 
 // ---------------------------------------------------------------------------
 // ExpandingLineButton

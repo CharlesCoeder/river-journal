@@ -35,7 +35,7 @@ export const PersistentEditor = () => {
     placeholderColor: theme.placeholderColor.val
   };
   const fontFamilies = {
-    content: families.native,
+    content: families.native
   };
 
   // Debounced function to update Legend State from editor changes
@@ -90,7 +90,6 @@ export const PersistentEditor = () => {
       fadeAnim.stopAnimation();
     };
   }, [shouldShow, fadeAnim]);
-
   const keyboardHeight = use$(ephemeral$.keyboardHeight);
 
   // Position below the header using safe area insets + header height.
@@ -120,7 +119,9 @@ export const PersistentEditor = () => {
     pointerEvents: shouldShow ? 'auto' : 'none'
   }]}>
       <View style={styles.editorWrapper}>
-        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.initialContent} contentRevision={persistentEditor.initialContentRevision} readOnly={persistentEditor.readOnly} dom={{ hideKeyboardAccessoryView: true }} />
+        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.initialContent} contentRevision={persistentEditor.initialContentRevision} readOnly={persistentEditor.readOnly} dom={{
+        hideKeyboardAccessoryView: true
+      }} />
       </View>
     </Animated.View>;
 };

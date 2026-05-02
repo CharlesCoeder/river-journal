@@ -8,6 +8,7 @@ export * from './components/ExpandingLineButton'
 export * from './components/WordCountDisplay'
 export * from './components/JournalTextArea'
 export * from './components/ThemeSwitcher'
+export { useReducedMotion } from './hooks/useReducedMotion'
 
 // type augmentation for tamagui custom config
 import type { Conf } from '@my/config'
