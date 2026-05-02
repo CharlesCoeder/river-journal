@@ -55,6 +55,36 @@ vi.mock('@my/ui', async () => {
       children
     )
 
+  // ─── StreakChip stub — forwards text content and a11y props for HomeScreen assertions
+  const StreakChip = ({ dayCount, ...props }: any) => {
+    const label = dayCount != null ? `Day ${dayCount} streak` : 'Day — streak'
+    const text = dayCount != null ? `Day ${dayCount}` : 'Day —'
+    return ReactModule.createElement(
+      'span',
+      {
+        'data-testid': 'streak-chip',
+        role: 'text',
+        'aria-label': label,
+      },
+      text
+    )
+  }
+
+  // ─── CollectiveEntry stub — forwards onPress and a11y for HomeScreen assertions
+  const CollectiveEntry = ({ state = 'dim', onPress, ...props }: any) => {
+    const label = state === 'lit' ? 'Collective' : 'Collective, locked'
+    return ReactModule.createElement(
+      'span',
+      {
+        'data-testid': 'collective-entry',
+        role: 'button',
+        'aria-label': label,
+        onClick: onPress,
+      },
+      'COLLECTIVE'
+    )
+  }
+
   return {
     AnimatePresence,
     ScrollView: passthrough('div'),
@@ -63,6 +93,8 @@ vi.mock('@my/ui', async () => {
     XStack: passthrough('div'),
     YStack: passthrough('div'),
     useReducedMotion: () => reduceMotionValue,
+    StreakChip,
+    CollectiveEntry,
   }
 })
 
@@ -275,55 +307,61 @@ describe('Begin writing CTA — x translation on hover/press (AC2)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. Reserved slots — AC 3 + AC 7 (a11y-inert, no visible content)
+// 6. Slot wrappers — now contain real components (1-7 upgrade from 1-6)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('StreakChip reserved slot (AC3, AC7)', () => {
-  it('renders the StreakChip slot by testID', () => {
+describe('StreakChip slot wrapper (1-7: now contains StreakChip component)', () => {
+  it('renders the StreakChip slot wrapper by testID', () => {
     render(React.createElement(HomeScreen))
     expect(screen.getByTestId('home-streak-chip-slot')).toBeTruthy()
   })
 
-  it('StreakChip slot has no text content (visually inert)', () => {
+  it('StreakChip slot wrapper has text content (contains StreakChip)', () => {
     render(React.createElement(HomeScreen))
     const slot = screen.getByTestId('home-streak-chip-slot')
-    expect(slot.textContent).toBe('')
+    // Slot now contains the real StreakChip — text is non-empty
+    expect(slot.textContent).not.toBe('')
   })
 
-  it('StreakChip slot has no accessibilityLabel / aria-label (a11y-inert)', () => {
+  it('StreakChip slot wrapper contains an element with role="text" (from StreakChip)', () => {
     render(React.createElement(HomeScreen))
     const slot = screen.getByTestId('home-streak-chip-slot')
-    expect(slot.getAttribute('aria-label')).toBeNull()
+    const chip = slot.querySelector('[role="text"]')
+    expect(chip).toBeTruthy()
   })
 
-  it('StreakChip slot has no role (a11y-inert)', () => {
+  it('StreakChip slot wrapper contains an element with aria-label (from StreakChip)', () => {
     render(React.createElement(HomeScreen))
     const slot = screen.getByTestId('home-streak-chip-slot')
-    expect(slot.getAttribute('role')).toBeNull()
+    const chip = slot.querySelector('[aria-label]')
+    expect(chip).toBeTruthy()
   })
 })
 
-describe('CollectiveEntry reserved slot (AC3, AC7)', () => {
-  it('renders the CollectiveEntry slot by testID', () => {
+describe('CollectiveEntry slot wrapper (1-7: now contains CollectiveEntry component)', () => {
+  it('renders the CollectiveEntry slot wrapper by testID', () => {
     render(React.createElement(HomeScreen))
     expect(screen.getByTestId('home-collective-entry-slot')).toBeTruthy()
   })
 
-  it('CollectiveEntry slot has no text content (visually inert)', () => {
+  it('CollectiveEntry slot wrapper has text content (contains CollectiveEntry)', () => {
     render(React.createElement(HomeScreen))
     const slot = screen.getByTestId('home-collective-entry-slot')
-    expect(slot.textContent).toBe('')
+    // Slot now contains the real CollectiveEntry — text is non-empty
+    expect(slot.textContent).not.toBe('')
   })
 
-  it('CollectiveEntry slot has no accessibilityLabel / aria-label (a11y-inert)', () => {
+  it('CollectiveEntry slot wrapper contains an element with role="button" (from CollectiveEntry)', () => {
     render(React.createElement(HomeScreen))
     const slot = screen.getByTestId('home-collective-entry-slot')
-    expect(slot.getAttribute('aria-label')).toBeNull()
+    const entry = slot.querySelector('[role="button"]')
+    expect(entry).toBeTruthy()
   })
 
-  it('CollectiveEntry slot has no role (a11y-inert)', () => {
+  it('CollectiveEntry slot wrapper contains an element with aria-label (from CollectiveEntry)', () => {
     render(React.createElement(HomeScreen))
     const slot = screen.getByTestId('home-collective-entry-slot')
-    expect(slot.getAttribute('role')).toBeNull()
+    const entry = slot.querySelector('[aria-label]')
+    expect(entry).toBeTruthy()
   })
 })
 
@@ -368,5 +406,88 @@ describe('Dialog components preserved (AC6)', () => {
     expect(screen.getByTestId('keyring-prompt')).toBeTruthy()
     expect(screen.getByTestId('orphan-flows-dialog')).toBeTruthy()
     expect(screen.getByTestId('encryption-mode-dialog')).toBeTruthy()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. Story 1-7: StreakChip mounts in home (AC1, AC2, AC6)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('StreakChip mounts in HomeScreen (1-7 AC1, AC2, AC6)', () => {
+  it('renders a StreakChip element inside the home layout', () => {
+    render(React.createElement(HomeScreen))
+    expect(screen.getByTestId('streak-chip')).toBeTruthy()
+  })
+
+  it('StreakChip displays the placeholder "Day —" text', () => {
+    render(React.createElement(HomeScreen))
+    expect(screen.getByText('Day —')).toBeTruthy()
+  })
+
+  it('StreakChip has accessibilityRole="text"', () => {
+    render(React.createElement(HomeScreen))
+    const chip = screen.getByTestId('streak-chip')
+    expect(chip.getAttribute('role')).toBe('text')
+  })
+
+  it('StreakChip has accessibilityLabel "Day — streak"', () => {
+    render(React.createElement(HomeScreen))
+    const chip = screen.getByTestId('streak-chip')
+    expect(chip.getAttribute('aria-label')).toBe('Day — streak')
+  })
+
+  it('StreakChip slot wrapper still has testID "home-streak-chip-slot" for continuity', () => {
+    render(React.createElement(HomeScreen))
+    // The wrapper <View testID="home-streak-chip-slot"> must still be present
+    // so existing 1-6 test infrastructure doesn't break
+    expect(screen.getByTestId('home-streak-chip-slot')).toBeTruthy()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. Story 1-7: CollectiveEntry mounts in home (AC3, AC4, AC6, AC7)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('CollectiveEntry mounts in HomeScreen (1-7 AC3, AC4, AC6, AC7)', () => {
+  it('renders a CollectiveEntry element inside the home layout', () => {
+    render(React.createElement(HomeScreen))
+    expect(screen.getByTestId('collective-entry')).toBeTruthy()
+  })
+
+  it('CollectiveEntry displays "COLLECTIVE" text', () => {
+    render(React.createElement(HomeScreen))
+    expect(screen.getByText('COLLECTIVE')).toBeTruthy()
+  })
+
+  it('CollectiveEntry has accessibilityRole="button"', () => {
+    render(React.createElement(HomeScreen))
+    const entry = screen.getByTestId('collective-entry')
+    expect(entry.getAttribute('role')).toBe('button')
+  })
+
+  it('CollectiveEntry has accessibilityLabel "Collective, locked" (dim state default)', () => {
+    render(React.createElement(HomeScreen))
+    const entry = screen.getByTestId('collective-entry')
+    expect(entry.getAttribute('aria-label')).toBe('Collective, locked')
+  })
+
+  it('CollectiveEntry slot wrapper still has testID "home-collective-entry-slot" for continuity', () => {
+    render(React.createElement(HomeScreen))
+    // The wrapper <View testID="home-collective-entry-slot"> must still be present
+    expect(screen.getByTestId('home-collective-entry-slot')).toBeTruthy()
+  })
+
+  it('pressing CollectiveEntry calls router.push("/collective") (AC7)', () => {
+    pushSpy.mockClear()
+    render(React.createElement(HomeScreen))
+    const entry = screen.getByTestId('collective-entry')
+    fireEvent.click(entry)
+    expect(pushSpy).toHaveBeenCalledWith('/collective')
+  })
+
+  it('pressing CollectiveEntry calls router.push exactly once per press', () => {
+    pushSpy.mockClear()
+    render(React.createElement(HomeScreen))
+    const entry = screen.getByTestId('collective-entry')
+    fireEvent.click(entry)
+    expect(pushSpy).toHaveBeenCalledTimes(1)
   })
 })

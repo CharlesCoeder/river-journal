@@ -1,4 +1,4 @@
-import { AnimatePresence, YStack, Text, XStack, ScrollView, View, useReducedMotion } from '@my/ui'
+import { AnimatePresence, YStack, Text, XStack, ScrollView, View, useReducedMotion, StreakChip, CollectiveEntry } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -32,11 +32,7 @@ export function HomeScreen() {
     <YStack
       flex={1}
       backgroundColor="$background"
-      position="relative"
     >
-      {/* StreakChip reserved slot — top-right, absolute-positioned (pattern a) */}
-      <HomeStreakChipSlot />
-
       <ScrollView
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
@@ -60,7 +56,10 @@ export function HomeScreen() {
               $sm={{ paddingHorizontal: '$6' }}
               $md={{ paddingHorizontal: '$8' }}
               $lg={{ paddingHorizontal: '$12' }}
+              position="relative"
             >
+              {/* StreakChip — anchored to top-right of the centered content card (M1 fix from 1-6 review) */}
+              <HomeStreakChipSlot />
               {/* Content — left-aligned, generous spacing */}
               <YStack
                 gap={96}
@@ -88,8 +87,8 @@ export function HomeScreen() {
                   >
                     {today}.
                   </Text>
-                  {/* CollectiveEntry reserved slot — below date, inside date YStack */}
-                  <HomeCollectiveEntrySlot />
+                  {/* CollectiveEntry — below date, inside date YStack */}
+                  <HomeCollectiveEntrySlot onPress={() => router.push('/collective')} />
                 </YStack>
 
                 {/* Action area */}
@@ -148,7 +147,7 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
   )
 }
 
-/** Reserved slot for StreakChip — top-right of home content area (1.7 will swap for real component) */
+/** StreakChip slot — anchored to top-right of the centered content card (M1 fix: moved inside maxWidth={1024} YStack) */
 function HomeStreakChipSlot() {
   return (
     <View
@@ -156,20 +155,18 @@ function HomeStreakChipSlot() {
       position="absolute"
       top="$4"
       right="$4"
-      width={70}
-      height={24}
-    />
+    >
+      <StreakChip />
+    </View>
   )
 }
 
-/** Reserved slot for CollectiveEntry — below date hero inside date YStack (1.7 will swap for real component) */
-function HomeCollectiveEntrySlot() {
+/** CollectiveEntry slot — below date hero inside date YStack */
+function HomeCollectiveEntrySlot({ onPress }: { onPress: () => void }) {
   return (
-    <View
-      testID="home-collective-entry-slot"
-      width={100}
-      height={24}
-    />
+    <View testID="home-collective-entry-slot">
+      <CollectiveEntry onPress={onPress} />
+    </View>
   )
 }
 
