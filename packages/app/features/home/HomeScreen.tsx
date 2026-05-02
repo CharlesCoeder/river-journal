@@ -1,4 +1,4 @@
-import { AnimatePresence, YStack, Text, XStack, ScrollView } from '@my/ui'
+import { AnimatePresence, YStack, Text, XStack, ScrollView, View, useReducedMotion } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -34,6 +34,9 @@ export function HomeScreen() {
       backgroundColor="$background"
       position="relative"
     >
+      {/* StreakChip reserved slot — top-right, absolute-positioned (pattern a) */}
+      <HomeStreakChipSlot />
+
       <ScrollView
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
@@ -85,6 +88,8 @@ export function HomeScreen() {
                   >
                     {today}.
                   </Text>
+                  {/* CollectiveEntry reserved slot — below date, inside date YStack */}
+                  <HomeCollectiveEntrySlot />
                 </YStack>
 
                 {/* Action area */}
@@ -115,6 +120,10 @@ export function HomeScreen() {
 /** State-driven CTA so the spring animation works in production (not CSS-extracted) */
 function BeginWritingCTA({ onPress }: { onPress: () => void }) {
   const [hovered, setHovered] = useState(false)
+  const [pressed, setPressed] = useState(false)
+  const reduceMotion = useReducedMotion()
+
+  const active = hovered || pressed
 
   return (
     <Text
@@ -124,14 +133,43 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
       $sm={{ fontSize: 30 }}
       color="$color"
       cursor="pointer"
-      transition="ctaSpring"
-      x={hovered ? 5 : 0}
+      transition={reduceMotion ? undefined : 'ctaSpring'}
+      x={!reduceMotion && active ? 5 : 0}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
       onPress={onPress}
+      accessibilityLabel="Begin writing"
+      accessibilityRole="button"
     >
       Begin writing
     </Text>
+  )
+}
+
+/** Reserved slot for StreakChip — top-right of home content area (1.7 will swap for real component) */
+function HomeStreakChipSlot() {
+  return (
+    <View
+      testID="home-streak-chip-slot"
+      position="absolute"
+      top="$4"
+      right="$4"
+      width={70}
+      height={24}
+    />
+  )
+}
+
+/** Reserved slot for CollectiveEntry — below date hero inside date YStack (1.7 will swap for real component) */
+function HomeCollectiveEntrySlot() {
+  return (
+    <View
+      testID="home-collective-entry-slot"
+      width={100}
+      height={24}
+    />
   )
 }
 
