@@ -5,6 +5,7 @@ import { SplashScreen, Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
+import { SliderHub } from 'app/features/navigation/SliderHub'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
@@ -14,7 +15,7 @@ import { PersistenceGate } from 'app/provider/PersistenceGate'
 import { PersistentEditor } from 'app/features/journal/components/PersistentEditor'
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 }
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -67,16 +68,17 @@ function RootLayoutNav() {
           <Provider>
             <TamaguifiedReactNavigationThemeProvider>
               <TamaguifiedSafeAreaView>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="journal" options={{ animation: 'none' }} />
-                  <Stack.Screen name="auth" />
-                  <Stack.Screen name="privacy" />
-                  <Stack.Screen
-                    name="google-auth"
-                    options={{ animation: 'none' }}
-                  />
-                </Stack>
+                <SliderHub>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="journal" options={{ animation: 'none' }} />
+                    <Stack.Screen name="auth" />
+                    <Stack.Screen name="privacy" />
+                    <Stack.Screen
+                      name="google-auth"
+                      options={{ animation: 'none' }}
+                    />
+                  </Stack>
+                </SliderHub>
                 <PersistentEditor />
                 <NativeToast />
               </TamaguifiedSafeAreaView>

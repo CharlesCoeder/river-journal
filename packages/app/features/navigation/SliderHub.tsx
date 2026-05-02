@@ -40,8 +40,10 @@ interface SliderHubProps {
  * On web at the $sm breakpoint (< ~660px) or during SSR, renders a
  * passthrough with no gesture handler.
  *
- * Story 1.4 will move this wrapper to the root layout; for now it is
- * smoke-mounted in the (tabs)/index.tsx home tab only.
+ * Mounted at `apps/mobile/app/_layout.tsx` (root layout) so every route
+ * inherits the gesture wrapper. The route-aware `usePathname()` guard in
+ * `navigateTo` short-circuits same-route commits to prevent loops when the
+ * current route equals the destination.
  */
 export function SliderHub({ children }: SliderHubProps) {
   const media = useMedia()
