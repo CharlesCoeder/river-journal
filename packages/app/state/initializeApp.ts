@@ -9,6 +9,7 @@ import { entries$ } from './entries'
 import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$ } from './syncConfig'
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
+import { lapsed$, recordSessionOpen } from './lapsed'
 
 export const appStatus$ = observable({
   isPersistenceLoaded: false,
@@ -26,6 +27,10 @@ function setupPersistence() {
       },
     })
   )
+
+  // Persist lapsed-state in its own IndexedDB table / MMKV namespace.
+  // Local-only — no Supabase sync, no encryption. Story 1-8.
+  syncObservable(lapsed$, configurePersistence({ persist: { name: 'lapsed-state' } }))
 
   // Activate the synced observables so their persistence loads.
   // syncedSupabase uses lazy activation — calling .get() triggers persistence
@@ -103,10 +108,12 @@ export async function initializePersistence() {
       when(syncState(store$).isPersistLoaded),
       when(syncState(flows$).isPersistLoaded),
       when(syncState(entries$).isPersistLoaded),
+      when(syncState(lapsed$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)
     ensureLocalSessionId()
+    recordSessionOpen()
 
     // Initialize auth listener — fires INITIAL_SESSION immediately to hydrate
     // session state, then handles SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.

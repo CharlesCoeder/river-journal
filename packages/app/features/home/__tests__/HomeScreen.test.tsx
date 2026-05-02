@@ -16,12 +16,13 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, children, accessibilityRole, accessibilityLabel } = props
+    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel } = props
     return {
       ...(testID ? { 'data-testid': testID } : {}),
       ...(accessibilityRole ? { role: accessibilityRole } : {}),
       ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
       ...(onPress ? { onClick: onPress } : {}),
+      ...(onScroll ? { onScroll: onScroll } : {}),
     }
   }
 
@@ -148,6 +149,34 @@ vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
 vi.mock('app/features/navigation/WordLinkNav', () => ({
   WordLinkNav: () => React.createElement('nav', { 'data-testid': 'word-link-nav' }, null),
 }))
+
+// ─── useLapsedPrompt mock — controllable per-test ────────────────────────────
+// Mutate lapsedMock.shouldShow and reset lapsedMock.dismiss in beforeEach.
+const lapsedMock = { shouldShow: false, dismiss: vi.fn() }
+
+vi.mock('../useLapsedPrompt', () => ({
+  useLapsedPrompt: () => lapsedMock,
+}))
+
+// ─── LapsedPrompt mock — stub returns testID node when shouldShow, null otherwise ─
+vi.mock('../components/LapsedPrompt', () => {
+  const ReactModule = require('react')
+  return {
+    LapsedPrompt: () =>
+      lapsedMock.shouldShow
+        ? ReactModule.createElement(
+            'span',
+            {
+              'data-testid': 'lapsed-prompt',
+              role: 'button',
+              'aria-label': 'Want to start again? Tap to dismiss.',
+              onClick: lapsedMock.dismiss,
+            },
+            'Want to start again?'
+          )
+        : null,
+  }
+})
 
 // ─── Import under test ───────────────────────────────────────────────────────
 import { HomeScreen } from '../HomeScreen'
@@ -489,5 +518,105 @@ describe('CollectiveEntry mounts in HomeScreen (1-7 AC3, AC4, AC6, AC7)', () => 
     const entry = screen.getByTestId('collective-entry')
     fireEvent.click(entry)
     expect(pushSpy).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. Story 1-8: Lapsed prompt mount + dismissal flow (AC4, AC5, AC9)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Lapsed prompt (1-8 AC4, AC5, AC9)', () => {
+  beforeEach(() => {
+    pushSpy.mockClear()
+    lapsedMock.dismiss = vi.fn()
+    lapsedMock.shouldShow = false
+  })
+
+  it('prompt is NOT in the DOM when shouldShow is false (AC4)', () => {
+    lapsedMock.shouldShow = false
+    render(React.createElement(HomeScreen))
+    expect(screen.queryByTestId('lapsed-prompt')).toBeNull()
+  })
+
+  it('prompt renders with copy "Want to start again?" when shouldShow is true (AC4)', () => {
+    lapsedMock.shouldShow = true
+    render(React.createElement(HomeScreen))
+    expect(screen.getByText('Want to start again?')).toBeTruthy()
+  })
+
+  it('prompt is positioned in the DOM between date block and CTA when shouldShow is true (AC4)', () => {
+    lapsedMock.shouldShow = true
+    render(React.createElement(HomeScreen))
+    const prompt = screen.getByTestId('lapsed-prompt')
+    const cta = screen.getByText('Begin writing')
+    // Verify both are mounted
+    expect(prompt).toBeTruthy()
+    expect(cta).toBeTruthy()
+    // DOM order: prompt must appear before CTA
+    const allNodes = Array.from(document.body.querySelectorAll('[data-testid="lapsed-prompt"], [aria-label="Begin writing"]'))
+    const promptIdx = allNodes.findIndex((n) => n.getAttribute('data-testid') === 'lapsed-prompt')
+    const ctaIdx = allNodes.findIndex((n) => n.getAttribute('aria-label') === 'Begin writing')
+    expect(promptIdx).toBeLessThan(ctaIdx)
+  })
+
+  it('tapping Begin writing while shouldShow is true calls dismiss BEFORE router.push (AC5)', () => {
+    lapsedMock.shouldShow = true
+    const dismissMock = vi.fn()
+    lapsedMock.dismiss = dismissMock
+    render(React.createElement(HomeScreen))
+    const cta = screen.getByRole('button', { name: 'Begin writing' })
+    fireEvent.click(cta)
+    // Both must have been called
+    expect(dismissMock).toHaveBeenCalled()
+    expect(pushSpy).toHaveBeenCalledWith('/journal')
+    // dismiss must have been called before router.push (invocationCallOrder)
+    const dismissOrder = dismissMock.mock.invocationCallOrder[0]
+    const pushOrder = pushSpy.mock.invocationCallOrder[pushSpy.mock.invocationCallOrder.length - 1]
+    expect(dismissOrder).toBeLessThan(pushOrder)
+  })
+
+  it('tapping Begin writing when shouldShow is false does NOT call dismiss (AC5)', () => {
+    lapsedMock.shouldShow = false
+    const dismissMock = vi.fn()
+    lapsedMock.dismiss = dismissMock
+    render(React.createElement(HomeScreen))
+    const cta = screen.getByRole('button', { name: 'Begin writing' })
+    fireEvent.click(cta)
+    expect(dismissMock).not.toHaveBeenCalled()
+  })
+
+  it('tapping COLLECTIVE while shouldShow is true calls dismiss BEFORE router.push (AC5)', () => {
+    lapsedMock.shouldShow = true
+    const dismissMock = vi.fn()
+    lapsedMock.dismiss = dismissMock
+    render(React.createElement(HomeScreen))
+    const entry = screen.getByTestId('collective-entry')
+    fireEvent.click(entry)
+    expect(dismissMock).toHaveBeenCalled()
+    expect(pushSpy).toHaveBeenCalledWith('/collective')
+    // dismiss must have been called before router.push
+    const dismissOrder = dismissMock.mock.invocationCallOrder[0]
+    const pushOrder = pushSpy.mock.invocationCallOrder[pushSpy.mock.invocationCallOrder.length - 1]
+    expect(dismissOrder).toBeLessThan(pushOrder)
+  })
+
+  it('scrolling the ScrollView while shouldShow is true calls dismiss (AC5)', () => {
+    lapsedMock.shouldShow = true
+    const dismissMock = vi.fn()
+    lapsedMock.dismiss = dismissMock
+    render(React.createElement(HomeScreen))
+    // The ScrollView renders as a <div data-testid="home-scroll-view">
+    const scrollContainer = screen.getByTestId('home-scroll-view')
+    fireEvent.scroll(scrollContainer, { target: { scrollTop: 50 } })
+    expect(dismissMock).toHaveBeenCalled()
+  })
+
+  it('scrolling when shouldShow is false does NOT call dismiss (AC5)', () => {
+    lapsedMock.shouldShow = false
+    const dismissMock = vi.fn()
+    lapsedMock.dismiss = dismissMock
+    render(React.createElement(HomeScreen))
+    const scrollContainer = screen.getByTestId('home-scroll-view')
+    fireEvent.scroll(scrollContainer, { target: { scrollTop: 50 } })
+    expect(dismissMock).not.toHaveBeenCalled()
   })
 })

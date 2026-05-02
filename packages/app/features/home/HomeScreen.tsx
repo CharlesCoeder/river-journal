@@ -6,8 +6,10 @@ import { useEffect, useState } from 'react'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
+import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
+import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
 
 export function HomeScreen() {
   const router = useRouter()
@@ -17,6 +19,7 @@ export function HomeScreen() {
   }, [])
 
   const todayStats = use$(store$.views.statsByDate(getTodayJournalDayString()))
+  const { shouldShow: showLapsed, dismiss: dismissLapsed } = useLapsedPrompt()
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -25,7 +28,13 @@ export function HomeScreen() {
   })
 
   const handleBeginFlow = () => {
+    if (showLapsed) dismissLapsed()
     router.push('/journal')
+  }
+
+  const handleCollectivePress = () => {
+    if (showLapsed) dismissLapsed()
+    router.push('/collective')
   }
 
   return (
@@ -37,6 +46,9 @@ export function HomeScreen() {
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
+        onScroll={() => { if (showLapsed) dismissLapsed() }}
+        scrollEventThrottle={1000}
+        testID="home-scroll-view"
       >
         <AnimatePresence>
           {mounted && (
@@ -88,8 +100,11 @@ export function HomeScreen() {
                     {today}.
                   </Text>
                   {/* CollectiveEntry — below date, inside date YStack */}
-                  <HomeCollectiveEntrySlot onPress={() => router.push('/collective')} />
+                  <HomeCollectiveEntrySlot onPress={handleCollectivePress} />
                 </YStack>
+
+                {/* Lapsed prompt — between date block and action area (Story 1-8) */}
+                <LapsedPrompt />
 
                 {/* Action area */}
                 <XStack
