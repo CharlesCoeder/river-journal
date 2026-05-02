@@ -1,4 +1,5 @@
 import { AnimatePresence, ScrollView, Text, XStack, YStack, View } from '@my/ui'
+import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -133,6 +134,7 @@ export function SettingsScreen() {
         $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
         $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
+        <WordLinkNav variant="browse" />
         {/* Header */}
         <XStack
           justifyContent="space-between"

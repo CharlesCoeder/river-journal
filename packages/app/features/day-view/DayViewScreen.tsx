@@ -6,6 +6,7 @@ import { store$, deleteFlow } from 'app/state/store'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import type { Flow } from 'app/state/types'
 import { DeleteFlowDialog } from './components/DeleteFlowDialog'
+import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 
 const STAGGER_MS = 100
 const MAX_STAGGER = 10
@@ -69,6 +70,7 @@ export function DayViewScreen() {
         $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
         $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
+        <WordLinkNav variant="browse" />
         {/* Header */}
         <XStack
           justifyContent="space-between"

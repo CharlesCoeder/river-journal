@@ -5,6 +5,8 @@ import '../public/hover-transitions.css'
 import type { Metadata } from 'next'
 import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
+import { SkipToContent } from 'app/features/navigation/SkipToContent'
+import { KeyboardShortcuts } from 'app/features/navigation/KeyboardShortcuts'
 import '../public/fonts/fonts.css'
 
 export const metadata: Metadata = {
@@ -19,8 +21,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // You can use `suppressHydrationWarning` to avoid the warning about mismatched content during hydration in dev mode
     <html lang="en" suppressHydrationWarning>
       <body>
+        <SkipToContent />
         <NextTamaguiProvider>
-          <PersistenceGate>{children}</PersistenceGate>
+          <PersistenceGate>
+            <KeyboardShortcuts />
+            <main id="main-content" tabIndex={-1} style={{ display: 'contents' }}>
+              {children}
+            </main>
+          </PersistenceGate>
         </NextTamaguiProvider>
       </body>
     </html>

@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, YStack, XStack, Text, ScrollView, View, Spinner } from '@my/ui'
+import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useRouter } from 'solito/navigation'
 import { useObservable, use$ } from '@legendapp/state/react'
 import { DesignInput } from './components/DesignInput'
@@ -183,6 +184,7 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
             $sm={{ paddingHorizontal: '$6' }}
             $md={{ paddingHorizontal: '$12', paddingTop: '$12' }}
           >
+        <WordLinkNav variant="browse" />
         {/* Cancel button — top right, wider than form */}
         <XStack width="100%" maxWidth={576} justifyContent="flex-end">
           <Text

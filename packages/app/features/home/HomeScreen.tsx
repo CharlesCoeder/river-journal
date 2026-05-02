@@ -2,26 +2,21 @@ import { AnimatePresence, YStack, Text, XStack, ScrollView } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
-import { signOut } from 'app/utils'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 import { getTodayJournalDayString } from 'app/state/date-utils'
+import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 
 export function HomeScreen() {
   const router = useRouter()
-  const isAuthenticated = use$(store$.session.isAuthenticated)
-  const email = use$(store$.session.email)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const todayStats = use$(store$.views.statsByDate(getTodayJournalDayString()))
-  const todayWords = todayStats?.totalWords || 0
-  const hasHistory = todayWords > 0 || (todayStats?.flows?.length || 0) > 0
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -33,62 +28,12 @@ export function HomeScreen() {
     router.push('/journal')
   }
 
-  const handleLogin = () => {
-    router.push('/auth')
-  }
-
-  const handleLogout = useCallback(async () => {
-    setIsLoggingOut(true)
-    try {
-      await signOut()
-    } finally {
-      setIsLoggingOut(false)
-    }
-  }, [])
-
   return (
     <YStack
       flex={1}
       backgroundColor="$background"
       position="relative"
     >
-      {/* Auth indicator — positioned relative to full viewport */}
-      <XStack
-        position="absolute"
-        top={48}
-        right={48}
-        zIndex={10}
-        $sm={{ top: 32, right: 32 }}
-        transition="designEnter"
-        opacity={mounted ? 1 : 0}
-        y={mounted ? 0 : 15}
-      >
-        {isAuthenticated ? (
-          <Text
-            fontFamily="$body"
-            fontSize={10}
-            letterSpacing={3}
-            color="$color7"
-            textTransform="uppercase"
-          >
-            {email}
-          </Text>
-        ) : (
-          <Text
-            fontFamily="$body"
-            fontSize={10}
-            letterSpacing={3}
-            color="$color7"
-            textTransform="uppercase"
-            cursor="pointer"
-            hoverStyle={{ color: '$color' }}
-            onPress={handleLogin}
-          >
-            Log in
-          </Text>
-        )}
-      </XStack>
-
       <ScrollView
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
@@ -151,31 +96,8 @@ export function HomeScreen() {
                   {/* Primary CTA — serif italic underline */}
                   <BeginWritingCTA onPress={handleBeginFlow} />
 
-                  {/* Secondary links */}
-                  <XStack gap="$4">
-                    <Text
-                      fontFamily="$body"
-                      fontSize={14}
-                      color="$color8"
-                      letterSpacing={0.5}
-                      cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
-                      onPress={() => router.push('/day-view')}
-                    >
-                      Past Entries
-                    </Text>
-                    <Text
-                      fontFamily="$body"
-                      fontSize={14}
-                      color="$color8"
-                      letterSpacing={0.5}
-                      cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
-                      onPress={() => router.push('/settings')}
-                    >
-                      Preferences
-                    </Text>
-                  </XStack>
+                  {/* Word-link nav row (web/desktop wide viewports only) */}
+                  <WordLinkNav variant="home" />
                 </XStack>
               </YStack>
             </YStack>
