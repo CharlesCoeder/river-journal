@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AccessibilityInfo, Platform } from 'react-native'
-import { Stack, Text, View } from 'tamagui'
+import { Text, View } from 'tamagui'
 import type { ReactNode } from 'react'
 
 // ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ export function ExpandingLineButton({
   const lineWidth = isActive ? 24 : 16
 
   return (
-    <Stack
+    <View
       tag="button"
       accessibilityRole="button"
       accessibilityLabel={
@@ -108,11 +108,11 @@ export function ExpandingLineButton({
       {/* Expanding underline */}
       <View
         width={lineWidth}
-        height={2}
+        height={1}
         backgroundColor="$color"
         flexShrink={0}
         pointerEvents="none"
-        animation={reduceMotion ? undefined : 'smoothCollapse'}
+        transition={reduceMotion ? undefined : 'smoothCollapse'}
       />
       {/* Label */}
       <Text
@@ -120,7 +120,6 @@ export function ExpandingLineButton({
         fontSize={size === 'cta' ? '$6' : '$4'}
         color="$color"
         letterSpacing={0.5}
-        textTransform="uppercase"
         paddingRight="$2"
         pointerEvents="none"
         numberOfLines={1}
@@ -128,6 +127,6 @@ export function ExpandingLineButton({
       >
         {children}
       </Text>
-    </Stack>
+    </View>
   )
 }
