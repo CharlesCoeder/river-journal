@@ -19,8 +19,8 @@ export function CollectiveEntry({ state = 'dim', onPress }: CollectiveEntryProps
         letterSpacing={2}
         cursor="pointer"
         onPress={onPress}
-        accessibilityLabel="Collective"
-        accessibilityRole="button"
+        aria-label="Collective"
+        role="button"
       >
         COLLECTIVE
       </Text>
@@ -36,8 +36,8 @@ export function CollectiveEntry({ state = 'dim', onPress }: CollectiveEntryProps
       letterSpacing={2}
       cursor="pointer"
       onPress={onPress}
-      accessibilityLabel="Collective, locked"
-      accessibilityRole="button"
+      aria-label="Collective, locked"
+      role="button"
     >
       COLLECTIVE
     </Text>

@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { View, XStack, useMedia, useReducedMotion } from '@my/ui'
+import { View, XStack, Text, useMedia, useReducedMotion } from '@my/ui'
 import { useRouter, usePathname } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -121,7 +121,6 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
     <View
       tag="nav"
       aria-label="Primary navigation"
-      accessibilityLabel="Primary navigation"
       role="navigation"
     >
       <XStack gap="$4">
@@ -137,7 +136,7 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
           const color = active ? '$color' : '$color8'
 
           return (
-            <View
+            <Text
               key={item.key}
               tag="a"
               href={item.route}
@@ -154,7 +153,7 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
               onClick={(e: any) => handlePress(e, item)}
             >
               {resolvedLabel}
-            </View>
+            </Text>
           )
         })}
       </XStack>

@@ -19,19 +19,21 @@ vi.mock('tamagui', () => {
     transition,
     enterStyle,
     exitStyle,
+    role,
     ...rest
   }: any) =>
     ReactModule.createElement(
       'span',
       {
         ...(testID ? { 'data-testid': testID } : {}),
-        ...(accessibilityRole ? { role: accessibilityRole } : {}),
+        ...(accessibilityRole || role ? { role: accessibilityRole ?? role } : {}),
         ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
         // Surface animation/transition props as data attrs so tests can assert absence
         ...(animation !== undefined ? { 'data-animation': String(animation) } : {}),
         ...(transition !== undefined ? { 'data-transition': String(transition) } : {}),
         ...(enterStyle !== undefined ? { 'data-enter-style': 'present' } : {}),
         ...(exitStyle !== undefined ? { 'data-exit-style': 'present' } : {}),
+        ...rest,
       },
       children
     )

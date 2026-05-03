@@ -42,11 +42,10 @@ export function ExpandingLineButton({
   return (
     <View
       tag="button"
-      accessibilityRole="button"
-      accessibilityLabel={
+      role="button"
+      aria-label={
         accessibilityLabel ?? (typeof children === 'string' ? children : undefined)
       }
-      accessibilityState={{ disabled }}
       aria-disabled={disabled || undefined}
       cursor={disabled ? 'not-allowed' : 'pointer'}
       alignItems="center"

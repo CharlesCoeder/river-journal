@@ -117,8 +117,6 @@ export function MenuSurface() {
   return (
     <View
       tag="ul"
-      accessibilityRole="menu"
-      accessibilityLabel="Main menu"
       aria-label="Main menu"
       role="menu"
       paddingVertical="$4"
@@ -178,7 +176,6 @@ function MenuRow({ label, icon, isVisible, reduceMotion, onPress }: MenuRowProps
   return (
     <View
       tag="li"
-      accessibilityRole="menuitem"
       role="menuitem"
       data-hidden={!isVisible ? 'true' : undefined}
       minHeight={44}
@@ -188,7 +185,7 @@ function MenuRow({ label, icon, isVisible, reduceMotion, onPress }: MenuRowProps
     >
       <View
         tag="button"
-        accessibilityRole="button"
+        role="button"
         cursor="pointer"
         minHeight={44}
         paddingVertical="$3"

@@ -15,9 +15,8 @@ export function StreakChip({ dayCount }: StreakChipProps) {
       fontFamily="$body"
       fontSize="$3"
       color="$color8"
-      accessibilityLabel={label}
-      // NOTE: 2-7 may revisit if chip becomes interactive. Changing role retrains screen-reader users — coordinate with a11y review.
-      accessibilityRole="text"
+      aria-label={label}
+      role="text"
     >
       {text}
     </Text>

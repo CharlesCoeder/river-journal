@@ -35,8 +35,8 @@ export function LapsedPrompt() {
       color="$color"
       cursor="pointer"
       onPress={dismiss}
-      accessibilityRole="button"
-      accessibilityLabel="Want to start again? Tap to dismiss."
+      role="button"
+      aria-label="Want to start again? Tap to dismiss."
       testID="lapsed-prompt"
     >
       Want to start again?

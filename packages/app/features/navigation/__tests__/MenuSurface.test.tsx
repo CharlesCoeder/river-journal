@@ -74,6 +74,7 @@ vi.mock('@my/ui', async () => {
       R.createElement(
         tag,
         {
+          ...rest,
           ...(testID ? { 'data-testid': testID } : {}),
           ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
           ...(accessibilityRole ? { role: accessibilityRole } : {}),

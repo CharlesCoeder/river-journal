@@ -154,8 +154,8 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={onPress}
-      accessibilityLabel="Begin writing"
-      accessibilityRole="button"
+      aria-label="Begin writing"
+      role="button"
     >
       Begin writing
     </Text>

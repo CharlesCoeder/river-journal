@@ -16,8 +16,9 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel } = props
+    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } = props
     return {
+      ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
       ...(accessibilityRole ? { role: accessibilityRole } : {}),
       ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
@@ -42,6 +43,7 @@ vi.mock('@my/ui', async () => {
     ReactModule.createElement(
       'span',
       {
+        ...props,
         ...(testID ? { 'data-testid': testID } : {}),
         ...(accessibilityRole ? { role: accessibilityRole } : {}),
         ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),

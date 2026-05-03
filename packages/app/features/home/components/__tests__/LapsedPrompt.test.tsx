@@ -13,6 +13,7 @@ vi.mock('@my/ui', async () => {
     ReactModule.createElement(
       'span',
       {
+        ...props,
         ...(testID ? { 'data-testid': testID } : {}),
         ...(accessibilityRole ? { role: accessibilityRole } : {}),
         ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),

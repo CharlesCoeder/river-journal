@@ -25,6 +25,7 @@ vi.mock('tamagui', () => {
     ReactModule.createElement(
       'span',
       {
+        ...rest,
         ...(testID ? { 'data-testid': testID } : {}),
         ...(accessibilityRole ? { role: accessibilityRole } : {}),
         ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
