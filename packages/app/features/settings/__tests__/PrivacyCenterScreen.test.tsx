@@ -31,7 +31,11 @@ vi.mock('@my/ui', async () => {
   const ScrollView = ({ children, ...props }: any) =>
     ReactModule.createElement('div', mapProps(props), children)
 
+  const AnimatePresence = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
+
   return {
+    AnimatePresence,
     ScrollView,
     Text: passthrough('span'),
     View: passthrough('div'),
@@ -85,27 +89,27 @@ describe('PrivacyCenterScreen', () => {
       expect(screen.getByText('How River Journal handles your data and encryption.')).toBeTruthy()
     })
 
-    it('renders privacy mode cards', () => {
+    it('renders privacy mode cards', async () => {
       render(React.createElement(PrivacyCenterScreen))
 
-      expect(screen.getAllByText('Strict Privacy Mode').length).toBeGreaterThanOrEqual(1)
+      expect((await screen.findAllByText('Strict Privacy Mode')).length).toBeGreaterThanOrEqual(1)
       expect(screen.getAllByText('Cloud Backup Mode').length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText('You hold the only key to unlock your journal.')).toBeTruthy()
       expect(screen.getByText('We securely handle the encryption behind the scenes.')).toBeTruthy()
     })
 
-    it('renders what we can and cannot access section', () => {
+    it('renders what we can and cannot access section', async () => {
       render(React.createElement(PrivacyCenterScreen))
 
-      expect(screen.getByText('What We Can & Cannot Access')).toBeTruthy()
+      expect(await screen.findByText('What We Can & Cannot Access')).toBeTruthy()
       expect(screen.getByText('Local Only (No Sync)')).toBeTruthy()
       expect(screen.getByText('Synced Metadata')).toBeTruthy()
     })
 
-    it('renders retention and deletion section', () => {
+    it('renders retention and deletion section', async () => {
       render(React.createElement(PrivacyCenterScreen))
 
-      expect(screen.getByText('Data Retention & Deletion')).toBeTruthy()
+      expect(await screen.findByText('Data Retention & Deletion')).toBeTruthy()
       expect(screen.getByText('Cloud Data')).toBeTruthy()
       expect(screen.getByText('Account Deletion')).toBeTruthy()
       expect(screen.getByText('Local Data')).toBeTruthy()
