@@ -1,22 +1,33 @@
-import { useEffect, useRef } from 'react'
+import { useHotkeys } from '@tanstack/react-hotkeys'
 import { useRouter, usePathname } from 'solito/navigation'
 import { hidePersistentEditor } from 'app/state/store'
 
 // ---------------------------------------------------------------------------
 // useKeyboardShortcuts
 //
-// Registers a single keydown listener on `document` for web/desktop.
-// Short-circuits on non-web platforms (React Native, etc.).
+// Registers keyboard shortcuts for web/desktop via @tanstack/react-hotkeys.
+// The library handles lifecycle (add/remove event listeners on mount/unmount).
 //
 // Shortcuts:
-//   Cmd/Ctrl+N  — open editor (/journal)
-//   Cmd/Ctrl+,  — open preferences (/settings)
-//   Esc         — exit editor to home (only when on /journal, no modal open)
+//   Cmd/Ctrl+N   — open editor (/journal)
+//   Cmd/Ctrl+,   — open preferences (/settings)
+//   Esc          — exit editor to home (only when on /journal, no modal open)
 //
-// Suppression contract (AC 7):
-//   - event.isComposing or keyCode===229 (IME) → bail
-//   - event.defaultPrevented → bail
-//   - event target is input/textarea/select or isContentEditable → bail
+// Suppression contract:
+//   - ignoreInputs: true (per-definition) — library suppresses input/textarea/select/contenteditable
+//   - isEditableTarget() guard — fallback for bare contenteditable="" (library uses
+//     isContentEditable which some environments return false for the empty-string form)
+//   - isComposing / keyCode===229 (IME) guard — library does NOT suppress IME events
+//   - defaultPrevented guard — check runs before our own preventDefault call to
+//     detect events pre-prevented by external code
+//
+// Note on Mod: 'Mod+N' resolves to a single platform modifier (Meta on mac,
+// Control elsewhere). Since both metaKey and ctrlKey must work cross-platform,
+// we register Meta+N / Control+N (and Meta+, / Control+,) explicitly.
+//
+// Note on preventDefault: called manually inside callbacks (not via library
+// option) so the `if (event.defaultPrevented) return` guard correctly detects
+// events pre-prevented by external code before our call.
 // ---------------------------------------------------------------------------
 
 function isEditableTarget(e: KeyboardEvent): boolean {
@@ -27,7 +38,7 @@ function isEditableTarget(e: KeyboardEvent): boolean {
   const editableTags = new Set(['input', 'textarea', 'select'])
   // isContentEditable handles contenteditable="true" and inherited cases.
   // Also check for the empty-string form (contenteditable="") which the HTML
-  // spec treats as equivalent to "true" but some test environments do not.
+  // spec treats as equivalent to "true" but some environments do not.
   const ce = (target as HTMLElement).getAttribute?.('contenteditable')
   const isContentEditable =
     !!(target as HTMLElement).isContentEditable || ce === '' || ce === 'true'
@@ -38,62 +49,55 @@ export function useKeyboardShortcuts(): void {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Use a ref to avoid stale closure on pathname
-  const pathnameRef = useRef(pathname)
-  useEffect(() => {
-    pathnameRef.current = pathname
-  }, [pathname])
+  const openEditorCallback = (event: KeyboardEvent) => {
+    if (event.isComposing || event.keyCode === 229) return // IME guard
+    if (event.defaultPrevented) return // pre-prevented by external code
+    if (isEditableTarget(event)) return // fallback editable guard
+    event.preventDefault() // block browser default (e.g. "New Window")
+    if (pathname !== '/journal') router.push('/journal')
+  }
 
-  useEffect(() => {
-    // Short-circuit on non-web environments
-    if (typeof window === 'undefined' || typeof document === 'undefined') return
+  const openSettingsCallback = (event: KeyboardEvent) => {
+    if (event.isComposing || event.keyCode === 229) return
+    if (event.defaultPrevented) return
+    if (isEditableTarget(event)) return
+    event.preventDefault()
+    if (pathname !== '/settings') router.push('/settings')
+  }
 
-    function handleKeyDown(e: KeyboardEvent) {
-      // Suppression guards (AC 7)
-      if (e.isComposing || e.keyCode === 229) return
-      if (e.defaultPrevented) return
-      if (isEditableTarget(e)) return
+  const exitEditorCallback = (event: KeyboardEvent) => {
+    if (event.isComposing || event.keyCode === 229) return
+    if (event.defaultPrevented) return
+    if (isEditableTarget(event)) return
+    if (pathname !== '/journal') return
+    const openDialog = document.querySelector('[role="dialog"][data-state="open"]')
+    if (openDialog) return // defer to Dialog's own Esc (modal-open guard)
+    hidePersistentEditor()
+    router.push('/')
+    // Do NOT call preventDefault for Esc — Dialog primitives need it unhandled
+  }
 
-      const currentPath = pathnameRef.current
+  const modNOptions = { ignoreInputs: true, preventDefault: false } as const
+  const modCommaOptions = { ignoreInputs: true, preventDefault: false } as const
+  const escOptions = { ignoreInputs: true, preventDefault: false } as const
 
-      // Cmd/Ctrl+N — open editor
-      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        if (currentPath !== '/journal') {
-          router.push('/journal')
-        }
-        return
-      }
-
-      // Cmd/Ctrl+, — open preferences
-      if (e.key === ',' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        if (currentPath !== '/settings') {
-          router.push('/settings')
-        }
-        return
-      }
-
-      // Esc — exit editor to home (only on /journal, no modal open)
-      if (e.key === 'Escape') {
-        if (currentPath !== '/journal') return
-
-        // Check for open modal (AC 8) — defer to Tamagui/Radix if dialog is open
-        const openDialog = document.querySelector('[role="dialog"][data-state="open"]')
-        if (openDialog) return
-
-        // Do NOT call preventDefault for Esc — let Dialog primitives handle
-        hidePersistentEditor()
-        router.push('/')
-        return
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [router])
+  useHotkeys(
+    [
+      // Register both Meta+N (macOS Cmd+N) and Control+N (Windows/Linux Ctrl+N)
+      // so the shortcut works regardless of the detected platform.
+      { hotkey: 'Meta+N', callback: openEditorCallback, options: modNOptions },
+      { hotkey: 'Control+N', callback: openEditorCallback, options: modNOptions },
+      // Register both Meta+, (macOS Cmd+,) and Control+, (Windows/Linux Ctrl+,)
+      { hotkey: 'Meta+,', callback: openSettingsCallback, options: modCommaOptions },
+      { hotkey: 'Control+,', callback: openSettingsCallback, options: modCommaOptions },
+      // Escape
+      { hotkey: 'Escape', callback: exitEditorCallback, options: escOptions },
+    ],
+    {
+      stopPropagation: false,
+      enabled: typeof window !== 'undefined',
+    },
+  )
 }
 
 export default useKeyboardShortcuts

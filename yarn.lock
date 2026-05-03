@@ -7659,6 +7659,48 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/hotkeys@npm:0.8.0":
+  version: 0.8.0
+  resolution: "@tanstack/hotkeys@npm:0.8.0"
+  dependencies:
+    "@tanstack/store": "npm:^0.11.0"
+  checksum: 10/f3177dfae9abd72dc8f2a7a646b8739e070ad6c422f20113cebee4e69950ca1fd8f4e8aeab000e5fcf3b3d6fce5054f4bc7e79031a72a9c63ea3e3e6e4583331
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-hotkeys@npm:0.10.0":
+  version: 0.10.0
+  resolution: "@tanstack/react-hotkeys@npm:0.10.0"
+  dependencies:
+    "@tanstack/hotkeys": "npm:0.8.0"
+    "@tanstack/react-store": "npm:^0.11.0"
+  peerDependencies:
+    react: ">=16.8"
+    react-dom: ">=16.8"
+  checksum: 10/7a78ed107d0f3faf149be43f1f7baa0957441a5aa1cbc495ddbdf05309cf617aaf71bd0f21e1167944621a9425e400369e466415151c3584f9b100dee8b178dd
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-store@npm:^0.11.0":
+  version: 0.11.0
+  resolution: "@tanstack/react-store@npm:0.11.0"
+  dependencies:
+    "@tanstack/store": "npm:0.11.0"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10/2b73cc857b11f790bcb68f6230053a601bf426f3a590a0d73e4d2a096ce750246e04d49ecfb7e756f1a20e8337eb40ecfb90c1bcc20427df199a2f3eda366b91
+  languageName: node
+  linkType: hard
+
+"@tanstack/store@npm:0.11.0, @tanstack/store@npm:^0.11.0":
+  version: 0.11.0
+  resolution: "@tanstack/store@npm:0.11.0"
+  checksum: 10/f83291e570f7a66768b77aa9c1c30606c78640da8426c7d1cae4dc6454e790885b362243547c09a543e88dc0581d6622ec3c5ee08a33682779ea066492949573
+  languageName: node
+  linkType: hard
+
 "@tauri-apps/api@npm:^2.5.0":
   version: 2.10.1
   resolution: "@tauri-apps/api@npm:2.10.1"
@@ -9167,6 +9209,7 @@ __metadata:
     "@tamagui/lucide-icons": "npm:2.0.0-rc.16"
     "@tamagui/shorthands": "npm:2.0.0-rc.16"
     "@tamagui/themes": "npm:2.0.0-rc.16"
+    "@tanstack/react-hotkeys": "npm:0.10.0"
     "@tauri-apps/api": "npm:^2.5.0"
     "@types/react": "npm:~19.0.10"
     "@types/react-native": "npm:^0.73.0"
@@ -20803,6 +20846,15 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
   checksum: 10/ddae7c4572511f7f641d6977bd0725340aa7dbeda8250418b54c1a57ec285083d96cf50d1a1acbd6cf729f7a87071b2302c6fbd29310432bf1b21a961a313279
+  languageName: node
+  linkType: hard
+
+"use-sync-external-store@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "use-sync-external-store@npm:1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10/b40ad2847ba220695bff2d4ba4f4d60391c0fb4fb012faa7a4c18eb38b69181936f5edc55a522c4d20a788d1a879b73c3810952c9d0fd128d01cb3f22042c09e
   languageName: node
   linkType: hard
 

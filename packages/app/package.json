@@ -20,6 +20,7 @@
     "@tamagui/lucide-icons": "2.0.0-rc.16",
     "@tamagui/shorthands": "2.0.0-rc.16",
     "@tamagui/themes": "2.0.0-rc.16",
+    "@tanstack/react-hotkeys": "0.10.0",
     "@tauri-apps/api": "^2.5.0",
     "@uiw/react-color-sketch": "^2.9.6",
     "burnt": "^0.12.2",
