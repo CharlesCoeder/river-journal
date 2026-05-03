@@ -21,7 +21,7 @@
 
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ComponentType } from 'react'
 
 // ---------------------------------------------------------------------------
@@ -284,7 +284,9 @@ describe('plain click calls preventDefault then router.push (AC 17)', () => {
     renderNav('home')
     const link = screen.getByText(/past entries/i)
     const mockPreventDefault = vi.fn()
-    fireEvent.click(link, { preventDefault: mockPreventDefault })
+    const event = createEvent.click(link)
+    event.preventDefault = mockPreventDefault
+    fireEvent(link, event)
     await waitFor(() => expect(__pushSpy).toHaveBeenCalledWith('/day-view'))
     expect(mockPreventDefault).toHaveBeenCalled()
   })

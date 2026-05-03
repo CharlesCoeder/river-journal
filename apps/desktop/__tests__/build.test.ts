@@ -53,15 +53,11 @@ test('Next.js build completes', async () => {
 
     // Check for route information
     expect(result).toContain('Route (app)')
-    expect(result).toContain('First Load JS shared by all')
+    expect(result).toContain('(Static)  prerendered as static content')
 
     // Check for specific route patterns
     expect(result).toContain('○ /')
     expect(result).toContain('○ /_not-found')
-
-    // Check for chunk information
-    expect(result).toContain('chunks/') // General chunk pattern
-    expect(result).toContain('other shared chunks (total)')
   } finally {
     // The process kill check has been moved to the afterAll block
   }

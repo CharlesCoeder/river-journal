@@ -442,7 +442,7 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
 const openEncryptionSetup = () => {
   batch(() => {
     encryptionSetup$.isOpen.set(true)
-    encryptionSetup$.selectedMode.set(null)
+    encryptionSetup$.selectedMode.set(DEFAULT_MODE)
     encryptionSetup$.step.set('choice')
     encryptionSetup$.isModeLocked.set(false)
     encryptionSetup$.error.set(null)
@@ -711,6 +711,7 @@ export const submitE2EPassword = async (
         encryptionSetup$.error.set(null)
         store$.session.syncEnabled.set(true)
         isEncryptionReadyForSync$.set(true)
+        trustBrowserPrompt$.isVisible.set(true)
       })
     } else {
       batch(() => {
