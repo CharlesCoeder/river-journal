@@ -48,6 +48,14 @@ export const FONT_PAIRING_IDS = ['outfit-newsreader', 'lato-lora', 'inter-source
 export type FontPairingId = (typeof FONT_PAIRING_IDS)[number]
 export const DEFAULT_FONT_PAIRING: FontPairingId = 'outfit-newsreader'
 
+export type HotkeyActionId = 'newEntry' | 'openSettings' | 'exitEditor'
+
+export interface HotkeyOverrides {
+  newEntry?: string // absent = use default 'Mod+N'
+  openSettings?: string // absent = use default 'Mod+,'
+  exitEditor?: string // absent = use default 'Escape'
+}
+
 /**
  * Maps each pairing to the journal (content) font-family strings
  * used by the Lexical editor's inline styles.
@@ -86,6 +94,7 @@ export interface UserProfile {
   themeName: ThemeName | 'custom'
   customTheme: CustomThemeDef | null
   fontPairing: FontPairingId
+  hotkeyOverrides: HotkeyOverrides
 
   sync: {
     word_goal: boolean

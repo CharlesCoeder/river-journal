@@ -17,6 +17,7 @@ import type {
   ThemeName,
   CustomThemeDef,
   FontPairingId,
+  HotkeyActionId,
 } from './types'
 import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES, FONT_PAIRING_IDS, DEFAULT_FONT_PAIRING } from './types'
 import { flows$ } from './flows'
@@ -644,6 +645,7 @@ const ensureProfile = () => {
       themeName: DEFAULT_THEME,
       customTheme: null,
       fontPairing: DEFAULT_FONT_PAIRING,
+      hotkeyOverrides: {},
       sync: {
         word_goal: true,
         themeName: true,
@@ -715,6 +717,32 @@ export const setFontPairing = (id: FontPairingId) => {
 export const setWordGoal = (goal: number) => {
   ensureProfile()
   store$.profile.word_goal.set(goal)
+}
+
+// -----------------------------------------------------------------
+// Hotkey override actions
+// -----------------------------------------------------------------
+
+/**
+ * Ensures store$.profile.hotkeyOverrides is an object (not undefined).
+ * Profiles persisted before the customizable-shortcuts feature lack the field;
+ * back-fill lazily so writes never dereference undefined.
+ */
+const ensureHotkeyOverridesField = () => {
+  ensureProfile()
+  if (!store$.profile.hotkeyOverrides.peek()) {
+    store$.profile.hotkeyOverrides.set({})
+  }
+}
+
+export const setHotkeyOverride = (id: HotkeyActionId, hotkey: string): void => {
+  ensureHotkeyOverridesField()
+  store$.profile.hotkeyOverrides[id].set(hotkey)
+}
+
+export const resetHotkeyOverride = (id: HotkeyActionId): void => {
+  ensureHotkeyOverridesField()
+  store$.profile.hotkeyOverrides[id].delete()
 }
 
 // =================================================================

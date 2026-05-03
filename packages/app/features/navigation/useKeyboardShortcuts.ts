@@ -1,6 +1,11 @@
 import { useHotkeys } from '@tanstack/react-hotkeys'
 import { useRouter, usePathname } from 'solito/navigation'
-import { hidePersistentEditor } from 'app/state/store'
+import { use$ } from '@legendapp/state/react'
+import { hidePersistentEditor, store$ } from 'app/state/store'
+import type { HotkeyActionId } from 'app/state/types'
+import { DEFAULT_HOTKEYS, expandHotkey } from './hotkeyDefaults'
+
+export { DEFAULT_HOTKEYS, expandHotkey }
 
 // ---------------------------------------------------------------------------
 // useKeyboardShortcuts
@@ -46,6 +51,14 @@ function isEditableTarget(e: KeyboardEvent): boolean {
 }
 
 export function useKeyboardShortcuts(): void {
+  const profile = use$(store$.profile) as
+    | { hotkeyOverrides?: Partial<Record<HotkeyActionId, string>> }
+    | null
+    | undefined
+  const newEntryKey = profile?.hotkeyOverrides?.newEntry ?? DEFAULT_HOTKEYS.newEntry
+  const openSettingsKey = profile?.hotkeyOverrides?.openSettings ?? DEFAULT_HOTKEYS.openSettings
+  const exitEditorKey = profile?.hotkeyOverrides?.exitEditor ?? DEFAULT_HOTKEYS.exitEditor
+
   const router = useRouter()
   const pathname = usePathname()
 
@@ -83,15 +96,21 @@ export function useKeyboardShortcuts(): void {
 
   useHotkeys(
     [
-      // Register both Meta+N (macOS Cmd+N) and Control+N (Windows/Linux Ctrl+N)
-      // so the shortcut works regardless of the detected platform.
-      { hotkey: 'Meta+N', callback: openEditorCallback, options: modNOptions },
-      { hotkey: 'Control+N', callback: openEditorCallback, options: modNOptions },
-      // Register both Meta+, (macOS Cmd+,) and Control+, (Windows/Linux Ctrl+,)
-      { hotkey: 'Meta+,', callback: openSettingsCallback, options: modCommaOptions },
-      { hotkey: 'Control+,', callback: openSettingsCallback, options: modCommaOptions },
-      // Escape
-      { hotkey: 'Escape', callback: exitEditorCallback, options: escOptions },
+      ...expandHotkey(newEntryKey).map((hotkey) => ({
+        hotkey: hotkey as Parameters<typeof useHotkeys>[0][number]['hotkey'],
+        callback: openEditorCallback,
+        options: modNOptions,
+      })),
+      ...expandHotkey(openSettingsKey).map((hotkey) => ({
+        hotkey: hotkey as Parameters<typeof useHotkeys>[0][number]['hotkey'],
+        callback: openSettingsCallback,
+        options: modCommaOptions,
+      })),
+      ...expandHotkey(exitEditorKey).map((hotkey) => ({
+        hotkey: hotkey as Parameters<typeof useHotkeys>[0][number]['hotkey'],
+        callback: exitEditorCallback,
+        options: escOptions,
+      })),
     ],
     {
       stopPropagation: false,

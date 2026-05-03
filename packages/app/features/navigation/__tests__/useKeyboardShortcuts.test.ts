@@ -53,9 +53,14 @@ vi.mock('solito/navigation', () => ({
 // ---------------------------------------------------------------------------
 const mockHidePersistentEditor = vi.fn()
 
+vi.mock('@legendapp/state/react', () => ({
+  use$: (obs$: any) => obs$, // identity
+}))
+
 vi.mock('app/state/store', () => ({
   store$: {
     session: { isAuthenticated: { get: () => false } },
+    profile: null,
   },
   hidePersistentEditor: (...args: unknown[]) => mockHidePersistentEditor(...args),
 }))

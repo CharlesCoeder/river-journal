@@ -14,6 +14,7 @@ import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 import { ThemePicker } from './components/ThemePicker'
 import { FontPicker } from './components/FontPicker'
 import { ExportJournal } from './components/ExportJournal'
+import { KeyboardShortcutsSection } from './components/KeyboardShortcutsSection'
 
 // ---------------------------------------------------------------------------
 // Privacy Tier — stacked vertical list matching design
@@ -86,7 +87,7 @@ function SectionHeader({ children }: { children: string }) {
 // ---------------------------------------------------------------------------
 
 const STAGGER_MS = 100
-const SECTION_COUNT = 6
+const SECTION_COUNT = 7
 
 export function SettingsScreen() {
   const router = useRouter()
@@ -269,9 +270,17 @@ export function SettingsScreen() {
               </YStack>
             )}
 
-            {/* Section 5: Linked Accounts (authenticated) */}
-            {visibleCount >= 5 && isAuthenticated && (
+            {/* Section 5: Keyboard Shortcuts */}
+            {visibleCount >= 5 && (
               <YStack key="section-5" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <SectionHeader>Keyboard Shortcuts</SectionHeader>
+                <KeyboardShortcutsSection />
+              </YStack>
+            )}
+
+            {/* Section 6: Linked Accounts (authenticated) */}
+            {visibleCount >= 6 && isAuthenticated && (
+              <YStack key="section-6" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
                 <LinkedProviders />
 
                 {/* Log Out */}
@@ -293,10 +302,10 @@ export function SettingsScreen() {
               </YStack>
             )}
 
-            {/* Section 6: Footer */}
-            {visibleCount >= 6 && (
+            {/* Section 7: Footer */}
+            {visibleCount >= 7 && (
               <XStack
-                key="section-6"
+                key="section-7"
                 transition="designEnter"
                 enterStyle={{ opacity: 0, y: 10 }}
                 opacity={1}
