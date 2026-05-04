@@ -43,6 +43,7 @@ import {
   setInstantWordCountFromText,
   clearActiveFlow,
   discardActiveFlowSession,
+  markUnlockSurfaced,
 } from '../store'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -295,5 +296,70 @@ describe('T8: threshold-crossing and count update happen in the same synchronous
     // If the threshold were recorded asynchronously, snapshotCrossing would be null here
     expect(snapshotCount).toBe(500)
     expect(snapshotCrossing).not.toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story 2-5: surfacedUnlockMilestones — S1-S4 (AC 19)
+// RED-PHASE TDD: all tests fail before surfacedUnlockMilestones field and
+// markUnlockSurfaced helper are added to store.ts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {
+  // Reset the set before each test in this group for isolation.
+  // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
+  beforeEach(() => {
+    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
+    ephemeral$.surfacedUnlockMilestones.set(new Set<number>())
+  })
+
+  // S1 — initial value is an empty Set and markUnlockSurfaced is exported from store
+  // This test verifies two things:
+  //   (a) markUnlockSurfaced is a callable function (fails pre-implementation)
+  //   (b) ephemeral$.surfacedUnlockMilestones starts as an empty Set (not undefined)
+  it('S1: ephemeral$.surfacedUnlockMilestones initial value is an empty Set and markUnlockSurfaced is a function', () => {
+    // Guard: markUnlockSurfaced must be a function — this fails pre-implementation
+    // because the import resolves to undefined when the export doesn't exist.
+    expect(typeof markUnlockSurfaced).toBe('function')
+    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
+    const initial = ephemeral$.surfacedUnlockMilestones.peek()
+    expect(initial).toBeInstanceOf(Set)
+    expect(initial.size).toBe(0)
+  })
+
+  // S2 — markUnlockSurfaced(7) adds 7 to the set
+  it('S2: markUnlockSurfaced(7) adds 7 to the surfacedUnlockMilestones set', () => {
+    markUnlockSurfaced(7)
+    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
+    const set = ephemeral$.surfacedUnlockMilestones.peek()
+    expect(set.has(7)).toBe(true)
+  })
+
+  // S3 — Idempotency: calling markUnlockSurfaced(7) twice does not thrash the observable
+  it('S3: calling markUnlockSurfaced(7) twice is idempotent — same Set ref, size stays 1', () => {
+    markUnlockSurfaced(7)
+    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
+    const refAfterFirst = ephemeral$.surfacedUnlockMilestones.peek()
+
+    markUnlockSurfaced(7)
+    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
+    const refAfterSecond = ephemeral$.surfacedUnlockMilestones.peek()
+
+    // The guard `if (current.has(milestone)) return` must prevent a second set() call.
+    // Set reference must be UNCHANGED — no observable thrash on duplicate calls.
+    expect(refAfterSecond).toBe(refAfterFirst)
+    expect(refAfterSecond.size).toBe(1)
+    expect(refAfterSecond.has(7)).toBe(true)
+  })
+
+  // S4 — Multiple milestones accumulate
+  it('S4: multiple calls to markUnlockSurfaced accumulate distinct milestones', () => {
+    markUnlockSurfaced(7)
+    markUnlockSurfaced(30)
+    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
+    const set = ephemeral$.surfacedUnlockMilestones.peek()
+    expect(set.has(7)).toBe(true)
+    expect(set.has(30)).toBe(true)
+    expect(set.size).toBe(2)
   })
 })

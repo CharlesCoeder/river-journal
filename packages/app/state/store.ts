@@ -110,6 +110,29 @@ export const ephemeral$ = observable<{
    * field). This field's job is per-active-flow signalling only.
    */
   thresholdCrossing: ThresholdCrossing | null
+  /**
+   * Set of unlock-token milestones the user has already seen surfaced in a
+   * CelebrationScreen handoff variant. Prevents the same unlock from re-appearing
+   * on subsequent flow exits within the same app session. Stored in ephemeral$
+   * (per-session, NOT persisted) for this story; Story 2.9 migrates this to
+   * `users.preferences.unlockedThemes` (the persistent record of which themes
+   * the user has SPENT their tokens on — semantically different but covers
+   * the "don't re-prompt" need across sessions because once a token is spent,
+   * `unlockTokensEarned` minus `users.preferences.unlockedThemes.length`
+   * yields the count of *unspent, un-surfaced* tokens).
+   *
+   * INTERIM SEMANTIC: a milestone number is added to this set when the
+   * UnlockNotification is rendered for it. On app restart, the set
+   * resets — meaning a user who earns a token, sees the notification, then
+   * cold-restarts before spending it WILL see it again on their next flow.
+   * Acceptable interim because (a) Story 2.9 is the next epic story, and
+   * (b) re-prompting an unspent token is more correct than swallowing it.
+   *
+   * TODO(Story 2.9): migrate to `users.preferences.unlockedThemes` for
+   * cross-session persistence. The semantics shift from "surfaced" to "spent"
+   * but the "don't re-prompt" invariant is preserved.
+   */
+  surfacedUnlockMilestones: Set<number>
 }>({
   persistentEditor: {
     isVisible: false,
@@ -122,6 +145,7 @@ export const ephemeral$ = observable<{
   instantWordCount: 0,
   keyboardHeight: 0,
   thresholdCrossing: null,
+  surfacedUnlockMilestones: new Set<number>(),
 })
 
 // =================================================================
@@ -539,6 +563,24 @@ export const clearActiveFlow = (): void => {
   store$.activeFlow.set(null)
   ephemeral$.instantWordCount.set(0)
   ephemeral$.thresholdCrossing.set(null)
+}
+
+/**
+ * Records a milestone as "surfaced" in the CelebrationScreen handoff variant.
+ * Calling multiple times with the same milestone is a no-op (idempotent).
+ *
+ * Replace the Set rather than mutating in place — Legend-State's change
+ * detection relies on referential identity for non-primitive values.
+ *
+ * NOTE: `surfacedUnlockMilestones` is ephemeral (per-session). Do NOT call
+ * this from clearActiveFlow, discardActiveFlowSession, or clearUserData.
+ */
+export const markUnlockSurfaced = (milestone: number): void => {
+  const current = ephemeral$.surfacedUnlockMilestones.peek()
+  if (current.has(milestone)) return
+  const next = new Set(current)
+  next.add(milestone)
+  ephemeral$.surfacedUnlockMilestones.set(next)
 }
 
 export const discardActiveFlowSession = (): void => {
