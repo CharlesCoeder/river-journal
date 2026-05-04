@@ -7,6 +7,7 @@ import {
   View,
   isWeb,
   ExpandingLineButton,
+  WordCounter,
 } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
@@ -140,14 +141,7 @@ export function JournalScreen() {
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Text
-                  fontFamily="$body"
-                  fontSize={14}
-                  color="$color8"
-                  letterSpacing={0.5}
-                >
-                  {wordCount} {wordCount === 1 ? 'word' : 'words'}
-                </Text>
+                <WordCounter count={wordCount} />
 
                 <ExpandingLineButton
                   size="default"

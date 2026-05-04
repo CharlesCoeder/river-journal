@@ -73,6 +73,11 @@ export { flows$, entries$, graceDays$ }
 
 import type { PersistentEditorState } from './types'
 
+export interface ThresholdCrossing {
+  crossedAt: string
+  wordCountAtCrossing: number
+}
+
 export const ephemeral$ = observable<{
   persistentEditor: PersistentEditorState
   /**
@@ -84,6 +89,27 @@ export const ephemeral$ = observable<{
   instantWordCount: number
   /** Current keyboard height from screen bottom (native only, 0 when closed). */
   keyboardHeight: number
+  /**
+   * Records the FIRST time the active flow's word count crossed 500 in the
+   * current writing day. Set when the count transitions from < 500 to ≥ 500
+   * within an active flow. Cleared when the active flow is cleared
+   * (clearActiveFlow / discardActiveFlowSession). Read by Story 2.5's
+   * CelebrationModal to choose handoff vs quieter variant, and by Epic 3's
+   * Collective lit-state. Story 2.4 owns ONLY the write side; consumers land
+   * in subsequent stories.
+   *
+   * Shape: { crossedAt: ISO string, wordCountAtCrossing: number } | null
+   * - null: not crossed during the current active flow
+   * - non-null: crossed; downstream consumers can read the timestamp/count
+   *
+   * NOTE: this is a writing-DAY signal, not a single-flow signal. If the user
+   * starts a second flow after celebrating the first, `thresholdCrossing` is
+   * cleared by the active-flow lifecycle helpers; downstream day-level "first
+   * 500-crossing today" gating is computed by the streak/flow data model
+   * (Story 2.5 will derive it from flows on today's entry, NOT from this
+   * field). This field's job is per-active-flow signalling only.
+   */
+  thresholdCrossing: ThresholdCrossing | null
 }>({
   persistentEditor: {
     isVisible: false,
@@ -95,6 +121,7 @@ export const ephemeral$ = observable<{
   },
   instantWordCount: 0,
   keyboardHeight: 0,
+  thresholdCrossing: null,
 })
 
 // =================================================================
@@ -511,6 +538,7 @@ export const clearLastSavedFlow = (): void => {
 export const clearActiveFlow = (): void => {
   store$.activeFlow.set(null)
   ephemeral$.instantWordCount.set(0)
+  ephemeral$.thresholdCrossing.set(null)
 }
 
 export const discardActiveFlowSession = (): void => {
@@ -519,6 +547,7 @@ export const discardActiveFlowSession = (): void => {
     store$.lastUpdated.set(new Date().toISOString())
   })
   ephemeral$.instantWordCount.set(0)
+  ephemeral$.thresholdCrossing.set(null)
 }
 
 /**
@@ -578,6 +607,25 @@ export const debugActiveFlow = () => {
 // -----------------------------------------------------------------
 
 /**
+ * Records the threshold-crossing event when the active flow's word count
+ * crosses from < 500 to >= 500 for the FIRST time during this active flow.
+ * Idempotent: subsequent calls after the threshold is crossed are no-ops
+ * (until the active flow is cleared, which resets thresholdCrossing to null).
+ *
+ * Called from the same Lexical text-content listener that sets
+ * ephemeral$.instantWordCount, AFTER the count is updated. The threshold
+ * registration occurs within the same synchronous tick as the count update.
+ */
+export const recordThresholdCrossingIfNeeded = (newCount: number): void => {
+  if (newCount < 500) return
+  if (ephemeral$.thresholdCrossing.peek() !== null) return // already crossed
+  ephemeral$.thresholdCrossing.set({
+    crossedAt: new Date().toISOString(),
+    wordCountAtCrossing: newCount,
+  })
+}
+
+/**
  * Updates the instant word count from plain text content.
  * Called on every keystroke (no debounce) via Lexical's
  * registerTextContentListener, so the bottom bar appears and updates
@@ -586,7 +634,9 @@ export const debugActiveFlow = () => {
  */
 export const setInstantWordCountFromText = (text: string): void => {
   const trimmed = text.trim()
-  ephemeral$.instantWordCount.set(trimmed ? trimmed.split(/\s+/).length : 0)
+  const count = trimmed ? trimmed.split(/\s+/).length : 0
+  ephemeral$.instantWordCount.set(count)
+  recordThresholdCrossingIfNeeded(count)
 }
 
 // -----------------------------------------------------------------

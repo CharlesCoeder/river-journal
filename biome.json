@@ -71,7 +71,8 @@
         "useMediaCaption": "off",
         "noHeaderScope": "off",
         "useAltText": "off",
-        "useButtonType": "off"
+        "useButtonType": "off",
+        "useSemanticElements": "off"
       }
     }
   },

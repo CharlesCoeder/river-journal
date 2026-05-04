@@ -3,7 +3,7 @@ import { useTheme } from '@my/ui';
 import { use$ } from '@legendapp/state/react';
 import { useEffect, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ephemeral$, store$, updateActiveFlowContent } from 'app/state/store';
+import { ephemeral$, store$, updateActiveFlowContent, recordThresholdCrossingIfNeeded } from 'app/state/store';
 import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from 'app/state/types';
 import { useDebouncedCallback } from 'use-debounce';
 import LexicalEditor from './Lexical/LexicalEditor';
@@ -62,6 +62,7 @@ export const PersistentEditor = () => {
   // bypassing both the 300ms debounce and full-content bridge serialization.
   const handleWordCountChange = (count: number) => {
     ephemeral$.instantWordCount.set(count);
+    recordThresholdCrossingIfNeeded(count);
   };
 
   // Cast to universal props to handle platform differences
