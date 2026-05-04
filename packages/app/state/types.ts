@@ -6,6 +6,8 @@
  * into a unified `AppState` interface.
  */
 
+import type { StreakState } from './streak'
+
 // =================================================================
 // 1. CORE INTERFACES
 // =================================================================
@@ -160,6 +162,7 @@ export interface AppState {
     flowsByEntryId: (entryId: string) => Flow[]
     entriesByMonth: (month: string) => DailyEntryView[]
     entriesByYear: (year: string) => DailyEntryView[]
+    streak?: () => StreakState // NEW — reactive computed streak view (attached by streak.ts side-effect)
   }
 }
 

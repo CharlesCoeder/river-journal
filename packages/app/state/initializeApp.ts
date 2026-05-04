@@ -11,6 +11,7 @@ import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$ } from './
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 import { lapsed$, recordSessionOpen } from './lapsed'
+import './streak' // attaches store$.views.streak side-effect
 
 export const appStatus$ = observable({
   isPersistenceLoaded: false,
@@ -80,7 +81,11 @@ function setupSyncReadinessGate() {
 
       if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
-        console.log('🔗 [syncGate] orphans pending consent', { flowCount, entryCount, userId: userId.slice(0, 8) })
+        console.log('🔗 [syncGate] orphans pending consent', {
+          flowCount,
+          entryCount,
+          userId: userId.slice(0, 8),
+        })
       }
     } else {
       // No undecided orphans — open sync gate immediately
