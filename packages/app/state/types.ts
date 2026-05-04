@@ -188,6 +188,24 @@ export interface Entry {
 }
 
 /**
+ * A grace day earned by hitting a streak milestone.
+ * Grace days can be spent to protect a streak on a missed day.
+ *
+ * Note: `userId` is camelCase here (unlike `Flow.user_id` which stays snake_case
+ * for orphan-adoption compatibility). Grace days have no anonymous-origin lifecycle —
+ * they are always created for an authenticated user — so there is no need for the
+ * snake_case convention that signals "this field is written before login and adopted later".
+ * If a future story introduces orphan grace-day adoption, switch to snake_case at that point.
+ */
+export interface GraceDay {
+  id: string
+  userId: string
+  earnedAt: string
+  earnedForMilestone: number
+  usedForDate: string | null
+}
+
+/**
  * A computed, UI-friendly structure representing a fully populated day's entry.
  */
 export interface DailyEntryView {

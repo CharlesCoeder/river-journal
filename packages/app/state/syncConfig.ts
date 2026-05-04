@@ -10,11 +10,31 @@
  * convert to/from snake_case for the Supabase API.
  */
 
+/**
+ * PLAINTEXT vs ENCRYPTED tables (architecture D2):
+ *
+ * ENCRYPTED (encryption transforms run at the sync boundary):
+ *   - flows.content  (only encrypted column in the system)
+ *
+ * PLAINTEXT, sync-via-syncedSupabase, NO encryption transforms:
+ *   - daily_entries
+ *   - user_grace_days
+ *   - (future v2 plaintext-synced tables: user_push_tokens, etc.)
+ *
+ * Plaintext tables use syncedSupabase() purely for the convenience of
+ * Legend-State observable + offline replay + RLS scoping. Their
+ * transform.save/load only convert camelCase ↔ snake_case (architecture G3).
+ *
+ * Collective tables (collective_posts, collective_reactions, collective_reports,
+ * etc.) are PLAINTEXT BUT NOT in this list — they are accessed via TanStack
+ * Query under state/collective/**, NOT via syncedSupabase (architecture D7).
+ */
+
 import { observable } from '@legendapp/state'
 import { configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase'
 import { supabase } from '../utils/supabase'
 import { persistPlugin } from './persistConfig'
-import type { Flow, Entry } from './types'
+import type { Flow, Entry, GraceDay } from './types'
 import type { EncryptionMode } from '../types/index'
 import { v4 as uuidv4 } from 'uuid'
 import {
@@ -352,5 +372,47 @@ export function localFlowToDb(value: Partial<Flow> & { id?: string }): Record<st
   // updated_at handled by DB trigger
   // local_session_id is local-only
   // user_id is not a flows column (association through daily_entries)
+  return result
+}
+
+// =================================================================
+// TRANSFORM HELPERS: user_grace_days (PLAINTEXT — no encryption)
+// =================================================================
+
+interface DbGraceDayRow {
+  id: string
+  user_id: string
+  earned_at: string
+  earned_for_milestone: number
+  used_for_date: string | null
+  created_at: string
+  updated_at: string
+  // Optional: the load transform tolerates rows where the column was projected
+  // away by the query (e.g., select without is_deleted). This is the only
+  // intentional asymmetry vs the SQL CREATE TABLE and database.ts Row shapes.
+  is_deleted?: boolean
+}
+
+export function dbGraceDayToLocal(row: DbGraceDayRow): GraceDay {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    earnedAt: row.earned_at,
+    earnedForMilestone: row.earned_for_milestone,
+    usedForDate: row.used_for_date,
+  }
+}
+
+export function localGraceDayToDb(value: Partial<GraceDay> & { id?: string }): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  if (value.id !== undefined) result.id = value.id
+  if (value.userId !== undefined) result.user_id = value.userId
+  if (value.earnedAt !== undefined) result.earned_at = value.earnedAt
+  if (value.earnedForMilestone !== undefined) result.earned_for_milestone = value.earnedForMilestone
+  if (value.usedForDate !== undefined) result.used_for_date = value.usedForDate
+  // updated_at handled by DB trigger — do NOT include it here
+  // is_deleted is owned by the global fieldDeleted: 'is_deleted' config in
+  // configureSyncedSupabase(); Legend-State sets it on the DB write when
+  // .delete() is called. Writing it here would create a duplicate-write hazard.
   return result
 }

@@ -4,6 +4,15 @@ vi.mock('../../utils/supabase', () => ({
   supabase: {},
 }))
 
+vi.mock('../../utils/encryption', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../utils/encryption')>()
+  return {
+    ...actual,
+    // Spy-wrapping the real module so we can assert call counts without breaking
+    // tests that legitimately exercise encryption (Flow transforms).
+  }
+})
+
 import {
   generateUUID,
   dbEntryToLocal,
@@ -11,6 +20,8 @@ import {
   dbFlowToLocal,
   localFlowToDb,
   mapDbFlowToLocalOrKeepExisting,
+  dbGraceDayToLocal,
+  localGraceDayToDb,
   syncEncryptionError$,
   syncEncryptionMode$,
   syncManagedKeyBytes$,
@@ -468,5 +479,126 @@ describe('Flow transforms', () => {
       content: db.content as string,
     })
     expect(local.content).toBe(plaintext)
+  })
+})
+
+describe('GraceDay transforms', () => {
+  const fullDbRow = {
+    id: 'gd-1',
+    user_id: 'u1',
+    earned_at: '2026-05-01T10:00:00Z',
+    earned_for_milestone: 7,
+    used_for_date: null as string | null,
+    is_deleted: false,
+    created_at: '2026-05-01T10:00:00Z',
+    updated_at: '2026-05-01T10:00:00Z',
+  }
+
+  it('converts a fully-populated DB row to camelCase local shape', () => {
+    const local = dbGraceDayToLocal({ ...fullDbRow, used_for_date: '2026-05-04' })
+    expect(local).toEqual({
+      id: 'gd-1',
+      userId: 'u1',
+      earnedAt: '2026-05-01T10:00:00Z',
+      earnedForMilestone: 7,
+      usedForDate: '2026-05-04',
+    })
+  })
+
+  it('preserves null used_for_date in the local shape', () => {
+    const local = dbGraceDayToLocal({ ...fullDbRow, used_for_date: null })
+    expect(local.usedForDate).toBeNull()
+  })
+
+  it('output contains exactly the five local fields — no DB metadata leaks', () => {
+    const local = dbGraceDayToLocal(fullDbRow)
+    expect(Object.keys(local).sort()).toEqual(
+      ['earnedAt', 'earnedForMilestone', 'id', 'usedForDate', 'userId']
+    )
+  })
+
+  it('strips is_deleted from the local shape', () => {
+    const local = dbGraceDayToLocal(fullDbRow)
+    expect(local).not.toHaveProperty('is_deleted')
+  })
+
+  it('strips created_at from the local shape', () => {
+    const local = dbGraceDayToLocal(fullDbRow)
+    expect(local).not.toHaveProperty('created_at')
+  })
+
+  it('strips updated_at from the local shape', () => {
+    const local = dbGraceDayToLocal(fullDbRow)
+    expect(local).not.toHaveProperty('updated_at')
+  })
+
+  it('partial update with only id and usedForDate emits only those two DB fields', () => {
+    const db = localGraceDayToDb({ id: 'gd-1', usedForDate: '2026-05-04' })
+    expect(db).toEqual({ id: 'gd-1', used_for_date: '2026-05-04' })
+    expect(db).not.toHaveProperty('user_id')
+    expect(db).not.toHaveProperty('earned_at')
+    expect(db).not.toHaveProperty('earned_for_milestone')
+  })
+
+  it('explicit null usedForDate is written to the DB payload (unspend path)', () => {
+    const db = localGraceDayToDb({ id: 'gd-1', usedForDate: null })
+    expect(Object.prototype.hasOwnProperty.call(db, 'used_for_date')).toBe(true)
+    expect(db.used_for_date).toBeNull()
+  })
+
+  it('absent usedForDate is omitted from the DB payload entirely', () => {
+    const db = localGraceDayToDb({ id: 'gd-1' })
+    expect(Object.prototype.hasOwnProperty.call(db, 'used_for_date')).toBe(false)
+  })
+
+  it('does not include updated_at in the DB payload — DB trigger owns it', () => {
+    const db = localGraceDayToDb({
+      id: 'gd-1',
+      userId: 'u1',
+      earnedAt: '2026-05-01T10:00:00Z',
+      earnedForMilestone: 7,
+      usedForDate: '2026-05-04',
+    })
+    expect(db).not.toHaveProperty('updated_at')
+  })
+
+  it('does not include is_deleted in the DB payload — global fieldDeleted config owns soft-delete', () => {
+    const db = localGraceDayToDb({
+      id: 'gd-1',
+      userId: 'u1',
+      earnedAt: '2026-05-01T10:00:00Z',
+      earnedForMilestone: 7,
+      usedForDate: null,
+    })
+    expect(db).not.toHaveProperty('is_deleted')
+  })
+
+  it('calls no encryption helpers when saving a grace-day row', async () => {
+    const encryptionModule = await import('../../utils/encryption')
+    const spies = Object.entries(encryptionModule)
+      .filter(([, v]) => typeof v === 'function')
+      .map(([name, fn]) => vi.spyOn(encryptionModule, name as keyof typeof encryptionModule, 'get').mockReturnValue(fn as never))
+
+    // Clear call counts by creating fresh spies on the actual functions
+    const encryptSpy = vi.spyOn(encryptionModule, 'encryptFlowContent')
+    const decryptSpy = vi.spyOn(encryptionModule, 'decryptFlowContent')
+    const encryptManagedSpy = vi.spyOn(encryptionModule, 'encryptFlowContentManaged')
+    const decryptManagedSpy = vi.spyOn(encryptionModule, 'decryptFlowContentManaged')
+
+    localGraceDayToDb({
+      id: 'gd-1',
+      userId: 'u1',
+      earnedAt: '2026-05-01T10:00:00Z',
+      earnedForMilestone: 7,
+      usedForDate: '2026-05-04',
+    })
+
+    expect(encryptSpy).not.toHaveBeenCalled()
+    expect(decryptSpy).not.toHaveBeenCalled()
+    expect(encryptManagedSpy).not.toHaveBeenCalled()
+    expect(decryptManagedSpy).not.toHaveBeenCalled()
+
+    vi.restoreAllMocks()
+    spies.forEach((s) => s.mockRestore())
   })
 })

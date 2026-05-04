@@ -6,6 +6,7 @@ import { configurePersistence } from './persistConfig'
 import { store$, countUndecidedOrphans } from './store'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
+import { graceDays$ } from './grace_days'
 import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$ } from './syncConfig'
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
@@ -37,6 +38,8 @@ function setupPersistence() {
   // loading while remote sync waits for the waitFor gate.
   flows$.get()
   entries$.get()
+  // graceDays follows the same lazy-activation + persist pattern as flows$/entries$
+  graceDays$.get()
 }
 
 function setupSyncReadinessGate() {
@@ -109,6 +112,7 @@ export async function initializePersistence() {
       when(syncState(flows$).isPersistLoaded),
       when(syncState(entries$).isPersistLoaded),
       when(syncState(lapsed$).isPersistLoaded),
+      when(syncState(graceDays$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)

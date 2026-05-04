@@ -22,6 +22,7 @@ import type {
 import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES, FONT_PAIRING_IDS, DEFAULT_FONT_PAIRING } from './types'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
+import { graceDays$ } from './grace_days'
 
 import { getTodayJournalDayString } from './date-utils'
 import { generateUUID, isSyncReady$, orphanFlowsPending$ } from './syncConfig'
@@ -63,7 +64,7 @@ export const store$ = observable<AppState>({
 })
 
 // Re-export granular observables for convenience
-export { flows$, entries$ }
+export { flows$, entries$, graceDays$ }
 
 // =================================================================
 // 1b. EPHEMERAL STATE (NOT PERSISTED)
@@ -158,6 +159,8 @@ const isUndecidedOrphanFlow = (flow: Flow, allEntries: Record<string, Entry>): b
 export const clearUserData = () => {
   const allFlows = flows$.get() ?? {}
   const allEntries = entries$.get() ?? {}
+  const allGraceDays = graceDays$.get() ?? {}
+  const currentUserId = store$.session.userId.get()
 
   // Phase 1: strip user_id from items we're about to remove.
   // transform.save returns undefined for !user_id, so any sync operations
@@ -171,6 +174,12 @@ export const clearUserData = () => {
     for (const [id, entry] of Object.entries(allEntries)) {
       if (entry.sync_excluded !== true && entry.user_id) {
         entries$[id].user_id.set(null)
+      }
+    }
+    // Grace days have no sync_excluded — nullify userId so save transform skips them
+    for (const [id, gd] of Object.entries(allGraceDays)) {
+      if (gd.userId === currentUserId) {
+        graceDays$[id].userId.set(null as unknown as string)
       }
     }
   })
@@ -197,6 +206,9 @@ export const clearUserData = () => {
       }
     }
     entries$.set(keptEntries)
+
+    // Grace days have no sync_excluded carve-out — no anonymous origin
+    graceDays$.set({})
 
     store$.lastUpdated.set(new Date().toISOString())
   })

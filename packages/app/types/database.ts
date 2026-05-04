@@ -136,6 +136,47 @@ export type Database = {
           },
         ]
       }
+      user_grace_days: {
+        Row: {
+          created_at: string
+          earned_at: string
+          earned_for_milestone: number
+          id: string
+          is_deleted: boolean
+          updated_at: string
+          used_for_date: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          earned_at?: string
+          earned_for_milestone: number
+          id: string
+          is_deleted?: boolean
+          updated_at?: string
+          used_for_date?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          earned_at?: string
+          earned_for_milestone?: number
+          id?: string
+          is_deleted?: boolean
+          updated_at?: string
+          used_for_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_grace_days_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
