@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 1.8: LapsedPrompt component — render, copy, a11y, dismiss-on-tap (AC4, AC7, AC8)
+// LapsedPrompt component — render, copy, a11y, dismiss-on-tap
 // Mocks useLapsedPrompt to isolate the component from state layer.
 
 import React from 'react'

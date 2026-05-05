@@ -3,7 +3,7 @@
 // All tests in this file should FAIL until packages/app/features/navigation/SliderHub.tsx
 // exports the pure `computeSliderHubCommit` function.
 //
-// Function contract (from Story 1-2 AC #1, #2, #3 and Task 6):
+// Function contract:
 //   computeSliderHubCommit(translationX: number, velocityX: number, screenWidth: number)
 //     → 'right' | 'left' | 'snap-back'
 //

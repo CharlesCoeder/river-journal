@@ -21,8 +21,8 @@
  * logic (see `makeNavigateTo` below). The replica MUST stay structurally
  * identical to the source; if the guard changes, update both.
  *
- * AC #8 (Story 1.4): "the existing route-aware no-op … MUST short-circuit
- * gesture-commits when the current route equals the destination"
+ * Contract: the existing route-aware no-op MUST short-circuit
+ * gesture-commits when the current route equals the destination.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'

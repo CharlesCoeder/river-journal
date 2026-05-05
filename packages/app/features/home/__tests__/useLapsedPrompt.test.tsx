@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 1.8: useLapsedPrompt() hook — pure 3-clause boolean logic (AC2, AC6)
+// useLapsedPrompt() hook — pure 3-clause boolean logic
 // Uses deterministic `now` arg. Mocks @legendapp/state/react to control observable reads.
 
 import React from 'react'

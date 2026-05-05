@@ -3,10 +3,9 @@
  *
  * Persisted Legend-State observable for lapsed-user detection.
  * Local-only UI state — never crosses the encryption boundary.
- * Reference: epic-1-context.md:40
  *
  * This observable tracks the last-session timestamp and a per-window
- * dismissal flag for the "Want to start again?" prompt (Story 1.8).
+ * dismissal flag for the "Want to start again?" prompt.
  */
 
 import { observable, batch } from '@legendapp/state'

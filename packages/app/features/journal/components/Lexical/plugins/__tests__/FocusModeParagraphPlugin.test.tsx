@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 2-6: FocusModeParagraphPlugin — smoke tests (AC 24)
+// FocusModeParagraphPlugin — smoke tests
 // RED-PHASE TDD: all tests fail before implementation.
 //   - FocusModeParagraphPlugin does not yet exist at
 //     packages/app/features/journal/components/Lexical/plugins/FocusModeParagraphPlugin.tsx

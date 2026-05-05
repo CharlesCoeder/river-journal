@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
-// Story 2-4: WordCounter component — count rendering, color logic, a11y, no animation (AC11 C1-C6)
-// RED-PHASE TDD: all tests fail before implementation of WordCounter.tsx
+// WordCounter component — count rendering, color logic, a11y, no animation
 
 import React from 'react'
 import { afterEach, describe, expect, it } from 'vitest'

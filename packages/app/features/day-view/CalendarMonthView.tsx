@@ -156,6 +156,9 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
     setOpenEntryDate(null)
   }
 
+  // ── Refs ─────────────────────────────────────────────────────────────────
+  const gridRef = useRef<HTMLDivElement | null>(null)
+
   // ── Touch swipe state ────────────────────────────────────────────────────
   const touchStartX = useRef<number | null>(null)
   const touchStartY = useRef<number | null>(null)
@@ -200,7 +203,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
     }
     if (targetIndex !== null) {
       e.preventDefault?.()
-      const buttons = document.querySelectorAll('[data-calendar-cell]')
+      const buttons = gridRef.current?.querySelectorAll('[data-calendar-cell]') ?? []
       const target = buttons[targetIndex] as HTMLElement | undefined
       if (target) {
         target.focus()
@@ -281,6 +284,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
 
       {/* 42-cell date grid with swipe support */}
       <View
+        ref={gridRef as any}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -300,6 +304,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
                 justifyContent="center"
                 disabled={!cell.inMonth}
                 aria-label={ariaLabel}
+                {...(cell.date === focusedDate ? { 'aria-current': 'date' } as any : {})}
                 {...(isToday ? { 'data-today': 'true' } as any : {})}
                 {...({ 'data-calendar-cell': idx } as any)}
                 onPress={() => handleCellPress(cell)}

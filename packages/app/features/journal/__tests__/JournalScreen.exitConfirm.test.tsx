@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 2-6: JournalScreen — exit-confirm gating (AC 22) + focus-mode toggle wiring (AC 23)
+// JournalScreen — exit-confirm gating + focus-mode toggle wiring
 // RED-PHASE TDD: all tests fail before implementation.
 //   - handleExitFlow gating logic does not yet check word count or checkpoint
 //   - showExitConfirmDialog state and dialog copy do not yet exist

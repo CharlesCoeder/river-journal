@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 2-6: setFocusMode action + hasReachedAutosaveCheckpoint helper — unit tests (AC 20, AC 21)
+// setFocusMode action + hasReachedAutosaveCheckpoint helper — unit tests
 // RED-PHASE TDD: all tests fail before implementation.
 //   - `store$.profile.editor.focusMode` field does not yet exist on UserProfile
 //   - `setFocusMode` action is not yet exported from store.ts

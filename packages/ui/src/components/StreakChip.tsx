@@ -30,7 +30,7 @@ export function StreakChip({ dayCount, state = 'pending' }: StreakChipProps) {
   return (
     <AnimatePresence>
       <Text
-        key={dayCount}
+        key={dayCount ?? 'placeholder'}
         fontFamily="$body"
         fontSize="$3"
         color={color}

@@ -93,10 +93,8 @@ export const ephemeral$ = observable<{
    * Records the FIRST time the active flow's word count crossed 500 in the
    * current writing day. Set when the count transitions from < 500 to ≥ 500
    * within an active flow. Cleared when the active flow is cleared
-   * (clearActiveFlow / discardActiveFlowSession). Read by Story 2.5's
-   * CelebrationModal to choose handoff vs quieter variant, and by Epic 3's
-   * Collective lit-state. Story 2.4 owns ONLY the write side; consumers land
-   * in subsequent stories.
+   * (clearActiveFlow / discardActiveFlowSession). Read by CelebrationModal
+   * to choose handoff vs quieter variant, and by Collective lit-state.
    *
    * Shape: { crossedAt: ISO string, wordCountAtCrossing: number } | null
    * - null: not crossed during the current active flow
@@ -106,8 +104,8 @@ export const ephemeral$ = observable<{
    * starts a second flow after celebrating the first, `thresholdCrossing` is
    * cleared by the active-flow lifecycle helpers; downstream day-level "first
    * 500-crossing today" gating is computed by the streak/flow data model
-   * (Story 2.5 will derive it from flows on today's entry, NOT from this
-   * field). This field's job is per-active-flow signalling only.
+   * (derived from flows on today's entry, NOT from this field). This field's
+   * job is per-active-flow signalling only.
    */
   thresholdCrossing: ThresholdCrossing | null
   /**

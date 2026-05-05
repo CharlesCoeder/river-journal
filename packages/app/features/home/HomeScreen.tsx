@@ -104,7 +104,7 @@ export function HomeScreen() {
                   <HomeCollectiveEntrySlot onPress={handleCollectivePress} />
                 </YStack>
 
-                {/* Lapsed prompt — between date block and action area (Story 1-8) */}
+                {/* Lapsed prompt — between date block and action area */}
                 <LapsedPrompt />
 
                 {/* Action area */}
@@ -165,7 +165,7 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
 
 /** StreakChip slot — anchored to top-right of the centered content card (M1 fix: moved inside maxWidth={1024} YStack) */
 function HomeStreakChipSlot() {
-  const streak = use$(store$.views.streak!) as StreakState | undefined
+  const streak = use$(store$.views.streak) as StreakState | undefined
   const currentStreak = streak?.currentStreak ?? 0
   const today = getTodayJournalDayString()
   const state = streak?.lastQualifyingDate === today ? 'active' : 'pending'
