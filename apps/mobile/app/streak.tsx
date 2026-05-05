@@ -1,9 +1,5 @@
-import { Text, YStack } from '@my/ui'
+import { StreakPlaceholderScreen } from 'app/features/navigation/StreakPlaceholderScreen'
 
 export default function StreakScreen() {
-  return (
-    <YStack flex={1} alignItems="center" justifyContent="center">
-      <Text>Streak — coming soon</Text>
-    </YStack>
-  )
+  return <StreakPlaceholderScreen />
 }

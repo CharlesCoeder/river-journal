@@ -1,24 +1,46 @@
-import { Text } from 'tamagui'
+import { useRef, useEffect } from 'react'
+import { AnimatePresence, Text } from 'tamagui'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 
 export interface StreakChipProps {
   dayCount?: number
+  state?: 'pending' | 'active'
 }
 
-export function StreakChip({ dayCount }: StreakChipProps) {
-  // Treat 0 as "no streak yet" — render placeholder. Story 2-7 will revisit this contract.
-  const displayCount = dayCount != null && dayCount > 0 ? dayCount : undefined
-  const text = displayCount != null ? `Day ${displayCount}` : 'Day —'
-  const label = displayCount != null ? `Day ${displayCount} streak` : 'Day — streak'
+export function StreakChip({ dayCount, state = 'pending' }: StreakChipProps) {
+  const prevRef = useRef<number | undefined>(undefined)
+  const reducedMotion = useReducedMotion()
+
+  const text = dayCount !== undefined ? `Day ${dayCount}` : 'Day —'
+  const label = dayCount !== undefined ? `Day ${dayCount} streak` : 'Day — streak'
+  const color = state === 'active' ? '$color' : '$color8'
+
+  const shouldAnimate =
+    prevRef.current !== undefined &&
+    dayCount !== undefined &&
+    dayCount > prevRef.current
+
+  const transition = shouldAnimate ? (reducedMotion ? '100ms' : 'designEnter') : undefined
+  const enterStyle = shouldAnimate ? { opacity: 0, scale: 0.92 } : undefined
+
+  useEffect(() => {
+    prevRef.current = dayCount
+  }, [dayCount])
 
   return (
-    <Text
-      fontFamily="$body"
-      fontSize="$3"
-      color="$color8"
-      aria-label={label}
-      role="text"
-    >
-      {text}
-    </Text>
+    <AnimatePresence>
+      <Text
+        key={dayCount}
+        fontFamily="$body"
+        fontSize="$3"
+        color={color}
+        aria-label={label}
+        role="text"
+        transition={transition as any}
+        enterStyle={enterStyle as any}
+      >
+        {text}
+      </Text>
+    </AnimatePresence>
   )
 }
