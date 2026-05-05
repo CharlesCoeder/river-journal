@@ -48,6 +48,16 @@ export default defineConfig({
   },
   test: {
     setupFiles: ['./vitest.setup.ts'],
+    // Exclude default deps + git worktrees (kept under .claude/worktrees/ for sprint
+    // recovery). Without this, vitest's glob walks into worktree copies of the repo
+    // and runs duplicate test files against worktree-local node_modules.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/.claude/worktrees/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
+    ],
     poolOptions: {
       threads: {
         singleThread: true,
