@@ -148,7 +148,7 @@ describe('module graph — initialization order and circular-import safety', () 
 
 describe('store$.views.streak — reactive computed view (AC13)', () => {
   it('R1: store$.views.streak.get() returns a StreakState object with all six fields', () => {
-    // AC13 R1 — shape exhaustiveness
+    // forward-compat seam comment: �� shape exhaustiveness
     // Red-phase: store$.views.streak is undefined.
     const s = store$.views?.streak?.get()
     expect(s).not.toBeNull()
@@ -166,7 +166,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R2: empty state baseline — all zeros, empty arrays, null dates', () => {
-    // AC13 R2 — empty-state baseline
+    // forward-compat seam comment: �� empty-state baseline
     // entries$/flows$/graceDays$ are {} (reset in beforeEach)
     // Red-phase: store$.views.streak undefined.
     const s = store$.views?.streak?.get()
@@ -181,7 +181,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R3: E2E reactive cycle — flows$ write causes streak$ to update currentStreak', () => {
-    // AC13 R3 — full reactive cycle: entries$ + flows$ → streak$ recomputes
+    // forward-compat seam comment: �� full reactive cycle: entries$ + flows$ → streak$ recomputes
     // Seed an entry on today, then add a qualifying flow → currentStreak goes 0→1
     const today = getTodayJournalDayString()
     const entryId = 'e-r3'
@@ -204,7 +204,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R4: E2E reactive cycle — entries$ write for orphan flow causes currentStreak to update', () => {
-    // AC13 R4 — orphan flow becomes qualifying when its entry is added
+    // forward-compat seam comment: �� orphan flow becomes qualifying when its entry is added
     // An orphan flow (flow whose entry does not exist yet) contributes 0 to any date.
     // Adding the entry makes the flow non-orphan → streak recomputes.
     const today = getTodayJournalDayString()
@@ -226,7 +226,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R5: E2E reactive cycle — graceDays$ write bridges a gap and extends currentStreak', () => {
-    // AC13 R5 — grace day added for a gap day → currentStreak expands
+    // forward-compat seam comment: �� grace day added for a gap day → currentStreak expands
     // Setup: today qualifies, today-2 qualifies, today-1 is a gap → currentStreak 1
     const today = getTodayJournalDayString()
     const ydayMinus1 = shiftDay(today, -1)
@@ -263,7 +263,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R6: lastQualifyingDate matches getTodayJournalDayString() when today qualifies', () => {
-    // AC13 R6 — documents that today is sourced from getTodayJournalDayString() inline.
+    // forward-compat seam comment: �� documents that today is sourced from getTodayJournalDayString() inline.
     // We just verify the read is consistent — no mocking required.
     const today = getTodayJournalDayString()
     const entryId = 'e-r6'
@@ -279,7 +279,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R7: tier baked-in as "free" — longestStreak=35 yields 2 unlocked themes, not 6 (paid bypass is NOT active)', () => {
-    // AC13 R7 — documents that computed view bakes in 'free' until Story 7.1.
+    // forward-compat seam comment: �� documents that computed view bakes in 'free' until Story 7.1.
     // MILESTONES [7, 30, 90, 180]: longestStreak 35 crosses 7 and 30 → 2 themes.
     // If a contributor flips the literal to a paid-tier value, this test fails loudly.
     const today = getTodayJournalDayString()
@@ -308,7 +308,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R8: chosenUnlocks baked-in as undefined — passive map returns milestone-ordered themes', () => {
-    // AC13 R8 — documents the Story 2.9 forward-compat seam.
+    // forward-compat seam comment: �� documents the the unlock-token feature forward-compat seam.
     // With chosenUnlocks=undefined, Model A passive map applies:
     // longestStreak=35 → MILESTONES [7,30] crossed → ['forest-morning', 'leather']
     const today = getTodayJournalDayString()

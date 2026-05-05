@@ -150,7 +150,7 @@ export function CelebrationScreen() {
 
   const handleChooseTheme = () => {
     clearLastSavedFlow()
-    router.push('/settings') // Theme picker UI lands in Story 2.9
+    router.push('/settings') // Theme picker UI handles unlock-token spending
   }
 
   const handleCreateAccount = () => {

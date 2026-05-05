@@ -114,23 +114,16 @@ export const ephemeral$ = observable<{
    * Set of unlock-token milestones the user has already seen surfaced in a
    * CelebrationScreen handoff variant. Prevents the same unlock from re-appearing
    * on subsequent flow exits within the same app session. Stored in ephemeral$
-   * (per-session, NOT persisted) for this story; Story 2.9 migrates this to
-   * `users.preferences.unlockedThemes` (the persistent record of which themes
-   * the user has SPENT their tokens on — semantically different but covers
-   * the "don't re-prompt" need across sessions because once a token is spent,
-   * `unlockTokensEarned` minus `users.preferences.unlockedThemes.length`
-   * yields the count of *unspent, un-surfaced* tokens).
+   * (per-session, NOT persisted). Persistent "spent" state lives in
+   * `users.preferences.unlockedThemes` and is the long-term source of truth
+   * for which themes the user has chosen to spend tokens on.
    *
-   * INTERIM SEMANTIC: a milestone number is added to this set when the
+   * SEMANTIC: a milestone number is added to this set when the
    * UnlockNotification is rendered for it. On app restart, the set
    * resets — meaning a user who earns a token, sees the notification, then
    * cold-restarts before spending it WILL see it again on their next flow.
-   * Acceptable interim because (a) Story 2.9 is the next epic story, and
-   * (b) re-prompting an unspent token is more correct than swallowing it.
-   *
-   * TODO(Story 2.9): migrate to `users.preferences.unlockedThemes` for
-   * cross-session persistence. The semantics shift from "surfaced" to "spent"
-   * but the "don't re-prompt" invariant is preserved.
+   * That is the intended behavior: re-prompting an unspent token is more
+   * correct than swallowing it.
    */
   surfacedUnlockMilestones: Set<number>
 }>({
@@ -740,8 +733,8 @@ export const updatePersistentEditorContent = (content: string): void => {
 // -----------------------------------------------------------------
 
 /**
- * Creates a default profile if none exists. Also ensures the `editor` sub-object
- * exists on legacy profiles that were persisted before this field was added.
+ * Creates a default profile if none exists, or backfills missing optional fields
+ * on legacy profiles loaded from persistence.
  */
 const ensureProfile = () => {
   if (!store$.profile.get()) {
@@ -752,6 +745,7 @@ const ensureProfile = () => {
       fontPairing: DEFAULT_FONT_PAIRING,
       hotkeyOverrides: {},
       editor: { focusMode: false },
+      unlockedThemes: [],
       sync: {
         word_goal: true,
         themeName: true,
@@ -759,9 +753,15 @@ const ensureProfile = () => {
         fontPairing: true,
       },
     })
-  } else if (!store$.profile.editor.get()) {
-    // Migration: legacy profiles lack the editor sub-object — backfill it.
-    store$.profile.editor.set({ focusMode: false })
+  } else {
+    if (!store$.profile.editor.get()) {
+      // Migration: legacy profiles lack the editor sub-object — backfill it.
+      store$.profile.editor.set({ focusMode: false })
+    }
+    if (!store$.profile.unlockedThemes.get()) {
+      // Migration: legacy profiles lack unlockedThemes — backfill empty array.
+      store$.profile.unlockedThemes.set([])
+    }
   }
 }
 
@@ -834,6 +834,22 @@ export const clearCustomTheme = () => {
       store$.profile.themeName.set(DEFAULT_THEME)
     }
   })
+}
+
+/**
+ * Spends one unlock token on the given theme (Model B — user-chosen unlocks).
+ * Idempotent: if `theme` is already in `unlockedThemes`, no-op.
+ *
+ * The caller is responsible for verifying that the user HAS an unspent token
+ * (i.e., `streak.unlockTokensEarned > unlockedThemes.length`). This action
+ * trusts its caller; the ThemePicker UI gates the affordance via the
+ * available-token count.
+ */
+export const spendUnlockToken = (theme: ThemeName): void => {
+  ensureProfile()
+  const current = store$.profile.unlockedThemes.peek() ?? []
+  if (current.includes(theme)) return
+  store$.profile.unlockedThemes.set([...current, theme])
 }
 
 /**
