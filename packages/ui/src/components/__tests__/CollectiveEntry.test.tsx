@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 1-7: CollectiveEntry component — uppercase text, onPress, dim/lit a11y, no router, no animation (AC3, AC5, AC6)
+// CollectiveEntry component — uppercase text, onPress, dim/lit a11y, no router, no animation
 
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'

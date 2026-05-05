@@ -31,7 +31,7 @@ function setupPersistence() {
   )
 
   // Persist lapsed-state in its own IndexedDB table / MMKV namespace.
-  // Local-only — no Supabase sync, no encryption. Story 1-8.
+  // Local-only — no Supabase sync, no encryption.
   syncObservable(lapsed$, configurePersistence({ persist: { name: 'lapsed-state' } }))
 
   // Activate the synced observables so their persistence loads.

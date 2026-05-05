@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 1.6: HomeScreen layout — date hero, CTA spring, reserved slots, dialog preservation (AC1–AC7)
+// HomeScreen layout — date hero, CTA spring, reserved slots, dialog preservation
 
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -534,9 +534,9 @@ describe('StreakChip mounts in HomeScreen with real streak data wiring', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 10. Story 1-7: CollectiveEntry mounts in home (AC3, AC4, AC6, AC7)
+// 10. CollectiveEntry mounts in home
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CollectiveEntry mounts in HomeScreen (1-7 AC3, AC4, AC6, AC7)', () => {
+describe('CollectiveEntry mounts in HomeScreen', () => {
   it('renders a CollectiveEntry element inside the home layout', () => {
     render(React.createElement(HomeScreen))
     expect(screen.getByTestId('collective-entry')).toBeTruthy()
@@ -583,9 +583,9 @@ describe('CollectiveEntry mounts in HomeScreen (1-7 AC3, AC4, AC6, AC7)', () => 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 11. Story 1-8: Lapsed prompt mount + dismissal flow (AC4, AC5, AC9)
+// 11. Lapsed prompt mount + dismissal flow
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Lapsed prompt (1-8 AC4, AC5, AC9)', () => {
+describe('Lapsed prompt', () => {
   beforeEach(() => {
     pushSpy.mockClear()
     lapsedMock.dismiss = vi.fn()

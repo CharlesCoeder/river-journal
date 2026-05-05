@@ -1,4 +1,4 @@
-// Story 2.2: computeStreakState pure function — table-driven tests (NFR20)
+// computeStreakState pure function — table-driven tests
 // Red-phase TDD: all tests fail against the not-implemented stub.
 
 import { describe, expect, it } from 'vitest'

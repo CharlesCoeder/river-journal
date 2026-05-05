@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 2-4: store threshold-crossing logic — unit tests (AC12 T1-T8)
+// store threshold-crossing logic — unit tests
 // RED-PHASE TDD: all tests fail before implementation (thresholdCrossing field + helpers do not yet exist)
 
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -48,7 +48,7 @@ import {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test isolation: reset ephemeral state before each test and after all tests.
-// Pattern mirrors Story 2.3 AC 31 placement (module-scope afterAll).
+// Pattern: module-scope afterAll for ephemeral-state reset.
 // ─────────────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -300,9 +300,7 @@ describe('T8: threshold-crossing and count update happen in the same synchronous
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Story 2-5: surfacedUnlockMilestones — S1-S4 (AC 19)
-// RED-PHASE TDD: all tests fail before surfacedUnlockMilestones field and
-// markUnlockSurfaced helper are added to store.ts.
+// surfacedUnlockMilestones tests
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {

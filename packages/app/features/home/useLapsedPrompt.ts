@@ -7,13 +7,11 @@
  * Returns `{ shouldShow: boolean; dismiss: () => void }`.
  *
  * `shouldShow === true` IFF ALL of:
- *   1. `hasOpenedBefore === true` (not a first-time user — epics.md:902-904)
+ *   1. `hasOpenedBefore === true` (not a first-time user)
  *   2. `lastSessionAt !== null` AND `(now - lastSessionAt) > LAPSED_THRESHOLD_MS` (strict >)
  *   3. `dismissedAt === null` OR `dismissedAt < lastSessionAt` (not dismissed in this window)
  *
  * `now` arg is for deterministic testing; defaults to `Date.now()`.
- *
- * Story 1-8.
  */
 import { use$ } from '@legendapp/state/react'
 import { lapsed$, dismissLapsedPrompt, LAPSED_THRESHOLD_MS } from 'app/state/lapsed'

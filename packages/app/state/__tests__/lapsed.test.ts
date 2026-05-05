@@ -1,4 +1,4 @@
-// Story 1.8: lapsed$ observable + helpers — pure state unit tests (AC1, AC3, AC6)
+// lapsed$ observable + helpers — pure state unit tests
 // No persistence involved. Observable is reset to initial shape in beforeEach.
 
 import { beforeEach, describe, expect, it } from 'vitest'

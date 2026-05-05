@@ -216,7 +216,7 @@ export function computeStreakState(
  *
  * Note on subscription granularity: this hook calls `use$(store$.views.streak)`
  * which subscribes the calling component to the WHOLE StreakState object. If a
- * consumer needs only `currentStreak` (e.g., StreakChip in Story 2.7), they
+ * consumer needs only `currentStreak` (e.g., StreakChip), they
  * should call `use$(store$.views.streak.currentStreak)` directly rather than
  * destructuring from this hook's output.
  *

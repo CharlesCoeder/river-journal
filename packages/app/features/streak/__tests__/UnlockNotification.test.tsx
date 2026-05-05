@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Story 2-5: UnlockNotification component — render tests (AC 17, U1-U3)
+// UnlockNotification component — render tests
 // RED-PHASE TDD: all tests fail before the component file exists.
 
 import React from 'react'

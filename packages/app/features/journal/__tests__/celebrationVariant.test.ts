@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Story 2-5: chooseCelebrationVariant pure function — table-driven tests (AC 16, V1-V10)
+// chooseCelebrationVariant pure function — table-driven tests
 // RED-PHASE TDD: all tests fail against the not-yet-implemented function.
 
 import { describe, expect, it } from 'vitest'

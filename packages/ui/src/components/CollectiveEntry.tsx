@@ -6,10 +6,10 @@ export interface CollectiveEntryProps {
 }
 
 export function CollectiveEntry({ state = 'dim', onPress }: CollectiveEntryProps) {
-  // TODO(epic-3): If 'lit' grows into a state machine (lit/unread/active),
+  // TODO: If 'lit' grows into a state machine (lit/unread/active),
   // refactor to a discriminated union. Do not extend the string union past 3 cases.
   if (state === 'lit') {
-    // TODO(epic-3): lit-state styling — dot indicator? Color? Tap target?
+    // TODO: lit-state styling — dot indicator? Color? Tap target?
     return (
       <Text
         fontFamily="$body"
