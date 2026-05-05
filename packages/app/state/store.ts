@@ -648,7 +648,8 @@ export const updatePersistentEditorContent = (content: string): void => {
 // -----------------------------------------------------------------
 
 /**
- * Creates a default profile if none exists.
+ * Creates a default profile if none exists, or backfills missing optional fields
+ * on legacy profiles loaded from persistence.
  */
 const ensureProfile = () => {
   if (!store$.profile.get()) {
@@ -658,6 +659,8 @@ const ensureProfile = () => {
       customTheme: null,
       fontPairing: DEFAULT_FONT_PAIRING,
       hotkeyOverrides: {},
+      editor: { focusMode: false },
+      unlockedThemes: [],            // Story 2.9 (Model B)
       sync: {
         word_goal: true,
         themeName: true,
@@ -665,6 +668,14 @@ const ensureProfile = () => {
         fontPairing: true,
       },
     })
+  } else {
+    if (!store$.profile.editor.get()) {
+      store$.profile.editor.set({ focusMode: false })
+    }
+    if (!store$.profile.unlockedThemes.get()) {
+      // Migration: legacy profiles lack unlockedThemes — backfill empty array.
+      store$.profile.unlockedThemes.set([])
+    }
   }
 }
 
@@ -712,6 +723,22 @@ export const clearCustomTheme = () => {
       store$.profile.themeName.set(DEFAULT_THEME)
     }
   })
+}
+
+/**
+ * Spends one unlock token on the given theme (Model B — Story 2.9).
+ * Idempotent: if `theme` is already in `unlockedThemes`, no-op.
+ *
+ * The caller is responsible for verifying that the user HAS an unspent token
+ * (i.e., `streak.unlockTokensEarned > unlockedThemes.length`). This action
+ * trusts its caller; the ThemePicker UI gates the affordance via the
+ * available-token count.
+ */
+export const spendUnlockToken = (theme: ThemeName): void => {
+  ensureProfile()
+  const current = store$.profile.unlockedThemes.peek() ?? []
+  if (current.includes(theme)) return
+  store$.profile.unlockedThemes.set([...current, theme])
 }
 
 /**

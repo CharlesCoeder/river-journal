@@ -1,12 +1,12 @@
 /**
  * state/streak.ts
  *
- * Pure-function client-side streak math.
+ * Pure-function client-side streak math + reactive wiring layer.
  * Architecture refs: D3 (client-authoritative streak math), D7 (boundary rule),
  * NFR20 (zero streak miscount — table-driven test surface is the contract).
  *
- * NO observable reads, NO I/O, NO side effects. The function takes plain data
- * (arrays or keyed Records) plus a `today` string and returns a snapshot.
+ * Pure function section: NO observable reads, NO I/O, NO side effects.
+ * Wiring section (below computeStreakState): attaches streak$ computed view to store$.
  */
 
 import type { Entry, Flow, GraceDay, ThemeName } from './types'
@@ -191,4 +191,91 @@ export function computeStreakState(
     nextUnlockMilestone,
     lastQualifyingDate,
   }
+}
+
+// =================================================================
+// REACTIVE WIRING LAYER (Story 2.3 + Story 2.9)
+// Pure function above remains untouched — wiring appended below.
+// =================================================================
+
+import { store$ } from './store'
+import { entries$ } from './entries'
+import { flows$ } from './flows'
+import { graceDays$ } from './grace_days'
+import { getTodayJournalDayString } from './date-utils'
+import { use$ } from '@legendapp/state/react'
+
+/** Referentially stable paid-tier list — prevents unnecessary re-renders on paid accounts. */
+const PAID_TIER_THEMES: ThemeName[] = [...THEME_NAMES]
+
+/**
+ * streak$ reactive computed view — attached to store$.views.streak.
+ *
+ * Re-evaluates from entries$ + flows$ + graceDays$ + today + tier + chosenUnlocks.
+ * Consumers: StreakChip (Story 2.7), CelebrationModal (Story 2.5), ThemePicker (Story 2.9).
+ *
+ * chosenUnlocks: user-spent token destinations (Model B — Story 2.9).
+ * When store$.profile is null (cold-start window before rehydration), unlockedThemes.get()
+ * returns undefined → ?? undefined → computeStreakState falls back to passive-map branch.
+ * Once profile loads, streak$ re-evaluates with the user's actual chosen array.
+ */
+store$.assign({
+  views: {
+    streak: () =>
+      computeStreakState(
+        entries$.get(),
+        flows$.get(),
+        graceDays$.get(),
+        getTodayJournalDayString(),
+        'free', // TODO(Story 7.1): replace literal with store$.profile.subscription_tier.get()
+        store$.profile.unlockedThemes.get() ?? undefined, // chosenUnlocks: user-spent token destinations (Model B — Story 2.9)
+      ),
+  },
+} as any)
+
+/**
+ * Reactively returns the unlocked-themes list for the current streak state and the
+ * given subscription tier. Re-renders the calling component when underlying state
+ * (entries, flows, grace days, today, tier-passed-in, chosenUnlocks) changes.
+ *
+ * Note on subscription granularity: this hook calls `use$(store$.views.streak)`
+ * which subscribes the calling component to the WHOLE StreakState object. If a
+ * consumer needs only `currentStreak` (e.g., StreakChip in Story 2.7), they
+ * should call `use$(store$.views.streak.currentStreak)` directly rather than
+ * destructuring from this hook's output.
+ *
+ * Post-Story-2.9: the 'free' branch returns the user-chosen `unlockedThemes`
+ * (sourced from `users.preferences.unlockedThemes` via `chosenUnlocks`), NOT the
+ * passive-map output. The hook signature is unchanged; its returned values shift
+ * because `streak.unlockedThemes` is now driven by `chosenUnlocks`. Reviewers
+ * running `git diff packages/app/state/streak.ts` should see the wiring block's
+ * `chosenUnlocks` arg change (Story 2.9).
+ *
+ * @param tier 'free' | 'paid_monthly' | 'paid_yearly' — until Story 7.1 ships
+ *             subscription_tier, callers pass 'free' literally.
+ * @returns ThemeName[] — paid: all six (referentially stable across calls);
+ *          free: streak-derived (user-chosen unlocks via chosenUnlocks post-Story-2.9).
+ */
+/**
+ * Returns the subscription tier for the ThemePicker.
+ * Returns 'free' today. Exported as a seam for test injection (AC 14 / Story 2.9).
+ * TODO(Story 7.1): replace with use$(store$.profile.subscription_tier) ?? 'free'
+ */
+export function getThemePickerTier(): SubscriptionTier {
+  return 'free'
+}
+
+export function useUnlockedThemes(tier: SubscriptionTier): ThemeName[] {
+  // PAID-TIER EARLY RETURN — must run BEFORE use$() so that:
+  //   (a) paid-tier callers do NOT subscribe to streak$ at all (perf: no re-render
+  //       when streak changes for paid users who don't care), AND
+  //   (b) referential-stability tests can call this hook outside a React render
+  //       context for paid tiers without tripping use$'s component guard.
+  if (tier === 'paid_monthly' || tier === 'paid_yearly') {
+    return PAID_TIER_THEMES
+  }
+  const streak = use$(store$.views.streak)
+  return streak.unlockedThemes
+  // TODO(Story 7.1 cleanup): once streak$ baked-in tier is dynamic, the paid-tier
+  // branch above becomes redundant — remove it then.
 }

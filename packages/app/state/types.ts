@@ -96,6 +96,22 @@ export interface UserProfile {
   fontPairing: FontPairingId
   hotkeyOverrides: HotkeyOverrides
 
+  /**
+   * Optional editor-level settings. Absent on profiles created before Story 2.6.
+   * Consumers read with `?? { focusMode: false }`.
+   */
+  editor?: {
+    focusMode: boolean
+  }
+
+  /**
+   * Themes the user has spent unlock tokens on (Model B — Story 2.9).
+   * Length === number of tokens spent. Server source of truth: `users.preferences.unlockedThemes`
+   * JSONB array (migration 20260505000000_*). Optional at the type level for backward compat
+   * with persisted profiles created before this field was added; consumers read with `?? []`.
+   */
+  unlockedThemes?: ThemeName[]
+
   sync: {
     word_goal: boolean
     themeName: boolean

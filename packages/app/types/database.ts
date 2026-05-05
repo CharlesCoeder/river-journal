@@ -177,6 +177,17 @@ export type Database = {
           },
         ]
       }
+      /**
+       * users.preferences JSONB documented shape (client-known keys; server tolerates extra):
+       *   {
+       *     unlockedThemes?: string[]   // ThemeName[]; Story 2.9 (Model B unlock tokens)
+       *     // ...other client-extensible keys (e.g. focusMode is local-only on UserProfile, NOT server-persisted today)
+       *   }
+       *
+       * The Database['public']['Tables']['users'].Row.preferences field stays typed as `Json`
+       * (any-shape) to avoid coupling the generated Database type to a hand-curated client shape.
+       * The ThemeName[] narrowing happens at the consumer site in `state/types.ts` UserProfile.
+       */
       users: {
         Row: {
           created_at: string
