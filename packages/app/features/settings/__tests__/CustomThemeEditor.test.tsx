@@ -16,7 +16,7 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onChangeText, disabled, ...rest } = props as any
+    const { testID, onPress, onChangeText, disabled, fontStyle, backgroundColor, ...rest } = props as any
     return {
       ...(testID ? { 'data-testid': testID } : {}),
       ...(onPress ? { onClick: onPress } : {}),
@@ -24,6 +24,8 @@ vi.mock('@my/ui', async () => {
         ? { onChange: (e: any) => onChangeText(e.target.value) }
         : {}),
       ...(disabled ? { disabled } : {}),
+      ...(fontStyle ? { 'data-font-style': fontStyle } : {}),
+      ...(backgroundColor ? { 'data-background-color': backgroundColor } : {}),
     }
   }
 
@@ -114,6 +116,50 @@ describe('CustomThemeEditor', () => {
     const textInput = screen.getByTestId('color-input-text')
     fireEvent.change(textInput, { target: { value: '#E8E5E0' } })
     expect(screen.getByTestId('contrast-warning')).toBeTruthy()
+    // AC 1: exact copy, no numeric ratio
+    expect(screen.getByText('This combination may be hard to read.')).toBeTruthy()
+    expect(screen.getByTestId('contrast-warning').textContent).not.toContain(':1')
+    // AC 2: italic styling on warning text
+    const warningText = screen.getByText('This combination may be hard to read.')
+    expect(warningText.getAttribute('data-font-style')).toBe('italic')
+    // AC 10: dot element present
+    expect(screen.getByTestId('contrast-warning-dot')).toBeTruthy()
+  })
+
+  it('Save button is enabled even when contrast is low', () => {
+    render(<CustomThemeEditor onClose={mockOnClose} />)
+    const textInput = screen.getByTestId('color-input-text')
+    fireEvent.change(textInput, { target: { value: '#E8E5E0' } })
+    // Warning is shown
+    expect(screen.getByTestId('contrast-warning')).toBeTruthy()
+    // Save is still enabled (not disabled)
+    const saveButton = screen.getByTestId('save-custom-theme')
+    expect(saveButton.hasAttribute('disabled')).toBe(false)
+    // Clicking Save calls setCustomTheme with the low-contrast colors
+    fireEvent.click(saveButton)
+    expect(mockSetCustomTheme).toHaveBeenCalledWith({
+      bg: '#F9F6F0',
+      text: '#E8E5E0',
+      stone: '#8A8680',
+    })
+  })
+
+  it('warning disappears reactively when contrast is restored', () => {
+    render(<CustomThemeEditor onClose={mockOnClose} />)
+    const textInput = screen.getByTestId('color-input-text')
+    // First: set low-contrast color — warning appears
+    fireEvent.change(textInput, { target: { value: '#E8E5E0' } })
+    expect(screen.getByTestId('contrast-warning')).toBeTruthy()
+    // Then: restore high-contrast color — warning disappears
+    fireEvent.change(textInput, { target: { value: '#000000' } })
+    expect(screen.queryByTestId('contrast-warning')).toBeNull()
+  })
+
+  it('warning is suppressed during partial hex entry', () => {
+    render(<CustomThemeEditor onClose={mockOnClose} />)
+    const textInput = screen.getByTestId('color-input-text')
+    fireEvent.change(textInput, { target: { value: '#E8' } })
+    expect(screen.queryByTestId('contrast-warning')).toBeNull()
   })
 
   it('does not show contrast warning for high-contrast colors', () => {

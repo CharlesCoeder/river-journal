@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Button, Input, Text, XStack, YStack, View } from '@my/ui'
+import { Button, Circle, Input, Text, XStack, YStack, View } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$, setCustomTheme, clearCustomTheme } from 'app/state/store'
 import { hexToRgb, THEME_DEFS } from '@my/config/src/themes'
@@ -197,17 +197,14 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         </YStack>
       )}
 
-      {/* WCAG Contrast Warning */}
+      {/* Contrast advisory — non-blocking, creation surface only */}
       {lowContrast && (
-        <Text
-          testID="contrast-warning"
-          fontFamily="$body"
-          fontSize={13}
-          color="$orange10"
-        >
-          Low contrast ({contrast?.toFixed(1)}:1) — WCAG AA recommends at least 4.5:1 for
-          readability
-        </Text>
+        <XStack testID="contrast-warning" alignItems="center" gap="$2">
+          <Circle testID="contrast-warning-dot" size={6} backgroundColor="$color8" />
+          <Text fontFamily="$body" fontSize={13} color="$color8" fontStyle="italic">
+            This combination may be hard to read.
+          </Text>
+        </XStack>
       )}
 
       <XStack
@@ -235,6 +232,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         <Button
           testID="save-custom-theme"
           size="$3"
+          // disabled is bound ONLY to hex-format validity — low contrast is a non-blocking advisory (NFR26 + epics.md:1358); do NOT widen.
           disabled={!allValid}
           opacity={allValid ? 1 : 0.5}
           onPress={handleSave}
