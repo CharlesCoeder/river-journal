@@ -29,12 +29,25 @@ export default defineConfig({
         import.meta.dirname,
         'packages/app/features/navigation/__mocks__/my-ui.ts'
       ),
+      // Stub out @tamagui/lucide-icons which transitively requires react-native-svg
+      // (a native-only package with no Node.js-compatible build).
+      '@tamagui/lucide-icons': path.resolve(
+        import.meta.dirname,
+        'packages/app/features/navigation/__mocks__/tamagui-lucide-icons.ts'
+      ),
+      // Stub out react-native-svg which is a native-only package with no
+      // Node.js-compatible build (transitively required by @tamagui/lucide-icons).
+      'react-native-svg': path.resolve(
+        import.meta.dirname,
+        'packages/app/features/navigation/__mocks__/react-native-svg.ts'
+      ),
       // Map the 'app/*' workspace alias (used in source imports) to the
       // actual package directory so Vitest can resolve it in test environments.
       app: path.resolve(import.meta.dirname, 'packages/app'),
     },
   },
   test: {
+    setupFiles: ['./vitest.setup.ts'],
     poolOptions: {
       threads: {
         singleThread: true,
