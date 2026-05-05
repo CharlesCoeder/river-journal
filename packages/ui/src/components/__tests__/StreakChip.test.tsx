@@ -1,12 +1,20 @@
 // @vitest-environment happy-dom
-// Story 1-7: StreakChip component — placeholder text, dayCount prop, a11y, no animation (AC1, AC5, AC6)
+// StreakChip component — placeholder text, dayCount prop, a11y, animation, state prop
 
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 
+// ─── Mock useReducedMotion — avoids react-native import ──────────────────────
+const { useReducedMotionMock } = vi.hoisted(() => ({
+  useReducedMotionMock: vi.fn(() => false),
+}))
+vi.mock('../../hooks/useReducedMotion', () => ({
+  useReducedMotion: useReducedMotionMock,
+}))
+
 // ─── Mock tamagui — forward a11y + content props to a <span> ────────────────
-// StreakChip imports { Text } from 'tamagui'; we intercept here.
+// StreakChip imports { AnimatePresence, Text } from 'tamagui'; we intercept here.
 vi.mock('tamagui', () => {
   const ReactModule = require('react')
 
@@ -20,6 +28,7 @@ vi.mock('tamagui', () => {
     enterStyle,
     exitStyle,
     role,
+    color,
     ...rest
   }: any) =>
     ReactModule.createElement(
@@ -33,22 +42,30 @@ vi.mock('tamagui', () => {
         ...(transition !== undefined ? { 'data-transition': String(transition) } : {}),
         ...(enterStyle !== undefined ? { 'data-enter-style': 'present' } : {}),
         ...(exitStyle !== undefined ? { 'data-exit-style': 'present' } : {}),
+        // Surface color prop for state-prop assertions
+        ...(color !== undefined ? { 'data-color': String(color) } : {}),
         ...rest,
       },
       children
     )
 
-  return { Text }
+  const AnimatePresence = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
+
+  return { Text, AnimatePresence }
 })
 
 import { StreakChip } from '../StreakChip'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  useReducedMotionMock.mockReturnValue(false)
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Placeholder text rendering (AC1)
+// 1. Placeholder text rendering
 // ─────────────────────────────────────────────────────────────────────────────
-describe('StreakChip renders placeholder text when no dayCount is given (AC1)', () => {
+describe('StreakChip renders placeholder text when no dayCount is given', () => {
   it('renders "Day —" with no props', () => {
     render(React.createElement(StreakChip))
     expect(screen.getByText('Day —')).toBeTruthy()
@@ -59,23 +76,19 @@ describe('StreakChip renders placeholder text when no dayCount is given (AC1)', 
     expect(screen.getByText('Day —')).toBeTruthy()
   })
 
-  it('does NOT render "Day 0" when dayCount is 0 — falls back to placeholder (AC1 edge case)', () => {
-    // dayCount=0 is a streak-zero edge case; per story spec the ?? operator means 0 renders as
-    // "Day 0" (nullish coalescing), but the story notes this as a 2-7 contract gap to revisit.
-    // This test documents the DESIRED behavior: dayCount=0 should render placeholder "Day —",
-    // NOT "Day 0". This test is intentionally red until the implementation handles 0 specially.
+  it('renders "Day 0" when dayCount is 0 — does NOT collapse to placeholder', () => {
+    // Per story spec: dayCount=0 renders "Day 0", NOT "Day —"
+    // Zero-streak shows "Day 0" to keep chip placement predictable.
     render(React.createElement(StreakChip, { dayCount: 0 }))
-    // Should not contain "Day 0"
-    expect(screen.queryByText('Day 0')).toBeNull()
-    // Should show the placeholder instead
-    expect(screen.getByText('Day —')).toBeTruthy()
+    expect(screen.getByText('Day 0')).toBeTruthy()
+    expect(screen.queryByText('Day —')).toBeNull()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. dayCount prop rendering (AC1)
+// 2. dayCount prop rendering
 // ─────────────────────────────────────────────────────────────────────────────
-describe('StreakChip renders dayCount when provided (AC1)', () => {
+describe('StreakChip renders dayCount when provided', () => {
   it('renders "Day 5" when dayCount={5}', () => {
     render(React.createElement(StreakChip, { dayCount: 5 }))
     expect(screen.getByText('Day 5')).toBeTruthy()
@@ -98,13 +111,19 @@ describe('StreakChip renders dayCount when provided (AC1)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Accessibility (AC6)
+// 3. Accessibility
 // ─────────────────────────────────────────────────────────────────────────────
-describe('StreakChip accessibility (AC6)', () => {
+describe('StreakChip accessibility', () => {
   it('has accessibilityLabel "Day — streak" with no props', () => {
     render(React.createElement(StreakChip))
     const chip = screen.getByText('Day —')
     expect(chip.getAttribute('aria-label')).toBe('Day — streak')
+  })
+
+  it('has accessibilityLabel "Day 0 streak" when dayCount={0}', () => {
+    render(React.createElement(StreakChip, { dayCount: 0 }))
+    const chip = screen.getByText('Day 0')
+    expect(chip.getAttribute('aria-label')).toBe('Day 0 streak')
   })
 
   it('has accessibilityLabel "Day 5 streak" when dayCount={5}', () => {
@@ -113,7 +132,7 @@ describe('StreakChip accessibility (AC6)', () => {
     expect(chip.getAttribute('aria-label')).toBe('Day 5 streak')
   })
 
-  it('has accessibilityRole="text" (non-interactive chip) (AC6)', () => {
+  it('has accessibilityRole="text" (non-interactive chip)', () => {
     render(React.createElement(StreakChip))
     const chip = screen.getByText('Day —')
     expect(chip.getAttribute('role')).toBe('text')
@@ -121,28 +140,113 @@ describe('StreakChip accessibility (AC6)', () => {
 
   it('is reachable by getByRole("text", { name: "Day — streak" })', () => {
     render(React.createElement(StreakChip))
-    // Verify the element exposes the correct accessible name
     expect(screen.getByRole('text', { name: 'Day — streak' })).toBeTruthy()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. No animation / transition props (AC5)
+// 4. state prop controls color token
 // ─────────────────────────────────────────────────────────────────────────────
-describe('StreakChip has no animation props — static by design (AC5)', () => {
+describe('StreakChip state prop controls color', () => {
+  it('state="pending" (default) uses $color8 (stone)', () => {
+    render(React.createElement(StreakChip, { dayCount: 5 }))
+    const chip = screen.getByText('Day 5')
+    expect(chip.getAttribute('data-color')).toBe('$color8')
+  })
+
+  it('state="pending" explicit uses $color8', () => {
+    render(React.createElement(StreakChip, { dayCount: 5, state: 'pending' }))
+    const chip = screen.getByText('Day 5')
+    expect(chip.getAttribute('data-color')).toBe('$color8')
+  })
+
+  it('state="active" uses $color (text token — higher contrast)', () => {
+    render(React.createElement(StreakChip, { dayCount: 5, state: 'active' }))
+    const chip = screen.getByText('Day 5')
+    expect(chip.getAttribute('data-color')).toBe('$color')
+  })
+
+  it('state="active" renders different color than state="pending"', () => {
+    const { unmount } = render(React.createElement(StreakChip, { dayCount: 5, state: 'pending' }))
+    const pendingColor = screen.getByText('Day 5').getAttribute('data-color')
+    unmount()
+    render(React.createElement(StreakChip, { dayCount: 5, state: 'active' }))
+    const activeColor = screen.getByText('Day 5').getAttribute('data-color')
+    expect(activeColor).not.toBe(pendingColor)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Day-increment spring: fires on N → N+1 only
+// ─────────────────────────────────────────────────────────────────────────────
+describe('StreakChip day-increment spring', () => {
+  it('fires designEnter transition on increment (3 → 4)', () => {
+    const { rerender } = render(React.createElement(StreakChip, { dayCount: 3 }))
+    rerender(React.createElement(StreakChip, { dayCount: 4 }))
+    const chip = screen.getByText('Day 4')
+    expect(chip.getAttribute('data-transition')).toBe('designEnter')
+    expect(chip.getAttribute('data-enter-style')).toBe('present')
+  })
+
+  it('does NOT fire transition on decrement (4 → 3)', () => {
+    const { rerender } = render(React.createElement(StreakChip, { dayCount: 4 }))
+    rerender(React.createElement(StreakChip, { dayCount: 3 }))
+    const chip = screen.getByText('Day 3')
+    expect(chip.getAttribute('data-transition')).toBeNull()
+  })
+
+  it('does NOT fire transition on initial mount with defined dayCount', () => {
+    render(React.createElement(StreakChip, { dayCount: 5 }))
+    const chip = screen.getByText('Day 5')
+    expect(chip.getAttribute('data-transition')).toBeNull()
+  })
+
+  it('does NOT fire transition when dayCount goes from undefined to defined (initial mount of real value)', () => {
+    const { rerender } = render(React.createElement(StreakChip, { dayCount: undefined }))
+    rerender(React.createElement(StreakChip, { dayCount: 5 }))
+    const chip = screen.getByText('Day 5')
+    expect(chip.getAttribute('data-transition')).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. prefers-reduced-motion collapses spring to 100ms
+// ─────────────────────────────────────────────────────────────────────────────
+describe('StreakChip prefers-reduced-motion', () => {
+  it('collapses designEnter to "100ms" tween under reduced motion', () => {
+    useReducedMotionMock.mockReturnValue(true)
+    const { rerender } = render(React.createElement(StreakChip, { dayCount: 3 }))
+    rerender(React.createElement(StreakChip, { dayCount: 4 }))
+    const chip = screen.getByText('Day 4')
+    expect(chip.getAttribute('data-transition')).toBe('100ms')
+  })
+
+  it('uses designEnter when reduced motion is off', () => {
+    useReducedMotionMock.mockReturnValue(false)
+    const { rerender } = render(React.createElement(StreakChip, { dayCount: 3 }))
+    rerender(React.createElement(StreakChip, { dayCount: 4 }))
+    const chip = screen.getByText('Day 4')
+    expect(chip.getAttribute('data-transition')).toBe('designEnter')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. No animation on static renders
+// ─────────────────────────────────────────────────────────────────────────────
+describe('StreakChip has no animation props on static render — static by design', () => {
   it('rendered element has no data-animation attribute', () => {
     render(React.createElement(StreakChip))
     const chip = screen.getByText('Day —')
     expect(chip.getAttribute('data-animation')).toBeNull()
   })
 
-  it('rendered element has no data-transition attribute', () => {
+  it('rendered element has no data-transition attribute on initial render', () => {
     render(React.createElement(StreakChip))
     const chip = screen.getByText('Day —')
     expect(chip.getAttribute('data-transition')).toBeNull()
   })
 
-  it('rendered element has no data-enter-style attribute', () => {
+  it('rendered element has no data-enter-style attribute on initial render', () => {
     render(React.createElement(StreakChip))
     const chip = screen.getByText('Day —')
     expect(chip.getAttribute('data-enter-style')).toBeNull()

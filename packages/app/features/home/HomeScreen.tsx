@@ -2,6 +2,7 @@ import { AnimatePresence, YStack, Text, XStack, ScrollView, View, useReducedMoti
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
+import type { StreakState } from 'app/state/streak'
 import { useEffect, useState } from 'react'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
@@ -164,6 +165,10 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
 
 /** StreakChip slot — anchored to top-right of the centered content card (M1 fix: moved inside maxWidth={1024} YStack) */
 function HomeStreakChipSlot() {
+  const streak = use$(store$.views.streak!) as StreakState | undefined
+  const currentStreak = streak?.currentStreak ?? 0
+  const today = getTodayJournalDayString()
+  const state = streak?.lastQualifyingDate === today ? 'active' : 'pending'
   return (
     <View
       testID="home-streak-chip-slot"
@@ -171,7 +176,7 @@ function HomeStreakChipSlot() {
       top="$4"
       right="$4"
     >
-      <StreakChip />
+      <StreakChip dayCount={currentStreak} state={state} />
     </View>
   )
 }

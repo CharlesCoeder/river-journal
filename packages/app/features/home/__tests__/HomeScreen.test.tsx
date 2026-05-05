@@ -58,8 +58,8 @@ vi.mock('@my/ui', async () => {
       children
     )
 
-  // ─── StreakChip stub — forwards text content and a11y props for HomeScreen assertions
-  const StreakChip = ({ dayCount, ...props }: any) => {
+    // ─── StreakChip stub — forwards dayCount, state and a11y props for HomeScreen assertions
+  const StreakChip = ({ dayCount, state, ...props }: any) => {
     const label = dayCount != null ? `Day ${dayCount} streak` : 'Day — streak'
     const text = dayCount != null ? `Day ${dayCount}` : 'Day —'
     return ReactModule.createElement(
@@ -68,6 +68,7 @@ vi.mock('@my/ui', async () => {
         'data-testid': 'streak-chip',
         role: 'text',
         'aria-label': label,
+        ...(state !== undefined ? { 'data-state': state } : {}),
       },
       text
     )
@@ -115,14 +116,31 @@ vi.mock('solito/navigation', () => ({
 }))
 
 // ─── Legend State ────────────────────────────────────────────────────────────
+// use$ is called with an observable reference; the mock reads .get() off whatever is passed.
+// For store$.views.streak (an observable function), we return streakMockValue.
+// For store$.views.statsByDate(...) results (plain objects), we return them directly.
+let streakMockValue: any = undefined
+
 vi.mock('@legendapp/state/react', () => ({
-  use$: vi.fn(() => null),
+  use$: vi.fn((obs: any) => {
+    if (obs && typeof obs === 'object' && typeof obs.get === 'function') {
+      return obs.get()
+    }
+    return null
+  }),
 }))
 
 vi.mock('app/state/store', () => ({
   store$: {
     views: {
-      statsByDate: vi.fn(() => ({})),
+      statsByDate: vi.fn(() => ({
+        // plain object — not an observable; use$ will get null (the fallback path in HomeScreen)
+        get: vi.fn(() => null),
+      })),
+      // streak is accessed as store$.views.streak! — it's a computed observable
+      get streak() {
+        return { get: () => streakMockValue }
+      },
     },
     session: {
       get: vi.fn(() => ({ isAuthenticated: false })),
@@ -131,7 +149,7 @@ vi.mock('app/state/store', () => ({
 }))
 
 vi.mock('app/state/date-utils', () => ({
-  getTodayJournalDayString: () => '2026-05-02',
+  getTodayJournalDayString: () => '2026-05-04',
 }))
 
 // ─── Dialog components ───────────────────────────────────────────────────────
@@ -187,6 +205,7 @@ afterEach(() => {
   cleanup()
   pushSpy.mockClear()
   reduceMotionValue = false
+  streakMockValue = undefined
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -441,17 +460,18 @@ describe('Dialog components preserved (AC6)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 9. Story 1-7: StreakChip mounts in home (AC1, AC2, AC6)
+// 9. StreakChip mounts in home with real streak data wiring
 // ─────────────────────────────────────────────────────────────────────────────
-describe('StreakChip mounts in HomeScreen (1-7 AC1, AC2, AC6)', () => {
+describe('StreakChip mounts in HomeScreen with real streak data wiring', () => {
   it('renders a StreakChip element inside the home layout', () => {
     render(React.createElement(HomeScreen))
     expect(screen.getByTestId('streak-chip')).toBeTruthy()
   })
 
-  it('StreakChip displays the placeholder "Day —" text', () => {
+  it('StreakChip displays "Day 0" when no streak data (zero default)', () => {
+    // When streak view returns undefined, fallback is currentStreak=0 → "Day 0"
     render(React.createElement(HomeScreen))
-    expect(screen.getByText('Day —')).toBeTruthy()
+    expect(screen.getByText('Day 0')).toBeTruthy()
   })
 
   it('StreakChip has accessibilityRole="text"', () => {
@@ -460,17 +480,56 @@ describe('StreakChip mounts in HomeScreen (1-7 AC1, AC2, AC6)', () => {
     expect(chip.getAttribute('role')).toBe('text')
   })
 
-  it('StreakChip has accessibilityLabel "Day — streak"', () => {
+  it('StreakChip has accessibilityLabel "Day 0 streak" when no streak data', () => {
     render(React.createElement(HomeScreen))
     const chip = screen.getByTestId('streak-chip')
-    expect(chip.getAttribute('aria-label')).toBe('Day — streak')
+    expect(chip.getAttribute('aria-label')).toBe('Day 0 streak')
   })
 
   it('StreakChip slot wrapper still has testID "home-streak-chip-slot" for continuity', () => {
     render(React.createElement(HomeScreen))
-    // The wrapper <View testID="home-streak-chip-slot"> must still be present
-    // so existing 1-6 test infrastructure doesn't break
     expect(screen.getByTestId('home-streak-chip-slot')).toBeTruthy()
+  })
+
+  it('chip receives dayCount from streak view currentStreak (Day 7)', () => {
+    streakMockValue = {
+      currentStreak: 7,
+      lastQualifyingDate: '2026-04-30',
+      longestStreak: 7,
+      unlockTokensEarned: 1,
+      unlockedThemes: [],
+      nextUnlockMilestone: 30,
+    }
+    render(React.createElement(HomeScreen))
+    expect(screen.getByText('Day 7')).toBeTruthy()
+  })
+
+  it('chip receives state="active" when lastQualifyingDate is today', () => {
+    streakMockValue = {
+      currentStreak: 5,
+      lastQualifyingDate: '2026-05-04', // matches mocked getTodayJournalDayString
+      longestStreak: 5,
+      unlockTokensEarned: 0,
+      unlockedThemes: [],
+      nextUnlockMilestone: 7,
+    }
+    render(React.createElement(HomeScreen))
+    const chip = screen.getByTestId('streak-chip')
+    expect(chip.getAttribute('data-state')).toBe('active')
+  })
+
+  it('chip receives state="pending" when lastQualifyingDate is not today', () => {
+    streakMockValue = {
+      currentStreak: 5,
+      lastQualifyingDate: '2026-05-03', // yesterday — different from mocked today
+      longestStreak: 5,
+      unlockTokensEarned: 0,
+      unlockedThemes: [],
+      nextUnlockMilestone: 7,
+    }
+    render(React.createElement(HomeScreen))
+    const chip = screen.getByTestId('streak-chip')
+    expect(chip.getAttribute('data-state')).toBe('pending')
   })
 })
 

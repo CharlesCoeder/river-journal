@@ -1,5 +1,10 @@
+// Note: this file was named "StreakPlaceholderScreen" when it held a coming-soon stub.
+// The function name is kept as-is to avoid downstream import updates across three platform routes.
+// The screen is no longer a placeholder — it renders the real Streak/Profile screen body.
+
 import { YStack, Text } from '@my/ui'
 import { WordLinkNav } from './WordLinkNav'
+import { GraceDayInventory } from 'app/features/streak/GraceDayInventory'
 
 export function StreakPlaceholderScreen() {
   return (
@@ -17,10 +22,9 @@ export function StreakPlaceholderScreen() {
       $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
     >
       <WordLinkNav variant="browse" />
-      <YStack flex={1} alignItems="center" justifyContent="center">
-        <Text fontFamily="$body" fontSize="$4" color="$color8">
-          Streak — coming soon
-        </Text>
+      <YStack flex={1} alignItems="center" justifyContent="flex-start" gap="$6" paddingTop="$8">
+        <Text fontFamily="$body" fontSize="$5" color="$color">Your streak</Text>
+        <GraceDayInventory />
       </YStack>
     </YStack>
   )
