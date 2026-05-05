@@ -8,7 +8,9 @@ import {
   isWeb,
   ExpandingLineButton,
   WordCounter,
+  useReducedMotion,
 } from '@my/ui'
+import { Eye, EyeOff } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
@@ -23,15 +25,20 @@ import {
   hidePersistentEditor,
   updatePersistentEditorHeaderHeight,
   updatePersistentEditorBottomBarHeight,
+  setFocusMode,
+  hasReachedAutosaveCheckpoint,
 } from 'app/state/store'
 import { use$ } from '@legendapp/state/react'
 
 export function JournalScreen() {
   const router = useRouter()
-  const [showSaveDialog, setShowSaveDialog] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false)
   const activeFlow = use$(store$.activeFlow)
+  const reduceMotion = useReducedMotion()
   useTrackKeyboardHeight()
+
+  // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
+  const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
 
   const handleBackToHome = () => {
     hidePersistentEditor()
@@ -39,22 +46,32 @@ export function JournalScreen() {
   }
 
   const handleSaveFlow = () => {
-    setIsSaving(true)
     saveActiveFlowSession()
-    setIsSaving(false)
-    setShowSaveDialog(false)
+    setShowExitConfirmDialog(false)
     hidePersistentEditor()
     router.replace('/journal/celebration')
   }
 
+  const handleConfirmExit = () => {
+    setShowExitConfirmDialog(false)
+    handleBackToHome()
+  }
+
   const handleExitFlow = () => {
     const content = getActiveFlowContent()
-    if (content.trim()) {
-      // Save directly and go to celebration — no confirmation dialog needed
-      handleSaveFlow()
-    } else {
+    const wordCount = ephemeral$.instantWordCount.peek()
+    const checkpoint = hasReachedAutosaveCheckpoint()
+    if (!content.trim()) {
+      // No content at all — exit straight to home, no dialog
       handleBackToHome()
+      return
     }
+    if (wordCount < 50 && !checkpoint) {
+      setShowExitConfirmDialog(true)
+      return
+    }
+    // ≥50 words OR checkpoint reached → save and celebrate
+    handleSaveFlow()
   }
 
   const handleHeaderLayout = useCallback((e: LayoutChangeEvent) => {
@@ -106,7 +123,7 @@ export function JournalScreen() {
               $lg={{ height: '$12' }}
               onLayout={handleHeaderLayout}
             />
-            <Editor />
+            <Editor focusMode={focusMode} />
           </YStack>
         )}
       </AnimatePresence>
@@ -141,7 +158,17 @@ export function JournalScreen() {
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <WordCounter count={wordCount} />
+                <XStack alignItems="center" gap="$3">
+                  <ExpandingLineButton
+                    size="default"
+                    onPress={() => setFocusMode(!focusMode)}
+                    aria-label="Toggle focus mode"
+                    aria-pressed={focusMode}
+                  >
+                    {focusMode ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </ExpandingLineButton>
+                  <WordCounter count={wordCount} />
+                </XStack>
 
                 <ExpandingLineButton
                   size="default"
@@ -155,11 +182,11 @@ export function JournalScreen() {
         </AnimatePresence>
       </KeyboardOffsetView>
 
-      {/* Save dialog */}
+      {/* Exit-confirm dialog — shown when tapping Finish Session with <50 words and no checkpoint */}
       <Dialog
-        open={showSaveDialog || isSaving}
+        open={showExitConfirmDialog}
         onOpenChange={(open) => {
-          if (!isSaving) setShowSaveDialog(open)
+          setShowExitConfirmDialog(open)
         }}
       >
         <Dialog.Portal>
@@ -173,7 +200,7 @@ export function JournalScreen() {
           <Dialog.Content
             key="content"
             animateOnly={['transform', 'opacity']}
-            transition="designModal"
+            transition={reduceMotion ? '100ms' : 'designModal'}
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: 10, opacity: 0 }}
             backgroundColor="$background"
@@ -188,17 +215,17 @@ export function JournalScreen() {
           >
             <Dialog.Title
               fontFamily="$journal"
-              fontSize={24}
+              fontSize="$6"
               color="$color"
             >
-              Save this flow?
+              You've barely written
             </Dialog.Title>
             <Dialog.Description
               fontFamily="$body"
-              fontSize={14}
+              fontSize="$3"
               color="$color8"
             >
-              Your words will be saved and you can revisit them anytime.
+              Exit without saving? Your words won't be kept.
             </Dialog.Description>
 
             <XStack
@@ -206,38 +233,18 @@ export function JournalScreen() {
               justifyContent="flex-end"
               marginTop="$3"
             >
-              <Dialog.Close
-                displayWhenAdapted
-                asChild
+              <ExpandingLineButton
+                size="default"
+                onPress={() => setShowExitConfirmDialog(false)}
               >
-                <Text
-                  fontFamily="$body"
-                  fontSize={12}
-                  letterSpacing={3}
-                  textTransform="uppercase"
-                  color="$color8"
-                  cursor="pointer"
-                  hoverStyle={{ color: '$color' }}
-                  onPress={() => setShowSaveDialog(false)}
-                >
-                  Cancel
-                </Text>
-              </Dialog.Close>
-              <Text
-                fontFamily="$body"
-                fontSize={12}
-                letterSpacing={3}
-                textTransform="uppercase"
-                color="$color"
-                cursor="pointer"
-                hoverStyle={{ opacity: 0.7 }}
-                onPress={handleSaveFlow}
-                borderBottomWidth={1}
-                borderColor="$color5"
-                paddingBottom={2}
+                Cancel
+              </ExpandingLineButton>
+              <ExpandingLineButton
+                size="default"
+                onPress={handleConfirmExit}
               >
-                {isSaving ? 'Saving...' : 'Save Flow'}
-              </Text>
+                Confirm
+              </ExpandingLineButton>
             </XStack>
           </Dialog.Content>
         </Dialog.Portal>

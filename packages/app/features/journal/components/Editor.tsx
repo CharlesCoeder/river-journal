@@ -14,9 +14,11 @@ export interface EditorProps {
   readOnly?: boolean
   /** Initial content to display (used when readOnly is true) */
   initialContent?: string
+  /** When true, dims all paragraphs except the one containing the cursor */
+  focusMode?: boolean
 }
 
-export const Editor = ({ readOnly = false, initialContent }: EditorProps) => {
+export const Editor = ({ readOnly = false, initialContent, focusMode = false }: EditorProps) => {
   const theme = useTheme()
   const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING
   const families = FONT_PAIRING_FAMILIES[fontPairing]
@@ -89,6 +91,7 @@ export const Editor = ({ readOnly = false, initialContent }: EditorProps) => {
         fontFamilies={fontFamilies}
         readOnly={readOnly}
         initialContent={readOnly ? initialContent : undefined}
+        focusMode={focusMode}
       >
         {!readOnly && <LexicalSync />}
       </UniversalLexicalEditor>

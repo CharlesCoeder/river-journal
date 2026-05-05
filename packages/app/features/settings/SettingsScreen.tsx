@@ -1,8 +1,8 @@
-import { AnimatePresence, ScrollView, Text, XStack, YStack, View } from '@my/ui'
+import { AnimatePresence, ScrollView, Text, XStack, YStack, View, ExpandingLineButton } from '@my/ui'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
-import { store$ } from 'app/state/store'
+import { store$, setFocusMode } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
 import { signOut } from 'app/utils'
 import { useCallback, useEffect, useState } from 'react'
@@ -87,7 +87,7 @@ function SectionHeader({ children }: { children: string }) {
 // ---------------------------------------------------------------------------
 
 const STAGGER_MS = 100
-const SECTION_COUNT = 7
+const SECTION_COUNT = 8
 
 export function SettingsScreen() {
   const router = useRouter()
@@ -95,6 +95,8 @@ export function SettingsScreen() {
   const userId = use$(store$.session.userId)
   const syncEnabled = use$(store$.session.syncEnabled)
   const currentMode = use$(encryptionSetup$.currentMode)
+  // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
+  const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [visibleCount, setVisibleCount] = useState(0)
   useEffect(() => {
@@ -302,10 +304,28 @@ export function SettingsScreen() {
               </YStack>
             )}
 
-            {/* Section 7: Footer */}
+            {/* Section 7: Editor preferences */}
             {visibleCount >= 7 && (
+              <YStack key="section-7" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <SectionHeader>Editor</SectionHeader>
+                <XStack justifyContent="space-between" alignItems="center">
+                  <Text fontFamily="$body" fontSize="$4" color="$color">
+                    Focus mode
+                  </Text>
+                  <ExpandingLineButton
+                    size="default"
+                    onPress={() => setFocusMode(!focusMode)}
+                  >
+                    {focusMode ? 'On' : 'Off'}
+                  </ExpandingLineButton>
+                </XStack>
+              </YStack>
+            )}
+
+            {/* Section 8: Footer */}
+            {visibleCount >= 8 && (
               <XStack
-                key="section-7"
+                key="section-8"
                 transition="designEnter"
                 enterStyle={{ opacity: 0, y: 10 }}
                 opacity={1}

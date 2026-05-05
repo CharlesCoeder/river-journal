@@ -142,6 +142,42 @@ export const injectFontCSS = (): (() => void) => {
 }
 
 /**
+ * Injects focus-mode CSS rules into the WebView's <style> block on native.
+ * Same rules as lexical-theme.css — kept in sync manually.
+ * Returns a cleanup function to remove the injected styles.
+ */
+export const injectFocusModeCSS = (): (() => void) => {
+  const styleId = 'rj-focus-mode-css'
+
+  const existingStyle = document.getElementById(styleId)
+  if (existingStyle) {
+    return () => {
+      existingStyle.remove()
+    }
+  }
+
+  const css = `
+    .rj-focus-dim { opacity: 0.4; transition: opacity 200ms ease-out; }
+    .rj-focus-active { opacity: 1; transition: opacity 200ms ease-out; }
+    @media (prefers-reduced-motion: reduce) {
+      .rj-focus-dim, .rj-focus-active { transition: opacity 0ms; }
+    }
+  `
+
+  const style = document.createElement('style')
+  style.id = styleId
+  style.textContent = css
+  document.head.appendChild(style)
+
+  return () => {
+    const injectedStyle = document.getElementById(styleId)
+    if (injectedStyle) {
+      injectedStyle.remove()
+    }
+  }
+}
+
+/**
  * Creates mobile-specific Lexical config without CSS class theme mappings
  * since we use inline styles with dynamic theme values
  */

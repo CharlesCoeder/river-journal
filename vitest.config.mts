@@ -29,6 +29,9 @@ export default defineConfig({
         import.meta.dirname,
         'packages/app/features/navigation/__mocks__/my-ui.ts'
       ),
+      // Map the 'app/*' workspace alias (used in source imports) to the
+      // actual package directory so Vitest can resolve it in test environments.
+      app: path.resolve(import.meta.dirname, 'packages/app'),
     },
   },
   test: {

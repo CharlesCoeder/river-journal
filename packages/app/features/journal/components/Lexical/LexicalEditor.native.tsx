@@ -12,8 +12,9 @@ import { $getRoot } from 'lexical';
 import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown';
 import { ALL_TRANSFORMERS } from './transformers';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { injectFontCSS, createMobileLexicalConfig } from './utils';
+import { injectFontCSS, injectFocusModeCSS, createMobileLexicalConfig } from './utils';
 import type { LexicalEditorNativeProps } from './LexicalEditor.types';
+import { FocusModeParagraphPlugin } from './plugins/FocusModeParagraphPlugin';
 
 /**
  * Plugin to set editor to read-only mode
@@ -87,7 +88,8 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   contentRevision,
   themeValues,
   fontFamilies,
-  readOnly = false
+  readOnly = false,
+  focusMode = false,
 }) => {
   const initialConfig = createMobileLexicalConfig();
   const contentFont = fontFamilies?.content || 'Newsreader';
@@ -96,6 +98,12 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   // Inject font CSS when component mounts
   useEffect(() => {
     const cleanup = injectFontCSS();
+    return cleanup;
+  }, []);
+
+  // Inject focus-mode CSS into the WebView
+  useEffect(() => {
+    const cleanup = injectFocusModeCSS();
     return cleanup;
   }, []);
   return <LexicalComposer initialConfig={initialConfig}>
@@ -128,6 +136,9 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
 
         {/* Instant word count — computed inside WebView, only a number crosses the bridge */}
         {!readOnly && onWordCountChange ? <WordCountPlugin onWordCountChange={onWordCountChange} /> : null}
+
+        {/* Focus mode plugin — dims non-active paragraphs when enabled */}
+        {!readOnly && <FocusModeParagraphPlugin focusMode={focusMode} readOnly={readOnly} />}
 
         {/* Sync content with Legend State */}
         <ContentSyncer content={initialContent || ''} revision={contentRevision} />

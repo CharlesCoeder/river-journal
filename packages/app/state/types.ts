@@ -98,6 +98,15 @@ export interface UserProfile {
   fontPairing: FontPairingId
   hotkeyOverrides: HotkeyOverrides
 
+  /**
+   * Editor-specific preferences. Optional at the type level for backward compat
+   * with persisted legacy profiles created before this field was added.
+   * Always set on newly created profiles. Consumers read with `?? false`.
+   */
+  editor?: {
+    focusMode: boolean
+  }
+
   sync: {
     word_goal: boolean
     themeName: boolean

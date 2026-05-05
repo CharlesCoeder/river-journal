@@ -16,6 +16,8 @@ export interface LexicalEditorBaseProps {
   readOnly?: boolean
   /** Initial content to display (markdown format) */
   initialContent?: string
+  /** When true, dims all paragraphs except the one containing the cursor */
+  focusMode?: boolean
 }
 
 // Web version props

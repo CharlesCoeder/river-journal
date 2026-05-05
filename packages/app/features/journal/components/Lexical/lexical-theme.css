@@ -39,3 +39,10 @@
     "Courier New", monospace;
   font-size: 0.95em;
 }
+
+/* Focus mode — paragraph dim/active treatment */
+.rj-focus-dim { opacity: 0.4; transition: opacity 200ms ease-out; }
+.rj-focus-active { opacity: 1; transition: opacity 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .rj-focus-dim, .rj-focus-active { transition: opacity 0ms; }
+}

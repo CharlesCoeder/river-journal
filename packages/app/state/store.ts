@@ -740,7 +740,8 @@ export const updatePersistentEditorContent = (content: string): void => {
 // -----------------------------------------------------------------
 
 /**
- * Creates a default profile if none exists.
+ * Creates a default profile if none exists. Also ensures the `editor` sub-object
+ * exists on legacy profiles that were persisted before this field was added.
  */
 const ensureProfile = () => {
   if (!store$.profile.get()) {
@@ -750,6 +751,7 @@ const ensureProfile = () => {
       customTheme: null,
       fontPairing: DEFAULT_FONT_PAIRING,
       hotkeyOverrides: {},
+      editor: { focusMode: false },
       sync: {
         word_goal: true,
         themeName: true,
@@ -757,7 +759,35 @@ const ensureProfile = () => {
         fontPairing: true,
       },
     })
+  } else if (!store$.profile.editor.get()) {
+    // Migration: legacy profiles lack the editor sub-object — backfill it.
+    store$.profile.editor.set({ focusMode: false })
   }
+}
+
+/**
+ * Sets focus mode preference on the user profile.
+ * Creates a profile if none exists (mirrors setWordGoal / setFontPairing pattern).
+ */
+export const setFocusMode = (value: boolean): void => {
+  ensureProfile()
+  store$.profile.editor.focusMode.set(value)
+}
+
+/**
+ * True when the active flow has been autosaved at least once this session.
+ * Used by JournalScreen's exit-confirm gate.
+ *
+ * MVP semantics: returns true iff `store$.activeFlow.content` (the debounced
+ * value, 300ms behind keystrokes) is non-empty. The 300ms editor → store
+ * debounce is the only persist path during writing; once it fires,
+ * activeFlow.content is non-empty and we treat that as "checkpoint reached".
+ *
+ * NOTE: activeFlow has only { content, wordCount } — there is no `id` field.
+ */
+export function hasReachedAutosaveCheckpoint(): boolean {
+  const active = store$.activeFlow.peek()
+  return !!active?.content?.trim()
 }
 
 /**

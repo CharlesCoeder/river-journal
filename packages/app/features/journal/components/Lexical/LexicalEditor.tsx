@@ -14,6 +14,7 @@ import { ALL_TRANSFORMERS } from './transformers'
 
 import { createBaseLexicalConfig } from './lexical-config'
 import type { LexicalEditorProps } from './LexicalEditor.types'
+import { FocusModeParagraphPlugin } from './plugins/FocusModeParagraphPlugin'
 
 /**
  * Plugin to set editor to read-only mode
@@ -53,6 +54,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
   fontFamilies,
   readOnly = false,
   initialContent,
+  focusMode = false,
 }) => {
   const initialConfig = createBaseLexicalConfig()
   const contentFont = fontFamilies?.content || 'Newsreader, Georgia, "Times New Roman", serif'
@@ -111,6 +113,11 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <HistoryPlugin />
             <MarkdownShortcutPlugin transformers={ALL_TRANSFORMERS} />
           </>
+        )}
+
+        {/* Focus mode plugin — dims non-active paragraphs when enabled */}
+        {!readOnly && (
+          <FocusModeParagraphPlugin focusMode={focusMode} readOnly={readOnly} />
         )}
 
         {/* Render children (our LexicalSync component) inside the provider */}
