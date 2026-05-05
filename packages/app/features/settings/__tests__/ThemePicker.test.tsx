@@ -33,6 +33,8 @@ vi.mock('@my/ui', async () => {
     XStack: passthrough('div'),
     YStack: passthrough('div'),
     View: passthrough('div'),
+    Button: passthrough('button'),
+    ExpandingLineButton: passthrough('button'),
     isWeb: true,
   }
 })
@@ -40,6 +42,9 @@ vi.mock('@my/ui', async () => {
 vi.mock('@legendapp/state/react', () => ({
   use$: (obs$: any) => {
     if (obs$ === '__mock_themeName') return mockThemeName()
+    if (obs$ === '__mock_customTheme') return null
+    if (obs$ === '__mock_unlockedThemes') return []
+    if (obs$ === '__mock_streak') return { unlockTokensEarned: 0, currentStreak: 0 }
     return undefined
   },
 }))
@@ -48,15 +53,30 @@ vi.mock('app/state/store', () => ({
   store$: {
     profile: {
       themeName: '__mock_themeName',
+      customTheme: '__mock_customTheme',
+      unlockedThemes: '__mock_unlockedThemes',
+    },
+    views: {
+      streak: '__mock_streak',
     },
   },
   setTheme: (...args: unknown[]) => mockSetTheme(...args),
+  spendUnlockToken: vi.fn(),
 }))
 
 vi.mock('app/state/types', () => ({
   THEME_NAMES: ['ink', 'night', 'forest-morning', 'forest-night', 'leather', 'fireside'],
   LIGHT_THEMES: ['ink', 'forest-morning', 'leather'],
   DARK_THEMES: ['night', 'forest-night', 'fireside'],
+}))
+
+// Stub the streak module so importing ThemePicker doesn't trigger streak.ts's
+// store$.assign({ views: { streak: ... } }) side-effect (which crashes against
+// the partial store$ mock above). Tests in this file don't exercise unlock-token
+// behavior — that surface is covered by ThemePicker.unlock.test.tsx.
+vi.mock('app/state/streak', () => ({
+  useUnlockedThemes: () => ['ink', 'night', 'forest-morning', 'forest-night', 'leather', 'fireside'],
+  getThemePickerTier: () => 'free',
 }))
 
 vi.mock('@my/config/src/themes', () => ({
