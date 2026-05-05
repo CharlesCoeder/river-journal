@@ -1,12 +1,12 @@
 /**
  * state/streak.ts
  *
- * Pure-function client-side streak math.
+ * Pure-function client-side streak math + reactive wiring layer.
  * Architecture refs: D3 (client-authoritative streak math), D7 (boundary rule),
  * NFR20 (zero streak miscount — table-driven test surface is the contract).
  *
- * NO observable reads, NO I/O, NO side effects. The function takes plain data
- * (arrays or keyed Records) plus a `today` string and returns a snapshot.
+ * Pure function section: NO observable reads, NO I/O, NO side effects.
+ * Wiring section (below computeStreakState): attaches streak$ computed view to store$.
  */
 
 import { use$ } from '@legendapp/state/react'
@@ -37,7 +37,7 @@ export const MILESTONES: readonly number[] = Object.keys(STREAK_THEME_UNLOCKS)
 // declared `ThemeName[]` return. Mutation is prevented by convention + the
 // hook never exposing this constant directly. If runtime-mutation paranoia is
 // warranted later, change the hook's return type to `readonly ThemeName[]`
-// and freeze (a coordinated change across all consumers — Story 2.9 scope).
+// and freeze (a coordinated change across all consumers).
 const PAID_TIER_THEMES: ThemeName[] = [...THEME_NAMES]
 
 export interface StreakState {
@@ -220,22 +220,30 @@ export function computeStreakState(
  * should call `use$(store$.views.streak.currentStreak)` directly rather than
  * destructuring from this hook's output.
  *
- * @param tier 'free' | 'paid_monthly' | 'paid_yearly' — until Story 7.1 ships
- *             subscription_tier, callers pass 'free' literally.
+ * The 'free' branch returns the user-chosen `unlockedThemes` (sourced from
+ * `users.preferences.unlockedThemes` via `chosenUnlocks`). The hook signature
+ * is unchanged; its returned values come from `streak.unlockedThemes`, which
+ * is driven by `chosenUnlocks` in the wiring block below.
+ *
+ * @param tier 'free' | 'paid_monthly' | 'paid_yearly' — until subscription_tier
+ *             ships, callers pass 'free' literally.
  * @returns ThemeName[] — paid: all six (referentially stable across calls);
- *          free: streak-derived (passive map until Story 2.9 lands
- *          users.preferences.unlockedThemes).
+ *          free: user-chosen unlocks via chosenUnlocks.
  */
+/**
+ * Returns the subscription tier for the ThemePicker.
+ * Returns 'free' today. Exported as a seam for test injection.
+ */
+export function getThemePickerTier(): SubscriptionTier {
+  return 'free'
+}
+
 export function useUnlockedThemes(tier: SubscriptionTier): ThemeName[] {
-  // PAID-TIER EARLY RETURN — must run BEFORE the subscription hook so that:
+  // PAID-TIER EARLY RETURN — must run BEFORE use$() so that:
   //   (a) paid-tier callers do NOT subscribe to streak$ at all (perf: no re-render
   //       when streak changes for paid users who don't care), AND
-  //   (b) the referential-stability test can call this hook outside a React render
+  //   (b) referential-stability tests can call this hook outside a React render
   //       context for paid tiers without tripping use$'s component guard.
-  // The Rules of Hooks technically forbid conditional hook calls, BUT `use$` from
-  // Legend-State is a renderless subscription primitive that internally guards
-  // against non-render contexts; calling it AFTER the early return is safe and
-  // matches Legend-State's documented usage.
   if (tier === 'paid_monthly' || tier === 'paid_yearly') {
     return PAID_TIER_THEMES
   }
@@ -244,22 +252,21 @@ export function useUnlockedThemes(tier: SubscriptionTier): ThemeName[] {
   // store$.views.streak is always defined after module load (attached just below).
   const streak = use$(store$.views.streak!) as unknown as StreakState
   return streak.unlockedThemes
-  // TODO(Story 7.1 cleanup): once streak$ baked-in tier is dynamic, the paid-tier
-  // branch above becomes redundant — remove it then.
+  // Once streak$ baked-in tier becomes dynamic, the paid-tier branch above
+  // becomes redundant — remove it then.
 }
 
 // Midnight-rollover behavior: this computed reads getTodayJournalDayString()
 // inline. It does NOT auto-recompute when the wall clock crosses midnight —
 // it recomputes only when entries$/flows$/graceDays$ change. The next write
 // (or app foreground that triggers a sync read) will pick up the new day.
-// If a future story needs midnight-precise reactivity (e.g., a clock-driven
+// If a future surface needs midnight-precise reactivity (e.g., a clock-driven
 // "your streak is in danger today" surface), inject `today` as an observable
 // and write to it on a daily timer at the app shell level.
 
 // Side-effect: attaches streak$ computed view on module import. Imported transitively via app/state/store re-exports + initializeApp.
 // Type cast: store$.assign takes Partial<AppState>; here we deep-merge only the views.streak key.
 // Legend-State's assign() merges deeply, so passing a partial views object is safe at runtime.
-// The cast tells TypeScript to trust the partial-assign pattern (mirrors store.ts lines 790–916).
 store$.assign({
   views: {
     streak: () =>
@@ -268,8 +275,12 @@ store$.assign({
         flows$.get(),
         graceDays$.get(),
         getTodayJournalDayString(),
-        'free', // TODO(Story 7.1): replace literal with store$.profile.subscription_tier.get()
-        undefined // TODO(Story 2.9): replace with store$.profile.preferences.unlockedThemes?.get()
+        'free',
+        // chosenUnlocks: user-spent token destinations (Model B). When store$.profile is null
+        // (cold-start window before rehydration), unlockedThemes.get() returns undefined → ?? undefined
+        // → computeStreakState falls back to passive-map branch. Once profile loads, streak$
+        // re-evaluates with the user's actual chosen array.
+        store$.profile.unlockedThemes.get() ?? undefined
       ),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any,

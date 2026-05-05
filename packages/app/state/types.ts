@@ -107,6 +107,15 @@ export interface UserProfile {
     focusMode: boolean
   }
 
+  /**
+   * Themes the user has spent unlock tokens on (Model B — user-chosen unlocks).
+   * Length === number of tokens spent. Server source of truth: `users.preferences.unlockedThemes`
+   * JSONB array. Optional at the type level for backward compat with persisted profiles
+   * created before this field was added; consumers read with `?? []`.
+   */
+  unlockedThemes?: ThemeName[]
+
+
   sync: {
     word_goal: boolean
     themeName: boolean
