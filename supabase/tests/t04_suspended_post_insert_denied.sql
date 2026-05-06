@@ -19,7 +19,7 @@ BEGIN
   IF to_regclass('public.user_suspensions') IS NULL THEN
     -- Epic 5.1 has not landed; the predicate's exception clause returns FALSE
     -- (i.e. NOT suspended), so an INSERT here would be allowed. Skip-pass.
-    PERFORM ok(TRUE, 'user_suspensions table absent — skip (pre-Epic-5.1)');
+    PERFORM tap_ok(TRUE, 'user_suspensions table absent — skip (pre-Epic-5.1)');
     RETURN;
   END IF;
 
@@ -39,8 +39,9 @@ BEGIN
       IF SQLSTATE = '42501' THEN v_blocked := TRUE; END IF;
   END;
 
-  PERFORM ok(v_blocked, 'suspended user INSERT must be RLS-denied');
+  PERFORM tap_ok(v_blocked, 'suspended user INSERT must be RLS-denied');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

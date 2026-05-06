@@ -88,9 +88,12 @@ BEGIN
   -- descendants CTE: recursive walk via parent_post_id. Crosses author
   -- boundaries on purpose ("how much engagement did my post receive"
   -- semantics). Safe because the RPC returns only the integer count, never
-  -- descendant bodies/ids — no information leak. The recursive `LIMIT 99`
-  -- is a GLOBAL bound across the entire recursion (Postgres semantics),
-  -- not per-root. Acceptable because:
+  -- descendant bodies/ids — no information leak.
+  --
+  -- Depth bound: Postgres does not permit LIMIT inside the recursive term,
+  -- so we cap depth via `WHERE depth <= 99` instead. This prevents runaway
+  -- recursion on pathological reply chains. Combined with the outer
+  -- LEAST(..., 99) the UI affordance is unaffected:
   --   (a) YourPostsScreen pages at <= 50 rows;
   --   (b) descendant_count is a UI affordance count, not a precise number;
   --   (c) outer LEAST(..., 99) caps each row at 99, rendering "99+" in UI.
@@ -129,7 +132,7 @@ BEGIN
       FROM walk w
       JOIN collective_posts cp ON cp.parent_post_id = w.child_id
       WHERE cp.is_removed = FALSE
-      LIMIT 99   -- bounded global recursion (see CTE comment above)
+        AND w.depth < 99   -- depth-bounded recursion (see CTE comment above)
     )
     SELECT root_id, COUNT(*)::INT AS n FROM walk GROUP BY root_id
   )

@@ -24,8 +24,9 @@ BEGIN
       IF v_state = '42501' THEN v_denied := TRUE; END IF;
   END;
 
-  PERFORM ok(v_denied, 'unauthenticated collective_feed_page must raise SQLSTATE 42501');
+  PERFORM tap_ok(v_denied, 'unauthenticated collective_feed_page must raise SQLSTATE 42501');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

@@ -48,9 +48,10 @@ BEGIN
   WHERE id = v_p1
     AND body <> 'BODY-ONE-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.';
 
-  PERFORM ok(v_p1_count = 1, 'most-recent post P1 appears exactly once in preview');
-  PERFORM ok(v_dup = 0,      'no row has id=P1 with a truncated body (UNION non-overlap)');
+  PERFORM tap_ok(v_p1_count = 1, 'most-recent post P1 appears exactly once in preview');
+  PERFORM tap_ok(v_dup = 0,      'no row has id=P1 with a truncated body (UNION non-overlap)');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

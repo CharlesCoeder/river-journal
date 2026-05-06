@@ -27,8 +27,9 @@ BEGIN
       IF SQLSTATE = '42501' THEN v_blocked := TRUE; END IF;
   END;
 
-  PERFORM ok(v_blocked, 'sub-500 user INSERT must be RLS-denied');
+  PERFORM tap_ok(v_blocked, 'sub-500 user INSERT must be RLS-denied');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

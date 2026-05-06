@@ -35,8 +35,9 @@ BEGIN
       v_count := 0;
   END;
 
-  PERFORM ok(v_count = 0, 'sub-500 user must see zero rows from direct SELECT on collective_posts');
+  PERFORM tap_ok(v_count = 0, 'sub-500 user must see zero rows from direct SELECT on collective_posts');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

@@ -1,17 +1,35 @@
--- _helpers.sql — Shared seeding helpers for Story 3-1 SQL regression suite.
+-- _helpers.sql — Shared seeding helpers for the Collective SQL regression
+-- suite. Each numbered test file (t01..t13) includes this file via
+-- `\i _helpers.sql` so that the test_seed_*, test_become*, and tap_*
+-- helpers are defined in the test transaction.
 --
--- Loaded implicitly by each t01..t12 test file via \i (psql include) or
--- redefined inline when running under `supabase test db` (pgTAP). pgTAP loads
--- only files matching `t*.sql`, so this file is named with leading `_` to be
--- ignored by the runner — tests `\i _helpers.sql` themselves.
+-- Note on pg_prove discovery: the Supabase CLI's `test db` command invokes
+-- pg_prove against every *.sql file in this directory, so this file is
+-- *also* run standalone by the runner. Standalone it produces only function
+-- definitions (no SELECT plan(...) / SELECT * FROM finish()), which pg_prove
+-- reports as a parse warning ("No plan found in TAP output"). That warning
+-- is harmless and intentional — adding a top-level plan/finish here would
+-- corrupt the surrounding transaction state when test files `\i` this file.
+-- The 13 numbered tests are the suite of record.
 --
 -- Each test runs inside a transaction (BEGIN ... ROLLBACK) wrapped by pgTAP,
 -- so seeded rows are cleaned up automatically.
 
 -- Seed an auth user + public.users row. Returns the new user id.
+--
+-- SECURITY DEFINER + pinned search_path: tests routinely call test_become(...)
+-- to switch into the `authenticated` role mid-transaction, then later seed
+-- additional users. The `authenticated` role has no INSERT on auth.users, so
+-- without DEFINER semantics the second seed call fails with
+-- `permission denied for table users`. Running as the function owner
+-- (postgres, which has BYPASSRLS + INSERT on auth.users) keeps the helper
+-- usable from any role context. These helpers are loaded only inside test
+-- transactions and never reach production.
 CREATE OR REPLACE FUNCTION test_seed_user(p_email TEXT DEFAULT NULL)
 RETURNS UUID
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_uid UUID := gen_random_uuid();
@@ -30,10 +48,30 @@ BEGIN
 END;
 $$;
 
+-- Convenience: seed user + mark them 500-completed today (so collective RLS
+-- INSERT policies allow them to post). Returns the new user id.
+CREATE OR REPLACE FUNCTION test_seed_user_500(p_email TEXT DEFAULT NULL)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_uid UUID := test_seed_user(p_email);
+BEGIN
+  PERFORM test_seed_500_today(v_uid);
+  RETURN v_uid;
+END;
+$$;
+
 -- Seed a daily_entry + flows summing to >= 500 words for today's UTC day.
+-- SECURITY DEFINER for the same reason as test_seed_user: callers may have
+-- already switched into the `authenticated` role before invoking this.
 CREATE OR REPLACE FUNCTION test_seed_500_today(p_user UUID)
 RETURNS VOID
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_entry_id UUID := gen_random_uuid();
@@ -57,6 +95,8 @@ $$;
 CREATE OR REPLACE FUNCTION test_seed_sub500_today(p_user UUID)
 RETURNS VOID
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_entry_id UUID := gen_random_uuid();
@@ -100,5 +140,63 @@ BEGIN
   PERFORM set_config('role', 'anon', true);
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('request.jwt.claims', '{}', true);
+END;
+$$;
+
+-- TAP capture buffer.
+--
+-- pgTAP's ok()/is()/throws_ok()/etc. return the TAP line as text. When invoked
+-- via `SELECT ok(...)` at top level, psql prints the line and pg_prove parses
+-- it as TAP. But our test bodies need procedural logic (DECLARE/BEGIN with
+-- multiple seed users), so they live inside `DO $$ ... $$` blocks. Inside a
+-- DO block, only `PERFORM ok(...)` is legal — and PERFORM discards the
+-- returned TAP line, leaving pg_prove to report "Bad plan: planned N, ran 0".
+--
+-- Workaround: tests INSERT each assertion's TAP line into a per-session
+-- temp table, then SELECT them in order after the DO block to emit them onto
+-- stdout for pg_prove. Use the convenience helper `tap_ok(condition,
+-- description)` in place of `PERFORM ok(...)` and `SELECT * FROM tap_emit()`
+-- right before `SELECT * FROM finish();`.
+--
+-- The temp table is created lazily by tap_ok / tap_emit (so loading
+-- _helpers.sql outside a transaction does not leave a residue) and is
+-- dropped on transaction commit/rollback (ON COMMIT DROP).
+--
+-- Both helpers are SECURITY DEFINER so they remain functional after a test
+-- has called test_become(...) to switch into the `authenticated` role —
+-- which has no privileges on the postgres-owned temp table.
+
+CREATE OR REPLACE FUNCTION tap_ok(p_cond BOOLEAN, p_desc TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Suppress the harmless `relation already exists, skipping` NOTICE that
+  -- would otherwise fire on every assertion after the first.
+  PERFORM set_config('client_min_messages', 'warning', true);
+  CREATE TEMP TABLE IF NOT EXISTS _tap_lines (
+    line_no SERIAL PRIMARY KEY,
+    line TEXT NOT NULL
+  ) ON COMMIT DROP;
+  INSERT INTO _tap_lines(line) SELECT ok(p_cond, p_desc);
+END;
+$$;
+
+-- Emit captured TAP lines in insertion order. Call once before finish().
+CREATE OR REPLACE FUNCTION tap_emit()
+RETURNS SETOF TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Suppress the harmless `relation already exists, skipping` NOTICE that
+  -- would otherwise fire on every assertion after the first.
+  PERFORM set_config('client_min_messages', 'warning', true);
+  CREATE TEMP TABLE IF NOT EXISTS _tap_lines (
+    line_no SERIAL PRIMARY KEY,
+    line TEXT NOT NULL
+  ) ON COMMIT DROP;
+  RETURN QUERY SELECT line FROM _tap_lines ORDER BY line_no;
 END;
 $$;

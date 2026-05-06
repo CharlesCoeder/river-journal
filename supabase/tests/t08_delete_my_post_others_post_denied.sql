@@ -37,9 +37,10 @@ BEGIN
       IF v_msg = 'cannot delete this post' THEN v_msg_match := TRUE; END IF;
   END;
 
-  PERFORM ok(v_denied,    'delete_my_post on someone else''s post must raise SQLSTATE 42501');
-  PERFORM ok(v_msg_match, 'error message must be the ambiguous "cannot delete this post"');
+  PERFORM tap_ok(v_denied,    'delete_my_post on someone else''s post must raise SQLSTATE 42501');
+  PERFORM tap_ok(v_msg_match, 'error message must be the ambiguous "cannot delete this post"');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

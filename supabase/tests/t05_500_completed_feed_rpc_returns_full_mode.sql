@@ -26,9 +26,10 @@ BEGIN
   SELECT COUNT(*) INTO v_total FROM collective_feed_page(NULL, 20);
   SELECT COUNT(*) INTO v_full  FROM collective_feed_page(NULL, 20) WHERE mode = 'full';
 
-  PERFORM ok(v_total >= 2, 'collective_feed_page returns at least the seeded rows');
-  PERFORM ok(v_total = v_full, 'every returned row has mode = full');
+  PERFORM tap_ok(v_total >= 2, 'collective_feed_page returns at least the seeded rows');
+  PERFORM tap_ok(v_total = v_full, 'every returned row has mode = full');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;
