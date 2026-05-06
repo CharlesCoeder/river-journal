@@ -115,6 +115,22 @@ export interface UserProfile {
    */
   unlockedThemes?: ThemeName[]
 
+  /**
+   * Server-synced versioned preference shapes. The full shape is documented in
+   * packages/app/types/database.ts users.preferences JSONB JSDoc.
+   * Optional at the type level for backward compat with persisted profiles
+   * created before this field was added; consumers read with `?.collective_post_v1`.
+   *
+   * Version-key design: each disclosure boundary uses an independent key so
+   * a future `collective_post_v2` copy change re-prompts automatically without
+   * a migration path — new key = unacknowledged state.
+   */
+  preferences?: {
+    disclosures?: {
+      collective_post_v1?: { acknowledged_at: string }
+      ai_cloud_v1?: { acknowledged_at: string } // reserved Boundary B; not written in this story
+    }
+  }
 
   sync: {
     word_goal: boolean

@@ -12,6 +12,7 @@ export * from './components/WordCounter'
 export * from './components/JournalTextArea'
 export * from './components/ThemeSwitcher'
 export { useReducedMotion } from './hooks/useReducedMotion'
+export * from './components/ThreePostureDisclosure'
 
 // type augmentation for tamagui custom config
 import type { Conf } from '@my/config'
