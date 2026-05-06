@@ -41,6 +41,13 @@ export default defineConfig({
         import.meta.dirname,
         'packages/app/features/navigation/__mocks__/react-native-svg.ts'
       ),
+      // Stub out @react-native-community/netinfo which is a native-only
+      // package; Node tests that touch the native query client only need a
+      // no-op event-listener surface.
+      '@react-native-community/netinfo': path.resolve(
+        import.meta.dirname,
+        'packages/app/features/navigation/__mocks__/netinfo.ts'
+      ),
       // Map the 'app/*' workspace alias (used in source imports) to the
       // actual package directory so Vitest can resolve it in test environments.
       app: path.resolve(import.meta.dirname, 'packages/app'),

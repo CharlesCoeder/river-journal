@@ -1,3 +1,8 @@
+// EAGER IMPORT — must run before NextTamaguiProvider/Provider mounts so
+// setMutationDefaults() registers at module load. See:
+// packages/app/state/collective/mutations.ts.
+import 'app/state/collective/mutations'
+
 import 'app/features/journal/components/Lexical/lexical-theme.css'
 import '../public/tamagui.generated.css'
 import '../public/hover-transitions.css'

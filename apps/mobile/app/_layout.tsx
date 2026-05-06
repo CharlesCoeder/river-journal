@@ -1,3 +1,7 @@
+// EAGER IMPORT — must run before Provider mounts so setMutationDefaults()
+// registers at module load. See: packages/app/state/collective/mutations.ts.
+import 'app/state/collective/mutations'
+
 import { useEffect } from 'react'
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
