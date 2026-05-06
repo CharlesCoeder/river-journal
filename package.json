@@ -26,6 +26,7 @@
     "check-tamagui": "tamagui check",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:migrations": "supabase test db",
     "prepare": "husky"
   },
   "resolutions": {

@@ -28,6 +28,147 @@ export type Database = {
   }
   public: {
     Tables: {
+      collective_posts: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_removed: boolean
+          is_user_deleted: boolean
+          parent_post_id: string | null
+          removed_at: string | null
+          removed_reason: string | null
+          updated_at: string
+          user_deleted_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id: string
+          is_removed?: boolean
+          is_user_deleted?: boolean
+          parent_post_id?: string | null
+          removed_at?: string | null
+          removed_reason?: string | null
+          updated_at?: string
+          user_deleted_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_removed?: boolean
+          is_user_deleted?: boolean
+          parent_post_id?: string | null
+          removed_at?: string | null
+          removed_reason?: string | null
+          updated_at?: string
+          user_deleted_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collective_posts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collective_posts_parent_post_id_fkey'
+            columns: ['parent_post_id']
+            isOneToOne: false
+            referencedRelation: 'collective_posts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      collective_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          post_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          kind: string
+          post_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          post_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collective_reactions_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'collective_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collective_reactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      collective_reports: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          post_id: string
+          reason_code: string
+          reporter_user_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          note?: string | null
+          post_id: string
+          reason_code: string
+          reporter_user_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          post_id?: string
+          reason_code?: string
+          reporter_user_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collective_reports_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'collective_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collective_reports_reporter_user_id_fkey'
+            columns: ['reporter_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       daily_entries: {
         Row: {
           created_at: string
@@ -181,12 +322,18 @@ export type Database = {
        * users.preferences JSONB documented shape (client-known keys; server tolerates extra):
        *   {
        *     unlockedThemes?: string[]   // ThemeName[]; user-chosen unlock tokens (Model B)
+       *     disclosures?: {
+       *       collective_post_v1?: { acknowledged_at: string }
+       *       ai_cloud_v1?:        { acknowledged_at: string }   // reserved (Growth phase)
+       *     }
        *     // ...other client-extensible keys (e.g. focusMode is local-only on UserProfile, NOT server-persisted today)
        *   }
        *
        * The Database['public']['Tables']['users'].Row.preferences field stays typed as `Json`
        * (any-shape) to avoid coupling the generated Database type to a hand-curated client shape.
-       * The ThemeName[] narrowing happens at the consumer site in `state/types.ts` UserProfile.
+       * The ThemeName[] / disclosures narrowing happens at the consumer site in
+       * `state/types.ts` UserProfile (disclosures wiring lands when the disclosure
+       * primitive is added in a follow-up).
        */
       users: {
         Row: {
@@ -224,6 +371,37 @@ export type Database = {
     }
     Functions: {
       cleanup_stale_trusted_browsers: { Args: Record<string, never>; Returns: number }
+      collective_feed_page: {
+        Args: { cursor: string | null; page_size: number }
+        Returns: {
+          id: string
+          user_id: string | null
+          parent_post_id: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          mode: 'full' | 'preview'
+        }[]
+      }
+      collective_thread_page: {
+        Args: { post_id: string; cursor: string | null; page_size: number }
+        Returns: {
+          id: string
+          user_id: string | null
+          parent_post_id: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          mode: 'full' | 'preview'
+        }[]
+      }
+      daily_500_completed_today: { Args: { uid: string }; Returns: boolean }
+      delete_my_post: { Args: { post_id: string }; Returns: undefined }
+      is_active_suspension: { Args: { uid: string; kind_param: string }; Returns: boolean }
       user_has_password: { Args: never; Returns: boolean }
     }
     Enums: {
