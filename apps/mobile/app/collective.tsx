@@ -1,9 +1,5 @@
-import { Text, YStack } from '@my/ui'
+import CollectiveFeedScreen from 'app/features/collective/CollectiveFeedScreen'
 
 export default function CollectiveScreen() {
-  return (
-    <YStack flex={1} alignItems="center" justifyContent="center">
-      <Text>Collective — coming soon</Text>
-    </YStack>
-  )
+  return <CollectiveFeedScreen />
 }

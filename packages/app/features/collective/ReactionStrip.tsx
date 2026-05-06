@@ -4,7 +4,7 @@
 // Boundary rule (D7): MUST NOT import the Legend-State package.
 //
 // Props: { postId, userId, disabled? }
-// Returns null when userId is null (anonymous viewer — AC #1).
+// Returns null when userId is null (anonymous viewer).
 
 import { XStack, View, Text, useReducedMotion } from '@my/ui'
 import { Heart, Sparkles, Flame, Leaf, Waves } from '@tamagui/lucide-icons'
@@ -64,14 +64,14 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
   const { mutate } = useToggleReaction()
   const reduceMotion = useReducedMotion()
 
-  // AC #1: return null for anonymous viewer
+  // Hide entirely from anonymous viewers
   if (userId === null) return null
 
-  // AC #20: cold-cache (data undefined during loading) => fall back to all-zero / all-null
+  // Cold-cache (data undefined during loading) — fall back to all-zero / all-null
   const counts = data?.counts ?? EMPTY_COUNTS
   const userReactions = data?.userReactions ?? EMPTY_USER_REACTIONS
 
-  // Tint transition: 'quick' token unless reduced motion is active (AC #12)
+  // Tint transition: 'quick' token unless reduced motion is active
   const tintTransition = reduceMotion ? undefined : 'quick'
 
   function handlePress(kind: ReactionKind) {

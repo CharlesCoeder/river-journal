@@ -1,7 +1,7 @@
 'use client'
 
-import { CollectivePlaceholderScreen } from 'app/features/navigation/CollectivePlaceholderScreen'
+import CollectiveFeedScreen from 'app/features/collective/CollectiveFeedScreen'
 
 export default function CollectivePage() {
-  return <CollectivePlaceholderScreen />
+  return <CollectiveFeedScreen />
 }
