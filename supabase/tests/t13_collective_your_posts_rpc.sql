@@ -27,7 +27,7 @@
 -- than seeding 100+ rows (option (b) per AC #20).
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(16);
 
 -- ==========================================================================

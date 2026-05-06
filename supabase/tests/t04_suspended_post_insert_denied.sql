@@ -8,7 +8,7 @@
 -- conditional branch is for the post-Epic-5.1 future).
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(1);
 
 DO $$

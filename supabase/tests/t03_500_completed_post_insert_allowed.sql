@@ -4,7 +4,7 @@
 -- daily_500_completed_today predicate do not exist yet.
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(1);
 
 DO $$

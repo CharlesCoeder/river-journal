@@ -4,7 +4,7 @@
 -- Red phase: FAILS because none of the functions exist yet.
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(5);
 
 DO $$

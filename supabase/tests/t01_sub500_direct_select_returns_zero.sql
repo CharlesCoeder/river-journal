@@ -5,7 +5,7 @@
 -- Red phase: FAILS because collective_posts table does not exist yet.
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(1);
 
 DO $$
