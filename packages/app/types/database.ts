@@ -399,6 +399,23 @@ export type Database = {
           mode: 'full' | 'preview'
         }[]
       }
+      collective_your_posts_page: {
+        Args: { cursor: string | null; page_size: number }
+        Returns: {
+          id: string
+          user_id: string
+          parent_post_id: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          reaction_count: number
+          descendant_count: number
+          tenure_tier: number | null
+          mode: 'full'
+        }[]
+      }
       daily_500_completed_today: { Args: { uid: string }; Returns: boolean }
       delete_my_post: { Args: { post_id: string }; Returns: undefined }
       is_active_suspension: { Args: { uid: string; kind_param: string }; Returns: boolean }

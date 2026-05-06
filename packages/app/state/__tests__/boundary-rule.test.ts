@@ -20,6 +20,8 @@ const TQ_FILES = [
   'queryStorage.ts',
   'queryStorage.native.ts',
   'collective/mutations.ts',
+  'collective/thread.ts',
+  'collective/yourPosts.ts',
 ] as const
 
 const LEGEND_PATTERN = /@legendapp\/state(?:\/[\w-]+(?:\/[\w-]+)?)?/
