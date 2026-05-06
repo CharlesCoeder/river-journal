@@ -2,7 +2,8 @@
  * Web/desktop AsyncStorage-shaped adapter over IndexedDB for TanStack Query
  * persistence. Reuses the `RiverJournal` database opened by persistConfig.ts
  * (single DB, separate object store: `'tanstack-query'`). The schema authority
- * is `state/persistConfig.ts` — DB_VERSION + TABLE_NAMES live there.
+ * is `state/persistConfig.ts` — DB_NAME, DB_VERSION, and TABLE_NAMES live
+ * there and are imported here so both openers agree on the full schema.
  *
  * Key namespace prefix: 'rj-tq:' — any callsite that writes here MUST include
  * the prefix in the key so a future grep catches stray persistence collisions.
@@ -15,8 +16,8 @@
  * into the persist-client boot path.
  */
 
-const DB_NAME = 'RiverJournal'
-const DB_VERSION = 6
+import { DB_NAME, DB_VERSION, TABLE_NAMES } from './persistConfig'
+
 const TABLE_NAME = 'tanstack-query'
 
 function hasIndexedDB(): boolean {
@@ -31,9 +32,17 @@ function openDb(): Promise<IDBDatabase> {
     }
     const req = (globalThis as any).indexedDB.open(DB_NAME, DB_VERSION) as IDBOpenDBRequest
     req.onupgradeneeded = () => {
+      // Race-safety: whichever caller (this adapter vs. Legend-State's
+      // observablePersistIndexedDB) opens the DB first at a new version is
+      // the ONLY one that receives `onupgradeneeded`. Therefore each
+      // upgrade handler must create EVERY expected store, not just the one
+      // it directly cares about — otherwise the later opener at the same
+      // version sees no upgrade event and its store is silently missing.
       const db = req.result
-      if (!db.objectStoreNames.contains(TABLE_NAME)) {
-        db.createObjectStore(TABLE_NAME)
+      for (const name of TABLE_NAMES) {
+        if (!db.objectStoreNames.contains(name)) {
+          db.createObjectStore(name)
+        }
       }
     }
     req.onsuccess = () => resolve(req.result)

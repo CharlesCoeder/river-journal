@@ -4773,6 +4773,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-community/netinfo@npm:11.5.2":
+  version: 11.5.2
+  resolution: "@react-native-community/netinfo@npm:11.5.2"
+  peerDependencies:
+    react: "*"
+    react-native: ">=0.59"
+  checksum: 10/0c388e1beb61d0135eb9303b18d7d953b0f777af15e34a8c0ab03f428669a987d658ead645a37b410afae7844374d07e7ab947897d5720b1e7fee5525fffd5b5
+  languageName: node
+  linkType: hard
+
 "@react-native/assets-registry@npm:0.81.5":
   version: 0.81.5
   resolution: "@react-native/assets-registry@npm:0.81.5"
@@ -7668,6 +7678,39 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-async-storage-persister@npm:^5.62.0":
+  version: 5.100.9
+  resolution: "@tanstack/query-async-storage-persister@npm:5.100.9"
+  dependencies:
+    "@tanstack/query-core": "npm:5.100.9"
+    "@tanstack/query-persist-client-core": "npm:5.100.9"
+  checksum: 10/4ffe24455dbe15f27879feec030a3619fca8cc27ba12a6d71b9c7f43a42fca43ecf09c134b84bc43411cdc87a00f2d360013b6b9896825c015f717df7cf5fdd1
+  languageName: node
+  linkType: hard
+
+"@tanstack/query-core@npm:5.100.9":
+  version: 5.100.9
+  resolution: "@tanstack/query-core@npm:5.100.9"
+  checksum: 10/159c2a7e0e5d7f6b301da8f565a1e5341005f581f2ff39be23483eb88352f4f5ed96b430b0d59eec6a9691129743d1a1133a4c626149afc22df5015602ac02eb
+  languageName: node
+  linkType: hard
+
+"@tanstack/query-devtools@npm:5.100.9":
+  version: 5.100.9
+  resolution: "@tanstack/query-devtools@npm:5.100.9"
+  checksum: 10/f47866ead5ed1ff147893d7e51bebec58323f79a3a6e6a309aad1d6b6610f39c56026df8cfd82da19d9fa5105dc0fa3e46d17a5931c7faaff2196d4051c9e2fb
+  languageName: node
+  linkType: hard
+
+"@tanstack/query-persist-client-core@npm:5.100.9":
+  version: 5.100.9
+  resolution: "@tanstack/query-persist-client-core@npm:5.100.9"
+  dependencies:
+    "@tanstack/query-core": "npm:5.100.9"
+  checksum: 10/de01ea77fad64786fadb73d765f0466984690bcb6c278d65538cbf8fb5bf7f8c966114f5d52f54d30626f59a72b3f5f63750a490d155f8d49bf64daf09e1e5c3
+  languageName: node
+  linkType: hard
+
 "@tanstack/react-hotkeys@npm:0.10.0":
   version: 0.10.0
   resolution: "@tanstack/react-hotkeys@npm:0.10.0"
@@ -7678,6 +7721,41 @@ __metadata:
     react: ">=16.8"
     react-dom: ">=16.8"
   checksum: 10/7a78ed107d0f3faf149be43f1f7baa0957441a5aa1cbc495ddbdf05309cf617aaf71bd0f21e1167944621a9425e400369e466415151c3584f9b100dee8b178dd
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query-devtools@npm:^5.62.0":
+  version: 5.100.9
+  resolution: "@tanstack/react-query-devtools@npm:5.100.9"
+  dependencies:
+    "@tanstack/query-devtools": "npm:5.100.9"
+  peerDependencies:
+    "@tanstack/react-query": ^5.100.9
+    react: ^18 || ^19
+  checksum: 10/f97fcad2e27f745c1ce79798c27b7400c9995113d53496523ee4d45fbf6e69768c64759e62eb2ea7ab27b93ad1c8dde9282ef039ac0c1d2678b63f2f2b6589a4
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query-persist-client@npm:^5.62.0":
+  version: 5.100.9
+  resolution: "@tanstack/react-query-persist-client@npm:5.100.9"
+  dependencies:
+    "@tanstack/query-persist-client-core": "npm:5.100.9"
+  peerDependencies:
+    "@tanstack/react-query": ^5.100.9
+    react: ^18 || ^19
+  checksum: 10/beb2dfd9858b87c9743cd5bc8ea2df3ee970dc967c04f0b7528f0e7d3e259b1bf8747b17ad25fbed95a2a1014e4897f5d9c5e7902c41a26f69843208d0d101eb
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query@npm:^5.62.0":
+  version: 5.100.9
+  resolution: "@tanstack/react-query@npm:5.100.9"
+  dependencies:
+    "@tanstack/query-core": "npm:5.100.9"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10/70355411cf77f4857620319cdaef21d69084efbb061fded6979996cdd4c380ac0b8087573b21eecd1bba66f07b39ecc7f6d636de1d80537fc83cae77e2a1a2b3
   languageName: node
   linkType: hard
 
@@ -9209,7 +9287,11 @@ __metadata:
     "@tamagui/lucide-icons": "npm:2.0.0-rc.16"
     "@tamagui/shorthands": "npm:2.0.0-rc.16"
     "@tamagui/themes": "npm:2.0.0-rc.16"
+    "@tanstack/query-async-storage-persister": "npm:^5.62.0"
     "@tanstack/react-hotkeys": "npm:0.10.0"
+    "@tanstack/react-query": "npm:^5.62.0"
+    "@tanstack/react-query-devtools": "npm:^5.62.0"
+    "@tanstack/react-query-persist-client": "npm:^5.62.0"
     "@tauri-apps/api": "npm:^2.5.0"
     "@types/react": "npm:~19.0.10"
     "@types/react-native": "npm:^0.73.0"
@@ -16174,6 +16256,7 @@ __metadata:
     "@babel/runtime": "npm:^7.26.0"
     "@lexical/react": "npm:^0.33.1"
     "@my/ui": "npm:0.0.1"
+    "@react-native-community/netinfo": "npm:11.5.2"
     "@react-navigation/bottom-tabs": "npm:^7.2.0"
     "@react-navigation/native": "npm:^7.0.14"
     "@react-navigation/native-stack": "npm:^7.3.25"
