@@ -1,16 +1,15 @@
--- _helpers.sql — Shared seeding helpers for the Collective SQL regression
+-- _helpers.psql — Shared seeding helpers for the Collective SQL regression
 -- suite. Each numbered test file (t01..t13) includes this file via
--- `\i _helpers.sql` so that the test_seed_*, test_become*, and tap_*
+-- `\i _helpers.psql` so that the test_seed_*, test_become*, and tap_*
 -- helpers are defined in the test transaction.
 --
--- Note on pg_prove discovery: the Supabase CLI's `test db` command invokes
--- pg_prove against every *.sql file in this directory, so this file is
--- *also* run standalone by the runner. Standalone it produces only function
--- definitions (no SELECT plan(...) / SELECT * FROM finish()), which pg_prove
--- reports as a parse warning ("No plan found in TAP output"). That warning
--- is harmless and intentional — adding a top-level plan/finish here would
--- corrupt the surrounding transaction state when test files `\i` this file.
--- The 13 numbered tests are the suite of record.
+-- Note on pg_prove discovery: the Supabase CLI invokes pg_prove with
+-- `--ext=.sql`, so pg_prove only discovers files matching that extension.
+-- This file uses `.psql` (still readable by psql's `\i` from test files)
+-- which keeps it out of pg_prove's discovery while remaining mounted into
+-- the container. Eliminates the previous "No plan found in TAP output"
+-- parse warning that surfaced as a non-zero exit even though every
+-- numbered test passed.
 --
 -- Each test runs inside a transaction (BEGIN ... ROLLBACK) wrapped by pgTAP,
 -- so seeded rows are cleaned up automatically.

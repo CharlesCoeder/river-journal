@@ -4,7 +4,7 @@
 -- Red phase: FAILS because collective_feed_page does not exist yet.
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(2);
 
 DO $$

@@ -4,7 +4,7 @@
 -- Red phase: FAILS because delete_my_post does not exist yet.
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(1);
 
 DO $$

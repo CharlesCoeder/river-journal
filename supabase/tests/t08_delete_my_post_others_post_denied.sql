@@ -4,7 +4,7 @@
 -- Red phase: FAILS because delete_my_post + collective_posts do not exist yet.
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(2);
 
 DO $$

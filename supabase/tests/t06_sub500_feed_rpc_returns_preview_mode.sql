@@ -3,7 +3,7 @@
 -- (1 most-recent full-body + up to 3 teasers).
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(4);
 
 DO $$

@@ -5,7 +5,7 @@
 -- do not exist yet.
 
 BEGIN;
-\i _helpers.sql
+\i _helpers.psql
 SELECT plan(4);
 
 DO $$
