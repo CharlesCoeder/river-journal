@@ -1,3 +1,11 @@
+// === EAGER IMPORT — ORDER-CRITICAL ===
+// mutations.ts MUST execute before <PersistQueryClientProvider> mounts so that
+// setMutationDefaults() calls register at module-load time. See:
+// state/collective/mutations.ts header comment. Any reorder is a regression.
+// ====================================
+import 'app/state/collective/mutations'
+import { __collectiveMutationsLoadedAt } from 'app/state/collective/mutations'
+
 import { useLayoutEffect, useState } from 'react'
 import {
   CustomToast,
@@ -10,9 +18,17 @@ import {
 } from '@my/ui'
 import { FontLanguage } from 'tamagui'
 import { addTheme, updateTheme } from '@tamagui/theme'
+import {
+  PersistQueryClientProvider,
+  removeOldestQuery,
+} from '@tanstack/react-query-persist-client'
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ToastViewport } from './ToastViewport'
 import { use$ } from '@legendapp/state/react'
 import { store$, isDarkTheme, isDarkColor } from 'app/state/store'
+import { queryClient, dehydrateOptions } from 'app/state/queryClient'
+import { queryStorage } from 'app/state/queryStorage'
 import { DEFAULT_THEME, DEFAULT_FONT_PAIRING } from 'app/state/types'
 import type { FontPairingId } from 'app/state/types'
 import { generatePalette } from '@my/config/src/themes'
@@ -57,10 +73,38 @@ function buildCustomThemeTokens(palette: string[]) {
 // Track whether the custom theme has been registered via addTheme
 let customThemeRegistered = false
 
+// Persister is constructed once at module load. `key` is namespaced separately
+// from any Legend-State MMKV/IndexedDB keys (`'rj-tq-cache'`). `retry:
+// removeOldestQuery` is the documented TanStack pattern for graceful
+// degradation when the underlying storage rejects a write (e.g. quota
+// exceeded) — without it, a single oversized cache entry silently kills all
+// subsequent persistence writes for the rest of the session.
+const persister = createAsyncStoragePersister({
+  storage: queryStorage,
+  key: 'rj-tq-cache',
+  throttleTime: 1000,
+  retry: removeOldestQuery,
+})
+
 export function Provider({
   children,
   ...rest
 }: Omit<TamaguiProviderProps, 'config' | 'defaultTheme'>) {
+  // Dev-only ordering witness: if the eager `import 'app/state/collective/mutations'`
+  // didn't execute before this Provider closure ran, the sentinel timestamp
+  // would still be undefined. This is the cheapest runtime guard against a
+  // future refactor (or auto-formatter) accidentally moving the eager import
+  // below the provider import. Production builds DCE this branch.
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    typeof __collectiveMutationsLoadedAt !== 'number'
+  ) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[rj-tq] mutations.ts side-effects did not run before Provider mounted — eager-import ordering is broken. See state/collective/mutations.ts header.'
+    )
+  }
+
   const themeName = use$(store$.profile.themeName) ?? DEFAULT_THEME
   const customTheme = use$(store$.profile.customTheme)
   const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING
@@ -99,15 +143,28 @@ export function Provider({
     >
       <Theme name={resolvedThemeName}>
         <FontLanguage body={fontVariant} heading={fontVariant} journal={fontVariant} journalItalic={fontVariant}>
-          <ToastProvider
-            swipeDirection="horizontal"
-            duration={6000}
-            native={isWeb ? [] : ['mobile']}
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+              persister,
+              dehydrateOptions,
+              maxAge: 24 * 60 * 60 * 1000,
+            }}
+            onSuccess={() => {
+              queryClient.resumePausedMutations()
+            }}
           >
-            {children}
-            <CustomToast />
-            <ToastViewport />
-          </ToastProvider>
+            <ToastProvider
+              swipeDirection="horizontal"
+              duration={6000}
+              native={isWeb ? [] : ['mobile']}
+            >
+              {children}
+              <CustomToast />
+              <ToastViewport />
+            </ToastProvider>
+            {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+          </PersistQueryClientProvider>
         </FontLanguage>
       </Theme>
     </TamaguiProvider>
