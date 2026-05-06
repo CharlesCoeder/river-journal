@@ -36,6 +36,8 @@ import { queryClient } from 'app/state/queryClient'
 import { supabase } from 'app/utils/supabase'
 import { collectiveFeedKey, type FeedPage, type Post } from './feed'
 import { collectiveThreadKey, type ThreadPageResult } from './thread'
+import { collectiveReactionsKey, type ReactionsCache } from './reactions'
+import type { ToggleReactionVars } from './types'
 import type { Database } from 'app/types/database'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -52,18 +54,10 @@ export type CreatePostVars = {
   user_id: string
 }
 
-// TODO: Replace this placeholder union with the finalized set from Story 3.11
-// (ReactionStrip). The DB-level `kind` column is TEXT (permissive), but we
-// narrow here to prevent unintentional values from the call site.
-export type ReactionKind = 'heart' | 'sparkle' | 'flame' | 'leaf' | 'wave'
-
-export type ToggleReactionVars = {
-  id: string
-  post_id: string
-  kind: ReactionKind
-  user_id: string
-  toggle: 'add' | 'remove'
-}
+// ReactionKind is the single source of truth in types.ts — re-exported here
+// for back-compat with any existing consumers importing from mutations.ts.
+export type { ReactionKind } from './types'
+export type { ToggleReactionVars } from './types'
 
 export type ReportPostVars = {
   id: string
@@ -85,6 +79,7 @@ type PostMutationContext = { snapshot: InfiniteData<FeedPage> | undefined }
 type ReactMutationContext = {
   feedSnapshot: InfiniteData<FeedPage> | undefined
   threadSnapshot: InfiniteData<ThreadPageResult> | undefined
+  reactionsSnapshot: ReactionsCache | undefined
 }
 
 // ─── Sentinels (preserved from Story 3-2 stub) ───────────────────────────────
@@ -218,22 +213,43 @@ queryClient.setMutationDefaults(['collective', 'react'], {
       collectiveThreadKey(vars.post_id)
     )
 
-    // Apply optimistic toggle on feed cache if present.
-    // The count/user-state update logic is intentionally minimal — the
-    // onSettled invalidation re-fetches authoritative state so any
-    // mis-count is short-lived. Full net-out correctness lives on the server.
-    // (Detailed count manipulation deferred to Story 3.11's ReactionStrip.)
+    // Snapshot the reactions cache for this post (AC #8 resolution from Story 3-11).
+    const reactionsSnapshot = queryClient.getQueryData<ReactionsCache>(
+      collectiveReactionsKey(vars.post_id)
+    )
 
-    return { feedSnapshot, threadSnapshot }
+    // Apply optimistic toggle on the reactions cache (AC #8).
+    if (reactionsSnapshot) {
+      const prevCount = reactionsSnapshot.counts[vars.kind] ?? 0
+      const optimistic: ReactionsCache = {
+        counts: {
+          ...reactionsSnapshot.counts,
+          [vars.kind]:
+            vars.toggle === 'add'
+              ? prevCount + 1
+              : Math.max(0, prevCount - 1),
+        },
+        userReactions: {
+          ...reactionsSnapshot.userReactions,
+          [vars.kind]: vars.toggle === 'add' ? vars.id : null,
+        },
+      }
+      queryClient.setQueryData(collectiveReactionsKey(vars.post_id), optimistic)
+    }
+
+    return { feedSnapshot, threadSnapshot, reactionsSnapshot }
   },
 
   onError: (_err: unknown, vars: ToggleReactionVars, ctx: ReactMutationContext | undefined) => {
-    // Restore every cache we may have modified — never set undefined (AC #11).
+    // Restore every cache we may have modified — never set undefined (AC #31).
     if (ctx?.feedSnapshot !== undefined) {
       queryClient.setQueryData(collectiveFeedKey, ctx.feedSnapshot)
     }
     if (ctx?.threadSnapshot !== undefined) {
       queryClient.setQueryData(collectiveThreadKey(vars.post_id), ctx.threadSnapshot)
+    }
+    if (ctx?.reactionsSnapshot !== undefined) {
+      queryClient.setQueryData(collectiveReactionsKey(vars.post_id), ctx.reactionsSnapshot)
     }
   },
 
