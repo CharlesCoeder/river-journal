@@ -29,8 +29,9 @@ BEGIN
       IF v_state = '42501' THEN v_denied := TRUE; END IF;
   END;
 
-  PERFORM ok(v_denied, 'second delete_my_post on same post must raise 42501 (idempotent ambiguous error)');
+  PERFORM tap_ok(v_denied, 'second delete_my_post on same post must raise 42501 (idempotent ambiguous error)');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

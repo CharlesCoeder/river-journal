@@ -28,7 +28,14 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
+#variable_conflict use_column
 DECLARE
+  -- Alias the input parameter to a local variable so we can reference the
+  -- caller-supplied id from DML against tables that also have a `post_id`
+  -- column (notably collective_reactions). The `#variable_conflict use_column`
+  -- directive resolves bare `post_id` references to the table column, while
+  -- `v_post_id` carries the parameter value into WHERE clauses unambiguously.
+  v_post_id UUID := post_id;
   v_owner UUID;
   v_already_deleted BOOLEAN;
 BEGIN
@@ -39,7 +46,7 @@ BEGIN
   SELECT cp.user_id, cp.is_user_deleted
   INTO v_owner, v_already_deleted
   FROM collective_posts cp
-  WHERE cp.id = delete_my_post.post_id;
+  WHERE cp.id = v_post_id;
 
   IF NOT FOUND OR v_owner IS DISTINCT FROM auth.uid() OR v_already_deleted IS TRUE THEN
     RAISE EXCEPTION 'cannot delete this post' USING ERRCODE = '42501';
@@ -51,12 +58,10 @@ BEGIN
   SET body = '[deleted]',
       is_user_deleted = TRUE,
       user_deleted_at = NOW()
-  WHERE id = delete_my_post.post_id;
+  WHERE id = v_post_id;
 
-  -- Qualify with delete_my_post.post_id to disambiguate from the
-  -- collective_reactions.post_id column.
   DELETE FROM collective_reactions
-  WHERE post_id = delete_my_post.post_id;
+  WHERE post_id = v_post_id;
 END;
 $$;
 

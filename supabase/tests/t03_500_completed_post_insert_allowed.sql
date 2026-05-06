@@ -23,8 +23,9 @@ BEGIN
   -- Direct SELECT denied; verify via DEFINER-privileged context with SET ROLE postgres.
   RESET ROLE;
   SELECT COUNT(*) INTO v_count FROM collective_posts WHERE id = v_post_id;
-  PERFORM ok(v_count = 1, '500-completed user INSERT must land a row');
+  PERFORM tap_ok(v_count = 1, '500-completed user INSERT must land a row');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

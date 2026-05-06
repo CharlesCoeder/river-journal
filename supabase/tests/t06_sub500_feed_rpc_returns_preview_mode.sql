@@ -17,11 +17,14 @@ BEGIN
   v_poster := test_seed_user();
   PERFORM test_seed_500_today(v_poster);
   PERFORM test_become(v_poster);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_poster, 'p1');
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_poster, 'p2');
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_poster, 'p3');
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_poster, 'p4');
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_poster, 'p5');
+  -- Explicit decreasing offsets so created_at ordering is deterministic
+  -- (NOW() granularity within a single statement-batch is not reliably
+  -- monotonic for the most-recent-vs-teaser split the RPC performs).
+  INSERT INTO collective_posts (id, user_id, body, created_at) VALUES (gen_random_uuid(), v_poster, 'p1', NOW() - INTERVAL '5 minutes');
+  INSERT INTO collective_posts (id, user_id, body, created_at) VALUES (gen_random_uuid(), v_poster, 'p2', NOW() - INTERVAL '4 minutes');
+  INSERT INTO collective_posts (id, user_id, body, created_at) VALUES (gen_random_uuid(), v_poster, 'p3', NOW() - INTERVAL '3 minutes');
+  INSERT INTO collective_posts (id, user_id, body, created_at) VALUES (gen_random_uuid(), v_poster, 'p4', NOW() - INTERVAL '2 minutes');
+  INSERT INTO collective_posts (id, user_id, body, created_at) VALUES (gen_random_uuid(), v_poster, 'p5', NOW() - INTERVAL '1 minute');
 
   v_viewer := test_seed_user();
   PERFORM test_seed_sub500_today(v_viewer);
@@ -34,11 +37,12 @@ BEGIN
   SELECT COUNT(*) INTO v_teasers FROM collective_feed_page(NULL, 20)
     WHERE mode = 'preview' AND body IN ('p1','p2','p3','p4');
 
-  PERFORM ok(v_total = 4,          'preview returns exactly 4 rows when >=4 candidates exist (1 recent + 3 teasers)');
-  PERFORM ok(v_total <= 4,         'preview has at most 4 rows (1 + up to 3 teasers)');
-  PERFORM ok(v_total = v_preview,  'every returned row has mode = preview');
-  PERFORM ok(v_teasers = 3,        'exactly 3 teaser rows accompany the most-recent post');
+  PERFORM tap_ok(v_total = 4,          'preview returns exactly 4 rows when >=4 candidates exist (1 recent + 3 teasers)');
+  PERFORM tap_ok(v_total <= 4,         'preview has at most 4 rows (1 + up to 3 teasers)');
+  PERFORM tap_ok(v_total = v_preview,  'every returned row has mode = preview');
+  PERFORM tap_ok(v_teasers = 3,        'exactly 3 teaser rows accompany the most-recent post');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

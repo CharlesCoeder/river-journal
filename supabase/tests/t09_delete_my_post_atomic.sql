@@ -39,11 +39,12 @@ BEGIN
   SELECT COUNT(*) INTO v_react_count
   FROM collective_reactions WHERE post_id = v_post;
 
-  PERFORM ok(v_body = '[deleted]',         'body replaced with [deleted]');
-  PERFORM ok(v_deleted IS TRUE,            'is_user_deleted = TRUE');
-  PERFORM ok(v_at IS NOT NULL,             'user_deleted_at populated');
-  PERFORM ok(v_react_count = 0,            'reactions deleted in same transaction');
+  PERFORM tap_ok(v_body = '[deleted]',         'body replaced with [deleted]');
+  PERFORM tap_ok(v_deleted IS TRUE,            'is_user_deleted = TRUE');
+  PERFORM tap_ok(v_at IS NOT NULL,             'user_deleted_at populated');
+  PERFORM tap_ok(v_react_count = 0,            'reactions deleted in same transaction');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

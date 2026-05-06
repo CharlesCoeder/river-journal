@@ -4,6 +4,7 @@
 -- Red phase: FAILS because none of the functions exist yet.
 
 BEGIN;
+\i _helpers.sql
 SELECT plan(5);
 
 DO $$
@@ -34,9 +35,10 @@ BEGIN
       );
     END IF;
 
-    PERFORM ok(v_has_pin, format('function %s has SET search_path pinned via proconfig', v_fname));
+    PERFORM tap_ok(v_has_pin, format('function %s has SET search_path pinned via proconfig', v_fname));
   END LOOP;
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;

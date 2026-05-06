@@ -28,7 +28,7 @@
 
 BEGIN;
 \i _helpers.sql
-SELECT plan(15);
+SELECT plan(16);
 
 -- ==========================================================================
 -- 1. Auth assertion fires under anon role.
@@ -46,7 +46,7 @@ BEGIN
       GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE;
       IF v_state = '42501' THEN v_denied := TRUE; END IF;
   END;
-  PERFORM ok(v_denied, 'unauthenticated collective_your_posts_page raises SQLSTATE 42501 (AC #4)');
+  PERFORM tap_ok(v_denied, 'unauthenticated collective_your_posts_page raises SQLSTATE 42501 (AC #4)');
 END $$;
 
 -- ==========================================================================
@@ -59,8 +59,8 @@ DECLARE
   v_count_a INT;
   v_only_a INT;
 BEGIN
-  v_user_a := test_seed_user();
-  v_user_b := test_seed_user();
+  v_user_a := test_seed_user_500();
+  v_user_b := test_seed_user_500();
 
   PERFORM test_become(v_user_a);
   INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user_a, 'a-post-1');
@@ -74,8 +74,8 @@ BEGIN
   SELECT COUNT(*) INTO v_count_a FROM collective_your_posts_page(NULL, 50);
   SELECT COUNT(*) INTO v_only_a FROM collective_your_posts_page(NULL, 50) WHERE user_id = v_user_a;
 
-  PERFORM ok(v_count_a = 2, 'user A sees exactly their 2 posts (AC #7 own-posts filter)');
-  PERFORM ok(v_count_a = v_only_a, 'every returned row has user_id = auth.uid() (AC #7)');
+  PERFORM tap_ok(v_count_a = 2, 'user A sees exactly their 2 posts (AC #7 own-posts filter)');
+  PERFORM tap_ok(v_count_a = v_only_a, 'every returned row has user_id = auth.uid() (AC #7)');
 END $$;
 
 -- ==========================================================================
@@ -87,13 +87,13 @@ DECLARE
   v_visible INT;
   v_removed UUID := gen_random_uuid();
 BEGIN
-  v_user := test_seed_user();
+  v_user := test_seed_user_500();
   PERFORM test_become(v_user);
   INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 'visible');
   INSERT INTO collective_posts (id, user_id, body, is_removed) VALUES (v_removed, v_user, 'removed', TRUE);
 
   SELECT COUNT(*) INTO v_visible FROM collective_your_posts_page(NULL, 50) WHERE id = v_removed;
-  PERFORM ok(v_visible = 0, 'is_removed = TRUE posts are excluded (AC #7)');
+  PERFORM tap_ok(v_visible = 0, 'is_removed = TRUE posts are excluded (AC #7)');
 END $$;
 
 -- ==========================================================================
@@ -108,7 +108,7 @@ DECLARE
   v_body TEXT;
   v_flag BOOLEAN;
 BEGIN
-  v_user := test_seed_user();
+  v_user := test_seed_user_500();
   PERFORM test_become(v_user);
   INSERT INTO collective_posts (id, user_id, body, is_user_deleted, user_deleted_at)
   VALUES (v_id, v_user, 'my-original-body-please-dont-redact', TRUE, NOW());
@@ -117,8 +117,8 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_id;
 
-  PERFORM ok(v_flag = TRUE, 'is_user_deleted=TRUE post is included with flag intact (AC #7)');
-  PERFORM ok(
+  PERFORM tap_ok(v_flag = TRUE, 'is_user_deleted=TRUE post is included with flag intact (AC #7)');
+  PERFORM tap_ok(
     v_body = 'my-original-body-please-dont-redact',
     'body is returned verbatim, not redacted to [deleted] (AC #20 sentinel)'
   );
@@ -136,8 +136,8 @@ DECLARE
   v_b_reply UUID := gen_random_uuid();
   v_dcount INT;
 BEGIN
-  v_user_a := test_seed_user();
-  v_user_b := test_seed_user();
+  v_user_a := test_seed_user_500();
+  v_user_b := test_seed_user_500();
 
   PERFORM test_become(v_user_a);
   INSERT INTO collective_posts (id, user_id, body) VALUES (v_a_post, v_user_a, 'a-top');
@@ -151,7 +151,7 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_a_post;
 
-  PERFORM ok(v_dcount = 1, 'descendant_count counts cross-author replies (AC #7, #20)');
+  PERFORM tap_ok(v_dcount = 1, 'descendant_count counts cross-author replies (AC #7, #20)');
 END $$;
 
 -- ==========================================================================
@@ -166,10 +166,10 @@ DECLARE
   v_reactor3 UUID;
   v_rcount INT;
 BEGIN
-  v_user := test_seed_user();
-  v_reactor1 := test_seed_user();
-  v_reactor2 := test_seed_user();
-  v_reactor3 := test_seed_user();
+  v_user := test_seed_user_500();
+  v_reactor1 := test_seed_user_500();
+  v_reactor2 := test_seed_user_500();
+  v_reactor3 := test_seed_user_500();
 
   PERFORM test_become(v_user);
   INSERT INTO collective_posts (id, user_id, body) VALUES (v_post, v_user, 'p');
@@ -191,7 +191,7 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_post;
 
-  PERFORM ok(v_rcount = 3, 'reaction_count aggregates COUNT(*) over collective_reactions (AC #7, #20)');
+  PERFORM tap_ok(v_rcount = 3, 'reaction_count aggregates COUNT(*) over collective_reactions (AC #7, #20)');
 END $$;
 
 -- ==========================================================================
@@ -205,7 +205,7 @@ DECLARE
   v_r2 UUID := gen_random_uuid();
   v_dcount INT;
 BEGIN
-  v_user := test_seed_user();
+  v_user := test_seed_user_500();
   PERFORM test_become(v_user);
   INSERT INTO collective_posts (id, user_id, body) VALUES (v_top, v_user, 'top');
   INSERT INTO collective_posts (id, user_id, body, parent_post_id) VALUES (v_r1, v_user, 'r1', v_top);
@@ -215,7 +215,7 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_top;
 
-  PERFORM ok(v_dcount = 2, 'descendant_count walks the recursive CTE (AC #7, #20)');
+  PERFORM tap_ok(v_dcount = 2, 'descendant_count walks the recursive CTE (AC #7, #20)');
 END $$;
 
 -- ==========================================================================
@@ -226,7 +226,7 @@ DECLARE
   v_user UUID;
   v_non_null INT;
 BEGIN
-  v_user := test_seed_user();
+  v_user := test_seed_user_500();
   PERFORM test_become(v_user);
   INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 't');
 
@@ -234,7 +234,7 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE tenure_tier IS NOT NULL;
 
-  PERFORM ok(v_non_null = 0, 'tenure_tier is always NULL in this story (AC #20 sentinel for FR68)');
+  PERFORM tap_ok(v_non_null = 0, 'tenure_tier is always NULL in this story (AC #20 sentinel for FR68)');
 END $$;
 
 -- ==========================================================================
@@ -246,7 +246,7 @@ DECLARE
   v_total INT;
   v_full INT;
 BEGIN
-  v_user := test_seed_user();
+  v_user := test_seed_user_500();
   PERFORM test_become(v_user);
   INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 'm1');
   INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 'm2');
@@ -254,7 +254,7 @@ BEGIN
   SELECT COUNT(*) INTO v_total FROM collective_your_posts_page(NULL, 50);
   SELECT COUNT(*) INTO v_full FROM collective_your_posts_page(NULL, 50) WHERE mode = 'full';
 
-  PERFORM ok(v_total = v_full AND v_total >= 2, 'every row has mode = ''full'' (AC #20)');
+  PERFORM tap_ok(v_total = v_full AND v_total >= 2, 'every row has mode = ''full'' (AC #20)');
 END $$;
 
 -- ==========================================================================
@@ -268,7 +268,7 @@ DECLARE
   v_second INT;
   i INT;
 BEGIN
-  v_user := test_seed_user();
+  v_user := test_seed_user_500();
   PERFORM test_become(v_user);
 
   FOR i IN 1..25 LOOP
@@ -277,12 +277,12 @@ BEGIN
   END LOOP;
 
   SELECT COUNT(*) INTO v_first FROM collective_your_posts_page(NULL, 20);
-  PERFORM ok(v_first = 20, 'first page returns 20 of 25 (AC #7 page_size)');
+  PERFORM tap_ok(v_first = 20, 'first page returns 20 of 25 (AC #7 page_size)');
 
   -- Cursor = last created_at of the first page.
   SELECT MIN(created_at) INTO v_cursor FROM collective_your_posts_page(NULL, 20);
   SELECT COUNT(*) INTO v_second FROM collective_your_posts_page(v_cursor, 20);
-  PERFORM ok(v_second = 5, 'second page returns the remaining 5 with monotonic cursor (AC #6, #20)');
+  PERFORM tap_ok(v_second = 5, 'second page returns the remaining 5 with monotonic cursor (AC #6, #20)');
 END $$;
 
 -- ==========================================================================
@@ -295,7 +295,7 @@ DECLARE
   v_ceiling INT;
   i INT;
 BEGIN
-  v_user := test_seed_user();
+  v_user := test_seed_user_500();
   PERFORM test_become(v_user);
   FOR i IN 1..60 LOOP
     INSERT INTO collective_posts (id, user_id, body, created_at)
@@ -305,8 +305,8 @@ BEGIN
   SELECT COUNT(*) INTO v_floor FROM collective_your_posts_page(NULL, 0);
   SELECT COUNT(*) INTO v_ceiling FROM collective_your_posts_page(NULL, 999);
 
-  PERFORM ok(v_floor = 1, 'page_size = 0 clamps up to 1 (AC #5)');
-  PERFORM ok(v_ceiling = 50, 'page_size = 999 clamps down to 50 (AC #5)');
+  PERFORM tap_ok(v_floor = 1, 'page_size = 0 clamps up to 1 (AC #5)');
+  PERFORM tap_ok(v_ceiling = 50, 'page_size = 999 clamps down to 50 (AC #5)');
 END $$;
 
 -- ==========================================================================
@@ -329,8 +329,9 @@ BEGIN
     );
   END IF;
 
-  PERFORM ok(v_has_pin, 'collective_your_posts_page has SET search_path pinned (AC #2, #20)');
+  PERFORM tap_ok(v_has_pin, 'collective_your_posts_page has SET search_path pinned (AC #2, #20)');
 END $$;
 
+SELECT * FROM tap_emit();
 SELECT * FROM finish();
 ROLLBACK;
