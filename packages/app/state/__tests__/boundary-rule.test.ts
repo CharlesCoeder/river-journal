@@ -163,6 +163,28 @@ describe('Story 3-2 / packages/app/package.json sideEffects + deps (AC #1, #6)',
   })
 })
 
+describe('Boundary rule D7 — feed.ts narrow exception (single observe import)', () => {
+  const FEED_REL = 'collective/feed.ts'
+  const FEED_ABS = path.join(STATE_DIR, FEED_REL)
+
+  it('feed.ts exists on disk (vacuous-pass guard)', () => {
+    expect(existsSync(FEED_ABS)).toBe(true)
+  })
+
+  it('feed.ts imports ONLY `observe` from `@legendapp/state`', () => {
+    expect(existsSync(FEED_ABS)).toBe(true)
+    const src = readFileSync(FEED_ABS, 'utf8')
+    const allowed = /import\s*\{\s*observe\s*\}\s*from\s*['"]@legendapp\/state['"]/
+    expect(src).toMatch(allowed)
+    const lines = src.split('\n').filter((l) => /@legendapp\/state/.test(l))
+    expect(lines.length).toBe(1)
+    expect(lines[0]).toMatch(allowed)
+    expect(src).not.toMatch(/@legendapp\/state\/react/)
+    expect(src).not.toMatch(/@legendapp\/state\/sync/)
+    expect(src).not.toMatch(/use\$\s*\(/)
+  })
+})
+
 describe('Story 3-2 / persistConfig DB_VERSION + tanstack-query table (AC #2)', () => {
   it('persistConfig.ts bumps DB_VERSION to 6 and includes tanstack-query table', () => {
     const src = readIfExists('persistConfig.ts')
