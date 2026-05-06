@@ -153,7 +153,7 @@ queryClient.setMutationDefaults(['collective', 'post'], {
   onError: (_err: unknown, _vars: CreatePostVars, ctx: PostMutationContext | undefined) => {
     // Restore snapshot only if it was defined — never call setQueryData with
     // undefined (which would clobber any cache that arrived between onMutate
-    // and onError). AC #31.
+    // and onError).
     if (ctx?.snapshot !== undefined) {
       queryClient.setQueryData(collectiveFeedKey, ctx.snapshot)
     }
@@ -162,7 +162,7 @@ queryClient.setMutationDefaults(['collective', 'post'], {
   onSettled: () => {
     // Invalidate the entire ['collective'] subtree so the authoritative
     // server state replaces the optimistic row. This covers feed, every
-    // open thread, and your-posts. Accepted cost per AC #37.
+    // open thread, and your-posts. Accepted cost.
     queryClient.invalidateQueries({ queryKey: ['collective'] })
   },
 })
@@ -183,7 +183,7 @@ queryClient.setMutationDefaults(['collective', 'react'], {
       const { error } = await supabase.from('collective_reactions').insert(insert)
       if (error) {
         // Swallow duplicate on the expected UNIQUE constraint — this covers
-        // replay of an add that already landed (AC #35, #36).
+        // replay of an add that already landed.
         if (
           error.code === '23505' &&
           error.constraint === 'collective_reactions_post_id_user_id_kind_key'
@@ -213,12 +213,12 @@ queryClient.setMutationDefaults(['collective', 'react'], {
       collectiveThreadKey(vars.post_id)
     )
 
-    // Snapshot the reactions cache for this post (AC #8 resolution from Story 3-11).
+    // Snapshot the per-post reactions cache for optimistic toggle + rollback.
     const reactionsSnapshot = queryClient.getQueryData<ReactionsCache>(
       collectiveReactionsKey(vars.post_id)
     )
 
-    // Apply optimistic toggle on the reactions cache (AC #8).
+    // Apply optimistic toggle on the reactions cache.
     if (reactionsSnapshot) {
       const prevCount = reactionsSnapshot.counts[vars.kind] ?? 0
       const optimistic: ReactionsCache = {
@@ -241,7 +241,7 @@ queryClient.setMutationDefaults(['collective', 'react'], {
   },
 
   onError: (_err: unknown, vars: ToggleReactionVars, ctx: ReactMutationContext | undefined) => {
-    // Restore every cache we may have modified — never set undefined (AC #31).
+    // Restore every cache we may have modified — never set undefined.
     if (ctx?.feedSnapshot !== undefined) {
       queryClient.setQueryData(collectiveFeedKey, ctx.feedSnapshot)
     }
@@ -278,7 +278,6 @@ queryClient.setMutationDefaults(['collective', 'report'], {
       // Swallow duplicate on the expected UNIQUE constraint (post_id,
       // reporter_user_id). Duplicate reports are intentionally allowed to
       // no-op on the server rather than returning an error to the user.
-      // AC #12, #20, #36.
       if (
         error.code === '23505' &&
         error.constraint === 'collective_reports_post_id_reporter_user_id_key'
@@ -299,7 +298,7 @@ queryClient.setMutationDefaults(['collective', 'report'], {
   },
 
   onError: () => {
-    // No cache was mutated in onMutate — nothing to restore (AC #13).
+    // No cache was mutated in onMutate — nothing to restore.
   },
 
   onSettled: () => {
