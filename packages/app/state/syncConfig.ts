@@ -11,7 +11,7 @@
  */
 
 /**
- * PLAINTEXT vs ENCRYPTED tables (architecture D2):
+ * PLAINTEXT vs ENCRYPTED tables (architecture D2 / D7):
  *
  * ENCRYPTED (encryption transforms run at the sync boundary):
  *   - flows.content  (only encrypted column in the system)
@@ -25,9 +25,21 @@
  * Legend-State observable + offline replay + RLS scoping. Their
  * transform.save/load only convert camelCase ↔ snake_case (architecture G3).
  *
- * Collective tables (collective_posts, collective_reactions, collective_reports,
- * etc.) are PLAINTEXT BUT NOT in this list — they are accessed via TanStack
- * Query under state/collective/**, NOT via syncedSupabase (architecture D7).
+ * PLAINTEXT, server-visible — accessed via TanStack Query, NOT Legend-State;
+ * do NOT add transforms / syncedSupabase() setup for these tables here:
+ *   - collective_posts          (read via collective_feed_page /
+ *                                collective_thread_page DEFINER RPCs;
+ *                                INSERT direct; UPDATE/DELETE forbidden
+ *                                except via delete_my_post DEFINER fn)
+ *   - collective_reactions      (read direct; INSERT gated; DELETE own)
+ *   - collective_reports        (INSERT direct; SELECT admin-only)
+ *   - moderation_actions        (forward-reference; arrives later)
+ *   - user_suspensions          (forward-reference; arrives later)
+ *
+ * The boundary rule (D7) is binding: this file MUST NOT import the
+ * TanStack Query package (or any of its subpaths). The collective tables
+ * are accessed exclusively from `packages/app/state/collective/**`, which
+ * is the only side of the boundary allowed to import TanStack Query.
  */
 
 import { observable } from '@legendapp/state'
