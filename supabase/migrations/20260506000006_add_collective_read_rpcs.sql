@@ -115,33 +115,39 @@ BEGIN
 
   UNION ALL
 
-  -- Up to 3 teaser rows with truncated body. WHERE id <> v_recent_id
-  -- enforces non-overlap.
-  SELECT
-    cp.id,
-    cp.user_id,
-    cp.parent_post_id,
-    -- Truncation heuristic: substring up to first sentence-end (regex
-    -- match on [.!?] followed by whitespace) OR first 140 chars,
-    -- whichever is shorter.
-    CASE
-      WHEN substring(cp.body FROM '^[^.!?]*[.!?](\s|$)') IS NOT NULL
-       AND length(substring(cp.body FROM '^[^.!?]*[.!?](\s|$)'))
-           <= LEAST(length(cp.body), 140)
-      THEN substring(cp.body FROM '^[^.!?]*[.!?](\s|$)')
-      ELSE substring(cp.body FROM 1 FOR 140)
-    END AS body,
-    cp.created_at,
-    cp.is_removed,
-    cp.is_user_deleted,
-    cp.user_deleted_at,
-    'preview'::TEXT AS mode
-  FROM collective_posts cp
-  WHERE cp.parent_post_id IS NULL
-    AND cp.is_removed = FALSE
-    AND cp.id <> v_recent_id
-  ORDER BY 5 DESC  -- order by created_at column (5th in select list)
-  LIMIT 3;
+  -- Up to 3 teaser rows with truncated body. The teaser SELECT is wrapped
+  -- in a parenthesized subquery so its ORDER BY / LIMIT 3 binds ONLY to
+  -- the teaser branch, not the entire UNION ALL. Without parentheses,
+  -- Postgres would apply LIMIT 3 to the combined result and the preview
+  -- would cap at 3 rows total instead of the contracted 1 + up to 3 = 4.
+  -- WHERE id <> v_recent_id enforces non-overlap with the recent-post row.
+  SELECT * FROM (
+    SELECT
+      cp.id,
+      cp.user_id,
+      cp.parent_post_id,
+      -- Truncation heuristic: substring up to first sentence-end (regex
+      -- match on [.!?] followed by whitespace) OR first 140 chars,
+      -- whichever is shorter.
+      CASE
+        WHEN substring(cp.body FROM '^[^.!?]*[.!?](\s|$)') IS NOT NULL
+         AND length(substring(cp.body FROM '^[^.!?]*[.!?](\s|$)'))
+             <= LEAST(length(cp.body), 140)
+        THEN substring(cp.body FROM '^[^.!?]*[.!?](\s|$)')
+        ELSE substring(cp.body FROM 1 FOR 140)
+      END AS body,
+      cp.created_at,
+      cp.is_removed,
+      cp.is_user_deleted,
+      cp.user_deleted_at,
+      'preview'::TEXT AS mode
+    FROM collective_posts cp
+    WHERE cp.parent_post_id IS NULL
+      AND cp.is_removed = FALSE
+      AND cp.id <> v_recent_id
+    ORDER BY cp.created_at DESC
+    LIMIT 3
+  ) teasers;
 END;
 $$;
 
