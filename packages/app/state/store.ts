@@ -760,6 +760,13 @@ const ensureProfile = () => {
       // Migration: legacy profiles lack unlockedThemes — backfill empty array.
       store$.profile.unlockedThemes.set([])
     }
+    if (!store$.profile.preferences.get()) {
+      // Migration: legacy profiles lack the preferences sub-object — backfill
+      // with an empty object. Do NOT pre-create the disclosures sub-object;
+      // let it materialize on first write to avoid an unnecessary syncedSupabase
+      // round-trip on every cold start.
+      store$.profile.preferences.set({})
+    }
   }
 }
 

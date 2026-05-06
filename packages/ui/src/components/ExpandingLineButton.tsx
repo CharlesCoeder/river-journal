@@ -13,6 +13,8 @@ export interface ExpandingLineButtonProps {
   size?: 'default' | 'cta'
   disabled?: boolean
   accessibilityLabel?: string
+  /** DOM id forwarded to the root button element — used for focus management. */
+  id?: string
 }
 
 export function ExpandingLineButton({
@@ -21,6 +23,7 @@ export function ExpandingLineButton({
   size = 'default',
   disabled = false,
   accessibilityLabel,
+  id,
 }: ExpandingLineButtonProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isPressed, setIsPressed] = useState(false)
@@ -43,6 +46,7 @@ export function ExpandingLineButton({
     <View
       tag="button"
       role="button"
+      id={id}
       aria-label={
         accessibilityLabel ?? (typeof children === 'string' ? children : undefined)
       }
