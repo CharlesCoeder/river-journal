@@ -54,11 +54,8 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
         <FlagAffordance
           postId={post.id}
           reporterUserId={currentUserId ?? null}
-          disabled={
-            post.user_id === currentUserId ||
-            post.is_user_deleted === true ||
-            post.user_id === null
-          }
+          canSelfDelete={post.user_id === currentUserId && post.is_user_deleted === false}
+          canReport={post.user_id !== currentUserId && post.is_user_deleted === false && post.user_id !== null}
         />
       </XStack>
       {/* For self-deleted posts, body is the literal '[deleted]' — AuthorByline already

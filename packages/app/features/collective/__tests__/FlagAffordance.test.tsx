@@ -50,6 +50,14 @@ vi.mock('app/state/collective/mutations', () => ({
     isPending: mockIsPending,
     error: null,
   }),
+  // Story 3-13: useDeleteOwnPost needed by FlagAffordance after prop rename.
+  useDeleteOwnPost: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+    reset: vi.fn(),
+  }),
 }))
 
 // ─── addLocallyHiddenPost mock ────────────────────────────────────────────────
@@ -335,24 +343,24 @@ afterEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
-  it('renders a button with aria-label="Post actions" when reporterUserId is provided', () => {
+  it('renders a button with aria-label="Report this post" when canReport=true (only-report case)', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    const trigger = screen.getByRole('button', { name: /post actions/i })
+    const trigger = screen.getByRole('button', { name: /report this post/i })
     expect(trigger).not.toBeNull()
   })
 
   it('renders nothing (null) when reporterUserId is null', () => {
     const { container } = render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: null, disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: null, canReport: true, canSelfDelete: false })
     )
     expect(container.firstChild).toBeNull()
   })
 
   it('renders the MoreHorizontal icon inside the trigger', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
     const icon = document.querySelector('[data-icon="MoreHorizontal"]')
     expect(icon).not.toBeNull()
@@ -360,9 +368,9 @@ describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
 
   it('trigger has aria-haspopup="menu"', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    const trigger = screen.getByRole('button', { name: /post actions/i })
+    const trigger = screen.getByRole('button', { name: /report this post/i })
     expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
   })
 })
@@ -375,16 +383,16 @@ describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
 describe('Story 3-12 / t2 — disabled renders nothing (AC #4)', () => {
   it('returns null when disabled===true', () => {
     const { container } = render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: true })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: false, canSelfDelete: false })
     )
     expect(container.firstChild).toBeNull()
   })
 
   it('no button present when disabled===true', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: true })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: false, canSelfDelete: false })
     )
-    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /report this post/i })).toBeNull()
   })
 })
 
@@ -396,9 +404,9 @@ describe('Story 3-12 / t2 — disabled renders nothing (AC #4)', () => {
 describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () => {
   it('clicking the trigger opens the popover (Popover becomes data-open="true")', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    const trigger = screen.getByRole('button', { name: /post actions/i })
+    const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
 
     const popover = document.querySelector('[data-popover="true"]')
@@ -407,9 +415,9 @@ describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () =>
 
   it('"Report" menu item is visible after popover opens', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    const trigger = screen.getByRole('button', { name: /post actions/i })
+    const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
 
     expect(screen.getByText('Report')).not.toBeNull()
@@ -417,19 +425,23 @@ describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () =>
 
   it('"Report" menu item has role="menuitem"', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    const trigger = screen.getByRole('button', { name: /post actions/i })
+    const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
 
     const menuItem = screen.getByRole('menuitem', { name: /report/i })
     expect(menuItem).not.toBeNull()
   })
 
-  it('TODO marker for Story 3-13 delete entry exists in source', () => {
+  it('Delete menu item is present in source (Story 3-13 implemented)', () => {
+    // The TODO(Story 3-13) placeholder was replaced by the real Delete menu item.
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
     const src = readFileSync(FLAG_AFFORDANCE_PATH, 'utf8')
-    expect(src).toMatch(/TODO\(Story 3-13\)/)
+    // Verify the Delete menu item code is present (canSelfDelete conditional)
+    expect(src).toMatch(/canSelfDelete/)
+    // Verify the TODO placeholder is gone
+    expect(src).not.toMatch(/TODO\(Story 3-13\)/)
   })
 })
 
@@ -441,9 +453,9 @@ describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () =>
 describe('Story 3-12 / t4 — dialog opens with radio list + TextArea (AC #5, #6, #7)', () => {
   function openDialog() {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    const trigger = screen.getByRole('button', { name: /post actions/i })
+    const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
     const reportItem = screen.getByRole('menuitem', { name: /report/i })
     fireEvent.click(reportItem)
@@ -507,9 +519,9 @@ describe('Story 3-12 / t4 — dialog opens with radio list + TextArea (AC #5, #6
 describe('Story 3-12 / t5 — Submit enabled only after reason selected (AC #6, #8)', () => {
   function openDialog() {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    const trigger = screen.getByRole('button', { name: /post actions/i })
+    const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
     const reportItem = screen.getByRole('menuitem', { name: /report/i })
     fireEvent.click(reportItem)
@@ -567,10 +579,10 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
   it('mutate called once with correct vars on submit', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-submit', reporterUserId: 'u-reporter', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-submit', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
     )
     // Open popover
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     // Click Report
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
@@ -600,9 +612,9 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
   it('addLocallyHiddenPost called once with postId on submit', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-submit', reporterUserId: 'u-reporter', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-submit', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
     fireEvent.click(spamRadio)
@@ -616,9 +628,9 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
   it('addLocallyHiddenPost is called synchronously after mutate (not in onSuccess)', () => {
     // Both should be called in the same synchronous submit handler
     render(
-      React.createElement(FlagAffordance, { postId: 'p-sync', reporterUserId: 'u-reporter', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-sync', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
     fireEvent.click(spamRadio)
@@ -633,9 +645,9 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
   it('console.log NOT called during submit (NFR19)', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-nfr', reporterUserId: 'u-reporter', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-nfr', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
     fireEvent.click(spamRadio)
@@ -652,9 +664,9 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
   it('dialog closes after submit', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-close', reporterUserId: 'u-reporter', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-close', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
     fireEvent.click(spamRadio)
@@ -673,9 +685,9 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
   it('mutate called with note: null when TextArea is empty', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-nonote', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-nonote', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
     fireEvent.click(spamRadio)
@@ -689,9 +701,9 @@ describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
 
   it('mutate called with note: null when note is only whitespace', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-whitespace', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-whitespace', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
     fireEvent.click(spamRadio)
@@ -715,9 +727,9 @@ describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
 describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', () => {
   it('mutate NOT called when Cancel is tapped', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     fireEvent.click(screen.getByTestId('btn-cancel'))
 
@@ -726,9 +738,9 @@ describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', ()
 
   it('addLocallyHiddenPost NOT called when Cancel is tapped', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     fireEvent.click(screen.getByTestId('btn-cancel'))
 
@@ -737,9 +749,9 @@ describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', ()
 
   it('dialog closes after Cancel', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
     fireEvent.click(screen.getByTestId('btn-cancel'))
 
@@ -757,9 +769,9 @@ describe('Story 3-12 / t9 — Submit disabled during isPending (AC #8, #12)', ()
   it('mutate NOT called when Submit is tapped while isPending===true', () => {
     mockIsPending = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-pending', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-pending', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
@@ -772,9 +784,9 @@ describe('Story 3-12 / t9 — Submit disabled during isPending (AC #8, #12)', ()
   it('Submit button is aria-disabled="true" when isPending===true', () => {
     mockIsPending = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-pending2', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-pending2', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
@@ -790,9 +802,9 @@ describe('Story 3-12 / t9 — Submit disabled during isPending (AC #8, #12)', ()
   it('Submit button label stays "Submit" (no text swap) during isPending', () => {
     mockIsPending = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-pending3', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-pending3', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     expect(screen.getByTestId('btn-submit').textContent).toBe('Submit')
@@ -810,9 +822,9 @@ describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', (
   it('Dialog overlay animation is undefined/empty when useReducedMotion returns true', () => {
     reduceMotionValue = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-rm', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-rm', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     // Dialog overlay should have no "quick" animation token
@@ -824,9 +836,9 @@ describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', (
   it('Dialog content animation is undefined/empty when useReducedMotion returns true', () => {
     reduceMotionValue = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-rm2', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-rm2', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     const content = document.querySelector('[data-dialog-content="true"]')
@@ -837,9 +849,9 @@ describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', (
   it('Dialog uses "quick" animation token when reduced motion is OFF', () => {
     reduceMotionValue = false
     render(
-      React.createElement(FlagAffordance, { postId: 'p-anim', reporterUserId: 'u1', disabled: false })
+      React.createElement(FlagAffordance, { postId: 'p-anim', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
     )
-    fireEvent.click(screen.getByRole('button', { name: /post actions/i }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     const overlay = document.querySelector('[data-dialog-overlay="true"]')

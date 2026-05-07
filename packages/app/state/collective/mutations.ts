@@ -28,8 +28,7 @@
 // Boundary rule (D7): this file MUST NOT import the Legend-State package.
 //
 // Mutations registered here: ['collective','post'], ['collective','react'],
-// ['collective','report']. ['collective','delete_own'] is deferred to
-// Story 3.13.
+// ['collective','report'], ['collective','delete_own'].
 
 import { useMutation, type UseMutationResult, type InfiniteData } from '@tanstack/react-query'
 import { queryClient } from 'app/state/queryClient'
@@ -37,6 +36,7 @@ import { supabase } from 'app/utils/supabase'
 import { collectiveFeedKey, type FeedPage, type Post } from './feed'
 import { collectiveThreadKey, type ThreadPageResult } from './thread'
 import { collectiveReactionsKey, type ReactionsCache } from './reactions'
+import { yourPostsKey, type YourPostsPage } from './yourPosts'
 import type { ToggleReactionVars } from './types'
 import type { Database } from 'app/types/database'
 
@@ -67,6 +67,14 @@ export type ReportPostVars = {
   note?: string | null
 }
 
+export type DeleteOwnPostVars = { post_id: string }
+
+export type DeleteOwnContext = {
+  feedSnapshot: InfiniteData<FeedPage> | undefined
+  threadSnapshot: InfiniteData<ThreadPageResult> | undefined
+  yourPostsSnapshot: InfiniteData<YourPostsPage> | undefined
+}
+
 // DB insert types — typed against generated Database schema, no `any` re-derivation.
 type PostInsert = Database['public']['Tables']['collective_posts']['Insert']
 type ReactionInsert = Database['public']['Tables']['collective_reactions']['Insert']
@@ -91,7 +99,7 @@ export const __collectiveMutationsStub = true
 export const __collectiveMutationsLoadedAt: number = Date.now()
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// setMutationDefaults — THREE top-level calls at module load
+// setMutationDefaults — FOUR top-level calls at module load
 // (see FOOTGUN #1 note at top of file)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -306,6 +314,117 @@ queryClient.setMutationDefaults(['collective', 'report'], {
   },
 })
 
+// ─── 4. collective.delete_own ─────────────────────────────────────────────────
+
+queryClient.setMutationDefaults(['collective', 'delete_own'], {
+  gcTime: TWENTY_FOUR_HOURS_MS,
+
+  mutationFn: async (vars: DeleteOwnPostVars) => {
+    // PRIVACY (NFR19): only post_id is sent to the RPC — the original body is
+    // never in the request payload, and the optimistic update uses the literal
+    // '[deleted]', not the original body.
+    const { error } = await supabase.rpc('delete_my_post', { post_id: vars.post_id })
+    if (error) {
+      // Swallow the ambiguous 42501 from delete_my_post when BOTH code AND
+      // message match exactly. This covers offline-replay idempotency: the
+      // post was already deleted by a prior partial run (AC #2, #11, #32).
+      // Any other 42501 (e.g. RLS denial of EXECUTE) is re-thrown — match
+      // BOTH conditions; never swallow on code alone (AC #32).
+      // Double-submit safety: the second tap hits this path and resolves
+      // cleanly; the post stays in deleted state (AC #34).
+      if (error.code === '42501' && error.message === 'cannot delete this post') {
+        return
+      }
+      throw error
+    }
+  },
+
+  onMutate: async (vars: DeleteOwnPostVars): Promise<DeleteOwnContext> => {
+    await queryClient.cancelQueries({ queryKey: ['collective'] })
+
+    const feedSnapshot = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
+    const threadSnapshot = queryClient.getQueryData<InfiniteData<ThreadPageResult>>(
+      collectiveThreadKey(vars.post_id)
+    )
+    const yourPostsSnapshot = queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)
+
+    const deletedAt = new Date().toISOString()
+
+    // Walk all three caches and update the matching row. The spread preserves
+    // all other fields including the discriminated `mode` union literal.
+    if (feedSnapshot) {
+      queryClient.setQueryData<InfiniteData<FeedPage>>(collectiveFeedKey, {
+        ...feedSnapshot,
+        pages: feedSnapshot.pages.map(page => ({
+          ...page,
+          items: page.items.map(item =>
+            item.id === vars.post_id
+              ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
+              : item
+          ),
+        })),
+      })
+    }
+
+    if (threadSnapshot) {
+      queryClient.setQueryData<InfiniteData<ThreadPageResult>>(
+        collectiveThreadKey(vars.post_id),
+        {
+          ...threadSnapshot,
+          pages: threadSnapshot.pages.map(page => ({
+            ...page,
+            items: page.items.map(item =>
+              item.id === vars.post_id
+                ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
+                : item
+            ),
+          })),
+        }
+      )
+    }
+
+    if (yourPostsSnapshot) {
+      queryClient.setQueryData<InfiniteData<YourPostsPage>>(yourPostsKey, {
+        ...yourPostsSnapshot,
+        pages: yourPostsSnapshot.pages.map(page => ({
+          ...page,
+          items: page.items.map(item =>
+            item.id === vars.post_id
+              ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
+              : item
+          ),
+        })),
+      })
+    }
+
+    return { feedSnapshot, threadSnapshot, yourPostsSnapshot }
+  },
+
+  onError: (
+    _err: unknown,
+    vars: DeleteOwnPostVars,
+    ctx: DeleteOwnContext | undefined
+  ) => {
+    // Restore every snapshot that was non-undefined — never call setQueryData
+    // with undefined (would clobber a fresher cache that arrived between
+    // onMutate and onError). Mirrors the empty-cache safety pattern.
+    if (ctx?.feedSnapshot !== undefined) {
+      queryClient.setQueryData(collectiveFeedKey, ctx.feedSnapshot)
+    }
+    if (ctx?.threadSnapshot !== undefined) {
+      queryClient.setQueryData(collectiveThreadKey(vars.post_id), ctx.threadSnapshot)
+    }
+    if (ctx?.yourPostsSnapshot !== undefined) {
+      queryClient.setQueryData(yourPostsKey, ctx.yourPostsSnapshot)
+    }
+  },
+
+  onSettled: () => {
+    // Invalidate the entire ['collective'] subtree: feed, every thread, your-posts.
+    queryClient.invalidateQueries({ queryKey: ['collective'] })
+  },
+})
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Consumer hooks
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -341,6 +460,19 @@ export function useToggleReaction(): UseMutationResult<
 export function useReportPost(): UseMutationResult<unknown, Error, ReportPostVars, null> {
   return useMutation<unknown, Error, ReportPostVars, null>({
     mutationKey: ['collective', 'report'],
+  })
+}
+
+export function useDeleteOwnPost(): UseMutationResult<
+  unknown,
+  Error,
+  DeleteOwnPostVars,
+  DeleteOwnContext
+> {
+  // No inline mutationFn — the registered default at module load is the
+  // executable code path on replay. See FOOTGUN #1 at top of file.
+  return useMutation<unknown, Error, DeleteOwnPostVars, DeleteOwnContext>({
+    mutationKey: ['collective', 'delete_own'],
   })
 }
 

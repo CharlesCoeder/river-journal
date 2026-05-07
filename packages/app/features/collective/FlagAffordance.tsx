@@ -26,7 +26,7 @@ import {
   useReducedMotion,
 } from '@my/ui'
 import { MoreHorizontal } from '@tamagui/lucide-icons'
-import { useReportPost } from 'app/state/collective/mutations'
+import { useReportPost, useDeleteOwnPost } from 'app/state/collective/mutations'
 import type { ReportPostVars } from 'app/state/collective/mutations'
 import { addLocallyHiddenPost } from 'app/state/store'
 
@@ -48,20 +48,27 @@ export interface FlagAffordanceProps {
   /** Current authenticated user. null → component renders nothing (anonymous viewers cannot report). */
   reporterUserId: string | null
   /**
-   * When true, the trigger renders nothing (own post / self-deleted / anonymized post).
-   * Computed by the parent (PostRow): post.user_id === reporterUserId || post.is_user_deleted || post.user_id === null.
+   * When true, the "Report" menu item is rendered.
+   * Computed by PostRow: post.user_id !== currentUserId && !is_user_deleted && post.user_id !== null.
    */
-  disabled?: boolean
+  canReport: boolean
+  /**
+   * When true, the "Delete" menu item is rendered.
+   * Computed by PostRow: post.user_id === currentUserId && !is_user_deleted.
+   */
+  canSelfDelete: boolean
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FlagAffordance({ postId, reporterUserId, disabled = false }: FlagAffordanceProps) {
+export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelete }: FlagAffordanceProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedReason, setSelectedReason] = useState<ReasonCode | undefined>(undefined)
   const [note, setNote] = useState('')
   const mutation = useReportPost()
+  const deleteMutation = useDeleteOwnPost()
   const reducedMotion = useReducedMotion()
 
   // Keep hooks count stable — useRef satisfies linter for hook rule compliance
@@ -69,19 +76,47 @@ export function FlagAffordance({ postId, reporterUserId, disabled = false }: Fla
 
   // Early returns — hooks have all been called above (Rules of Hooks)
   if (reporterUserId === null) return null
-  if (disabled) return null
+  // Nothing to show: no report affordance AND no delete affordance.
+  if (!canReport && !canSelfDelete) return null
 
   const animationToken = reducedMotion ? undefined : 'quick'
+
+  // Context-aware a11y label for the trigger button.
+  const triggerAriaLabel = canReport && canSelfDelete
+    ? 'Post actions'
+    : canSelfDelete
+      ? 'Delete your post'
+      : 'Report this post'
 
   function openReportDialog() {
     setMenuOpen(false)
     setDialogOpen(true)
   }
 
+  function openDeleteDialog() {
+    setMenuOpen(false)
+    setDeleteDialogOpen(true)
+  }
+
   function handleCancel() {
     setDialogOpen(false)
     setNote('')
     setSelectedReason(undefined)
+  }
+
+  function handleDeleteCancel() {
+    setDeleteDialogOpen(false)
+  }
+
+  function handleDeleteConfirm() {
+    // Guard against double-tap: if already pending, the second tap's mutation
+    // will hit the 42501 ambiguous-error swallow path on the server and resolve
+    // cleanly. AC #34.
+    if (deleteMutation.isPending) return
+    // Fire-and-forget — do NOT await. Optimistic cache update is synchronous.
+    deleteMutation.mutate({ post_id: postId })
+    setDeleteDialogOpen(false)
+    setMenuOpen(false)
   }
 
   function handleSubmit() {
@@ -116,7 +151,7 @@ export function FlagAffordance({ postId, reporterUserId, disabled = false }: Fla
           <View
             tag="button"
             role="button"
-            aria-label="Post actions"
+            aria-label={triggerAriaLabel}
             aria-haspopup="menu"
             width="$4"
             height="$4"
@@ -136,16 +171,28 @@ export function FlagAffordance({ postId, reporterUserId, disabled = false }: Fla
           elevate
         >
           <YStack>
-            {/* TODO(Story 3-13): add "Delete" menu item below "Report" when this is the user's own post. */}
-            <View
-              tag="button"
-              role="menuitem"
-              onPress={openReportDialog}
-              paddingHorizontal="$3"
-              paddingVertical="$2"
-            >
-              <Text>Report</Text>
-            </View>
+            {canReport ? (
+              <View
+                tag="button"
+                role="menuitem"
+                onPress={openReportDialog}
+                paddingHorizontal="$3"
+                paddingVertical="$2"
+              >
+                <Text>Report</Text>
+              </View>
+            ) : null}
+            {canSelfDelete ? (
+              <View
+                tag="button"
+                role="menuitem"
+                onPress={openDeleteDialog}
+                paddingHorizontal="$3"
+                paddingVertical="$2"
+              >
+                <Text>Delete</Text>
+              </View>
+            ) : null}
           </YStack>
         </Popover.Content>
       </Popover>
@@ -222,6 +269,44 @@ export function FlagAffordance({ postId, reporterUserId, disabled = false }: Fla
                 opacity={submitDisabled ? 0.5 : 1}
               >
                 Submit
+              </ExpandingLineButton>
+            </XStack>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} modal>
+        <Dialog.Portal>
+          <Dialog.Overlay
+            key="delete-overlay"
+            backgroundColor="$shadow6"
+            animation={animationToken}
+            enterStyle={{ opacity: 0 }}
+            exitStyle={{ opacity: 0 }}
+          />
+          <Dialog.Content
+            key="delete-content"
+            gap="$3"
+            padding="$4"
+            maxWidth={420}
+            width="90%"
+            backgroundColor="$background"
+            borderColor="$color3"
+            borderWidth={1}
+            animation={animationToken}
+          >
+            <Dialog.Title fontSize="$5" fontFamily="$body">
+              Delete this post?
+            </Dialog.Title>
+            <Dialog.Description fontSize="$2" color="$color11">
+              {"The text will be replaced with '[deleted]'. Replies under it will remain visible."}
+            </Dialog.Description>
+
+            <XStack gap="$3" justifyContent="flex-end" marginTop="$3">
+              <ExpandingLineButton onPress={handleDeleteCancel}>
+                Cancel
+              </ExpandingLineButton>
+              <ExpandingLineButton onPress={handleDeleteConfirm}>
+                Delete
               </ExpandingLineButton>
             </XStack>
           </Dialog.Content>
