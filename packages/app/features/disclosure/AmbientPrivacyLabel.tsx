@@ -12,7 +12,7 @@
  */
 
 import React, { useState } from 'react'
-import { Pressable, Text, YStack } from 'tamagui'
+import { Text, YStack } from 'tamagui'
 import type { DisclosureBoundary } from './ThreePostureDisclosure'
 import { ThreePostureDisclosure } from './ThreePostureDisclosure'
 
@@ -49,10 +49,11 @@ export function AmbientPrivacyLabel({ boundary, provider, onPress: onPressProp }
 
   return (
     <YStack>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Re-open privacy disclosure"
+      <YStack
+        role="button"
+        aria-label="Re-open privacy disclosure"
         onPress={handlePress}
+        cursor="pointer"
       >
         <Text
           fontFamily="$body"
@@ -63,7 +64,7 @@ export function AmbientPrivacyLabel({ boundary, provider, onPress: onPressProp }
         >
           {labelText}
         </Text>
-      </Pressable>
+      </YStack>
 
       {/* Review-mode disclosure — mounted inline; self-contained.
           Suppressed when onPressProp is provided (parent manages disclosure state). */}

@@ -86,7 +86,7 @@ vi.mock('tamagui', () => {
   Dialog.Close = ({ children }: any) =>
     ReactModule.createElement(ReactModule.Fragment, null, children)
 
-  // YStack / XStack / Text / Pressable → semantic HTML pass-throughs
+  // YStack / XStack / Text / View / Button / Stack → semantic HTML pass-throughs
   const passthrough = (tagName: string) => {
     const Component = ({ children, tag, accessibilityRole, role, ...rest }: any) =>
       ReactModule.createElement(
@@ -119,7 +119,6 @@ vi.mock('tamagui', () => {
     YStack: passthrough('div'),
     XStack: passthrough('div'),
     Text: passthrough('span'),
-    Pressable: passthrough('button'),
     View: passthrough('div'),
     Button: passthrough('button'),
     Stack: passthrough('div'),

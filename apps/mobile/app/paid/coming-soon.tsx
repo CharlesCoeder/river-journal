@@ -4,25 +4,17 @@
  */
 
 import { useRouter } from 'solito/navigation'
-import { View, Text } from 'react-native'
-import { Pressable } from 'react-native'
+import { YStack, View, Text } from 'tamagui'
 
 export default function PaidComingSoonRoute() {
   const router = useRouter()
 
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-      }}
-    >
+    <YStack flex={1} alignItems="center" justifyContent="center" gap="$4">
       <Text>Paid tier coming soon</Text>
-      <Pressable onPress={() => router.back()}>
+      <View onPress={() => router.back()} cursor="pointer" role="button" aria-label="Back">
         <Text>Back</Text>
-      </Pressable>
-    </View>
+      </View>
+    </YStack>
   )
 }

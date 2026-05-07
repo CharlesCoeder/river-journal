@@ -108,15 +108,6 @@ vi.mock('@my/ui', async () => {
     View: passthrough('div'),
     Text: passthrough('span'),
     AnimatePresence: ({ children }: any) => R.createElement(R.Fragment, null, children),
-    Pressable: ({ children, onPress, testID, accessibilityLabel, accessibilityRole }: any) =>
-      R.createElement('button', {
-        type: 'button',
-        ...(testID ? { 'data-testid': testID } : {}),
-        ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
-        ...(accessibilityRole ? { role: accessibilityRole } : {}),
-        onClick: onPress,
-        children,
-      }),
   }
 })
 

@@ -42,7 +42,7 @@ vi.mock('../ThreePostureDisclosure', () => {
   }
 })
 
-// ─── Mock tamagui so Pressable / Text render as HTML ─────────────────────────
+// ─── Mock tamagui so YStack / Text render as HTML ───────────────────────────
 vi.mock('tamagui', () => {
   const ReactModule = require('react')
 
@@ -63,7 +63,6 @@ vi.mock('tamagui', () => {
 
   return {
     Text: passthrough('span'),
-    Pressable: passthrough('button'),
     Button: passthrough('button'),
     View: passthrough('div'),
     YStack: passthrough('div'),
