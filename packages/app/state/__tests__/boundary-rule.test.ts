@@ -187,6 +187,38 @@ describe('Boundary rule D7 — feed.ts narrow exception (single observe import)'
   })
 })
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Story 3-12 — D7 narrow exception: locallyHidden.ts
+// This is the SECOND documented boundary-rule exception (the first is feed.ts).
+// locallyHidden.ts IS allowed to import use$ from @legendapp/state/react because
+// it bridges the Legend-State user preference into the TanStack-Query-driven feed
+// surface as a read-only, one-way bridge.
+//
+// This block does NOT add locallyHidden.ts to TQ_FILES or LEGEND_FILES — those
+// arrays serve different assertion purposes. Mirror the feed.ts exception block
+// structure exactly (lines 168–188).
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Boundary rule D7 — locallyHidden.ts narrow exception (use$ bridge)', () => {
+  const REL = 'collective/locallyHidden.ts'
+  const ABS = path.join(STATE_DIR, REL)
+
+  it('locallyHidden.ts exists on disk', () => {
+    expect(existsSync(ABS)).toBe(true)
+  })
+
+  it('locallyHidden.ts imports use$ from @legendapp/state/react (single Legend-State import)', () => {
+    expect(existsSync(ABS)).toBe(true)
+    const src = readFileSync(ABS, 'utf8')
+    const allowed = /import\s*\{[^}]*use\$[^}]*\}\s*from\s*['"]@legendapp\/state\/react['"]/
+    expect(src).toMatch(allowed)
+    const legendLines = src.split('\n').filter((l) => /@legendapp\/state/.test(l))
+    expect(legendLines.length).toBe(1)
+    // Must NOT have TQ imports
+    expect(src).not.toMatch(/@tanstack\/(react-query|query-[\w-]+)/)
+  })
+})
+
 describe('Story 3-2 / persistConfig DB_VERSION + tanstack-query table (AC #2)', () => {
   it('persistConfig.ts bumps DB_VERSION to 6 and includes tanstack-query table', () => {
     const src = readIfExists('persistConfig.ts')

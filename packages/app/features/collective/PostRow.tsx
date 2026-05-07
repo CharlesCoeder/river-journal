@@ -9,8 +9,9 @@
 //   - is_removed: caller should filter these out; PostRow renders nothing for safety
 //   - normal: original body + AuthorByline, ReactionStrip
 
-import { View, Text, AuthorByline } from '@my/ui'
+import { View, Text, XStack, AuthorByline } from '@my/ui'
 import { ReactionStrip } from 'app/features/collective/ReactionStrip'
+import { FlagAffordance } from './FlagAffordance'
 import type { Post } from 'app/state/collective/feed'
 
 export interface PostRowProps {
@@ -42,12 +43,24 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
       accessibilityRole="article"
       accessibilityLabel={a11yLabel}
     >
-      <AuthorByline
-        displayName={displayName}
-        postedAt={post.created_at}
-        tenureTier={undefined}
-        deletedDisplay={isDeleted}
-      />
+      <XStack justifyContent="space-between" alignItems="center">
+        <AuthorByline
+          displayName={displayName}
+          postedAt={post.created_at}
+          tenureTier={undefined}
+          deletedDisplay={isDeleted}
+          flexShrink={1}
+        />
+        <FlagAffordance
+          postId={post.id}
+          reporterUserId={currentUserId ?? null}
+          disabled={
+            post.user_id === currentUserId ||
+            post.is_user_deleted === true ||
+            post.user_id === null
+          }
+        />
+      </XStack>
       {/* For self-deleted posts, body is the literal '[deleted]' — AuthorByline already
           communicates this. Render body only for non-self-deleted posts to avoid duplicate
           '[deleted]' text nodes that confuse a11y queries. */}

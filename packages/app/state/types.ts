@@ -132,6 +132,11 @@ export interface UserProfile {
     }
     /** Default false (undefined). When true, AuthorByline displays tenure tier in feed and composer preview. */
     collective_show_tenure_tier?: boolean
+    /**
+     * Post ids the local user has hidden via the report flow. Server-synced via users.preferences.
+     * Optional at the type level for backward compat with persisted profiles created before this field was added.
+     */
+    locallyHiddenPosts?: string[]
   }
 
   sync: {

@@ -13,6 +13,7 @@ import { onlineManager } from '@tanstack/react-query'
 import { useFeed } from 'app/state/collective/feed'
 import { useIsSuspended } from 'app/state/collective/suspension'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
+import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
 import { CollectivePreview } from 'app/features/collective/CollectivePreview'
 import { PostRow } from 'app/features/collective/PostRow'
 import { useRouter } from 'solito/router'
@@ -60,15 +61,17 @@ export default function CollectiveFeedScreen() {
   const isSuspended = useIsSuspended(currentUserId ?? null)
   const reducedMotion = useReducedMotion()
   const router = useRouter()
+  const hiddenIds = useLocallyHiddenPostIds()
 
-  // Flatten pages, apply defensive is_removed filter, memoize
-  // RPC should not return removed posts, but guard here as regression sentinel
+  // Flatten pages, apply defensive is_removed filter, then apply local-hide
+  // filter. is_removed runs first (global moderation override); local-hide
+  // runs second (user preference).
   const allPosts = useMemo(() => {
     const flat = feed.data?.pages.flatMap((p) => p.items) ?? []
-    const filtered = flat.filter((p) => !p.is_removed)
-    // TODO(Story 3-12): apply locally-hidden post filter from preferences here
-    return filtered
-  }, [feed.data])
+    return flat
+      .filter((p) => !p.is_removed)
+      .filter((p) => !hiddenIds.has(p.id))
+  }, [feed.data, hiddenIds])
 
   const isOnline = onlineManager.isOnline()
 
