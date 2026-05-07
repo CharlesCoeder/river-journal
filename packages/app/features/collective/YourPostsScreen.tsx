@@ -30,7 +30,7 @@ import { useFeed } from 'app/state/collective/feed'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { YourPostRow } from './YourPostRow'
 import { SkeletonRows, formatTimeAgo } from './_shared'
-import { useRouter } from 'solito/router'
+import { useRouter } from 'solito/navigation'
 
 export default function YourPostsScreen() {
   // All hooks must be called unconditionally before any early returns (Rules of Hooks)

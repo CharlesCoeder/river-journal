@@ -30,8 +30,7 @@ function safeFlushSync(fn: () => void): void {
 import { View, XStack, YStack, Text, ExpandingLineButton } from '@my/ui'
 // react-native Pressable for tappable affordances (not in @my/ui barrel)
 import { Pressable } from 'react-native'
-import { useRouter } from 'solito/router'
-import { useSearchParams } from 'solito/navigation'
+import { useRouter, useSearchParams } from 'solito/navigation'
 import { useThread } from 'app/state/collective/thread'
 import type { ThreadPost } from 'app/state/collective/thread'
 import { useCurrentUserId } from 'app/state/collective/currentUser'

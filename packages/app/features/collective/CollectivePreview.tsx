@@ -9,7 +9,7 @@
 //   - "Begin writing" CTA
 
 import { YStack, Text, ExpandingLineButton } from '@my/ui'
-import { useRouter } from 'solito/router'
+import { useRouter } from 'solito/navigation'
 import { PostRow } from 'app/features/collective/PostRow'
 import type { Post } from 'app/state/collective/feed'
 
