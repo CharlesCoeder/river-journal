@@ -57,11 +57,22 @@ export interface FlagAffordanceProps {
    * Computed by PostRow: post.user_id === currentUserId && !is_user_deleted.
    */
   canSelfDelete: boolean
+  /**
+   * When true, a "Focus" item is rendered above Report and Delete.
+   * ThreadView sets this to true for replies (depth ≥ 1); false for the rendered root.
+   * Defaults to false so existing callers (PostRow in feed) need no change.
+   */
+  canFocus?: boolean
+  /**
+   * Tap handler for the Focus menu item. Called when the user taps Focus.
+   * Only invoked when canFocus === true.
+   */
+  onFocus?: () => void
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelete }: FlagAffordanceProps) {
+export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelete, canFocus = false, onFocus }: FlagAffordanceProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -76,8 +87,8 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
 
   // Early returns — hooks have all been called above (Rules of Hooks)
   if (reporterUserId === null) return null
-  // Nothing to show: no report affordance AND no delete affordance.
-  if (!canReport && !canSelfDelete) return null
+  // Nothing to show: no report, no delete, no focus affordance.
+  if (!canReport && !canSelfDelete && !canFocus) return null
 
   const animationToken = reducedMotion ? undefined : 'quick'
 
@@ -87,6 +98,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
     : canSelfDelete
       ? 'Delete your post'
       : 'Report this post'
+
+  function handleFocus() {
+    setMenuOpen(false)
+    onFocus?.()
+  }
 
   function openReportDialog() {
     setMenuOpen(false)
@@ -171,6 +187,17 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
           elevate
         >
           <YStack>
+            {canFocus ? (
+              <View
+                tag="button"
+                role="menuitem"
+                onPress={handleFocus}
+                paddingHorizontal="$3"
+                paddingVertical="$2"
+              >
+                <Text>Focus</Text>
+              </View>
+            ) : null}
             {canReport ? (
               <View
                 tag="button"
