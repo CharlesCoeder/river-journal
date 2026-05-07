@@ -127,6 +127,7 @@ vi.mock('@my/ui', async () => {
 vi.mock('@tamagui/lucide-icons', () => ({
   BookOpen: () => React.createElement('svg', { 'data-testid': 'icon-book-open' }),
   Users: () => React.createElement('svg', { 'data-testid': 'icon-users' }),
+  FileText: () => React.createElement('svg', { 'data-testid': 'icon-file-text' }),
   MessageCircle: () => React.createElement('svg', { 'data-testid': 'icon-message-circle' }),
   Flame: () => React.createElement('svg', { 'data-testid': 'icon-flame' }),
   Award: () => React.createElement('svg', { 'data-testid': 'icon-award' }),
@@ -210,8 +211,8 @@ function renderMenu() {
 // Suite 1 — Menu item ordering and count
 // ===========================================================================
 
-describe('MenuSurface renders six items in the locked order', () => {
-  it('renders exactly six menu items including a Log in/out item (AC 1)', () => {
+describe('MenuSurface renders seven items in the locked order', () => {
+  it('renders exactly seven menu items including a Log in/out item (AC 1)', () => {
     renderMenu()
 
     expect(screen.getByText(/past entries/i)).toBeTruthy()
@@ -222,12 +223,13 @@ describe('MenuSurface renders six items in the locked order', () => {
     expect(screen.getByText(/log in/i)).toBeTruthy() // unauthenticated default
   })
 
-  it('MENU_ITEMS exports exactly 6 items in the locked order (AC 1)', () => {
+  it('MENU_ITEMS exports exactly 7 items in the locked order (AC 1)', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
     const keys = MENU_ITEMS.map((i) => i.key)
     expect(keys).toEqual([
       expect.stringMatching(/past.?entries/i),
       expect.stringMatching(/collective/i),
+      expect.stringMatching(/your.?posts/i),
       expect.stringMatching(/streak/i),
       expect.stringMatching(/preferences/i),
       expect.stringMatching(/account/i),
@@ -235,10 +237,16 @@ describe('MenuSurface renders six items in the locked order', () => {
     ])
   })
 
-  it('DOM contains exactly six elements with role="menuitem" inside role="menu" (AC 1, AC 4)', () => {
+  it('DOM contains exactly seven elements with role="menuitem" inside role="menu" (AC 1, AC 4)', () => {
     renderMenu()
     const container = screen.getByRole('menu')
-    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(6)
+    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(7)
+  })
+
+  it('MENU_ITEMS[2] is the your-posts entry with route /collective/your-posts (AC 24, AC 25)', () => {
+    if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
+    expect(MENU_ITEMS[2].key).toBe('your-posts')
+    expect(MENU_ITEMS[2].route).toBe('/collective/your-posts')
   })
 })
 
@@ -371,7 +379,7 @@ describe('reduced-motion: all items render visible without stagger delays', () =
     myUi.__setReducedMotion(false)
   })
 
-  it('when useReducedMotion returns true all six items are visible on first render, no timer advance needed (AC 7)', async () => {
+  it('when useReducedMotion returns true all seven items are visible on first render, no timer advance needed (AC 7)', async () => {
     vi.useFakeTimers()
     const myUi = (await import('@my/ui')) as any
     myUi.__setReducedMotion(true)
@@ -379,7 +387,7 @@ describe('reduced-motion: all items render visible without stagger delays', () =
     renderMenu()
 
     const container = screen.getByRole('menu')
-    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(6)
+    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(7)
     expect(container.querySelectorAll('[data-hidden="true"]').length).toBe(0)
 
     vi.useRealTimers()
@@ -407,9 +415,9 @@ describe('container-level accessibility labels and roles', () => {
 // ===========================================================================
 
 describe('per-item accessibility and minimum touch-target', () => {
-  it('all six items have role="menuitem" (AC 4)', () => {
+  it('all seven items have role="menuitem" (AC 4)', () => {
     renderMenu()
-    expect(screen.getAllByRole('menuitem').length).toBe(6)
+    expect(screen.getAllByRole('menuitem').length).toBe(7)
   })
 
   it('each item element carries a minimum height of 44 px via inline style (AC 5)', () => {
@@ -430,9 +438,9 @@ describe('per-item accessibility and minimum touch-target', () => {
 // ===========================================================================
 
 describe('MENU_ITEMS is a frozen / readonly array that preserves the locked order', () => {
-  it('MENU_ITEMS has exactly 6 entries (AC 14)', () => {
+  it('MENU_ITEMS has exactly 7 entries (AC 14)', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
-    expect(MENU_ITEMS).toHaveLength(6)
+    expect(MENU_ITEMS).toHaveLength(7)
   })
 
   it('attempting to push a new item does not change the array length (AC 14)', () => {
@@ -442,7 +450,7 @@ describe('MENU_ITEMS is a frozen / readonly array that preserves the locked orde
     // @ts-expect-error — intentional mutation attempt to verify runtime guard
     const mutate = () => MENU_ITEMS!.push({ key: 'hack', label: 'Hack', route: '/hack' } as never)
     try { mutate() } catch (_) { /* expected for Object.freeze */ }
-    expect(MENU_ITEMS).toHaveLength(6)
+    expect(MENU_ITEMS).toHaveLength(7)
   })
 })
 

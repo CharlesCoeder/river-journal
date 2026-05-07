@@ -8,7 +8,7 @@
 // features/collective/** MUST NOT import Legend-State or app/state/store.
 
 import { useMemo } from 'react'
-import { YStack, XStack, View, Text, Separator, ExpandingLineButton, useReducedMotion } from '@my/ui'
+import { YStack, View, Text, Separator, ExpandingLineButton, useReducedMotion } from '@my/ui'
 import { onlineManager } from '@tanstack/react-query'
 import { useFeed } from 'app/state/collective/feed'
 import { useIsSuspended } from 'app/state/collective/suspension'
@@ -17,40 +17,7 @@ import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
 import { CollectivePreview } from 'app/features/collective/CollectivePreview'
 import { PostRow } from 'app/features/collective/PostRow'
 import { useRouter } from 'solito/router'
-
-// ─── Relative time formatter for offline strip ────────────────────────────────
-function formatTimeAgo(ms: number): string {
-  const diffMs = Date.now() - ms
-  const diffMinutes = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours >= 1) return `${diffHours}h`
-  if (diffMinutes >= 1) return `${diffMinutes}m`
-  return 'just now'
-}
-
-// ─── Skeleton rows ────────────────────────────────────────────────────────────
-const SKELETON_WIDTHS = ['85%', '70%', '92%', '60%', '78%'] as const
-
-function SkeletonRows({ reducedMotion }: { reducedMotion: boolean }) {
-  return (
-    <>
-      {SKELETON_WIDTHS.map((width, i) => (
-        <XStack
-          key={i}
-          data-testid={`skeleton-row-${i}`}
-          height={14}
-          borderRadius={0}
-          backgroundColor="$color3"
-          opacity={0.6}
-          marginVertical="$2"
-          width={width as string}
-          animation={reducedMotion ? undefined : 'quick'}
-          enterStyle={reducedMotion ? undefined : { opacity: 0 }}
-        />
-      ))}
-    </>
-  )
-}
+import { SkeletonRows, formatTimeAgo } from './_shared'
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
