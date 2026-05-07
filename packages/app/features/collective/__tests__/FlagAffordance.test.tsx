@@ -32,10 +32,14 @@ import path from 'node:path'
 // ─── Path constant for grep tests ─────────────────────────────────────────────
 const FLAG_AFFORDANCE_PATH = path.resolve(__dirname, '..', 'FlagAffordance.tsx')
 
+// ─── Hoisted spy refs (must be created before vi.mock factories run) ──────────
+const { mutateSpy, addLocallyHiddenPostSpy } = vi.hoisted(() => ({
+  mutateSpy: vi.fn(),
+  addLocallyHiddenPostSpy: vi.fn(),
+}))
+
 // ─── Controlled state for mocks ───────────────────────────────────────────────
 let reduceMotionValue = false
-const mutateSpy = vi.fn()
-const addLocallyHiddenPostSpy = vi.fn()
 
 // ─── useReportPost mock ───────────────────────────────────────────────────────
 let mockIsPending = false
