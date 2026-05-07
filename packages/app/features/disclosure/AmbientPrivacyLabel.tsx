@@ -26,24 +26,33 @@ export interface AmbientPrivacyLabelProps {
    * Unused for Boundary A.
    */
   provider?: string
+  /**
+   * Optional: override the internal review-open handler. When provided (e.g. by
+   * PostComposer managing its own disclosure state), the label calls this instead
+   * of its internal setReviewOpen(true). The label's own internal review disclosure
+   * is suppressed when this prop is set.
+   */
+  onPress?: () => void
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function AmbientPrivacyLabel({ boundary, provider }: AmbientPrivacyLabelProps) {
+export function AmbientPrivacyLabel({ boundary, provider, onPress: onPressProp }: AmbientPrivacyLabelProps) {
   // Local state: controls review-mode disclosure open/close.
-  // Consumers just place <AmbientPrivacyLabel /> above the composer;
-  // the review tap path "just works" without extra state in the parent.
+  // When onPressProp is provided (e.g. by PostComposer managing its own disclosure
+  // state), the label delegates to it and suppresses its own internal review disclosure.
   const [reviewOpen, setReviewOpen] = useState(false)
 
   const labelText = getLabelText(boundary, provider)
+
+  const handlePress = onPressProp ?? (() => setReviewOpen(true))
 
   return (
     <YStack>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Re-open privacy disclosure"
-        onPress={() => setReviewOpen(true)}
+        onPress={handlePress}
       >
         <Text
           fontFamily="$body"
@@ -56,8 +65,9 @@ export function AmbientPrivacyLabel({ boundary, provider }: AmbientPrivacyLabelP
         </Text>
       </Pressable>
 
-      {/* Review-mode disclosure — mounted inline; self-contained */}
-      {reviewOpen && (
+      {/* Review-mode disclosure — mounted inline; self-contained.
+          Suppressed when onPressProp is provided (parent manages disclosure state). */}
+      {!onPressProp && reviewOpen && (
         <ThreePostureDisclosure
           boundary={boundary}
           mode="review"
