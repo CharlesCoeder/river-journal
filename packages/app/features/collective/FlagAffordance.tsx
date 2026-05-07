@@ -28,22 +28,7 @@ import {
 import { MoreHorizontal } from '@tamagui/lucide-icons'
 import { useReportPost } from 'app/state/collective/mutations'
 import type { ReportPostVars } from 'app/state/collective/mutations'
-
-// ─── Lazy store reference ─────────────────────────────────────────────────────
-// Dynamic import avoids TDZ in Vitest's hoisted-mock environment where a
-// static import of 'app/state/store' would call the factory before const spy
-// variables are initialized in the test module body.
-//
-// The module-level cache (_addHiddenFn) ensures the function is available
-// synchronously on second-and-later renders (the Promise from the first render
-// resolves between test runs, populating the cache for subsequent tests).
-let _addHiddenFn: ((postId: string) => void) | null = null
-function warmAddHiddenFn(): void {
-  if (_addHiddenFn !== null) return
-  void import('app/state/store').then((m) => {
-    _addHiddenFn = m.addLocallyHiddenPost
-  })
-}
+import { addLocallyHiddenPost } from 'app/state/store'
 
 // ─── Reason definitions ───────────────────────────────────────────────────────
 
@@ -82,12 +67,6 @@ export function FlagAffordance({ postId, reporterUserId, disabled = false }: Fla
   // Keep hooks count stable — useRef satisfies linter for hook rule compliance
   useRef<null>(null)
 
-  // Warm the module-level addLocallyHiddenPost reference on each render.
-  // The first render triggers the async import; the module-level cache
-  // (_addHiddenFn) is populated before the next test runs, so it is
-  // available synchronously by the time handleSubmit fires.
-  warmAddHiddenFn()
-
   // Early returns — hooks have all been called above (Rules of Hooks)
   if (reporterUserId === null) return null
   if (disabled) return null
@@ -120,7 +99,7 @@ export function FlagAffordance({ postId, reporterUserId, disabled = false }: Fla
     // of server confirmation (per story design: user's hide intent is honored
     // regardless of whether the report ultimately succeeds server-side).
     mutation.mutate(vars)
-    _addHiddenFn?.(postId)
+    addLocallyHiddenPost(postId)
 
     setDialogOpen(false)
     setMenuOpen(false)
