@@ -15,12 +15,21 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { supabase } from 'app/utils/supabase'
+import type { Database } from 'app/types/database'
 import type { Post } from './feed'
 
 // Re-export the canonical Post type for consumer ergonomics. The
 // declaration lives in `feed.ts` (Story 3-3 landed first); this file
 // imports it to enforce a single source of truth across feed/thread.
 export type { Post }
+
+/**
+ * ThreadPost — the per-row shape returned by `collective_thread_page`.
+ * Unlike the feed's `Post` type, ThreadPost includes `descendant_count`
+ * (added in Story 3-10 via Pattern B recursive CTE). ThreadView imports
+ * this type rather than `Post` for correct type-checking.
+ */
+export type ThreadPost = Database['public']['Functions']['collective_thread_page']['Returns'][number]
 
 /**
  * Page size for thread reply pagination. Matches the feed page size; the
@@ -40,7 +49,7 @@ export function collectiveThreadKey(postId: string) {
 }
 
 export interface ThreadPageResult {
-  items: Post[]
+  items: ThreadPost[]
   mode: 'full' | 'preview'
   nextCursor: string | null
 }
@@ -74,7 +83,7 @@ export async function fetchThreadPage(
     throw new Error(error.message)
   }
 
-  const rows = (data ?? []) as Post[]
+  const rows = (data ?? []) as ThreadPost[]
   const mode: 'full' | 'preview' = rows[0]?.mode ?? 'full'
 
   if (mode === 'preview') {

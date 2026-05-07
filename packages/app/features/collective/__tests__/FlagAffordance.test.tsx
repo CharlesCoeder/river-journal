@@ -901,3 +901,79 @@ describe('Story 3-12 / t11 — telemetry guard source grep (NFR19, AC #13)', () 
     expect(src).not.toMatch(/quickFade/)
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t12 — Focus menu item: canFocus=true renders Focus item; tap calls onFocus
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('t12 — Focus menu item renders and fires onFocus', () => {
+  it('renders Focus item in menu when canFocus=true', () => {
+    const onFocusSpy = vi.fn()
+    const { container } = render(React.createElement(FlagAffordance, {
+      postId: 'post-focus-test',
+      reporterUserId: 'user-abc',
+      canReport: false,
+      canSelfDelete: false,
+      canFocus: true,
+      onFocus: onFocusSpy,
+    }))
+
+    // Open the menu
+    const trigger = container.querySelector('[data-popover-trigger] button, button[aria-haspopup="menu"]')
+      || container.querySelector('button')
+    expect(trigger).toBeTruthy()
+    fireEvent.click(trigger!)
+
+    // Focus item should be in the menu
+    const focusItem = screen.getByText('Focus')
+    expect(focusItem).toBeTruthy()
+  })
+
+  it('calls onFocus when Focus menu item is tapped', () => {
+    const onFocusSpy = vi.fn()
+    const { container } = render(React.createElement(FlagAffordance, {
+      postId: 'post-focus-test-2',
+      reporterUserId: 'user-abc',
+      canReport: false,
+      canSelfDelete: false,
+      canFocus: true,
+      onFocus: onFocusSpy,
+    }))
+
+    // Open the menu
+    const trigger = container.querySelector('button')
+    expect(trigger).toBeTruthy()
+    fireEvent.click(trigger!)
+
+    // Tap the Focus item
+    const focusItem = screen.getByText('Focus')
+    fireEvent.click(focusItem)
+
+    expect(onFocusSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT render Focus item when canFocus=false (default)', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-no-focus',
+      reporterUserId: 'user-abc',
+      canReport: true,
+      canSelfDelete: false,
+      canFocus: false,
+    }))
+
+    expect(screen.queryByText('Focus')).toBeNull()
+  })
+
+  it('renders nothing when canFocus=false and canReport=false and canSelfDelete=false', () => {
+    const { container } = render(React.createElement(FlagAffordance, {
+      postId: 'post-empty',
+      reporterUserId: 'user-abc',
+      canReport: false,
+      canSelfDelete: false,
+      canFocus: false,
+    }))
+
+    // No button should render (early return: nothing to show)
+    expect(container.querySelector('button')).toBeNull()
+  })
+})

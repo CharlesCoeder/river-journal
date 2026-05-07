@@ -398,6 +398,7 @@ export type Database = {
           is_removed: boolean
           is_user_deleted: boolean
           user_deleted_at: string | null
+          descendant_count: number
           mode: 'full' | 'preview'
         }[]
       }
