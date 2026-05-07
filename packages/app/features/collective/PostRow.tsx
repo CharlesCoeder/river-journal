@@ -39,9 +39,8 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
   return (
     <View
       tag="article"
-      accessible
-      accessibilityRole="article"
-      accessibilityLabel={a11yLabel}
+      role="article"
+      aria-label={a11yLabel}
     >
       <XStack justifyContent="space-between" alignItems="center">
         <AuthorByline
