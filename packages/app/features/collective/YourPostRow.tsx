@@ -13,7 +13,7 @@
 // Boundary rule (D7): no Legend-State imports in this file.
 // features/collective/** MUST NOT import Legend-State or app/state/store.
 
-import { View, Text, XStack, AuthorByline, Pressable } from '@my/ui'
+import { View, Text, XStack, AuthorByline } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import type { YourPost } from 'app/state/collective/yourPosts'
 
@@ -46,18 +46,14 @@ export function YourPostRow({ post }: YourPostRowProps) {
   }
 
   return (
-    <Pressable
+    <View
+      tag="article"
+      role="article"
+      aria-label={a11yLabel}
       onPress={handlePress}
-      accessibilityRole="link"
-      accessibilityLabel={`Open thread for: ${bodyPreview}`}
+      cursor="pointer"
       data-testid="pressable-wrapper"
     >
-      <View
-        tag="article"
-        accessible
-        accessibilityRole="article"
-        accessibilityLabel={a11yLabel}
-      >
         <XStack justifyContent="space-between" alignItems="center">
           {/* Wrap AuthorByline in View for flexShrink — AuthorBylineProps does not extend ViewProps
               and does not accept flexShrink directly (AC #8). */}
@@ -120,7 +116,6 @@ export function YourPostRow({ post }: YourPostRowProps) {
             </Text>
           </XStack>
         )}
-      </View>
-    </Pressable>
+    </View>
   )
 }

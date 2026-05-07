@@ -302,17 +302,6 @@ vi.mock('@my/ui', async () => {
     YStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
 
-    Pressable: ({ children, onPress, accessibilityRole, 'aria-label': ariaLabel,
-                  accessibilityLabel, 'data-testid': dtid, ...props }: any) => {
-      const a11y: Record<string, unknown> = {}
-      if (onPress) a11y['onClick'] = onPress
-      if (accessibilityRole) a11y['role'] = accessibilityRole
-      if (ariaLabel) a11y['aria-label'] = ariaLabel
-      if (accessibilityLabel) a11y['aria-label'] = accessibilityLabel
-      if (dtid) a11y['data-testid'] = dtid
-      return ReactModule.createElement('button', a11y, children)
-    },
-
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>
       ReactModule.createElement('button', {
         onClick: onPress,

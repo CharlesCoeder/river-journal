@@ -131,6 +131,7 @@ vi.mock('@my/ui', async () => {
       accessibilityLabel,
       role,
       'aria-label': ariaLabel,
+      'data-testid': dataTestId,
       ...props
     }: any) => {
       const htmlTag = tag === 'article' ? 'article' : 'div'
@@ -141,6 +142,7 @@ vi.mock('@my/ui', async () => {
       if (accessibilityLabel) a11y['aria-label'] = accessibilityLabel
       if (ariaLabel) a11y['aria-label'] = ariaLabel
       if (onPress) a11y['onClick'] = onPress
+      if (dataTestId) a11y['data-testid'] = dataTestId
       return ReactModule.createElement(htmlTag, { ...a11y, 'data-tag': tag }, children)
     },
 
@@ -179,17 +181,6 @@ vi.mock('@my/ui', async () => {
         deletedDisplay ? '[deleted]' : displayName
       ),
 
-    Pressable: ({ children, onPress, accessibilityRole, accessibilityLabel, ...props }: any) =>
-      ReactModule.createElement(
-        'div',
-        {
-          onClick: onPress,
-          role: accessibilityRole,
-          'aria-label': accessibilityLabel,
-          'data-testid': 'pressable-wrapper',
-        },
-        children
-      ),
   }
 })
 

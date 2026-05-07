@@ -28,8 +28,6 @@ function safeFlushSync(fn: () => void): void {
   }
 }
 import { View, XStack, YStack, Text, ExpandingLineButton } from '@my/ui'
-// react-native Pressable for tappable affordances (not in @my/ui barrel)
-import { Pressable } from 'react-native'
 import { useRouter, useSearchParams } from 'solito/navigation'
 import { useThread } from 'app/state/collective/thread'
 import type { ThreadPost } from 'app/state/collective/thread'
@@ -258,15 +256,16 @@ export default function ThreadView({ postId }: ThreadViewProps) {
               Root post uses "Reply to this thread" label; replies use "Reply to this post"
               so that aria-label queries can uniquely target each context. */}
           {canReply ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={isRoot ? 'Reply to this thread' : 'Reply to this post'}
+            <View
+              role="button"
+              aria-label={isRoot ? 'Reply to this thread' : 'Reply to this post'}
               onPress={() => setActiveReplyId(post.id)}
+              cursor="pointer"
             >
               <Text fontSize="$1" color="$color9" fontFamily="$body">
                 Reply
               </Text>
-            </Pressable>
+            </View>
           ) : null}
 
           {/* Inline composer — one at a time. key ensures state teardown on post change. */}
@@ -283,56 +282,60 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           {/* Expansion / depth-cap affordances — priority: cap > collapsed > expanded > unloaded */}
           {atCap && hasDescendants ? (
             /* Depth cap: route to a focused subthread */
-            <Pressable
+            <View
               onPress={() => {
                 const rootId = focusedFromRoot ?? postId
                 router.push(`/collective/thread/${post.id}?focusedFromRoot=${rootId}`)
               }}
+              cursor="pointer"
             >
               <Text fontSize="$1" color="$color9" fontFamily="$body">
                 Continue this thread →
               </Text>
-            </Pressable>
+            </View>
           ) : isCollapsed && hasDescendants ? (
             /* Collapsed via rail tap — re-expand */
-            <Pressable
+            <View
               onPress={() => setCollapsedIds((prev) => {
                 const next = new Set(prev)
                 next.delete(post.id)
                 return next
               })}
+              cursor="pointer"
             >
               <Text fontSize="$1" color="$color9" fontFamily="$body">
                 {post.descendant_count === 1 ? 'View 1 more reply' : `View ${post.descendant_count} more replies`}
               </Text>
-            </Pressable>
+            </View>
           ) : isExpanded && hasUnloaded ? (
             /* User-triggered expansion is active — allow collapsing */
-            <Pressable
+            <View
               onPress={() => setExpandedSubtreeIds((prev) => {
                 const next = new Set(prev)
                 next.delete(post.id)
                 return next
               })}
+              cursor="pointer"
             >
               <Text fontSize="$1" color="$color9" fontFamily="$body">
                 Hide replies
               </Text>
-            </Pressable>
+            </View>
           ) : !isExpanded && hasUnloaded && !atCap ? (
             /* Unloaded descendants exist — offer to load via ThreadExpansion */
-            <Pressable
+            <View
               onPress={() => setExpandedSubtreeIds((prev) => new Set(prev).add(post.id))}
+              cursor="pointer"
             >
               <Text fontSize="$1" color="$color9" fontFamily="$body">
                 {post.descendant_count === 1 ? 'View 1 more reply' : `View ${post.descendant_count} more replies`}
               </Text>
-            </Pressable>
+            </View>
           ) : null}
 
           {/* Children rendering — only when not at cap and not collapsed */}
           {!atCap && !isCollapsed && (allLoaded || (isExpanded && hasUnloaded)) ? (
-            <View tag="ul" accessibilityRole={"group" as any}>
+            <View tag="ul" role="group">
               {/* Inline render when all descendants are loaded (allLoaded) */}
               {allLoaded ? (
                 loadedChildren.map((child) => (
@@ -360,7 +363,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           <View
             key={post.id}
             tag="li"
-            accessibilityRole={"treeitem" as any}
+            role="treeitem"
             aria-level={depth + 1}
             {...(ariaExpanded !== undefined ? { 'aria-expanded': ariaExpanded } : {})}
           >
@@ -373,8 +376,8 @@ export default function ThreadView({ postId }: ThreadViewProps) {
                 width={12}
                 borderLeftWidth={1}
                 borderLeftColor="$color3"
-                accessibilityRole="button"
-                accessibilityLabel={isCollapsed ? 'Expand subtree' : 'Collapse subtree'}
+                role="button"
+                aria-label={isCollapsed ? 'Expand subtree' : 'Collapse subtree'}
                 onPress={() => setCollapsedIds((prev) => {
                   const next = new Set(prev)
                   if (next.has(post.id)) {
@@ -399,7 +402,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         <View
           key={post.id}
           tag="li"
-          accessibilityRole="treeitem"
+          role="treeitem"
           aria-level={1}
           {...(ariaExpanded !== undefined ? { 'aria-expanded': ariaExpanded } : {})}
         >
@@ -420,7 +423,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   // ─── Loading state (cold cache) ────────────────────────────────────────────
   if (root.isLoading && !root.data) {
     return (
-      <View tag="ul" accessibilityRole={"tree" as any} maxWidth={720} marginHorizontal="auto" width="100%">
+      <View tag="ul" role="tree" maxWidth={720} marginHorizontal="auto" width="100%">
         <SkeletonRows />
       </View>
     )
@@ -429,7 +432,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   // ─── Error state ───────────────────────────────────────────────────────────
   if (root.error && !root.data) {
     return (
-      <View tag="ul" accessibilityRole={"tree" as any} maxWidth={720} marginHorizontal="auto" width="100%">
+      <View tag="ul" role="tree" maxWidth={720} marginHorizontal="auto" width="100%">
         <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
           Couldn&apos;t load this thread.
         </Text>
@@ -444,7 +447,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   const rootPost = allItems.find((p) => p.id === postId) ?? allItems[0]
 
   return (
-    <View tag="ul" accessibilityRole="tree" maxWidth={720} marginHorizontal="auto" width="100%">
+    <View tag="ul" role="tree" maxWidth={720} marginHorizontal="auto" width="100%">
       {/* Back to full thread — shown when this is a focused subthread */}
       {focusedFromRoot && focusedFromRoot !== postId ? (
         <ExpandingLineButton

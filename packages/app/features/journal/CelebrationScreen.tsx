@@ -59,7 +59,7 @@ export function CelebrationScreen() {
 
   // Refs for focus management (AC 12)
   const visitButtonRef = useRef<any>(null)
-  const quieterPressableRef = useRef<any>(null)
+  const quieterRef = useRef<any>(null)
 
   const onNudgeLayout = useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height
@@ -112,8 +112,8 @@ export function CelebrationScreen() {
         requestAnimationFrame(() => {
           if (variant === 'handoff' && visitButtonRef.current?.focus) {
             visitButtonRef.current.focus()
-          } else if (variant !== 'handoff' && quieterPressableRef.current?.focus) {
-            quieterPressableRef.current.focus()
+          } else if (variant !== 'handoff' && quieterRef.current?.focus) {
+            quieterRef.current.focus()
           }
         })
       }
@@ -380,7 +380,7 @@ export function CelebrationScreen() {
                     onKeyDown={(e: any) => {
                       if (e.key === 'Enter' || e.key === ' ') handleDismiss()
                     }}
-                    ref={quieterPressableRef}
+                    ref={quieterRef}
                   >
                     {/* Word count only — body sans; aria-live for screen reader announce (AC 14) */}
                     <Text
