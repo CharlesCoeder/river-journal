@@ -14,7 +14,7 @@
 // features/collective/** MUST NOT import Legend-State or app/state/store.
 
 import { View, Text, XStack, AuthorByline, Pressable } from '@my/ui'
-import { useRouter } from 'solito/router'
+import { useRouter } from 'solito/navigation'
 import type { YourPost } from 'app/state/collective/yourPosts'
 
 interface YourPostRowProps {

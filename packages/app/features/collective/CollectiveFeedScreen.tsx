@@ -16,7 +16,7 @@ import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
 import { CollectivePreview } from 'app/features/collective/CollectivePreview'
 import { PostRow } from 'app/features/collective/PostRow'
-import { useRouter } from 'solito/router'
+import { useRouter } from 'solito/navigation'
 import { SkeletonRows, formatTimeAgo } from './_shared'
 
 // ─── Component ────────────────────────────────────────────────────────────────
