@@ -88,7 +88,7 @@ export default function YourPostsScreen() {
   // Mirror CollectiveFeedScreen.tsx pattern exactly (AC #22)
   const showErrorStrip = yourPosts.isError && yourPosts.data !== undefined
   const showOfflineStrip = !showErrorStrip && !isOnline && yourPosts.dataUpdatedAt > 0
-  const showEmptyState = !showErrorStrip && isEmptyState
+  const showEmptyState = !showErrorStrip && !showOfflineStrip && isEmptyState
 
   return (
     <YStack width="100%" maxWidth={720} marginHorizontal="auto">
