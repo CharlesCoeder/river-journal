@@ -436,7 +436,10 @@ describe('t4 — self-deleted row renders [deleted] body and deletion-date marke
 
   it('renders literal "[deleted]" as the post body', () => {
     render(React.createElement(YourPostsScreen))
-    expect(screen.getByText('[deleted]')).not.toBeNull()
+    // Both the AuthorByline header and the body placeholder now render [deleted];
+    // assert at least one node exists with that text.
+    const nodes = screen.getAllByText('[deleted]')
+    expect(nodes.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders the deletion-date marker with correct human-friendly date', () => {
@@ -462,6 +465,14 @@ describe('t4 — self-deleted row renders [deleted] body and deletion-date marke
     ])
     render(React.createElement(YourPostsScreen))
     expect(screen.queryByText(/you deleted this on/i)).toBeNull()
+  })
+
+  it('renders [deleted] body placeholder via testID (body slot, not AuthorByline)', () => {
+    render(React.createElement(YourPostsScreen))
+    // The body-deleted-placeholder testID is on the body Text, not on AuthorByline
+    const bodyPlaceholder = document.querySelector('[data-testid="body-deleted-placeholder"]')
+    expect(bodyPlaceholder).not.toBeNull()
+    expect(bodyPlaceholder?.textContent).toBe('[deleted]')
   })
 })
 
@@ -717,6 +728,24 @@ describe('t11 — strip precedence error-with-cache > offline', () => {
 
     expect(screen.getByText(/Offline/i)).not.toBeNull()
     expect(screen.queryByText(/Couldn't refresh/i)).toBeNull()
+  })
+
+  it('renders ONLY the offline strip when offline + empty data + cache present (no empty CTA)', () => {
+    // Strip precedence: offline beats empty state
+    mockYourPostsIsError = false
+    mockIsOnline = false
+    mockYourPostsData = makeYourPostsData([]) // empty items, but data exists (cache present)
+    mockYourPostsDataUpdatedAt = Date.now() - 3 * 60 * 1000
+    mockYourPostsIsLoading = false
+    mockFeedData = makeFeedData('full')
+
+    render(React.createElement(YourPostsScreen))
+
+    // Offline strip must render
+    expect(screen.getByText(/last synced/i)).not.toBeNull()
+    // Empty state CTA must NOT render
+    expect(screen.queryByText(/You haven't posted yet/i)).toBeNull()
+    expect(screen.queryByText('Compose')).toBeNull()
   })
 })
 

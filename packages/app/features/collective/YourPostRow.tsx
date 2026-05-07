@@ -72,17 +72,23 @@ export function YourPostRow({ post }: YourPostRowProps) {
           {/* NO FlagAffordance — AC #14: this is a record view, not an action surface */}
         </XStack>
 
-        {/* Body area: match on is_user_deleted flag, NOT body string (AC #10)
-            For self-deleted posts, AuthorByline already renders [deleted] via
-            deletedDisplay prop (the "header" slot). We do NOT render a separate
-            [deleted] body Text here to avoid duplicate text nodes that confuse
-            a11y queries — this mirrors PostRow.tsx:63-68 exactly.
-            The deletion-date marker below communicates the body area deletion state. */}
-        {!post.is_user_deleted ? (
+        {/* Body area: match on is_user_deleted flag, NOT body string (AC #10).
+            Self-deleted: render muted [deleted] placeholder in the body slot.
+            Non-deleted: render the actual journal body text. */}
+        {post.is_user_deleted ? (
+          <Text
+            fontFamily="$journal"
+            fontSize="$4"
+            color="$color9"
+            testID="body-deleted-placeholder"
+          >
+            [deleted]
+          </Text>
+        ) : (
           <Text fontFamily="$journal" fontSize="$4">
             {post.body}
           </Text>
-        ) : null}
+        )}
 
         {/* Self-deletion date marker: only when user_deleted_at is non-null (AC #11) */}
         {post.is_user_deleted && deletionDateDisplay !== null ? (
