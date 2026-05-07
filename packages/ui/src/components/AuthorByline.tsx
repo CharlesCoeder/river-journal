@@ -79,9 +79,8 @@ export function AuthorByline({
 
   return (
     <XStack
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={a11yLabel}
+      role="text"
+      aria-label={a11yLabel}
     >
       <Text
         numberOfLines={1}
