@@ -109,6 +109,34 @@ vi.mock('solito/router', () => ({
   useRouter: () => ({ push: mockRouterPush }),
 }))
 
+// ─── useDeleteOwnPost mock — Story 3-13 ──────────────────────────────────────
+// Controlled mock for the delete mutation. The Story 3-13 UI tests drive this
+// mock to assert dialog open/close behavior and that mutate is called with the
+// correct post_id. By mocking here we avoid driving real mutations through the
+// singleton queryClient during UI tests.
+const mockDeleteMutate = vi.fn()
+let mockDeleteIsPending = false
+vi.mock('app/state/collective/mutations', async () => {
+  const actual = await vi.importActual<typeof import('app/state/collective/mutations')>('app/state/collective/mutations')
+  return {
+    ...actual,
+    useDeleteOwnPost: () => ({
+      mutate: mockDeleteMutate,
+      mutateAsync: vi.fn(),
+      isPending: mockDeleteIsPending,
+      error: null,
+      reset: vi.fn(),
+    }),
+    useReportPost: () => ({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      error: null,
+      reset: vi.fn(),
+    }),
+  }
+})
+
 // ─── ReactionStrip mock — renders as button for a11y assertions ───────────────
 vi.mock('app/features/collective/ReactionStrip', () => ({
   ReactionStrip: ({ postId, userId, disabled }: any) =>
@@ -120,13 +148,23 @@ vi.mock('app/features/collective/ReactionStrip', () => ({
 }))
 
 // ─── FlagAffordance mock — renders as a button for a11y assertions ────────────
+// Story 3-13: Updated to accept canReport + canSelfDelete instead of disabled.
+// The old `disabled` prop is replaced by the two named flags in this story.
+// CRITICAL: If the mock still destructures `disabled`, it will always be
+// undefined after the prop rename, silently breaking t-new5/t-new6/t-new7 assertions.
 vi.mock('app/features/collective/FlagAffordance', () => ({
-  FlagAffordance: ({ postId, reporterUserId, disabled }: any) => {
-    // Mirror FlagAffordance's own early-return rules:
-    // null reporterUserId → null; disabled === true → null
-    if (!reporterUserId || disabled) return null
+  FlagAffordance: ({ postId, reporterUserId, canReport, canSelfDelete }: any) => {
+    // Mirror FlagAffordance's own early-return rules post-3-13:
+    // null reporterUserId → null
+    // !canReport && !canSelfDelete → null (nothing to show)
+    if (!reporterUserId || (!canReport && !canSelfDelete)) return null
+    const ariaLabel = canReport && canSelfDelete
+      ? 'Post actions'
+      : canSelfDelete
+        ? 'Delete your post'
+        : 'Report this post'
     return React.createElement('button', {
-      'aria-label': 'Post actions',
+      'aria-label': ariaLabel,
       'aria-haspopup': 'menu',
       'data-testid': `flag-affordance-${postId}`,
     })
@@ -159,12 +197,16 @@ vi.mock('@my/ui', async () => {
     Text: ({ children, fontSize, color, textAlign, ...props }: any) =>
       ReactModule.createElement('span', mapA11y(props), children),
 
-    View: ({ children, tag, onPress, accessible, accessibilityRole, accessibilityLabel, ...props }: any) => {
+    View: ({ children, tag, onPress, accessible, accessibilityRole, accessibilityLabel, role, 'aria-label': ariaLabel, ...props }: any) => {
       const htmlTag = tag === 'article' ? 'article' : 'div'
       const a11y: Record<string, unknown> = {}
       if (accessible) a11y['data-accessible'] = 'true'
+      // Support both React-native-style (accessibilityRole/accessibilityLabel) and
+      // web-style (role/aria-label) a11y props so FlagAffordance trigger renders queryable.
       if (accessibilityRole) a11y['role'] = accessibilityRole
+      if (role) a11y['role'] = role
       if (accessibilityLabel) a11y['aria-label'] = accessibilityLabel
+      if (ariaLabel) a11y['aria-label'] = ariaLabel
       if (onPress) {
         a11y['onClick'] = onPress
       }
@@ -197,6 +239,58 @@ vi.mock('@my/ui', async () => {
         'data-deleted-display': deletedDisplay ? 'true' : 'false',
         'data-tenure-tier': tenureTier ?? 'none',
       }, deletedDisplay ? '[deleted]' : displayName),
+
+    // Story 3-13: Dialog and sub-components for delete confirmation dialog tests.
+    // These are needed so AC #27e–g assertions (screen.getByText, button presses)
+    // can render and interact with the dialog in happy-dom.
+    Dialog: Object.assign(
+      ({ children, open, onOpenChange, modal }: any) => {
+        if (!open) return null
+        return ReactModule.createElement('div', { role: 'dialog', 'data-modal': modal ? 'true' : 'false' }, children)
+      },
+      {
+        Portal: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+        Overlay: ({ children, ...props }: any) =>
+          ReactModule.createElement('div', { 'data-testid': 'dialog-overlay' }, children),
+        Content: ({ children, ...props }: any) =>
+          ReactModule.createElement('div', { 'data-testid': 'dialog-content' }, children),
+        Title: ({ children, ...props }: any) =>
+          ReactModule.createElement('h2', { 'data-testid': 'dialog-title' }, children),
+        Description: ({ children, ...props }: any) =>
+          ReactModule.createElement('p', { 'data-testid': 'dialog-description' }, children),
+      }
+    ),
+
+    Popover: Object.assign(
+      ({ children, open, onOpenChange, placement }: any) =>
+        ReactModule.createElement('div', { 'data-testid': 'popover', 'data-open': open ? 'true' : 'false' }, children),
+      {
+        Trigger: ({ children, asChild }: any) =>
+          ReactModule.createElement('div', { 'data-testid': 'popover-trigger' }, children),
+        Content: ({ children, ...props }: any) =>
+          ReactModule.createElement('div', { 'data-testid': 'popover-content' }, children),
+      }
+    ),
+
+    RadioGroup: Object.assign(
+      ({ children, value, onValueChange, required }: any) =>
+        ReactModule.createElement('div', { role: 'radiogroup' }, children),
+      {
+        Item: ({ value, id, ...props }: any) =>
+          ReactModule.createElement('input', { type: 'radio', value, id }),
+      }
+    ),
+
+    Label: ({ children, htmlFor, ...props }: any) =>
+      ReactModule.createElement('label', { htmlFor }, children),
+
+    TextArea: ({ value, onChangeText, placeholder, maxLength, ...props }: any) =>
+      ReactModule.createElement('textarea', {
+        value: value ?? '',
+        onChange: (e: any) => onChangeText?.(e.target.value),
+        placeholder,
+        maxLength,
+      }),
   }
 })
 
@@ -256,6 +350,9 @@ afterEach(() => {
   mockIsOnline = true
   mockLastQualifyingDate = null
   mockHiddenPostIds = new Set()
+  // Story 3-13
+  mockDeleteMutate.mockReset()
+  mockDeleteIsPending = false
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1033,7 +1130,9 @@ describe('Story 3-12 / t-new3 — is_removed filter runs before local-hide (AC #
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Story 3-12 / t-new4 — FlagAffordance present on normal post (AC #11, #19)', () => {
-  it('renders a button with aria-label="Post actions" for a normal post', () => {
+  it('renders a button with aria-label="Report this post" for a normal (others) post', () => {
+    // After Story 3-13 AC #22: the trigger label is context-aware.
+    // canReport=true, canSelfDelete=false → "Report this post".
     mockCurrentUserId = 'user-abc123'
     mockFeedData = makeFeedData([
       makePost({ id: 'normal-post', user_id: 'other-user', is_user_deleted: false }),
@@ -1041,8 +1140,8 @@ describe('Story 3-12 / t-new4 — FlagAffordance present on normal post (AC #11,
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    // The FlagAffordance mock renders a button with aria-label="Post actions"
-    const flagBtn = screen.queryByRole('button', { name: /post actions/i })
+    // Story 3-13 AC #22: only-Report case renders "Report this post" label.
+    const flagBtn = screen.queryByRole('button', { name: /report this post/i })
     expect(flagBtn).not.toBeNull()
   })
 })
@@ -1103,5 +1202,458 @@ describe('Story 3-12 / t-new7 — FlagAffordance hidden on anonymized post (AC #
 
     render(React.createElement(CollectiveFeedScreen))
     expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
+  })
+})
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Story 3-13 / self-delete affordance tests
+//
+// RED PHASE CONTRACT: every test in this block MUST FAIL until the Story 3-13
+// developer:
+//   1. Renames FlagAffordance's `disabled` prop to `canReport` + adds `canSelfDelete`.
+//   2. Adds the Delete menu item inside FlagAffordance's Popover content.
+//   3. Adds the delete confirmation Dialog with the exact copy from AC #17.
+//   4. Updates PostRow to compute `canSelfDelete` and `canReport` and pass both
+//      flags to FlagAffordance.
+//
+// Test infrastructure notes:
+//   - FlagAffordance is mocked above (updated for canReport/canSelfDelete).
+//     The mock does NOT render the Dialog — tests that need the Dialog interact
+//     with FlagAffordance's REAL implementation, so those tests mock
+//     useDeleteOwnPost at the module level but render the real component.
+//   - For dialog tests (27.e–g), a separate render strategy is used: we render
+//     FlagAffordance directly (not through CollectiveFeedScreen) so the real
+//     Dialog code is exercised. This mirrors the report-dialog test pattern.
+//   - AC #27a–d use CollectiveFeedScreen render (FlagAffordance mock).
+//   - AC #27e–h use direct FlagAffordance render (real component, mocked hook).
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC #27a — Delete menu item renders for own non-deleted post
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-13 / t-3-13-a — Delete affordance on own non-deleted post (AC #13, #14, #27a)', () => {
+  it('renders "Delete your post" button when post.user_id === currentUserId && !is_user_deleted', () => {
+    // RED: fails until PostRow passes canSelfDelete=true for own non-deleted posts
+    // and FlagAffordance mock returns the "Delete your post" aria-label variant.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'own-fresh-post', user_id: 'user-abc123', is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    // The updated FlagAffordance mock renders aria-label="Delete your post"
+    // when canSelfDelete=true and canReport=false (own post, non-deleted).
+    const deleteBtn = screen.queryByRole('button', { name: /delete your post/i })
+    expect(deleteBtn).not.toBeNull()
+  })
+
+  it('FlagAffordance trigger is present for own non-deleted post', () => {
+    // RED: confirms the FlagAffordance trigger renders (not null) for own posts.
+    // Pre-3-13, the trigger was null for own posts (disabled=true early return).
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'own-post-trigger', user_id: 'user-abc123', is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    const flagBtn = document.querySelector('[data-testid="flag-affordance-own-post-trigger"]')
+    expect(flagBtn).not.toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC #27b — Delete menu item absent for other user's post
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-13 / t-3-13-b — Delete affordance absent on others post (AC #14, #27b)', () => {
+  it('does NOT render "Delete your post" button when post.user_id !== currentUserId', () => {
+    // RED: fails if PostRow computes canSelfDelete incorrectly and passes true for others' posts.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'others-post', user_id: 'other-user-xyz', is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
+  })
+
+  it('still renders "Report this post" button for others non-deleted post (canReport=true)', () => {
+    // Confirms the existing report affordance still works after the prop rename.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'others-post-2', user_id: 'other-user-xyz', is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    const reportBtn = screen.queryByRole('button', { name: /report this post/i })
+    expect(reportBtn).not.toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC #27c — Delete menu item absent when is_user_deleted === true
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-13 / t-3-13-c — Delete affordance absent on already-deleted post (AC #14, #27c)', () => {
+  it('does NOT render "Delete your post" button when post.is_user_deleted === true', () => {
+    // RED: fails if PostRow computes canSelfDelete as true even for already-deleted posts.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({
+        id: 'already-deleted',
+        user_id: 'user-abc123', // own post
+        is_user_deleted: true, // already deleted
+        user_deleted_at: new Date().toISOString(),
+      }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
+  })
+
+  it('no FlagAffordance trigger at all for own already-deleted post (nothing to show)', () => {
+    // The canReport=false AND canSelfDelete=false case — trigger must be null.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({
+        id: 'own-deleted',
+        user_id: 'user-abc123',
+        is_user_deleted: true,
+        user_deleted_at: new Date().toISOString(),
+      }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    const flagBtn = document.querySelector('[data-testid="flag-affordance-own-deleted"]')
+    expect(flagBtn).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC #27d — Existing Story 3-12 tests preserved after prop rename
+// (The FlagAffordance mock update must not break existing t-new4–t-new7 semantics)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-13 / t-3-13-d — prop rename backward-compat guards (AC #16, #27d)', () => {
+  it('t-new4 still passes: FlagAffordance present on others normal post', () => {
+    // Re-asserts t-new4 semantics with updated mock. canReport=true → "Report this post".
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'normal-post-d', user_id: 'other-user', is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    // "Report this post" because canReport=true, canSelfDelete=false
+    const reportBtn = screen.queryByRole('button', { name: /report this post/i })
+    expect(reportBtn).not.toBeNull()
+  })
+
+  it('t-new6 still passes: FlagAffordance hidden on self-deleted post (others)', () => {
+    // After prop rename: canReport=false (is_user_deleted=true), canSelfDelete=false → null.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({
+        id: 'deleted-others',
+        user_id: 'other-user',
+        is_user_deleted: true,
+        user_deleted_at: new Date().toISOString(),
+      }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /report this post/i })).toBeNull()
+  })
+
+  it('t-new7 still passes: FlagAffordance hidden on anonymized post (user_id=null)', () => {
+    // canReport=false (user_id=null), canSelfDelete=false → null.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'anon-post-d', user_id: null, is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC #27e–g — Delete confirmation Dialog tests
+//
+// These tests render FlagAffordance DIRECTLY (not through CollectiveFeedScreen)
+// so the real Dialog code path executes. The @my/ui mock above provides Dialog
+// sub-components. useDeleteOwnPost is mocked at module level (mockDeleteMutate).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Lazy import to avoid import-order issues with vi.mock hoisting
+let FlagAffordance: any
+
+beforeEach(async () => {
+  // Use vi.importActual to get the REAL FlagAffordance (not the stub mock used by
+  // CollectiveFeedScreen tests above). The mutations mock (useDeleteOwnPost,
+  // useReportPost) is already applied vi.mock-wide — importActual only bypasses
+  // the FlagAffordance module-level mock, not the mutations mock.
+  const mod = await vi.importActual<typeof import('../FlagAffordance')>('../FlagAffordance')
+  FlagAffordance = (mod as any).FlagAffordance ?? (mod as any).default
+})
+
+describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correct copy (AC #17, #27e)', () => {
+  it('tapping Delete menu item opens Dialog with title "Delete this post?"', async () => {
+    // RED: fails until FlagAffordance renders a Delete menu item that opens a Dialog.
+    if (!FlagAffordance) return
+
+    render(React.createElement(FlagAffordance, {
+      postId: 'dialog-test-post',
+      reporterUserId: 'user-abc123',
+      canReport: false,
+      canSelfDelete: true,
+    }))
+
+    // Find and click the Delete trigger (popover button or menu item)
+    // The trigger renders "Delete your post" aria-label per AC #22 (only canSelfDelete)
+    const trigger = screen.queryByRole('button', { name: /delete your post/i })
+    expect(trigger, 'Delete your post trigger must be present').not.toBeNull()
+
+    if (trigger) {
+      fireEvent.click(trigger)
+    }
+
+    // After clicking trigger, we may need to click the Delete menu item inside popover
+    const deleteMenuItem = screen.queryByText(/^Delete$/i)
+    if (deleteMenuItem) {
+      fireEvent.click(deleteMenuItem)
+    }
+
+    // Dialog should be open with correct title
+    const dialogTitle = screen.queryByText(/Delete this post\?/i)
+    expect(dialogTitle, 'Dialog title "Delete this post?" must appear').not.toBeNull()
+  })
+
+  it('Dialog description contains "[deleted]" mention from AC #17', async () => {
+    // RED: fails until Dialog description copy is wired.
+    if (!FlagAffordance) return
+
+    render(React.createElement(FlagAffordance, {
+      postId: 'dialog-desc-post',
+      reporterUserId: 'user-abc123',
+      canReport: false,
+      canSelfDelete: true,
+    }))
+
+    const trigger = screen.queryByRole('button', { name: /delete your post/i })
+    if (trigger) fireEvent.click(trigger)
+
+    const deleteMenuItem = screen.queryByText(/^Delete$/i)
+    if (deleteMenuItem) fireEvent.click(deleteMenuItem)
+
+    // AC #17 exact copy: "The text will be replaced with '[deleted]'"
+    const descriptionText = screen.queryByText(/replaced with '\[deleted\]'/i)
+    expect(descriptionText, 'Dialog description must mention "[deleted]"').not.toBeNull()
+  })
+
+  it('Dialog contains Cancel and Delete buttons', async () => {
+    // RED: fails until Dialog footer has two ExpandingLineButton actions.
+    if (!FlagAffordance) return
+
+    render(React.createElement(FlagAffordance, {
+      postId: 'dialog-buttons-post',
+      reporterUserId: 'user-abc123',
+      canReport: false,
+      canSelfDelete: true,
+    }))
+
+    const trigger = screen.queryByRole('button', { name: /delete your post/i })
+    if (trigger) fireEvent.click(trigger)
+
+    const deleteMenuItem = screen.queryByText(/^Delete$/i)
+    if (deleteMenuItem) fireEvent.click(deleteMenuItem)
+
+    expect(screen.queryByRole('button', { name: /cancel/i }), 'Cancel button must be present').not.toBeNull()
+    expect(screen.queryByRole('button', { name: /^delete$/i }), 'Delete button must be present').not.toBeNull()
+  })
+})
+
+describe('Story 3-13 / t-3-13-f — Cancel in Dialog fires no mutation (AC #19, #27f)', () => {
+  it('tapping Cancel closes Dialog without calling useDeleteOwnPost().mutate', async () => {
+    // RED: fails until Cancel handler is wired to close Dialog without mutating.
+    if (!FlagAffordance) return
+
+    render(React.createElement(FlagAffordance, {
+      postId: 'cancel-test-post',
+      reporterUserId: 'user-abc123',
+      canReport: false,
+      canSelfDelete: true,
+    }))
+
+    // Open the dialog
+    const trigger = screen.queryByRole('button', { name: /delete your post/i })
+    if (trigger) fireEvent.click(trigger)
+
+    const deleteMenuItem = screen.queryByText(/^Delete$/i)
+    if (deleteMenuItem) fireEvent.click(deleteMenuItem)
+
+    // Dialog should be open
+    expect(screen.queryByText(/Delete this post\?/i)).not.toBeNull()
+
+    // Click Cancel
+    const cancelBtn = screen.queryByRole('button', { name: /cancel/i })
+    expect(cancelBtn, 'Cancel button must be present').not.toBeNull()
+    if (cancelBtn) fireEvent.click(cancelBtn)
+
+    // Mutation must NOT have been called
+    expect(mockDeleteMutate).not.toHaveBeenCalled()
+
+    // Dialog should be closed (title no longer visible)
+    expect(screen.queryByText(/Delete this post\?/i)).toBeNull()
+  })
+})
+
+describe('Story 3-13 / t-3-13-g — Delete in Dialog fires mutation with correct post_id (AC #18, #27g)', () => {
+  it('tapping Delete calls useDeleteOwnPost().mutate({ post_id }) exactly once', async () => {
+    // RED: fails until Delete button handler is wired to call deleteMutation.mutate.
+    if (!FlagAffordance) return
+
+    render(React.createElement(FlagAffordance, {
+      postId: 'mutate-test-post',
+      reporterUserId: 'user-abc123',
+      canReport: false,
+      canSelfDelete: true,
+    }))
+
+    // Open the dialog
+    const trigger = screen.queryByRole('button', { name: /delete your post/i })
+    if (trigger) fireEvent.click(trigger)
+
+    const deleteMenuItem = screen.queryByText(/^Delete$/i)
+    if (deleteMenuItem) fireEvent.click(deleteMenuItem)
+
+    // Confirm delete
+    // There may be multiple "Delete" buttons (menu item + dialog button).
+    // We specifically want the one inside the open Dialog (role="dialog").
+    const allDeleteBtns = screen.queryAllByRole('button', { name: /^delete$/i })
+    const dialogDeleteBtn = allDeleteBtns[allDeleteBtns.length - 1] // last one = dialog action
+    expect(dialogDeleteBtn, 'Delete button in dialog must exist').not.toBeNull()
+
+    if (dialogDeleteBtn) fireEvent.click(dialogDeleteBtn)
+
+    // Mutation fired exactly once with correct post_id
+    expect(mockDeleteMutate).toHaveBeenCalledTimes(1)
+    expect(mockDeleteMutate).toHaveBeenCalledWith({ post_id: 'mutate-test-post' })
+  })
+
+  it('Dialog closes after confirming delete', async () => {
+    // RED: fails until handleDeleteConfirm calls setDeleteDialogOpen(false).
+    if (!FlagAffordance) return
+
+    render(React.createElement(FlagAffordance, {
+      postId: 'close-after-delete-post',
+      reporterUserId: 'user-abc123',
+      canReport: false,
+      canSelfDelete: true,
+    }))
+
+    const trigger = screen.queryByRole('button', { name: /delete your post/i })
+    if (trigger) fireEvent.click(trigger)
+
+    const deleteMenuItem = screen.queryByText(/^Delete$/i)
+    if (deleteMenuItem) fireEvent.click(deleteMenuItem)
+
+    expect(screen.queryByText(/Delete this post\?/i), 'Dialog must be open').not.toBeNull()
+
+    const allDeleteBtns = screen.queryAllByRole('button', { name: /^delete$/i })
+    const dialogDeleteBtn = allDeleteBtns[allDeleteBtns.length - 1]
+    if (dialogDeleteBtn) fireEvent.click(dialogDeleteBtn)
+
+    // Dialog closed
+    expect(screen.queryByText(/Delete this post\?/i)).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC #27h — Optimistic update renders deleted state
+// This re-uses the existing t8 deletion-state assertions pattern.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-13 / t-3-13-h — post renders deleted state after optimistic update (AC #17, #27h)', () => {
+  it('post with is_user_deleted=true (optimistic) renders AuthorByline deletedDisplay=true', () => {
+    // RED: The deletion-state matrix (from Story 3-8 PostRow) must render correctly
+    // for a post that was optimistically marked deleted. This re-uses t8's assertion
+    // pattern — confirming the optimistic update produces the expected render.
+    // The optimistic update sets is_user_deleted=true; PostRow uses that to render deleted state.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({
+        id: 'optimistically-deleted',
+        user_id: 'user-abc123',
+        is_user_deleted: true, // simulates post-optimistic-update state
+        body: '[deleted]',
+        user_deleted_at: new Date().toISOString(),
+      }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    // AuthorByline should show deletedDisplay=true
+    const byline = document.querySelector('[data-testid="author-byline"]')
+    expect(byline).not.toBeNull()
+    expect(byline?.getAttribute('data-deleted-display')).toBe('true')
+  })
+
+  it('post with is_user_deleted=true (optimistic) does NOT render ReactionStrip', () => {
+    // Deletion-state matrix: ReactionStrip suppressed when is_user_deleted=true.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({
+        id: 'optimistic-deleted-no-reactions',
+        user_id: 'user-abc123',
+        is_user_deleted: true,
+        body: '[deleted]',
+        user_deleted_at: new Date().toISOString(),
+      }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    const strip = document.querySelector('[data-testid="reaction-strip-optimistic-deleted-no-reactions"]')
+    expect(strip).toBeNull()
+  })
+
+  it('post with is_user_deleted=true (optimistic) does NOT render Delete affordance (canSelfDelete=false)', () => {
+    // Once deleted, canSelfDelete=false → no Delete affordance shown.
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({
+        id: 'no-redelete-post',
+        user_id: 'user-abc123',
+        is_user_deleted: true,
+        body: '[deleted]',
+        user_deleted_at: new Date().toISOString(),
+      }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
   })
 })
