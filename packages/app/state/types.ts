@@ -130,6 +130,8 @@ export interface UserProfile {
       collective_post_v1?: { acknowledged_at: string }
       ai_cloud_v1?: { acknowledged_at: string } // reserved Boundary B; not written in this story
     }
+    /** Default false (undefined). When true, AuthorByline displays tenure tier in feed and composer preview. */
+    collective_show_tenure_tier?: boolean
   }
 
   sync: {
