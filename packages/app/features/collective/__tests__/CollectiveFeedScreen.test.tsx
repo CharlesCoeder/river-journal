@@ -119,6 +119,26 @@ vi.mock('app/features/collective/ReactionStrip', () => ({
     }, 'reactions'),
 }))
 
+// ─── FlagAffordance mock — renders as a button for a11y assertions ────────────
+vi.mock('app/features/collective/FlagAffordance', () => ({
+  FlagAffordance: ({ postId, reporterUserId, disabled }: any) => {
+    // Mirror FlagAffordance's own early-return rules:
+    // null reporterUserId → null; disabled === true → null
+    if (!reporterUserId || disabled) return null
+    return React.createElement('button', {
+      'aria-label': 'Post actions',
+      'aria-haspopup': 'menu',
+      'data-testid': `flag-affordance-${postId}`,
+    })
+  },
+}))
+
+// ─── useLocallyHiddenPostIds mock ─────────────────────────────────────────────
+let mockHiddenPostIds: Set<string> = new Set()
+vi.mock('app/state/collective/locallyHidden', () => ({
+  useLocallyHiddenPostIds: () => mockHiddenPostIds,
+}))
+
 // ─── @my/ui mock — map Tamagui primitives to testable HTML elements ──────────
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
@@ -235,6 +255,7 @@ afterEach(() => {
   mockCurrentUserId = 'user-abc123'
   mockIsOnline = true
   mockLastQualifyingDate = null
+  mockHiddenPostIds = new Set()
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -884,5 +905,203 @@ describe('Story 3-8 / t18 — Load more hidden when hasNextPage===false (AC #12)
 
     render(React.createElement(CollectiveFeedScreen))
     expect(screen.queryByText('Load more')).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story 3-12 additions — locally-hidden filter + PostRow FlagAffordance integration
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t-new1 — locally-hidden filter applies: hidden post does not render
+// AC #18 t-new1
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-12 / t-new1 — locally-hidden filter hides post from feed (AC #10, #18)', () => {
+  it('post with id in hiddenIds does not render an <article>', () => {
+    mockHiddenPostIds = new Set(['p2'])
+    mockFeedData = makeFeedData([
+      makePost({ id: 'p1', body: 'Post one visible.' }),
+      makePost({ id: 'p2', body: 'Post two hidden.' }),
+      makePost({ id: 'p3', body: 'Post three visible.' }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+
+    expect(screen.getByText('Post one visible.')).not.toBeNull()
+    expect(screen.queryByText('Post two hidden.')).toBeNull()
+    expect(screen.getByText('Post three visible.')).not.toBeNull()
+  })
+
+  it('article count matches posts minus hidden', () => {
+    mockHiddenPostIds = new Set(['p2'])
+    mockFeedData = makeFeedData([
+      makePost({ id: 'p1', body: 'Visible 1.' }),
+      makePost({ id: 'p2', body: 'Hidden.' }),
+      makePost({ id: 'p3', body: 'Visible 2.' }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    const articles = document.querySelectorAll('article')
+    expect(articles.length).toBe(2)
+  })
+
+  it('does not throw when hiddenIds contains an id not in feed', () => {
+    mockHiddenPostIds = new Set(['nonexistent-id'])
+    mockFeedData = makeFeedData([
+      makePost({ id: 'p1', body: 'Visible post.' }),
+    ], 'full')
+    mockIsLoading = false
+
+    expect(() => {
+      render(React.createElement(CollectiveFeedScreen))
+    }).not.toThrow()
+    expect(screen.getByText('Visible post.')).not.toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t-new2 — empty hidden set is a no-op (all posts render)
+// AC #18 t-new2
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-12 / t-new2 — empty hidden set is no-op (AC #10, #18)', () => {
+  it('all posts render when hiddenIds is empty', () => {
+    mockHiddenPostIds = new Set()
+    mockFeedData = makeFeedData([
+      makePost({ id: 'q1', body: 'Alpha post.' }),
+      makePost({ id: 'q2', body: 'Beta post.' }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.getByText('Alpha post.')).not.toBeNull()
+    expect(screen.getByText('Beta post.')).not.toBeNull()
+  })
+
+  it('article count equals total posts when hiddenIds is empty', () => {
+    mockHiddenPostIds = new Set()
+    mockFeedData = makeFeedData([
+      makePost({ id: 'q1', body: 'Alpha post.' }),
+      makePost({ id: 'q2', body: 'Beta post.' }),
+      makePost({ id: 'q3', body: 'Gamma post.' }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    const articles = document.querySelectorAll('article')
+    expect(articles.length).toBe(3)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t-new3 — is_removed precedence: global removal runs before local-hide
+// AC #10, #18 t-new3
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-12 / t-new3 — is_removed filter runs before local-hide (AC #10, #18)', () => {
+  it('post with is_removed===true does not render even when NOT in hiddenIds', () => {
+    mockHiddenPostIds = new Set() // NOT locally hidden
+    mockFeedData = makeFeedData([
+      makePost({ id: 'removed-id', is_removed: true, body: 'Globally removed post.' }),
+      makePost({ id: 'visible-id', is_removed: false, body: 'Visible post.' }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.queryByText('Globally removed post.')).toBeNull()
+    expect(screen.getByText('Visible post.')).not.toBeNull()
+  })
+
+  it('post with is_removed===true AND in hiddenIds does not render (both filters agree)', () => {
+    mockHiddenPostIds = new Set(['overlap-id'])
+    mockFeedData = makeFeedData([
+      makePost({ id: 'overlap-id', is_removed: true, body: 'Overlap post.' }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.queryByText('Overlap post.')).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t-new4 — FlagAffordance mounts on a normal post (non-own, non-deleted, non-anon)
+// AC #11, #19 t-new4
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-12 / t-new4 — FlagAffordance present on normal post (AC #11, #19)', () => {
+  it('renders a button with aria-label="Post actions" for a normal post', () => {
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'normal-post', user_id: 'other-user', is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    // The FlagAffordance mock renders a button with aria-label="Post actions"
+    const flagBtn = screen.queryByRole('button', { name: /post actions/i })
+    expect(flagBtn).not.toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t-new5 — FlagAffordance hidden on own post (user_id === currentUserId)
+// AC #1, #11, #19 t-new5
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-12 / t-new5 — FlagAffordance hidden on own post (AC #1, #11, #19)', () => {
+  it('no "Post actions" button when post.user_id === currentUserId', () => {
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'own-post', user_id: 'user-abc123', is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t-new6 — FlagAffordance hidden on self-deleted post
+// AC #1, #11, #19 t-new6
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-12 / t-new6 — FlagAffordance hidden on self-deleted post (AC #1, #11, #19)', () => {
+  it('no "Post actions" button when post.is_user_deleted===true', () => {
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({
+        id: 'deleted-post',
+        user_id: 'other-user',
+        is_user_deleted: true,
+        user_deleted_at: new Date().toISOString(),
+      }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t-new7 — FlagAffordance hidden on anonymized post (user_id === null)
+// AC #1, #11, #19 t-new7
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-12 / t-new7 — FlagAffordance hidden on anonymized post (AC #1, #11, #19)', () => {
+  it('no "Post actions" button when post.user_id===null', () => {
+    mockCurrentUserId = 'user-abc123'
+    mockFeedData = makeFeedData([
+      makePost({ id: 'anon-post', user_id: null, is_user_deleted: false }),
+    ], 'full')
+    mockIsLoading = false
+
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
   })
 })

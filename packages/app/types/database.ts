@@ -327,6 +327,7 @@ export type Database = {
        *       ai_cloud_v1?:        { acknowledged_at: string }   // reserved (Growth phase)
        *     }
        *     collective_show_tenure_tier?: boolean   // Default false; when true, AuthorByline displays tenure tier in feed/preview
+       *     locallyHiddenPosts?: string[]   // post ids the local user has hidden via report
        *     // ...other client-extensible keys (e.g. focusMode is local-only on UserProfile, NOT server-persisted today)
        *   }
        *

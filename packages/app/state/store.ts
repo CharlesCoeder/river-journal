@@ -780,6 +780,18 @@ export const setFocusMode = (value: boolean): void => {
 }
 
 /**
+ * Adds a post id to the local-hide set in users.preferences.locallyHiddenPosts.
+ * Idempotent — re-adding the same id is a no-op.
+ * Persisted to server via users.preferences syncedSupabase mechanism.
+ */
+export const addLocallyHiddenPost = (postId: string): void => {
+  ensureProfile()
+  const cur = store$.profile.preferences.locallyHiddenPosts.get() ?? []
+  if (cur.includes(postId)) return
+  store$.profile.preferences.locallyHiddenPosts.set([...cur, postId])
+}
+
+/**
  * True when the active flow has been autosaved at least once this session.
  * Used by JournalScreen's exit-confirm gate.
  *
