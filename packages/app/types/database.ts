@@ -345,6 +345,7 @@ export type Database = {
           id: string
           managed_encryption_key: string | null
           preferences: Json
+          timezone: string
           updated_at: string
         }
         Insert: {
@@ -354,6 +355,7 @@ export type Database = {
           id: string
           managed_encryption_key?: string | null
           preferences?: Json
+          timezone?: string
           updated_at?: string
         }
         Update: {
@@ -363,6 +365,7 @@ export type Database = {
           id?: string
           managed_encryption_key?: string | null
           preferences?: Json
+          timezone?: string
           updated_at?: string
         }
         Relationships: []

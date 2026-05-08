@@ -22,6 +22,7 @@ export interface SessionState {
   email: string | null // User's email address when authenticated
   isAuthenticated: boolean // Whether user is logged in
   syncEnabled: boolean // Whether remote Supabase sync is active
+  lastSyncedTimezone: string | null // Last IANA tz PATCHed to users.timezone — idempotency cache for syncDeviceTimezone()
 }
 
 /**
