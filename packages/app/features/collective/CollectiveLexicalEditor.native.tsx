@@ -84,6 +84,7 @@ export function CollectiveLexicalEditor({
         <RichTextPlugin
           contentEditable={
             <ContentEditable
+              spellCheck={false}
               style={{
                 outline: 'none',
                 minHeight: `${minHeight}px`,

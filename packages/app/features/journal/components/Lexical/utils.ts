@@ -156,11 +156,19 @@ export const injectFocusModeCSS = (): (() => void) => {
     }
   }
 
+  // Selectors must outrank .lex-root p { all: revert } from lexical-theme.css
+  // (specificity 0,1,1, which resets opacity). Compound selectors below reach
+  // 0,2,1. Keep in sync with lexical-theme.css.
   const css = `
-    .rj-focus-dim { opacity: 0.4; transition: opacity 200ms ease-out; }
-    .rj-focus-active { opacity: 1; transition: opacity 200ms ease-out; }
+    .lex-root p.rj-focus-dim,
+    .lex-paragraph.rj-focus-dim    { opacity: 0.4; transition: opacity 200ms ease-out; }
+    .lex-root p.rj-focus-active,
+    .lex-paragraph.rj-focus-active { opacity: 1;   transition: opacity 200ms ease-out; }
     @media (prefers-reduced-motion: reduce) {
-      .rj-focus-dim, .rj-focus-active { transition: opacity 0ms; }
+      .lex-root p.rj-focus-dim,
+      .lex-paragraph.rj-focus-dim,
+      .lex-root p.rj-focus-active,
+      .lex-paragraph.rj-focus-active { transition: opacity 0ms; }
     }
   `
 

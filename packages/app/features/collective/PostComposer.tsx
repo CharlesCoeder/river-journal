@@ -172,7 +172,7 @@ export default function PostComposer({
     // Navigating here ensures the composer closes immediately on submit, even offline.
     // Skip navigation if a synchronous error occurred (AC #16: keep composer open on error).
     if (!syncError) {
-      router.back?.() ?? router.push('/collective')
+      router.push('/collective')
     }
   }
 
@@ -220,7 +220,17 @@ export default function PostComposer({
 
   // ─── Layout props ──────────────────────────────────────────────────────────
   const minHeight = compact ? 120 : 300
-  const outerProps = compact ? {} : { maxWidth: 720, width: '100%' }
+  // Compact mode defers width/centering to the parent (ThreadView); standalone
+  // mounts self-center.
+  const outerProps = compact
+    ? {}
+    : {
+        maxWidth: 720,
+        width: '100%',
+        marginHorizontal: 'auto',
+        padding: '$4',
+        gap: '$3',
+      }
 
   return (
     <YStack {...outerProps}>

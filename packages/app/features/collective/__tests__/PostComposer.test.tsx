@@ -158,8 +158,7 @@ vi.mock('app/state/collective/suspension', () => ({
   useIsSuspended: (_userId: string | null) => mockIsSuspended,
 }))
 
-// ─── useRouter mock (solito/router) ──────────────────────────────────────────
-vi.mock('solito/router', () => ({
+vi.mock('solito/navigation', () => ({
   useRouter: () => ({ back: mockRouterBack, push: mockRouterPush }),
 }))
 
@@ -538,14 +537,14 @@ describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
     expect(typeof callArg.id).toBe('string')
   })
 
-  it('calls router.back() or router.push("/collective") after mutate (synchronously)', () => {
+  it('calls router.push("/collective") synchronously after mutate (never router.back)', () => {
     render(React.createElement(PostComposer))
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'Post body text.' } })
     fireEvent.click(screen.getByText('Submit'))
-    // Navigation must happen synchronously after mutate, not inside onSuccess
-    const navigated = mockRouterBack.mock.calls.length > 0 || mockRouterPush.mock.calls.length > 0
-    expect(navigated).toBe(true)
+    expect(mockRouterPush).toHaveBeenCalledTimes(1)
+    expect(mockRouterPush).toHaveBeenCalledWith('/collective')
+    expect(mockRouterBack).not.toHaveBeenCalled()
   })
 })
 
@@ -892,7 +891,7 @@ describe('Story 3-9 / t16 — submit closes synchronously (offline-safe) (AC #14
     mockHasAcknowledgedBoundaryA = true
   })
 
-  it('full-mode: router.back is called synchronously after mutate, without waiting for onSuccess', () => {
+  it('full-mode: router.push("/collective") fires synchronously after mutate, without waiting for onSuccess', () => {
     // Simulate offline: mutate calls onMutate (optimistic) but never fires onSuccess
     mockMutate.mockImplementationOnce((_vars: any, _opts: any) => {
       // Only onMutate fires (optimistic); onSuccess never fires (offline)
@@ -903,9 +902,9 @@ describe('Story 3-9 / t16 — submit closes synchronously (offline-safe) (AC #14
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'offline post' } })
     fireEvent.click(screen.getByText('Submit'))
-    // Navigation must have happened synchronously (not inside onSuccess)
-    const navigated = mockRouterBack.mock.calls.length > 0 || mockRouterPush.mock.calls.length > 0
-    expect(navigated).toBe(true)
+    expect(mockRouterPush).toHaveBeenCalledTimes(1)
+    expect(mockRouterPush).toHaveBeenCalledWith('/collective')
+    expect(mockRouterBack).not.toHaveBeenCalled()
   })
 
   it('compact-mode: onSubmitted is called synchronously after mutate', () => {
@@ -986,10 +985,12 @@ describe('Story 3-9 / t18 — route files exist (AC #23, #24, #25)', () => {
     ).toBe(true)
   })
 
-  it('apps/web/app/collective/compose/page.tsx renders PostComposer', () => {
+  it('apps/web/app/collective/compose/page.tsx mounts the compose surface', () => {
     if (!existsSync(WEB_COMPOSE_ROUTE_PATH)) return
     const src = readFileSync(WEB_COMPOSE_ROUTE_PATH, 'utf8')
-    expect(src).toMatch(/PostComposer/)
+    // Route may render PostComposer directly, or via CollectiveComposeShell
+    // (which warms the feed cache so optimistic onMutate has a snapshot).
+    expect(src).toMatch(/PostComposer|CollectiveComposeShell/)
     expect(src).toMatch(/'use client'/)
   })
 
@@ -1000,10 +1001,10 @@ describe('Story 3-9 / t18 — route files exist (AC #23, #24, #25)', () => {
     ).toBe(true)
   })
 
-  it('apps/desktop/app/collective/compose/page.tsx renders PostComposer', () => {
+  it('apps/desktop/app/collective/compose/page.tsx mounts the compose surface', () => {
     if (!existsSync(DESKTOP_COMPOSE_ROUTE_PATH)) return
     const src = readFileSync(DESKTOP_COMPOSE_ROUTE_PATH, 'utf8')
-    expect(src).toMatch(/PostComposer/)
+    expect(src).toMatch(/PostComposer|CollectiveComposeShell/)
   })
 
   it('apps/mobile/app/collective/compose.tsx exists', () => {
@@ -1013,10 +1014,10 @@ describe('Story 3-9 / t18 — route files exist (AC #23, #24, #25)', () => {
     ).toBe(true)
   })
 
-  it('apps/mobile/app/collective/compose.tsx renders PostComposer', () => {
+  it('apps/mobile/app/collective/compose.tsx mounts the compose surface', () => {
     if (!existsSync(MOBILE_COMPOSE_ROUTE_PATH)) return
     const src = readFileSync(MOBILE_COMPOSE_ROUTE_PATH, 'utf8')
-    expect(src).toMatch(/PostComposer/)
+    expect(src).toMatch(/PostComposer|CollectiveComposeShell/)
   })
 })
 
