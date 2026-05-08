@@ -56,6 +56,7 @@ export const store$ = observable<AppState>({
     email: null,
     isAuthenticated: false,
     syncEnabled: false,
+    lastSyncedTimezone: null,
   },
   profile: null, // Populated on login
   activeFlow: null,

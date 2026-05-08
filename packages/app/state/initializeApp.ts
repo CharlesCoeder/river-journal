@@ -11,6 +11,7 @@ import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$ } from './
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 import { lapsed$, recordSessionOpen } from './lapsed'
+import { syncDeviceTimezone } from './timezoneSync'
 import './streak' // attaches store$.views.streak side-effect
 
 export const appStatus$ = observable({
@@ -100,6 +101,20 @@ function setupSyncReadinessGate() {
   })
 }
 
+function setupTimezoneSync() {
+  // Independent of the journal sync gate (which requires syncEnabled +
+  // encryption ready). The server-side daily-500 RLS predicate reads
+  // users.timezone, so this column must track the device IANA zone for
+  // collective posting to work even when journal sync is disabled.
+  observe(() => {
+    const isAuthenticated = store$.session.isAuthenticated.get()
+    const userId = store$.session.userId.get()
+    if (isAuthenticated && userId) {
+      void syncDeviceTimezone()
+    }
+  })
+}
+
 function ensureLocalSessionId() {
   const existingLocalSessionId = store$.session.localSessionId.get()
   if (existingLocalSessionId) return
@@ -111,6 +126,7 @@ export async function initializePersistence() {
   try {
     setupPersistence()
     setupSyncReadinessGate()
+    setupTimezoneSync()
 
     const persistencePromises = [
       when(syncState(store$).isPersistLoaded),
