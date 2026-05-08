@@ -82,6 +82,7 @@ export function CollectiveLexicalEditor({
           contentEditable={
             <div style={{ minHeight: `${minHeight}px` }}>
               <ContentEditable
+                spellCheck={false}
                 style={{
                   outline: 'none',
                   minHeight: `${minHeight}px`,

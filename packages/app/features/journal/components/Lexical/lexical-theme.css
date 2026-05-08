@@ -40,9 +40,19 @@
   font-size: 0.95em;
 }
 
-/* Focus mode — paragraph dim/active treatment */
-.rj-focus-dim { opacity: 0.4; transition: opacity 200ms ease-out; }
-.rj-focus-active { opacity: 1; transition: opacity 200ms ease-out; }
+/* Focus mode — paragraph dim/active treatment.
+   Selectors are scoped under .lex-root p / .lex-paragraph to outrank the
+   `.lex-root p, .lex-paragraph { all: revert; ... }` reset above (which
+   resets opacity to 1 at specificity 0,1,1). The compound selectors here
+   reach 0,2,1, so the dim/active opacity wins. Sync with utils.ts
+   injectFocusModeCSS — see the comment there. */
+.lex-root p.rj-focus-dim,
+.lex-paragraph.rj-focus-dim    { opacity: 0.4; transition: opacity 200ms ease-out; }
+.lex-root p.rj-focus-active,
+.lex-paragraph.rj-focus-active { opacity: 1;   transition: opacity 200ms ease-out; }
 @media (prefers-reduced-motion: reduce) {
-  .rj-focus-dim, .rj-focus-active { transition: opacity 0ms; }
+  .lex-root p.rj-focus-dim,
+  .lex-paragraph.rj-focus-dim,
+  .lex-root p.rj-focus-active,
+  .lex-paragraph.rj-focus-active { transition: opacity 0ms; }
 }

@@ -1,7 +1,7 @@
 'use client'
 
-import PostComposer from 'app/features/collective/PostComposer'
+import CollectiveComposeShell from 'app/features/collective/CollectiveComposeShell'
 
 export default function CollectiveComposePage() {
-  return <PostComposer />
+  return <CollectiveComposeShell />
 }
