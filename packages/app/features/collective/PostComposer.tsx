@@ -26,7 +26,7 @@ import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useIsSuspended } from 'app/state/collective/suspension'
 import { store$ } from 'app/state/store'
 import { useRouter } from 'solito/navigation'
-import { CollectiveLexicalEditor } from './CollectiveLexicalEditor'
+import CollectiveLexicalEditor from './CollectiveLexicalEditor'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

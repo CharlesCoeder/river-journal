@@ -26,6 +26,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $convertToMarkdownString } from '@lexical/markdown'
 import { ALL_TRANSFORMERS } from 'app/features/journal/components/Lexical/transformers'
 import { createBaseLexicalConfig } from 'app/features/journal/components/Lexical/lexical-config'
+import type { CollectiveLexicalEditorProps } from './CollectiveLexicalEditor.types'
 // NOTE: The journal's focus-mode plugin is deliberately NOT mounted in the composer.
 // The composer is a short-form surface; that plugin is a journal-only behavior.
 
@@ -46,20 +47,9 @@ function LexicalContextProbe({
   return null
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
-export interface CollectiveLexicalEditorProps {
-  /** Called on every editor change with the markdown body string. */
-  onContentChange: (markdown: string) => void
-  /** Minimum height of the writing surface. Default 300 (full), 120 (compact). */
-  minHeight?: number
-  /** Test-only: captures the LexicalEditor instance for isolation regression tests. */
-  __contextProbeRef?: React.MutableRefObject<unknown>
-}
-
 // ─── CollectiveLexicalEditor ──────────────────────────────────────────────────
 
-export function CollectiveLexicalEditor({
+function CollectiveLexicalEditor({
   onContentChange,
   minHeight = 300,
   __contextProbeRef,
@@ -142,3 +132,5 @@ export function CollectiveLexicalEditor({
     </LexicalComposer>
   )
 }
+
+export default CollectiveLexicalEditor
