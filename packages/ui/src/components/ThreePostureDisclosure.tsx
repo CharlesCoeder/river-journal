@@ -121,7 +121,7 @@ function BoundaryADialog({
   // primary surface is web (PostComposer is web-first per Epic 3 D6/D14). The RN focus
   // path will be added in Story 3.9 or a follow-up when the native composer ships.
   useEffect(() => {
-    if (open) {
+    if (open && typeof document !== 'undefined') {
       requestAnimationFrame(() => {
         ;(document.getElementById(ACK_BUTTON_ID) as HTMLElement | null)?.focus()
       })
