@@ -114,10 +114,12 @@ export default function PostComposer({
     // Focus the editor within one frame after acknowledgment (AC #3).
     // JSDOM doesn't fully implement ContentEditable focus; production behavior
     // verified manually. Tests assert state change (composer becomes visible).
-    requestAnimationFrame(() => {
-      const editable = document.querySelector('[data-lexical-editor]') as HTMLElement | null
-      editable?.focus()
-    })
+    if (typeof document !== 'undefined') {
+      requestAnimationFrame(() => {
+        const editable = document.querySelector('[data-lexical-editor]') as HTMLElement | null
+        editable?.focus()
+      })
+    }
   }
 
   // Called when the AmbientPrivacyLabel is tapped — opens review mode.
