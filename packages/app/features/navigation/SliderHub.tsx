@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Dimensions, Platform } from 'react-native'
+import { Platform, useWindowDimensions } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -70,12 +70,14 @@ function SliderHubGesture({
 }) {
   const router = useRouter()
   const currentPathname = usePathname()
+  const { width: screenWidth } = useWindowDimensions()
 
   const translateX = useSharedValue(0)
   // Re-entrancy guard: prevent double-push on fast gesture release
   const committing = useSharedValue(false)
 
   const snapBack = (motion: boolean) => {
+    'worklet'
     if (motion) {
       translateX.value = withTiming(0, { duration: 100 })
     } else {
@@ -108,7 +110,6 @@ function SliderHubGesture({
     .onEnd((e) => {
       if (committing.value) return
 
-      const screenWidth = Dimensions.get('window').width
       const decision = computeSliderHubCommit(e.translationX, e.velocityX, screenWidth)
 
       if (decision === 'snap-back') {
