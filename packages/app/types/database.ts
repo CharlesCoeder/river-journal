@@ -425,6 +425,7 @@ export type Database = {
       daily_500_completed_today: { Args: { uid: string }; Returns: boolean }
       delete_my_post: { Args: { post_id: string }; Returns: undefined }
       is_active_suspension: { Args: { uid: string; kind_param: string }; Returns: boolean }
+      is_eligible_to_post: { Args: Record<string, never>; Returns: boolean }
       user_has_password: { Args: never; Returns: boolean }
     }
     Enums: {

@@ -601,29 +601,10 @@ describe('Story 3-9 / t8 — submit disabled when pending (AC #13)', () => {
 // AC #13, #18, #26-t9
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t9 — submit disabled when suspended (AC #13, #18)', () => {
-  beforeEach(() => {
-    mockHasAcknowledgedBoundaryA = true
-    mockIsSuspended = true
-  })
-
-  it('Submit button is disabled when isSuspended===true', () => {
-    render(React.createElement(PostComposer))
-    const submitBtn = screen.getByText('Submit')
-    expect(submitBtn.closest('button')?.disabled).toBe(true)
-  })
-
-  it('renders suspension microcopy "Posting and reacting are paused for this account."', () => {
-    render(React.createElement(PostComposer))
-    expect(screen.getByText(/Posting and reacting are paused for this account/i)).not.toBeNull()
-  })
-
-  it('still renders the editor (does NOT block the route per AC #18)', () => {
-    render(React.createElement(PostComposer))
-    const editor = document.querySelector('[data-testid="collective-lexical-editor"]')
-    expect(editor).not.toBeNull()
-  })
-})
+// t9 REMOVED in iteration 2: suspension-state rendering moved to
+// CollectiveEligibilityGate. PostComposer no longer renders suspension
+// microcopy or gates Submit on suspended; the gate prevents the editor from
+// mounting in the suspended branch. See CollectiveEligibilityGate.test.tsx.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t10 — error path: microcopy rendered + body preserved
@@ -1151,17 +1132,9 @@ describe('Story 3-9 / t22 — D14 boundary: no PersistentEditor or ephemeral$.pe
 // AC #13 (unauthenticated branch)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t23 — unauthenticated placeholder (AC #13)', () => {
-  beforeEach(() => {
-    mockHasAcknowledgedBoundaryA = true
-    mockCurrentUserId = null
-  })
-
-  it('renders "Sign in to post." placeholder when currentUserId is null', () => {
-    render(React.createElement(PostComposer))
-    expect(screen.getByText(/Sign in to post/i)).not.toBeNull()
-  })
-})
+// t23 REMOVED in iteration 2: unauthenticated rendering moved to
+// CollectiveEligibilityGate. The gate owns the verbatim "Sign in to post."
+// copy assertion now. See CollectiveEligibilityGate.test.tsx.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t24 — compact mode Cancel button calls onCancelled

@@ -37,6 +37,7 @@ import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
 import { PostRow } from 'app/features/collective/PostRow'
 import { FlagAffordance } from 'app/features/collective/FlagAffordance'
 import PostComposer from 'app/features/collective/PostComposer'
+import { CollectiveEligibilityGate } from 'app/features/collective/CollectiveEligibilityGate'
 
 // ─── Depth cap ────────────────────────────────────────────────────────────────
 // Depth caps tuned for: mobile rail-stack readability, web content-density.
@@ -268,15 +269,24 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             </View>
           ) : null}
 
-          {/* Inline composer — one at a time. key ensures state teardown on post change. */}
+          {/* Inline composer — one at a time. key ensures state teardown on post change.
+              Wrapped in CollectiveEligibilityGate (compact variant) so an ineligible
+              user sees an explainer instead of a writing surface. The gate's onCancel
+              closes the inline slot when the editor never mounts (PostComposer's own
+              onCancelled won't fire in those branches). */}
           {activeReplyId === post.id ? (
-            <PostComposer
-              key={activeReplyId}
-              compact
-              replyContext={{ parentPostId: post.id }}
-              onSubmitted={() => safeFlushSync(() => setActiveReplyId(null))}
-              onCancelled={() => safeFlushSync(() => setActiveReplyId(null))}
-            />
+            <CollectiveEligibilityGate
+              variant="compact"
+              onCancel={() => safeFlushSync(() => setActiveReplyId(null))}
+            >
+              <PostComposer
+                key={activeReplyId}
+                compact
+                replyContext={{ parentPostId: post.id }}
+                onSubmitted={() => safeFlushSync(() => setActiveReplyId(null))}
+                onCancelled={() => safeFlushSync(() => setActiveReplyId(null))}
+              />
+            </CollectiveEligibilityGate>
           ) : null}
 
           {/* Expansion / depth-cap affordances — priority: cap > collapsed > expanded > unloaded */}
