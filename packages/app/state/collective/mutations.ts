@@ -39,6 +39,7 @@ import { collectiveReactionsKey, type ReactionsCache } from './reactions'
 import { yourPostsKey, type YourPostsPage } from './yourPosts'
 import type { ToggleReactionVars } from './types'
 import type { Database } from 'app/types/database'
+import { generateUUID } from 'app/utils/uuid'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -483,5 +484,5 @@ export function useDeleteOwnPost(): UseMutationResult<
 export function createPostWithId(
   vars: Omit<CreatePostVars, 'id'> & { id?: string }
 ): CreatePostVars {
-  return { ...vars, id: vars.id ?? crypto.randomUUID() }
+  return { ...vars, id: vars.id ?? generateUUID() }
 }
