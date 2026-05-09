@@ -26,6 +26,7 @@ export function computeSliderHubCommit(
   velocityX: number,
   screenWidth: number
 ): 'right' | 'left' | 'snap-back' {
+  'worklet'
   const displacementThreshold = screenWidth * COMMIT_THRESHOLD_RATIO
   const displacementCommits = Math.abs(translationX) >= displacementThreshold
   const velocityCommits = Math.abs(velocityX) >= VELOCITY_THRESHOLD
