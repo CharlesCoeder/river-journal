@@ -22,6 +22,7 @@ const TQ_FILES = [
   'collective/mutations.ts',
   'collective/thread.ts',
   'collective/yourPosts.ts',
+  'collective/eligibility.ts',
 ] as const
 
 const LEGEND_PATTERN = /@legendapp\/state(?:\/[\w-]+(?:\/[\w-]+)?)?/

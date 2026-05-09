@@ -24,7 +24,6 @@ import { ThreePostureDisclosure, hasAcknowledgedBoundaryA } from 'app/features/d
 import { AmbientPrivacyLabel } from 'app/features/disclosure/AmbientPrivacyLabel'
 import { useCreatePost, createPostWithId } from 'app/state/collective/mutations'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
-import { useIsSuspended } from 'app/state/collective/suspension'
 import { store$ } from 'app/state/store'
 import { useRouter } from 'solito/navigation'
 import CollectiveLexicalEditor from './CollectiveLexicalEditor'
@@ -63,7 +62,6 @@ export default function PostComposer({
 
   // ─── Hooks ────────────────────────────────────────────────────────────────
   const currentUserId = useCurrentUserId()
-  const isSuspended = useIsSuspended(currentUserId ?? null)
   const createPost = useCreatePost()
   const router = useRouter()
 
@@ -90,12 +88,10 @@ export default function PostComposer({
   const wordCount = trimmedBody ? trimmedBody.split(/\s+/).length : 0
   const charCount = body.length
 
-  const isSubmitDisabled =
-    trimmedBody.length === 0 ||
-    createPost.isPending ||
-    isSuspended === true ||
-    currentUserId === null ||
-    currentUserId === undefined
+  // Eligibility gating (auth / suspension / sync / 500-word) is now owned by
+  // CollectiveEligibilityGate — when the gate decides we're ineligible the
+  // editor never mounts, so we don't repeat those checks in `isSubmitDisabled`.
+  const isSubmitDisabled = trimmedBody.length === 0 || createPost.isPending
 
   // ─── Disclosure handlers ───────────────────────────────────────────────────
 
@@ -212,15 +208,6 @@ export default function PostComposer({
     }
   }
 
-  // ─── Unauthenticated placeholder (AC #13) ─────────────────────────────────
-  if (currentUserId === null || currentUserId === undefined) {
-    return (
-      <YStack maxWidth={compact ? undefined : 720} width="100%">
-        <Text>Sign in to post.</Text>
-      </YStack>
-    )
-  }
-
   // ─── Layout props ──────────────────────────────────────────────────────────
   const minHeight = compact ? 120 : 300
   // Compact mode defers width/centering to the parent (ThreadView); standalone
@@ -291,11 +278,6 @@ export default function PostComposer({
           {/* Submit disabled-state microcopy (AC #13) */}
           {createPost.isPending && (
             <Text fontSize="$1" color="$color9">Submitting...</Text>
-          )}
-          {isSuspended && (
-            <Text fontSize="$1" color="$color9">
-              Posting and reacting are paused for this account.
-            </Text>
           )}
 
           {/* Error microcopy (AC #16) — generic, no body content logged */}
