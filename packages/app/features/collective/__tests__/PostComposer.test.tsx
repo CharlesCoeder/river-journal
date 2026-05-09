@@ -247,7 +247,8 @@ vi.mock('app/features/collective/CollectiveLexicalEditor', () => {
   const ReactMod = require('react')
   let instanceCounter = 0
   return {
-    CollectiveLexicalEditor: ({ onContentChange, minHeight, __contextProbeRef }: any) => {
+    __esModule: true,
+    default: ({ onContentChange, minHeight, __contextProbeRef }: any) => {
       const instanceId = ++instanceCounter
       if (__contextProbeRef) {
         __contextProbeRef.current = { __lexicalEditorId: instanceId }

@@ -23,6 +23,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { $convertToMarkdownString } from '@lexical/markdown';
 import { ALL_TRANSFORMERS } from 'app/features/journal/components/Lexical/transformers';
 import { createMobileLexicalConfig, injectFontCSS } from 'app/features/journal/components/Lexical/utils';
+import type { CollectiveLexicalEditorProps } from './CollectiveLexicalEditor.types';
 // NOTE: FocusModeParagraphPlugin is deliberately NOT imported here.
 // The composer is a short-form surface; focus mode is a journal-only behavior.
 // NOTE: LexicalSync is deliberately NOT imported here — it syncs to the journal's
@@ -52,17 +53,9 @@ function FontInjector(): null {
   return null;
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
-export interface CollectiveLexicalEditorProps {
-  onContentChange: (markdown: string) => void;
-  minHeight?: number;
-  __contextProbeRef?: React.MutableRefObject<unknown>;
-}
-
 // ─── CollectiveLexicalEditor (native) ────────────────────────────────────────
 
-export function CollectiveLexicalEditor({
+function CollectiveLexicalEditor({
   onContentChange,
   minHeight = 300,
   __contextProbeRef,
@@ -142,3 +135,5 @@ export function CollectiveLexicalEditor({
     </LexicalComposer>
   );
 }
+
+export default CollectiveLexicalEditor;
