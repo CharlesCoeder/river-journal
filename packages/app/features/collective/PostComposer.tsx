@@ -18,6 +18,7 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { AuthorByline, ExpandingLineButton, Text, XStack, YStack } from '@my/ui'
 import { ThreePostureDisclosure, hasAcknowledgedBoundaryA } from 'app/features/disclosure/ThreePostureDisclosure'
 import { AmbientPrivacyLabel } from 'app/features/disclosure/AmbientPrivacyLabel'
@@ -267,11 +268,20 @@ export default function PostComposer({
           </XStack>
 
           {/* Writing surface — sharp-cornered, Newsreader serif, no chrome (AC #5) */}
-          <CollectiveLexicalEditor
-            onContentChange={setBody}
-            minHeight={minHeight}
-            __contextProbeRef={contextProbeRef}
-          />
+          {/*
+            Wrapping View gives the editor explicit dimensions. On native the
+            `'use dom'` WebView fills its parent View — without an explicit
+            height the WebView collapses to a default tiny height and becomes
+            untappable. Mirrors the editorWrapper pattern in
+            features/journal/components/PersistentEditor.native.tsx:122.
+          */}
+          <View style={{ width: '100%', height: minHeight }}>
+            <CollectiveLexicalEditor
+              onContentChange={setBody}
+              minHeight={minHeight}
+              __contextProbeRef={contextProbeRef}
+            />
+          </View>
 
           {/* Word/character count micro-typography (AC #11) */}
           <Text fontSize="$1" color="$color9">

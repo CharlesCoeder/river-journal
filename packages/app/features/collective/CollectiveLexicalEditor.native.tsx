@@ -67,29 +67,38 @@ function CollectiveLexicalEditor({
       <div
         style={{
           position: 'relative',
+          width: '100%',
+          height: '100%',
           minHeight: `${minHeight}px`,
           borderRadius: 0,
           border: 'none',
           background: 'transparent',
           fontFamily: 'Newsreader, Georgia, serif',
+          boxSizing: 'border-box',
         }}
       >
         <RichTextPlugin
           contentEditable={
-            <ContentEditable
-              spellCheck={false}
-              style={{
-                outline: 'none',
-                minHeight: `${minHeight}px`,
-                fontSize: '18px',
-                lineHeight: '1.625',
-                fontFamily: 'Newsreader, Georgia, serif',
-                borderRadius: 0,
-                border: 'none',
-                background: 'transparent',
-                padding: '0',
-              }}
-            />
+            <div style={{ minHeight: '100%', height: '100%', width: '100%' }}>
+              <ContentEditable
+                spellCheck={false}
+                style={{
+                  outline: 'none',
+                  width: '100%',
+                  height: '100%',
+                  minHeight: `${minHeight}px`,
+                  fontSize: '18px',
+                  lineHeight: '1.625',
+                  fontFamily: 'Newsreader, Georgia, serif',
+                  borderRadius: 0,
+                  border: 'none',
+                  background: 'transparent',
+                  padding: '0',
+                  boxSizing: 'border-box',
+                  wordWrap: 'break-word',
+                }}
+              />
+            </div>
           }
           placeholder={
             <div
