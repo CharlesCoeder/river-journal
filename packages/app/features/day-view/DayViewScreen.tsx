@@ -46,7 +46,9 @@ export function DayViewScreen() {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    // Parse as local midnight; bare 'YYYY-MM-DD' is UTC per ISO 8601 and would
+    // render as the previous day for users west of UTC.
+    const date = new Date(dateString + 'T00:00:00')
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
