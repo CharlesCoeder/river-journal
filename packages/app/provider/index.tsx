@@ -163,7 +163,9 @@ export function Provider({
               <CustomToast />
               <ToastViewport />
             </ToastProvider>
-            {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+            {isWeb && process.env.NODE_ENV === 'development' && (
+              <ReactQueryDevtools initialIsOpen={false} />
+            )}
           </PersistQueryClientProvider>
         </FontLanguage>
       </Theme>
