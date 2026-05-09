@@ -29,6 +29,7 @@ import { MoreHorizontal } from '@tamagui/lucide-icons'
 import { useReportPost, useDeleteOwnPost } from 'app/state/collective/mutations'
 import type { ReportPostVars } from 'app/state/collective/mutations'
 import { addLocallyHiddenPost } from 'app/state/store'
+import { generateUUID } from 'app/utils/uuid'
 
 // ─── Reason definitions ───────────────────────────────────────────────────────
 
@@ -139,7 +140,7 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
     if (!selectedReason || mutation.isPending) return
 
     const vars: ReportPostVars = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       post_id: postId,
       reporter_user_id: reporterUserId!,
       reason_code: selectedReason,

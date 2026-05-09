@@ -48,10 +48,9 @@ import { supabase } from '../utils/supabase'
 import { persistPlugin } from './persistConfig'
 import type { Flow, Entry, GraceDay } from './types'
 import type { EncryptionMode } from '../types/index'
-import { v4 as uuidv4 } from 'uuid'
+import { generateUUID as sharedGenerateUUID } from '../utils/uuid'
 import {
   EncryptionError,
-  assertCryptoGetRandomValues,
   base64ToBytes,
   decryptFlowContent,
   decryptFlowContentManaged,
@@ -67,15 +66,7 @@ import { fetchManagedEncryptionKey } from '../utils/userEncryption'
 // UUID GENERATION
 // =================================================================
 
-export function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  // Ensure crypto.getRandomValues is available before uuidv4 uses it,
-  // preventing a silent Math.random() fallback on React Native.
-  assertCryptoGetRandomValues()
-  return uuidv4()
-}
+export const generateUUID = sharedGenerateUUID
 
 // =================================================================
 // GLOBAL SYNC CONFIGURATION

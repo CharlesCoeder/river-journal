@@ -11,6 +11,7 @@ import { Heart, Sparkles, Flame, Leaf, Waves } from '@tamagui/lucide-icons'
 import { useToggleReaction } from 'app/state/collective/mutations'
 import { usePostReactions } from 'app/state/collective/reactions'
 import type { ReactionKind } from 'app/state/collective/types'
+import { generateUUID } from 'app/utils/uuid'
 
 // ─── Icon registry ────────────────────────────────────────────────────────────
 
@@ -83,7 +84,7 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
       mutate({ id: existingId, post_id: postId, kind, user_id: userId!, toggle: 'remove' })
     } else {
       // toggle: add -- generate UUID at call time (per ID GENERATION discipline)
-      mutate({ id: crypto.randomUUID(), post_id: postId, kind, user_id: userId!, toggle: 'add' })
+      mutate({ id: generateUUID(), post_id: postId, kind, user_id: userId!, toggle: 'add' })
     }
   }
 
