@@ -178,16 +178,16 @@ const isUndecidedOrphanEntry = (entry: Entry): boolean =>
   // orphan-consent dialog before opening cloud sync.
   !entry.user_id && !entry.sync_excluded && !!entry.local_session_id
 
-const isUndecidedOrphanFlow = (flow: Flow, allEntries: Record<string, Entry>): boolean => {
-  if (flow.user_id || flow.sync_excluded) return false
-
-  const relatedEntry = allEntries[flow.dailyEntryId]
-  if (!relatedEntry) {
-    return !!flow.local_session_id
-  }
-
-  return isUndecidedOrphanEntry(relatedEntry) && !!flow.local_session_id
-}
+// Flow-level orphan check. Independent of parent-entry state: a flow can
+// legitimately be orphan under an adopted parent entry — this happens when a
+// user signs out and writes a new flow before signing back in. The parent
+// entry kept its prior user_id (signOut deliberately doesn't clearUserData),
+// but the new flow has user_id: null and must still be surfaced for adoption
+// or local-only consent. The local_session_id truthiness check is the
+// load-bearing defense against cloud-downloaded ghost flows: dbFlowToLocal
+// sets local_session_id: '' for those.
+const isUndecidedOrphanFlow = (flow: Flow): boolean =>
+  !flow.user_id && !flow.sync_excluded && !!flow.local_session_id
 
 /**
  * Resets the application's data state, preserving the session.
@@ -333,7 +333,7 @@ export const countUndecidedOrphans = (): { flowCount: number; entryCount: number
   let flowCount = 0
   for (const id in allFlows) {
     const f = allFlows[id]
-    if (isUndecidedOrphanFlow(f, allEntries)) flowCount++
+    if (isUndecidedOrphanFlow(f)) flowCount++
   }
 
   return { flowCount, entryCount }
@@ -347,11 +347,6 @@ export const countUndecidedOrphans = (): { flowCount: number; entryCount: number
 export const excludeOrphanFlows = (): void => {
   const allEntries = entries$.get() ?? {}
   const allFlows = flows$.get() ?? {}
-  const orphanEntryIds = new Set(
-    Object.entries(allEntries)
-      .filter(([, entry]) => isUndecidedOrphanEntry(entry))
-      .map(([entryId]) => entryId)
-  )
 
   batch(() => {
     for (const [entryId, entry] of Object.entries(allEntries)) {
@@ -361,14 +356,7 @@ export const excludeOrphanFlows = (): void => {
     }
 
     for (const [flowId, flow] of Object.entries(allFlows)) {
-      const relatedEntry = allEntries[flow.dailyEntryId]
-      const shouldExclude =
-        !flow.user_id &&
-        !flow.sync_excluded &&
-        !!flow.local_session_id &&
-        (orphanEntryIds.has(flow.dailyEntryId) || !relatedEntry)
-
-      if (shouldExclude) {
+      if (isUndecidedOrphanFlow(flow)) {
         flows$[flowId].sync_excluded.set(true)
       }
     }
