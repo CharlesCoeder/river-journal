@@ -300,6 +300,137 @@ describe('excludeOrphanFlows', () => {
 })
 
 // ---------------------------------------------------------------------------
+// orphan-flow under adopted parent entry (logout-window regression)
+//
+// Repro: user is logged in, today's entry is stamped with user_id. User signs
+// out. signOut() does NOT clearUserData (only different-user signin does), so
+// the entry retains its user_id. User writes a new flow while signed out — the
+// flow inherits user_id: null but its dailyEntryId points at the existing
+// (adopted) entry. On re-login, the flow must be detected as an undecided
+// orphan independently of the parent entry's adoption state, otherwise it
+// stays at user_id: null forever (transform.save returns undefined → no
+// upload) and is never sync_excluded (Settings recovery row never surfaces).
+// ---------------------------------------------------------------------------
+
+describe('orphan-flow under adopted parent entry (logout-window regression)', () => {
+  let countUndecidedOrphans: () => { flowCount: number; entryCount: number }
+  let excludeOrphanFlows: () => void
+  let resolveOrphanFlows: (adopt: boolean) => void
+  let getLocallyExcludedEntries: () => Array<{
+    entryId: string
+    entryDate: string
+    totalWordCount: number
+    flowIds: string[]
+  }>
+
+  beforeEach(async () => {
+    const storeModule = await import('../store')
+    countUndecidedOrphans = storeModule.countUndecidedOrphans
+    excludeOrphanFlows = storeModule.excludeOrphanFlows
+    resolveOrphanFlows = storeModule.resolveOrphanFlows
+    getLocallyExcludedEntries = storeModule.getLocallyExcludedEntries
+    flows$.set({})
+    entries$.set({})
+    isSyncReady$.set(false)
+    orphanFlowsPending$.set(null)
+  })
+
+  // The shared scenario builder: an adopted parent entry with a logged-out
+  // flow written under it.
+  const seedLogoutWindowState = () => {
+    entries$!['e-today'].set(makeEntry('e-today', { user_id: 'user-123' }))
+    flows$!['f-logged-out'].set(
+      makeFlow('f-logged-out', { dailyEntryId: 'e-today' })
+      // makeFlow defaults: user_id: null, sync_excluded: undefined,
+      // local_session_id: 'sess-1' — exactly the logout-window shape.
+    )
+  }
+
+  it('countUndecidedOrphans reports the flow as orphan even though parent entry is adopted', () => {
+    seedLogoutWindowState()
+    expect(countUndecidedOrphans()).toEqual({ flowCount: 1, entryCount: 0 })
+  })
+
+  it('resolveOrphanFlows(true) stamps user_id on the flow without touching the parent entry', () => {
+    seedLogoutWindowState()
+    orphanFlowsPending$.set({ flowCount: 1, entryCount: 0, userId: 'user-123' })
+
+    resolveOrphanFlows(true)
+
+    expect(flows$!['f-logged-out'].user_id.get()).toBe('user-123')
+    // Parent entry was already adopted — must remain so.
+    expect(entries$!['e-today'].user_id.get()).toBe('user-123')
+    expect(entries$!['e-today'].sync_excluded.get()).toBeUndefined()
+    expect(isSyncReady$.get()).toBe(true)
+  })
+
+  it('resolveOrphanFlows(false) marks the flow sync_excluded but leaves the adopted parent entry alone', () => {
+    seedLogoutWindowState()
+    orphanFlowsPending$.set({ flowCount: 1, entryCount: 0, userId: 'user-123' })
+
+    resolveOrphanFlows(false)
+
+    expect(flows$!['f-logged-out'].sync_excluded.get()).toBe(true)
+    expect(flows$!['f-logged-out'].user_id.get()).toBeNull()
+    // Entry must NOT be excluded — it has other legitimately synced flows
+    // (the per-entry summary row in Settings is enough to surface recovery).
+    expect(entries$!['e-today'].sync_excluded.get()).toBeUndefined()
+    expect(entries$!['e-today'].user_id.get()).toBe('user-123')
+    expect(isSyncReady$.get()).toBe(true)
+  })
+
+  it('excludeOrphanFlows directly: flow gets sync_excluded, parent entry untouched', () => {
+    seedLogoutWindowState()
+
+    excludeOrphanFlows()
+
+    expect(flows$!['f-logged-out'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e-today'].sync_excluded.get()).toBeUndefined()
+  })
+
+  it('Settings recovery surface picks up the parent entry once the flow is excluded', () => {
+    seedLogoutWindowState()
+    excludeOrphanFlows()
+
+    const summaries = getLocallyExcludedEntries()
+    expect(summaries).toHaveLength(1)
+    expect(summaries[0].entryId).toBe('e-today')
+    expect(summaries[0].flowIds).toEqual(['f-logged-out'])
+  })
+
+  // I/O Matrix scenario #4: cloud-downloaded ghost flow (local_session_id: '')
+  // is invariant for the whole orphan logic. Pinned alongside the
+  // logout-window cases so the symmetry — same predicate in count + exclude —
+  // is visible in one block.
+  it('cloud-downloaded ghost flow (local_session_id: "") is neither counted nor excluded', () => {
+    flows$!['f-ghost'].set(makeFlow('f-ghost', { local_session_id: '' }))
+    entries$!['e-ghost'].set(
+      makeEntry('e-ghost', { local_session_id: '', user_id: 'user-123' })
+    )
+
+    expect(countUndecidedOrphans()).toEqual({ flowCount: 0, entryCount: 0 })
+
+    excludeOrphanFlows()
+    expect(flows$!['f-ghost'].sync_excluded.get()).toBeUndefined()
+    expect(entries$!['e-ghost'].sync_excluded.get()).toBeUndefined()
+  })
+
+  // I/O Matrix scenario #5: fully anonymous (pre-login) flow under anonymous
+  // entry — both should still be counted and excluded together via their
+  // respective predicates. Confirms the entry-level path is preserved.
+  it('fully anonymous flow under anonymous entry: both counted; both excluded together', () => {
+    entries$!['e-anon'].set(makeEntry('e-anon'))
+    flows$!['f-anon'].set(makeFlow('f-anon', { dailyEntryId: 'e-anon' }))
+
+    expect(countUndecidedOrphans()).toEqual({ flowCount: 1, entryCount: 1 })
+
+    excludeOrphanFlows()
+    expect(entries$!['e-anon'].sync_excluded.get()).toBe(true)
+    expect(flows$!['f-anon'].sync_excluded.get()).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // resolveOrphanFlows
 // ---------------------------------------------------------------------------
 
