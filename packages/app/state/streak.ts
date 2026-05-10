@@ -269,11 +269,51 @@ export function useUnlockedThemes(tier: SubscriptionTier): ThemeName[] {
 // Legend-State's assign() merges deeply, so passing a partial views object is safe at runtime.
 store$.assign({
   views: {
-    streak: () =>
-      computeStreakState(
-        entries$.get(),
-        flows$.get(),
-        graceDays$.get(),
+    streak: () => {
+      // Cross-user defense (NFR20): scope the streak inputs to the current
+      // session user so a prior user's qualifying days on a shared device do
+      // not contribute to the displayed streak.
+      //   signed-in:  row.user_id === currentUserId
+      //   signed-out: row.user_id === null  (anonymous-only scope)
+      // Flows scope via parent-entry membership in the scoped entry set —
+      // a flow's user_id may lag (logout-window) but its parent entry's
+      // ownership is the load-bearing identity.
+      // The pure computeStreakState function is untouched.
+      const currentUserId = store$.session.userId.get()
+      const allEntries = entries$.get() ?? {}
+      const allFlows = flows$.get() ?? {}
+      const allGraceDays = graceDays$.get() ?? {}
+
+      const scopedEntries: Record<string, Entry> = {}
+      for (const id in allEntries) {
+        const e = allEntries[id]
+        const ownerMatches = currentUserId
+          ? e.user_id === currentUserId
+          : e.user_id === null || e.user_id === undefined
+        if (ownerMatches) scopedEntries[id] = e
+      }
+
+      const scopedFlows: Record<string, Flow> = {}
+      for (const id in allFlows) {
+        const f = allFlows[id]
+        // Parent-entry membership in the scoped set is the load-bearing
+        // predicate; if the parent isn't in scope, neither is the flow.
+        if (scopedEntries[f.dailyEntryId]) scopedFlows[id] = f
+      }
+
+      const scopedGraceDays: Record<string, GraceDay> = {}
+      for (const id in allGraceDays) {
+        const g = allGraceDays[id]
+        const ownerMatches = currentUserId
+          ? g.userId === currentUserId
+          : g.userId === null || g.userId === undefined
+        if (ownerMatches) scopedGraceDays[id] = g
+      }
+
+      return computeStreakState(
+        scopedEntries,
+        scopedFlows,
+        scopedGraceDays,
         getTodayJournalDayString(),
         'free',
         // chosenUnlocks: user-spent token destinations (Model B). When store$.profile is null
@@ -281,7 +321,8 @@ store$.assign({
         // → computeStreakState falls back to passive-map branch. Once profile loads, streak$
         // re-evaluates with the user's actual chosen array.
         store$.profile.unlockedThemes.get() ?? undefined
-      ),
+      )
+    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any,
 })

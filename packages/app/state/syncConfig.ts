@@ -93,6 +93,44 @@ export const orphanFlowsPending$ = observable<{
   entryCount: number
   userId: string
 } | null>(null)
+
+// =================================================================
+// DEVICE STATE — persisted, cross-account memory
+// =================================================================
+// Tracks the most recent authenticated identity on this device and the user's
+// dismissals of the previous-account banner. Persisted (web: 'device-state'
+// IndexedDB table; native: MMKV per-table). Survives sign-out by design — the
+// banner needs to detect prev-vs-current transitions across sessions.
+//
+// `lastAuthedUserId` write semantics: WRITE-ONCE-PER-TRANSITION.
+//  - First-ever sign-in (null → A): seed to A; no banner.
+//  - Same-user sign-in (A → A): no-op.
+//  - Different-user sign-in (A → B): leave as A (this IS the banner trigger).
+//    Only overwritten to B when the user resolves the banner via either
+//    "Delete from this device" or "Keep local".
+// Never cleared on SIGNED_OUT.
+//
+// `acknowledgedAccountTransitions` is keyed by `${previousId}->${currentId}`
+// so a third account (C) re-opens the banner.
+export interface DeviceState {
+  lastAuthedUserId: string | null
+  acknowledgedAccountTransitions: Record<string, true>
+}
+
+export const deviceState$ = observable<DeviceState>({
+  lastAuthedUserId: null,
+  acknowledgedAccountTransitions: {},
+})
+
+export interface PreviousAccountBannerState {
+  previousUserId: string
+  entryCount: number
+  flowCount: number
+  acknowledged: false
+}
+// `previousAccountBanner$` itself is derived from deviceState$ + entries$ +
+// flows$ + store$.session — declared in `state/store.ts` to avoid the
+// import cycle (syncConfig must not import store/entries/flows).
 export const syncEncryptionMode$ = observable<EncryptionMode | null>(null)
 export const syncManagedKeyBytes$ = observable<Uint8Array | null>(null)
 

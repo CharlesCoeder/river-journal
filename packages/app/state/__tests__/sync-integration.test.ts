@@ -30,9 +30,11 @@ vi.mock('../persistConfig', () => ({
   configurePersistence: vi.fn(),
 }))
 
-import { isSyncReady$, syncUserId$, orphanFlowsPending$ } from '../syncConfig'
+import { isSyncReady$, syncUserId$, orphanFlowsPending$, deviceState$ } from '../syncConfig'
 import { flows$ } from '../flows'
 import { entries$ } from '../entries'
+import { graceDays$ } from '../grace_days'
+import { store$ } from '../store'
 
 // ---------------------------------------------------------------------------
 // Shared test data helpers
@@ -791,3 +793,292 @@ describe('resolveOrphanFlows error handling', () => {
     consoleSpy.mockRestore()
   })
 })
+
+// ---------------------------------------------------------------------------
+// Cross-user data defense — restoreExcludedEntries foreign-row guard
+// ---------------------------------------------------------------------------
+
+describe('restoreExcludedEntries — cross-user defense', () => {
+  let restoreExcludedEntries: (entryIds: string[], userId: string) => void
+
+  beforeEach(async () => {
+    const storeModule = await import('../store')
+    restoreExcludedEntries = storeModule.restoreExcludedEntries
+    flows$.set({})
+    entries$.set({})
+  })
+
+  it('refuses to restore an entry owned by a different user (I/O matrix: Restore foreign row)', () => {
+    entries$!['e-foreign'].set(makeEntry('e-foreign', { user_id: 'user-A', sync_excluded: true }))
+    flows$!['f-foreign'].set(
+      makeFlow('f-foreign', { dailyEntryId: 'e-foreign', user_id: 'user-A', sync_excluded: true })
+    )
+
+    restoreExcludedEntries(['e-foreign'], 'user-B')
+
+    // Entry untouched: still excluded, still owned by A
+    expect(entries$!['e-foreign'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e-foreign'].user_id.get()).toBe('user-A')
+    // Flow under foreign-owned parent also untouched
+    expect(flows$!['f-foreign'].sync_excluded.get()).toBe(true)
+    expect(flows$!['f-foreign'].user_id.get()).toBe('user-A')
+  })
+
+  it('skips a flow whose PARENT entry is foreign-owned, even if the flow itself has user_id null', () => {
+    // Parent entry owned by A; new flow written under it (logout-window shape)
+    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A', sync_excluded: true }))
+    flows$!['f-null-under-A'].set(
+      makeFlow('f-null-under-A', { dailyEntryId: 'e-A', sync_excluded: true })
+    )
+
+    restoreExcludedEntries(['e-A'], 'user-B')
+
+    // Both untouched — defense covers the flow via parent ownership.
+    expect(entries$!['e-A'].user_id.get()).toBe('user-A')
+    expect(flows$!['f-null-under-A'].user_id.get()).toBeNull()
+    expect(flows$!['f-null-under-A'].sync_excluded.get()).toBe(true)
+  })
+
+  it('still restores an anonymous (user_id === null) entry — null is the legitimate adoption path', () => {
+    entries$!['e-anon'].set(makeEntry('e-anon', { sync_excluded: true }))
+    flows$!['f-anon'].set(
+      makeFlow('f-anon', { dailyEntryId: 'e-anon', sync_excluded: true })
+    )
+
+    restoreExcludedEntries(['e-anon'], 'user-B')
+
+    expect(entries$!['e-anon'].sync_excluded.get()).toBe(false)
+    expect(entries$!['e-anon'].user_id.get()).toBe('user-B')
+    expect(flows$!['f-anon'].sync_excluded.get()).toBe(false)
+    expect(flows$!['f-anon'].user_id.get()).toBe('user-B')
+  })
+
+  it('mixed batch: restores own + anonymous, leaves foreign untouched', () => {
+    entries$!['e-own'].set(makeEntry('e-own', { user_id: 'user-B', sync_excluded: true }))
+    entries$!['e-anon'].set(makeEntry('e-anon', { sync_excluded: true }))
+    entries$!['e-foreign'].set(makeEntry('e-foreign', { user_id: 'user-A', sync_excluded: true }))
+
+    restoreExcludedEntries(['e-own', 'e-anon', 'e-foreign'], 'user-B')
+
+    expect(entries$!['e-own'].sync_excluded.get()).toBe(false)
+    expect(entries$!['e-anon'].user_id.get()).toBe('user-B')
+    expect(entries$!['e-foreign'].user_id.get()).toBe('user-A')
+    expect(entries$!['e-foreign'].sync_excluded.get()).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Cross-user data defense — adoptOrphanFlows foreign-parent guard
+// ---------------------------------------------------------------------------
+
+describe('adoptOrphanFlows — foreign-parent defense', () => {
+  let adoptOrphanFlows: (userId: string) => void
+
+  beforeEach(async () => {
+    const storeModule = await import('../store')
+    adoptOrphanFlows = storeModule.adoptOrphanFlows
+    flows$.set({})
+    entries$.set({})
+  })
+
+  it('skips a null-user_id flow whose parent entry is owned by a different user (I/O matrix: Adopt foreign parent)', () => {
+    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    flows$!['f-orphan-under-A'].set(makeFlow('f-orphan-under-A', { dailyEntryId: 'e-A' }))
+
+    adoptOrphanFlows('user-B')
+
+    // Parent untouched, flow remains orphan (no FK/RLS violation will be queued).
+    expect(entries$!['e-A'].user_id.get()).toBe('user-A')
+    expect(flows$!['f-orphan-under-A'].user_id.get()).toBeNull()
+  })
+
+  it('still adopts a null-user_id flow whose parent entry is also null (anonymous lineage)', () => {
+    entries$!['e-anon'].set(makeEntry('e-anon'))
+    flows$!['f-anon'].set(makeFlow('f-anon', { dailyEntryId: 'e-anon' }))
+
+    adoptOrphanFlows('user-B')
+
+    expect(entries$!['e-anon'].user_id.get()).toBe('user-B')
+    expect(flows$!['f-anon'].user_id.get()).toBe('user-B')
+  })
+
+  it('still adopts a null-user_id flow whose parent entry is owned by the SAME user (logout-window adoption)', () => {
+    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
+    flows$!['f-orphan-under-B'].set(makeFlow('f-orphan-under-B', { dailyEntryId: 'e-B' }))
+
+    adoptOrphanFlows('user-B')
+
+    expect(flows$!['f-orphan-under-B'].user_id.get()).toBe('user-B')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Cross-user data defense — countPreviousUserData / deletePreviousUserData
+// ---------------------------------------------------------------------------
+
+describe('countPreviousUserData / deletePreviousUserData', () => {
+  let countPreviousUserData: (userId: string) => { entryCount: number; flowCount: number }
+  let deletePreviousUserData: (userId: string) => void
+
+  beforeEach(async () => {
+    const storeModule = await import('../store')
+    countPreviousUserData = storeModule.countPreviousUserData
+    deletePreviousUserData = storeModule.deletePreviousUserData
+    flows$.set({})
+    entries$.set({})
+    graceDays$.set({})
+  })
+
+  it('countPreviousUserData returns zero for unknown userId', () => {
+    expect(countPreviousUserData('user-A')).toEqual({ entryCount: 0, flowCount: 0 })
+  })
+
+  it('countPreviousUserData counts only rows owned by the given userId', () => {
+    entries$!['e-A1'].set(makeEntry('e-A1', { user_id: 'user-A' }))
+    entries$!['e-A2'].set(makeEntry('e-A2', { user_id: 'user-A' }))
+    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
+    entries$!['e-anon'].set(makeEntry('e-anon'))
+    flows$!['f-A'].set(makeFlow('f-A', { user_id: 'user-A' }))
+    flows$!['f-B'].set(makeFlow('f-B', { user_id: 'user-B' }))
+
+    expect(countPreviousUserData('user-A')).toEqual({ entryCount: 2, flowCount: 1 })
+  })
+
+  it('deletePreviousUserData removes only the targeted user\'s rows; leaves current user + anonymous intact', () => {
+    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
+    entries$!['e-anon'].set(makeEntry('e-anon'))
+    flows$!['f-A'].set(makeFlow('f-A', { user_id: 'user-A' }))
+    flows$!['f-B'].set(makeFlow('f-B', { user_id: 'user-B' }))
+    flows$!['f-anon'].set(makeFlow('f-anon'))
+
+    deletePreviousUserData('user-A')
+
+    expect(entries$.get()['e-A']).toBeUndefined()
+    expect(flows$.get()['f-A']).toBeUndefined()
+    // Other users + anonymous untouched
+    expect(entries$.get()['e-B']).toBeDefined()
+    expect(entries$.get()['e-anon']).toBeDefined()
+    expect(flows$.get()['f-B']).toBeDefined()
+    expect(flows$.get()['f-anon']).toBeDefined()
+  })
+
+  it('deletePreviousUserData also wipes grace days owned by the targeted user', () => {
+    graceDays$!['g-A'].set({
+      id: 'g-A',
+      userId: 'user-A',
+      earnedAt: '2026-01-01T00:00:00Z',
+      earnedForMilestone: 7,
+      usedForDate: null,
+    })
+    graceDays$!['g-B'].set({
+      id: 'g-B',
+      userId: 'user-B',
+      earnedAt: '2026-01-01T00:00:00Z',
+      earnedForMilestone: 7,
+      usedForDate: null,
+    })
+
+    deletePreviousUserData('user-A')
+
+    expect(graceDays$.get()['g-A']).toBeUndefined()
+    expect(graceDays$.get()['g-B']).toBeDefined()
+  })
+
+  it('deletePreviousUserData is a no-op when userId is empty', () => {
+    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    deletePreviousUserData('')
+    expect(entries$.get()['e-A']).toBeDefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Cross-user data defense — previousAccountBanner$ derivation
+// ---------------------------------------------------------------------------
+
+describe('previousAccountBanner$ derivation', () => {
+  beforeEach(async () => {
+    // Lazy import so the observable is materialized via the same module path.
+    await import('../store')
+    flows$.set({})
+    entries$.set({})
+    deviceState$.lastAuthedUserId.set(null)
+    deviceState$.acknowledgedAccountTransitions.set({})
+    store$.session.userId.set(null)
+  })
+
+  it('returns null when no previous user has ever signed in', async () => {
+    const { previousAccountBanner$ } = await import('../store')
+    store$.session.userId.set('user-B')
+    expect(previousAccountBanner$.get() ?? null).toBeNull()
+  })
+
+  it('returns null when current user matches the previous user (same-user re-sign-in)', async () => {
+    const { previousAccountBanner$ } = await import('../store')
+    deviceState$.lastAuthedUserId.set('user-A')
+    store$.session.userId.set('user-A')
+    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    expect(previousAccountBanner$.get() ?? null).toBeNull()
+  })
+
+  it('returns null when no signed-in current user (signed-out)', async () => {
+    const { previousAccountBanner$ } = await import('../store')
+    deviceState$.lastAuthedUserId.set('user-A')
+    store$.session.userId.set(null)
+    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    expect(previousAccountBanner$.get() ?? null).toBeNull()
+  })
+
+  it('returns null when prev != current but no rows owned by prev remain', async () => {
+    const { previousAccountBanner$ } = await import('../store')
+    deviceState$.lastAuthedUserId.set('user-A')
+    store$.session.userId.set('user-B')
+    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
+    expect(previousAccountBanner$.get() ?? null).toBeNull()
+  })
+
+  it('returns banner state with counts when prev != current AND data exists for prev', async () => {
+    const { previousAccountBanner$ } = await import('../store')
+    deviceState$.lastAuthedUserId.set('user-A')
+    store$.session.userId.set('user-B')
+    entries$!['e-A1'].set(makeEntry('e-A1', { user_id: 'user-A' }))
+    entries$!['e-A2'].set(makeEntry('e-A2', { user_id: 'user-A' }))
+    flows$!['f-A'].set(makeFlow('f-A', { user_id: 'user-A' }))
+
+    const banner = previousAccountBanner$.get()
+    expect(banner).toEqual({
+      previousUserId: 'user-A',
+      entryCount: 2,
+      flowCount: 1,
+      acknowledged: false,
+    })
+  })
+
+  it('returns null after the (prev → current) transition is acknowledged ("Keep local")', async () => {
+    const { previousAccountBanner$ } = await import('../store')
+    deviceState$.lastAuthedUserId.set('user-A')
+    store$.session.userId.set('user-B')
+    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+
+    // Banner visible initially
+    expect(previousAccountBanner$.get()).not.toBeNull()
+
+    deviceState$.acknowledgedAccountTransitions['user-A->user-B'].set(true)
+
+    expect(previousAccountBanner$.get() ?? null).toBeNull()
+  })
+
+  it('a different third-account transition (B → C) re-opens the banner even after (A → B) was acknowledged', async () => {
+    const { previousAccountBanner$ } = await import('../store')
+    // Start from A → B acknowledged + advanced
+    deviceState$.lastAuthedUserId.set('user-B')
+    deviceState$.acknowledgedAccountTransitions.set({ 'user-A->user-B': true })
+    store$.session.userId.set('user-C')
+    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
+
+    const banner = previousAccountBanner$.get()
+    expect(banner).not.toBeNull()
+    expect(banner?.previousUserId).toBe('user-B')
+  })
+})
+

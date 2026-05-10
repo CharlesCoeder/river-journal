@@ -6,8 +6,9 @@
 import type { Session, AuthError, User } from '@supabase/supabase-js'
 import { Platform } from 'react-native'
 import { supabase } from './supabase'
-import { store$, clearUserData } from '../state/store'
+import { store$ } from '../state/store'
 import { batch } from '@legendapp/state'
+import { deviceState$ } from '../state/syncConfig'
 import { loadCurrentEncryptionMode, resetEncryptionSetupState } from '../state/encryptionSetup'
 import { hasWebTrustCapability, getStoredDeviceToken, hashDeviceToken, clearWebTrustData } from './webKeyStore'
 import { deleteTrustedBrowserByHash } from './userEncryption'
@@ -68,20 +69,9 @@ export const getAuthErrorMessage = (error: AuthError): string => {
  * Updates Legend-State store with auth session data
  */
 const updateSessionState = (session: Session | null) => {
-  const previousUserId = store$.session.userId.peek()
-
-  // When a different user signs in, clear the previous user's synced data
-  // from local persistence to prevent RLS 403s from stale user_id mismatches.
-  if (session?.user && previousUserId && previousUserId !== session.user.id) {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log('🔄 [auth] user changed, clearing previous user data', {
-        previous: previousUserId.slice(0, 8),
-        current: session.user.id.slice(0, 8),
-      })
-    }
-    clearUserData()
-  }
+  // NOTE: auto-wipe on user-change was removed. Wiping is now user-driven via
+  // the previous-account banner in Settings. See spec
+  // `docs/_bmad-output/implementation-artifacts/spec-fix-cross-user-data-defense.md`.
 
   batch(() => {
     if (session?.user) {
@@ -100,8 +90,28 @@ const updateSessionState = (session: Session | null) => {
   })
 
   if (session?.user) {
+    // Maintain device-state.lastAuthedUserId with WRITE-ONCE-PER-TRANSITION
+    // semantics. The previous-account banner derives from
+    // `lastAuthedUserId !== currentUserId`, so we MUST NOT overwrite the
+    // value on every authenticated session — only on first-ever sign-in
+    // (seed) or when the user resolves the banner (handled by the banner UI).
+    const lastAuthedUserId = deviceState$.lastAuthedUserId.peek()
+    if (lastAuthedUserId === null) {
+      // Seed on first-ever sign-in. No banner is shown for this case.
+      deviceState$.lastAuthedUserId.set(session.user.id)
+    } else if (lastAuthedUserId === session.user.id) {
+      // Same-user re-sign-in: no-op (no banner trigger, no overwrite needed).
+    } else {
+      // Different-user sign-in: leave lastAuthedUserId AS-IS (it points at
+      // the previous account). previousAccountBanner$ will compare the two
+      // and surface the banner. Banner actions ("Delete from this device" /
+      // "Keep local") are responsible for advancing lastAuthedUserId.
+    }
+
     void loadCurrentEncryptionMode()
   } else {
+    // Do NOT clear lastAuthedUserId on SIGNED_OUT — the banner needs it to
+    // survive the sign-out/sign-in transition.
     resetEncryptionSetupState()
   }
 }

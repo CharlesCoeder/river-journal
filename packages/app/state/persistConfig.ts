@@ -14,11 +14,14 @@ import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/ind
 // version sees no upgrade event and silently misses its store. Keep this list
 // the only place store names are declared.
 //
+// 7: added 'device-state' table for cross-account device memory
+// (lastAuthedUserId + acknowledgedAccountTransitions; see syncConfig.ts).
+//    Survives sign-out by design; drives the previous-account banner.
 // 6: added 'tanstack-query' object store for the plaintext server-visible
 // query cache (separate domain from Legend-State; see queryStorage.ts).
 // 5: added 'grace-days' table (was 4: added 'lapsed-state').
 export const DB_NAME = 'RiverJournal'
-export const DB_VERSION = 6
+export const DB_VERSION = 7
 export const TABLE_NAMES = [
   'app-state',
   'flows',
@@ -26,6 +29,7 @@ export const TABLE_NAMES = [
   'lapsed-state',
   'grace-days',
   'tanstack-query',
+  'device-state',
 ] as const
 
 export const persistPlugin = observablePersistIndexedDB({

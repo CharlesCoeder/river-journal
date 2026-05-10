@@ -25,7 +25,13 @@ import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
 
 import { getTodayJournalDayString } from './date-utils'
-import { generateUUID, isSyncReady$, orphanFlowsPending$ } from './syncConfig'
+import {
+  generateUUID,
+  isSyncReady$,
+  orphanFlowsPending$,
+  deviceState$,
+  type PreviousAccountBannerState,
+} from './syncConfig'
 
 // Re-export theme constants for convenience
 export { THEME_NAMES, DEFAULT_THEME, DARK_THEMES }
@@ -282,6 +288,8 @@ export const adoptOrphanFlows = (userId: string): void => {
     )
   }
 
+  let skippedForeignParent = 0
+
   batch(() => {
     for (const [entryId, entry] of Object.entries(allEntries)) {
       if (!entry.user_id && !entry.sync_excluded) {
@@ -292,6 +300,18 @@ export const adoptOrphanFlows = (userId: string): void => {
 
     for (const [flowId, flow] of Object.entries(allFlows)) {
       if (!flow.user_id && !flow.sync_excluded) {
+        // Cross-user defense: if the flow's parent entry is owned by a
+        // different (non-null) user, do NOT stamp this flow with the current
+        // userId. The orphan-consent dialog operates on user_id === null
+        // items, but the parent-entry ownership check guards against the
+        // logout-window edge case where a flow was written under an entry
+        // that already belongs to user A while user B is signing in.
+        // Stamping would create an FK/RLS violation on sync.
+        const parent = allEntries[flow.dailyEntryId]
+        if (parent && parent.user_id && parent.user_id !== userId) {
+          skippedForeignParent++
+          continue
+        }
         flows$[flowId].user_id.set(userId)
         adoptedFlows++
       }
@@ -301,7 +321,9 @@ export const adoptOrphanFlows = (userId: string): void => {
   if (process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
     console.log(
-      `🏠 [adoptOrphanFlows] POST-ADOPT: adopted ${adoptedEntries} entries, ${adoptedFlows} flows for user ${userId.slice(0, 8)}…`
+      `🏠 [adoptOrphanFlows] POST-ADOPT: adopted ${adoptedEntries} entries, ${adoptedFlows} flows for user ${userId.slice(0, 8)}…${
+        skippedForeignParent > 0 ? ` (skipped ${skippedForeignParent} flows under foreign-owned parent)` : ''
+      }`
     )
   }
 }
@@ -419,6 +441,14 @@ export interface LocallyExcludedEntrySummary {
   entryDate: string
   totalWordCount: number
   flowIds: string[]
+  /**
+   * Owner of the parent entry. `null` means anonymous/orphan; non-null means
+   * the entry was authored under a particular Supabase account. The
+   * Local-only Entries UI compares this against the current session userId
+   * to disable Restore for foreign-owned rows (the data still lists, the
+   * action is gated). Added with the cross-user defense.
+   */
+  user_id: string | null
 }
 
 /**
@@ -449,6 +479,7 @@ export const getLocallyExcludedEntries = (): LocallyExcludedEntrySummary[] => {
         entryDate: entry.entryDate,
         totalWordCount: flow.wordCount ?? 0,
         flowIds: [flow.id],
+        user_id: entry.user_id ?? null,
       })
     }
   }
@@ -478,21 +509,204 @@ export const restoreExcludedEntries = (entryIds: string[], userId: string): void
   const allFlows = flows$.peek() ?? {}
   const allEntries = entries$.peek() ?? {}
 
+  let skippedForeignEntries = 0
+  let skippedForeignFlows = 0
+  let skippedFlowMissingParent = 0
+
   batch(() => {
     for (const entryId of idSet) {
-      if (!allEntries[entryId]) continue
+      const entry = allEntries[entryId]
+      if (!entry) continue
+      // Cross-user defense: refuse to operate on entries owned by a different
+      // (non-null) user. Restoring would stamp current userId onto another
+      // account's row, leaking content to the wrong cloud account on sync.
+      // user_id === null is the legitimate adoption path — keep it flowing.
+      if (entry.user_id && entry.user_id !== userId) {
+        skippedForeignEntries++
+        continue
+      }
       entries$[entryId].sync_excluded.set(false)
       entries$[entryId].user_id.set(userId)
     }
     for (const flowId in allFlows) {
       const flow = allFlows[flowId]
       if (flow.sync_excluded === true && idSet.has(flow.dailyEntryId)) {
+        // Same defense applied via the flow's parent entry (the flow itself
+        // may have user_id === null even when the parent is owned).
+        const parent = allEntries[flow.dailyEntryId]
+        // Defensive: a flow whose parent entry is absent from the local pool
+        // would FK-violate on sync upload. Refuse rather than fabricate.
+        if (!parent) {
+          skippedFlowMissingParent++
+          continue
+        }
+        if (parent.user_id && parent.user_id !== userId) {
+          skippedForeignFlows++
+          continue
+        }
         flows$[flowId].sync_excluded.set(false)
         flows$[flowId].user_id.set(userId)
       }
     }
   })
+
+  if (
+    process.env.NODE_ENV === 'development' &&
+    (skippedForeignEntries > 0 || skippedForeignFlows > 0 || skippedFlowMissingParent > 0)
+  ) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `🛡️ [restoreExcludedEntries] skipped ${skippedForeignEntries} foreign entries, ${skippedForeignFlows} foreign flows, ${skippedFlowMissingParent} flows w/o parent (current user ${userId.slice(0, 8)}…)`
+    )
+  }
 }
+
+// -----------------------------------------------------------------
+// Previous-user data: counts + deletion (banner support)
+// -----------------------------------------------------------------
+
+/**
+ * Counts entries and flows on this device that are owned by the given userId.
+ * Used by the previous-account banner to show accurate counts before the user
+ * decides whether to delete or keep the prior account's local data.
+ */
+export const countPreviousUserData = (
+  userId: string
+): { entryCount: number; flowCount: number } => {
+  if (!userId) return { entryCount: 0, flowCount: 0 }
+  const allEntries = entries$.peek() ?? {}
+  const allFlows = flows$.peek() ?? {}
+
+  let entryCount = 0
+  for (const id in allEntries) {
+    if (allEntries[id].user_id === userId) entryCount++
+  }
+  let flowCount = 0
+  for (const id in allFlows) {
+    if (allFlows[id].user_id === userId) flowCount++
+  }
+  return { entryCount, flowCount }
+}
+
+/**
+ * Wipes all rows on this device owned by `userId` (entries, flows, grace days).
+ * Mirrors `clearUserData`'s two-phase nullify-then-replace pattern so
+ * Legend-State does not enqueue ghost Supabase deletes against the previous
+ * user's account.
+ *
+ * Filters by `user_id === userId` (no sync_excluded carve-out — the banner is
+ * the user's explicit "delete this account's data" affordance, including any
+ * local-only items that account authored).
+ */
+export const deletePreviousUserData = (userId: string): void => {
+  if (!userId) return
+  // Self-delete guard: never wipe the currently-signed-in user's own rows.
+  // Banner UI keys delete on `previousAccountBanner$.previousUserId`, which
+  // is non-null only when prev !== current — but a fast account-swap race
+  // between dialog open and confirm could collapse them. Refuse explicitly.
+  const currentUserId = store$.session.userId.peek()
+  if (currentUserId && currentUserId === userId) return
+  const allFlows = flows$.peek() ?? {}
+  const allEntries = entries$.peek() ?? {}
+  const allGraceDays = graceDays$.peek() ?? {}
+
+  // Snapshot target ids BEFORE phase 1 nullifies user_id (otherwise the
+  // proxy-backed `allFlows[id].user_id` we'd filter on later reads as null).
+  const targetFlowIds = new Set<string>()
+  for (const id in allFlows) {
+    if (allFlows[id].user_id === userId) targetFlowIds.add(id)
+  }
+  const targetEntryIds = new Set<string>()
+  for (const id in allEntries) {
+    if (allEntries[id].user_id === userId) targetEntryIds.add(id)
+  }
+  const targetGraceIds = new Set<string>()
+  for (const id in allGraceDays) {
+    if (allGraceDays[id].userId === userId) targetGraceIds.add(id)
+  }
+
+  // Phase 1: nullify user_id on items we're about to remove so transform.save
+  // returns undefined and Legend-State will not queue Supabase delete ops.
+  batch(() => {
+    for (const id of targetFlowIds) {
+      flows$[id].user_id.set(null)
+    }
+    for (const id of targetEntryIds) {
+      entries$[id].user_id.set(null)
+    }
+    for (const id of targetGraceIds) {
+      graceDays$[id].userId.set(null as unknown as string)
+    }
+  })
+
+  // Phase 2: drop the targeted rows; keep everything else.
+  batch(() => {
+    const finalFlows: Record<string, Flow> = {}
+    for (const [id, flow] of Object.entries(flows$.peek() ?? {})) {
+      if (!targetFlowIds.has(id)) finalFlows[id] = flow
+    }
+    flows$.set(finalFlows)
+
+    const finalEntries: Record<string, Entry> = {}
+    for (const [id, entry] of Object.entries(entries$.peek() ?? {})) {
+      if (!targetEntryIds.has(id)) finalEntries[id] = entry
+    }
+    entries$.set(finalEntries)
+
+    const finalGrace: Record<string, typeof allGraceDays[string]> = {}
+    for (const [id, gd] of Object.entries(graceDays$.peek() ?? {})) {
+      if (!targetGraceIds.has(id)) finalGrace[id] = gd
+    }
+    graceDays$.set(finalGrace)
+
+    store$.lastUpdated.set(new Date().toISOString())
+  })
+}
+
+/**
+ * Previous-account banner state, derived from:
+ *   - deviceState$.lastAuthedUserId  (the most recent prior identity)
+ *   - store$.session.userId          (the current authenticated identity)
+ *   - entries$ + flows$              (does data with that prior id still exist?)
+ *   - deviceState$.acknowledgedAccountTransitions  (Keep-local dismissals)
+ *
+ * Returns null unless ALL of:
+ *   - prior identity exists and is non-null
+ *   - current session is authenticated and differs from prior
+ *   - at least one entry or flow with user_id === prior identity remains
+ *   - the (prior → current) transition has not been acknowledged
+ *
+ * Lives here (not in syncConfig.ts) to avoid an import cycle: syncConfig must
+ * not import store/entries/flows.
+ */
+export const previousAccountBanner$ = observable<PreviousAccountBannerState | null>(
+  (): PreviousAccountBannerState | null => {
+    const previousUserId = deviceState$.lastAuthedUserId.get()
+    if (!previousUserId) return null
+
+    const currentUserId = store$.session.userId.get()
+    if (!currentUserId) return null
+    if (currentUserId === previousUserId) return null
+
+    const transitionKey = `${previousUserId}->${currentUserId}`
+    const ack = deviceState$.acknowledgedAccountTransitions.get() ?? {}
+    if (ack[transitionKey]) return null
+
+    const allEntries = entries$.get() ?? {}
+    const allFlows = flows$.get() ?? {}
+    let entryCount = 0
+    for (const id in allEntries) {
+      if (allEntries[id].user_id === previousUserId) entryCount++
+    }
+    let flowCount = 0
+    for (const id in allFlows) {
+      if (allFlows[id].user_id === previousUserId) flowCount++
+    }
+    if (entryCount === 0 && flowCount === 0) return null
+
+    return { previousUserId, entryCount, flowCount, acknowledged: false }
+  }
+)
 
 // =================================================================
 // 3. STATE ACTIONS
