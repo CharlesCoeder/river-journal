@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   AlertDialog,
   Button,
@@ -56,7 +56,9 @@ export function LocalOnlyEntriesScreen() {
   use$(entries$)
   const userId = use$(store$.session.userId)
 
-  const summaries = useMemo(() => getLocallyExcludedEntries(), [])
+  // Re-derived every render — the use$() subscriptions above ensure renders
+  // fire whenever flows$/entries$ change, so the list updates after a restore.
+  const summaries = getLocallyExcludedEntries()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const handleRestoreOne = useCallback(
