@@ -416,6 +416,96 @@ export const resolveOrphanFlows = (
   isSyncReady$.set(true)
 }
 
+// -----------------------------------------------------------------
+// Local-only entries recovery
+// -----------------------------------------------------------------
+
+/**
+ * A summary row for the Local-only Entries Settings screen.
+ * `flowIds` lists the excluded flows belonging to the entry; `totalWordCount`
+ * is the sum of those flows' word counts (used to communicate the privacy
+ * trade-off — server gains visibility of word_count, not content).
+ */
+export interface LocallyExcludedEntrySummary {
+  entryId: string
+  entryDate: string
+  totalWordCount: number
+  flowIds: string[]
+}
+
+/**
+ * Returns one summary row per entry that has at least one sync_excluded flow.
+ * Sorted by entryDate descending (newest first). Defensive: skips flows whose
+ * parent entry was deleted (unreachable in normal use).
+ *
+ * Uses peek() to avoid creating subscriptions; consumers subscribe via use$()
+ * on flows$ / entries$ at the call site and re-derive on change.
+ */
+export const getLocallyExcludedEntries = (): LocallyExcludedEntrySummary[] => {
+  const allFlows = flows$.peek() ?? {}
+  const allEntries = entries$.peek() ?? {}
+  const byEntry = new Map<string, LocallyExcludedEntrySummary>()
+
+  for (const flowId in allFlows) {
+    const flow = allFlows[flowId]
+    if (flow.sync_excluded !== true) continue
+    const entry = allEntries[flow.dailyEntryId]
+    if (!entry) continue
+    const existing = byEntry.get(entry.id)
+    if (existing) {
+      existing.flowIds.push(flow.id)
+      existing.totalWordCount += flow.wordCount ?? 0
+    } else {
+      byEntry.set(entry.id, {
+        entryId: entry.id,
+        entryDate: entry.entryDate,
+        totalWordCount: flow.wordCount ?? 0,
+        flowIds: [flow.id],
+      })
+    }
+  }
+
+  return Array.from(byEntry.values()).sort((a, b) =>
+    a.entryDate < b.entryDate ? 1 : a.entryDate > b.entryDate ? -1 : 0
+  )
+}
+
+/** Count of entries with at least one sync_excluded flow. Drives Settings row visibility. */
+export const countLocallyExcludedEntries = (): number => {
+  return getLocallyExcludedEntries().length
+}
+
+/**
+ * Reverse of excludeOrphanFlows for explicit user-driven recovery.
+ * For each provided entryId: clear sync_excluded and stamp user_id on the entry,
+ * then do the same for every flow whose dailyEntryId is in the set.
+ * Wrapped in a single batch() so subscribers fire once and the syncedSupabase
+ * flush is a single pass.
+ *
+ * No-op when entryIds is empty or userId is falsy (UI must gate, but defend in depth).
+ */
+export const restoreExcludedEntries = (entryIds: string[], userId: string): void => {
+  if (entryIds.length === 0 || !userId) return
+  const idSet = new Set(entryIds)
+  const allFlows = flows$.peek() ?? {}
+  const allEntries = entries$.peek() ?? {}
+
+  batch(() => {
+    for (const entryId of idSet) {
+      if (!allEntries[entryId]) continue
+      entries$[entryId].sync_excluded.set(false)
+      entries$[entryId].user_id.set(userId)
+    }
+    for (const flowId in allFlows) {
+      const flow = allFlows[flowId]
+      if (flow.sync_excluded === true && idSet.has(flow.dailyEntryId)) {
+        flows$[flowId].sync_excluded.set(false)
+        flows$[flowId].user_id.set(userId)
+      }
+    }
+  })
+}
+
 // =================================================================
 // 3. STATE ACTIONS
 // =================================================================

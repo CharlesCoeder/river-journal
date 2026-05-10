@@ -2,7 +2,7 @@ import { AnimatePresence, ScrollView, Text, XStack, YStack, View, ExpandingLineB
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
-import { store$, setFocusMode } from 'app/state/store'
+import { store$, setFocusMode, flows$, entries$, countLocallyExcludedEntries } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
 import { signOut } from 'app/utils'
 import { useCallback, useEffect, useState } from 'react'
@@ -97,6 +97,10 @@ export function SettingsScreen() {
   const currentMode = use$(encryptionSetup$.currentMode)
   // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
+  // Subscribe to flows$/entries$ so the row count re-derives when restores happen.
+  use$(flows$)
+  use$(entries$)
+  const localOnlyCount = countLocallyExcludedEntries()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [visibleCount, setVisibleCount] = useState(0)
   useEffect(() => {
@@ -219,6 +223,23 @@ export function SettingsScreen() {
                 <YStack key="section-2" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
                   <SectionHeader>Data & Sync</SectionHeader>
                   <SyncToggle />
+                  {localOnlyCount > 0 && (
+                    <XStack
+                      justifyContent="space-between"
+                      alignItems="center"
+                      testID="settings-local-only-row"
+                    >
+                      <Text fontFamily="$body" fontSize="$4" color="$color">
+                        Local-only entries ({localOnlyCount})
+                      </Text>
+                      <ExpandingLineButton
+                        size="default"
+                        onPress={() => router.push('/local-only-entries')}
+                      >
+                        Review
+                      </ExpandingLineButton>
+                    </XStack>
+                  )}
                   <ExportJournal />
                 </YStack>
               ) : (

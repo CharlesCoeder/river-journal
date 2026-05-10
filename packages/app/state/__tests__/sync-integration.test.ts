@@ -350,6 +350,142 @@ describe('resolveOrphanFlows', () => {
 })
 
 // ---------------------------------------------------------------------------
+// restoreExcludedEntries — local-only entries recovery
+// ---------------------------------------------------------------------------
+
+describe('restoreExcludedEntries', () => {
+  let restoreExcludedEntries: (entryIds: string[], userId: string) => void
+  let getLocallyExcludedEntries: () => Array<{
+    entryId: string
+    entryDate: string
+    totalWordCount: number
+    flowIds: string[]
+  }>
+  let countLocallyExcludedEntries: () => number
+
+  beforeEach(async () => {
+    const storeModule = await import('../store')
+    restoreExcludedEntries = storeModule.restoreExcludedEntries
+    getLocallyExcludedEntries = storeModule.getLocallyExcludedEntries
+    countLocallyExcludedEntries = storeModule.countLocallyExcludedEntries
+    flows$.set({})
+    entries$.set({})
+  })
+
+  it('clears sync_excluded and stamps user_id on entry and its flows', () => {
+    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true }))
+
+    restoreExcludedEntries(['e1'], 'user-123')
+
+    expect(entries$!['e1'].sync_excluded.get()).toBe(false)
+    expect(entries$!['e1'].user_id.get()).toBe('user-123')
+    expect(flows$!['f1'].sync_excluded.get()).toBe(false)
+    expect(flows$!['f1'].user_id.get()).toBe('user-123')
+    expect(flows$!['f2'].sync_excluded.get()).toBe(false)
+    expect(flows$!['f2'].user_id.get()).toBe('user-123')
+  })
+
+  it('only restores entries listed in entryIds; leaves others excluded', () => {
+    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
+    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true }))
+    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e2', sync_excluded: true }))
+
+    restoreExcludedEntries(['e1'], 'user-123')
+
+    expect(entries$!['e1'].sync_excluded.get()).toBe(false)
+    expect(flows$!['f1'].sync_excluded.get()).toBe(false)
+    // e2 untouched
+    expect(entries$!['e2'].sync_excluded.get()).toBe(true)
+    expect(flows$!['f2'].sync_excluded.get()).toBe(true)
+    expect(flows$!['f2'].user_id.get()).toBeNull()
+  })
+
+  it('is a no-op on empty input', () => {
+    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+
+    restoreExcludedEntries([], 'user-123')
+
+    expect(entries$!['e1'].sync_excluded.get()).toBe(true)
+    expect(flows$!['f1'].sync_excluded.get()).toBe(true)
+  })
+
+  it('is a no-op when userId is empty', () => {
+    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+
+    restoreExcludedEntries(['e1'], '')
+
+    expect(entries$!['e1'].sync_excluded.get()).toBe(true)
+    expect(flows$!['f1'].user_id.get()).toBeNull()
+  })
+
+  it('multi-entry call uses a single batch (subscriber fires once)', () => {
+    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
+    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true }))
+    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e2', sync_excluded: true }))
+
+    const flowSubscriber = vi.fn()
+    const unsub = flows$.onChange(flowSubscriber)
+
+    restoreExcludedEntries(['e1', 'e2'], 'user-123')
+
+    expect(flowSubscriber).toHaveBeenCalledTimes(1)
+    unsub()
+  })
+
+  it('getLocallyExcludedEntries groups flows by entry and sums word counts', () => {
+    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true, entryDate: '2026-03-01' }))
+    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true, entryDate: '2026-03-05' }))
+    flows$!['f1'].set(
+      makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 100 })
+    )
+    flows$!['f2'].set(
+      makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 200 })
+    )
+    flows$!['f3'].set(
+      makeFlow('f3', { dailyEntryId: 'e2', sync_excluded: true, wordCount: 50 })
+    )
+
+    const summaries = getLocallyExcludedEntries()
+
+    expect(summaries).toHaveLength(2)
+    // Sorted desc by entryDate
+    expect(summaries[0].entryId).toBe('e2')
+    expect(summaries[1].entryId).toBe('e1')
+    expect(summaries[1].totalWordCount).toBe(300)
+    expect(summaries[1].flowIds.sort()).toEqual(['f1', 'f2'])
+  })
+
+  it('getLocallyExcludedEntries skips flows whose parent entry was deleted', () => {
+    flows$!['f-orphan'].set(
+      makeFlow('f-orphan', { dailyEntryId: 'missing', sync_excluded: true })
+    )
+    expect(getLocallyExcludedEntries()).toHaveLength(0)
+  })
+
+  it('countLocallyExcludedEntries returns the number of distinct affected entries', () => {
+    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
+    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true }))
+    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f3'].set(makeFlow('f3', { dailyEntryId: 'e2', sync_excluded: true }))
+
+    expect(countLocallyExcludedEntries()).toBe(2)
+  })
+
+  it('countLocallyExcludedEntries is zero when no flows are excluded', () => {
+    flows$!['f1'].set(makeFlow('f1', { user_id: 'user-123' }))
+    entries$!['e1'].set(makeEntry('e1', { user_id: 'user-123' }))
+    expect(countLocallyExcludedEntries()).toBe(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // clearUserData — sync_excluded preservation
 // ---------------------------------------------------------------------------
 
