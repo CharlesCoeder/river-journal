@@ -15,6 +15,7 @@ import { ThemePicker } from './components/ThemePicker'
 import { FontPicker } from './components/FontPicker'
 import { ExportJournal } from './components/ExportJournal'
 import { KeyboardShortcutsSection } from './components/KeyboardShortcutsSection'
+import { PreviousAccountBanner } from './PreviousAccountBanner'
 
 // ---------------------------------------------------------------------------
 // Privacy Tier — stacked vertical list matching design
@@ -170,6 +171,10 @@ export function SettingsScreen() {
             Back to Home
           </Text>
         </XStack>
+
+        {/* Previous-account banner — non-staggered, sits above all sections.
+            Self-renders null when no transition is pending. */}
+        <PreviousAccountBanner />
 
         {/* Sections container — staggered reveals */}
         <YStack gap={80}>

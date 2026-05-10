@@ -72,7 +72,11 @@ export function LocalOnlyEntriesScreen() {
 
   const handleRestoreAll = useCallback(() => {
     if (!userId) return
-    const ids = summaries.map((s) => s.entryId)
+    // Defense in depth: restoreExcludedEntries already filters foreign rows,
+    // but only pass own + anonymous entry ids so the caller is honest.
+    const ids = summaries
+      .filter((s) => !s.user_id || s.user_id === userId)
+      .map((s) => s.entryId)
     if (ids.length === 0) return
     restoreExcludedEntries(ids, userId)
     queryClient.invalidateQueries({ queryKey: collectiveEligibilityKey })
@@ -183,42 +187,57 @@ export function LocalOnlyEntriesScreen() {
               </XStack>
 
               <YStack gap="$4">
-                {summaries.map((s) => (
-                  <XStack
-                    key={s.entryId}
-                    testID={`local-only-row-${s.entryId}`}
-                    justifyContent="space-between"
-                    alignItems="center"
-                    paddingVertical="$3"
-                    borderBottomWidth={1}
-                    borderColor="$color3"
-                  >
-                    <YStack gap="$1">
-                      <Text
-                        fontFamily="$body"
-                        fontSize={15}
-                        color="$color"
-                      >
-                        {formatEntryDate(s.entryDate)}
-                      </Text>
-                      <Text
-                        fontFamily="$body"
-                        fontSize={12}
-                        color="$color8"
-                      >
-                        {s.totalWordCount} {s.totalWordCount === 1 ? 'word' : 'words'}
-                      </Text>
-                    </YStack>
-                    <ExpandingLineButton
-                      size="default"
-                      disabled={!canSync}
-                      onPress={() => handleRestoreOne(s.entryId)}
-                      accessibilityLabel={`Sync entry from ${s.entryDate}`}
+                {summaries.map((s) => {
+                  // Cross-user defense: rows owned by a different account must
+                  // not be restorable from the current session — restoring would
+                  // re-stamp them with the wrong user_id and leak content.
+                  // Show the row (so the user knows it exists) but disable
+                  // Restore with an explanatory tooltip.
+                  const isForeign = !!s.user_id && !!userId && s.user_id !== userId
+                  const restoreDisabled = !canSync || isForeign
+                  return (
+                    <XStack
+                      key={s.entryId}
+                      testID={`local-only-row-${s.entryId}`}
+                      justifyContent="space-between"
+                      alignItems="center"
+                      paddingVertical="$3"
+                      borderBottomWidth={1}
+                      borderColor="$color3"
                     >
-                      Sync this entry
-                    </ExpandingLineButton>
-                  </XStack>
-                ))}
+                      <YStack gap="$1" flex={1} paddingRight="$3">
+                        <Text fontFamily="$body" fontSize={15} color="$color">
+                          {formatEntryDate(s.entryDate)}
+                        </Text>
+                        <Text fontFamily="$body" fontSize={12} color="$color8">
+                          {s.totalWordCount} {s.totalWordCount === 1 ? 'word' : 'words'}
+                        </Text>
+                        {isForeign && (
+                          <Text
+                            fontFamily="$body"
+                            fontSize={11}
+                            color="$color9"
+                            testID={`local-only-foreign-tooltip-${s.entryId}`}
+                          >
+                            This entry belongs to a different account. Sign in as that account to recover it.
+                          </Text>
+                        )}
+                      </YStack>
+                      <ExpandingLineButton
+                        size="default"
+                        disabled={restoreDisabled}
+                        onPress={() => handleRestoreOne(s.entryId)}
+                        accessibilityLabel={
+                          isForeign
+                            ? `Cannot restore entry from ${s.entryDate}: belongs to a different account`
+                            : `Sync entry from ${s.entryDate}`
+                        }
+                      >
+                        Sync this entry
+                      </ExpandingLineButton>
+                    </XStack>
+                  )
+                })}
               </YStack>
             </>
           )}

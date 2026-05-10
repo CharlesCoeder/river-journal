@@ -7,7 +7,7 @@ import { store$, countUndecidedOrphans } from './store'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
-import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$ } from './syncConfig'
+import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$, deviceState$ } from './syncConfig'
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 import { lapsed$, recordSessionOpen } from './lapsed'
@@ -34,6 +34,10 @@ function setupPersistence() {
   // Persist lapsed-state in its own IndexedDB table / MMKV namespace.
   // Local-only — no Supabase sync, no encryption.
   syncObservable(lapsed$, configurePersistence({ persist: { name: 'lapsed-state' } }))
+
+  // Persist device-state (lastAuthedUserId + acknowledgedAccountTransitions).
+  // Local-only — drives previous-account banner across sign-out boundaries.
+  syncObservable(deviceState$, configurePersistence({ persist: { name: 'device-state' } }))
 
   // Activate the synced observables so their persistence loads.
   // syncedSupabase uses lazy activation — calling .get() triggers persistence
@@ -134,6 +138,7 @@ export async function initializePersistence() {
       when(syncState(entries$).isPersistLoaded),
       when(syncState(lapsed$).isPersistLoaded),
       when(syncState(graceDays$).isPersistLoaded),
+      when(syncState(deviceState$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)
