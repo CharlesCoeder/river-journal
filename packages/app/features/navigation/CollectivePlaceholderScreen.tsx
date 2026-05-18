@@ -1,4 +1,5 @@
-import { YStack, XStack, Text, ScrollView } from '@my/ui'
+import { useEffect, useState } from 'react'
+import { AnimatePresence, YStack, XStack, Text, ScrollView } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { WordLinkNav } from './WordLinkNav'
 
@@ -15,6 +16,10 @@ const GLIMPSES: ReadonlyArray<string> = [
 
 export function CollectivePlaceholderScreen() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <ScrollView
@@ -62,7 +67,18 @@ export function CollectivePlaceholderScreen() {
           </Text>
         </XStack>
 
-        <YStack width="100%" maxWidth={680} gap="$8">
+        <AnimatePresence>
+          {mounted && (
+            <YStack
+              key="collective-placeholder-body"
+              transition="designEnter"
+              enterStyle={{ opacity: 0, y: 10 }}
+              opacity={1}
+              y={0}
+              width="100%"
+              maxWidth={680}
+              gap="$8"
+            >
           <YStack gap="$3">
             <Text
               fontFamily="$body"
@@ -120,7 +136,9 @@ export function CollectivePlaceholderScreen() {
               ))}
             </YStack>
           </YStack>
-        </YStack>
+            </YStack>
+          )}
+        </AnimatePresence>
       </YStack>
     </ScrollView>
   )
