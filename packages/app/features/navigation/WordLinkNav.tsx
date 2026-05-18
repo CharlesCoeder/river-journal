@@ -7,7 +7,7 @@ import { signOut } from 'app/utils'
 
 // ---------------------------------------------------------------------------
 // Locked word-link item list — mirrors MENU_ITEMS but without icons.
-// Both 'account' and 'log-in-out' target /auth (web/desktop have no /account).
+// 'account' and 'log-in-out' both target /auth (web/desktop have no /account).
 // ---------------------------------------------------------------------------
 
 type WordLinkItem = {
@@ -16,12 +16,13 @@ type WordLinkItem = {
   readonly route: string
 }
 
+// Temporary: 'account' and 'streak-profile' entries hidden — uncomment both rows to re-list.
 export const WORD_LINK_ITEMS = Object.freeze([
   { key: 'past-entries', label: 'Past Entries', route: '/day-view' },
   { key: 'collective', label: 'Collective', route: '/collective' },
-  { key: 'streak-profile', label: 'Streak/Profile', route: '/streak' },
+  // { key: 'streak-profile', label: 'Streak/Profile', route: '/streak' },
   { key: 'preferences', label: 'Preferences', route: '/settings' },
-  { key: 'account', label: 'Account', route: '/auth' },
+  // { key: 'account', label: 'Account', route: '/auth' },
   { key: 'log-in-out', label: 'Log in/out', route: '/auth' },
 ] as const satisfies ReadonlyArray<WordLinkItem>)
 
@@ -63,11 +64,9 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
   const normalizedPathname = normalizeRoute(pathname ?? '/')
 
   function isActive(item: (typeof WORD_LINK_ITEMS)[number]): boolean {
-    // For auth items, apply auth-state logic: only mark the contextually-correct item active
-    if (item.key === 'account') {
-      // Account is active only when on /auth AND authenticated
-      return normalizedPathname === '/auth' && isAuthenticated
-    }
+    // For auth items, apply auth-state logic: only mark the contextually-correct item active.
+    // The 'account' branch (active when on /auth AND authenticated) is currently unreachable
+    // because that entry is hidden above — restore both together.
     if (item.key === 'log-in-out') {
       // Log in/out is active only when on /auth AND not authenticated
       return normalizedPathname === '/auth' && !isAuthenticated

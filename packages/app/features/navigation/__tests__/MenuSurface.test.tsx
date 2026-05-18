@@ -194,36 +194,35 @@ function renderMenu() {
 // Suite 1 — Menu item ordering and count
 // ===========================================================================
 
-describe('MenuSurface renders seven items in the locked order', () => {
-  it('renders exactly seven menu items including a Log in/out item (AC 1)', () => {
+// Temporary: 'streak-profile' and 'account' entries are currently hidden from MENU_ITEMS;
+// when they are restored, re-add the matching assertions for /streak/ and /account/ below
+// and bump the count expectations back to 7.
+describe('MenuSurface renders the currently visible items in the locked order', () => {
+  it('renders the currently visible menu items including a Log in/out item (AC 1)', () => {
     renderMenu()
 
     expect(screen.getByText(/past entries/i)).toBeTruthy()
     expect(screen.getByText(/collective/i)).toBeTruthy()
-    expect(screen.getByText(/streak/i)).toBeTruthy()
     expect(screen.getByText(/preferences/i)).toBeTruthy()
-    expect(screen.getByText(/account/i)).toBeTruthy()
     expect(screen.getByText(/log in/i)).toBeTruthy() // unauthenticated default
   })
 
-  it('MENU_ITEMS exports exactly 7 items in the locked order (AC 1)', () => {
+  it('MENU_ITEMS exports the currently visible items in the locked order (AC 1)', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
     const keys = MENU_ITEMS.map((i) => i.key)
     expect(keys).toEqual([
       expect.stringMatching(/past.?entries/i),
       expect.stringMatching(/collective/i),
       expect.stringMatching(/your.?posts/i),
-      expect.stringMatching(/streak/i),
       expect.stringMatching(/preferences/i),
-      expect.stringMatching(/account/i),
       expect.stringMatching(/log.?(in|out)/i),
     ])
   })
 
-  it('DOM contains exactly seven elements with role="menuitem" inside role="menu" (AC 1, AC 4)', () => {
+  it('DOM contains the expected number of menuitem elements inside role="menu" (AC 1, AC 4)', () => {
     renderMenu()
     const container = screen.getByRole('menu')
-    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(7)
+    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(5)
   })
 
   it('MENU_ITEMS[2] is the your-posts entry with route /collective/your-posts (AC 24, AC 25)', () => {
@@ -241,9 +240,7 @@ describe('each menu item routes to the correct destination', () => {
   const routeTable = [
     { label: /past entries/i, route: '/day-view' },
     { label: /collective/i, route: '/collective' },
-    { label: /streak/i, route: '/streak' },
     { label: /preferences/i, route: '/settings' },
-    { label: /account/i, route: '/account' },
   ] as const
 
   for (const { label, route } of routeTable) {
@@ -370,7 +367,7 @@ describe('reduced-motion: all items render visible without stagger delays', () =
     renderMenu()
 
     const container = screen.getByRole('menu')
-    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(7)
+    expect(container.querySelectorAll('[role="menuitem"]').length).toBe(5)
     expect(container.querySelectorAll('[data-hidden="true"]').length).toBe(0)
 
     vi.useRealTimers()
@@ -398,9 +395,9 @@ describe('container-level accessibility labels and roles', () => {
 // ===========================================================================
 
 describe('per-item accessibility and minimum touch-target', () => {
-  it('all seven items have role="menuitem" (AC 4)', () => {
+  it('all currently visible items have role="menuitem" (AC 4)', () => {
     renderMenu()
-    expect(screen.getAllByRole('menuitem').length).toBe(7)
+    expect(screen.getAllByRole('menuitem').length).toBe(5)
   })
 
   it('each item element carries a minimum height of 44 px via inline style (AC 5)', () => {
@@ -421,9 +418,9 @@ describe('per-item accessibility and minimum touch-target', () => {
 // ===========================================================================
 
 describe('MENU_ITEMS is a frozen / readonly array that preserves the locked order', () => {
-  it('MENU_ITEMS has exactly 7 entries (AC 14)', () => {
+  it('MENU_ITEMS has the expected number of currently-visible entries (AC 14)', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
-    expect(MENU_ITEMS).toHaveLength(7)
+    expect(MENU_ITEMS).toHaveLength(5)
   })
 
   it('attempting to push a new item does not change the array length (AC 14)', () => {
@@ -433,7 +430,7 @@ describe('MENU_ITEMS is a frozen / readonly array that preserves the locked orde
     // @ts-expect-error — intentional mutation attempt to verify runtime guard
     const mutate = () => MENU_ITEMS!.push({ key: 'hack', label: 'Hack', route: '/hack' } as never)
     try { mutate() } catch (_) { /* expected for Object.freeze */ }
-    expect(MENU_ITEMS).toHaveLength(7)
+    expect(MENU_ITEMS).toHaveLength(5)
   })
 })
 
