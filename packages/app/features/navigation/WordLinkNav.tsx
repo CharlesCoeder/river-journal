@@ -117,6 +117,7 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
       tag="nav"
       aria-label="Primary navigation"
       role="navigation"
+      marginBottom={variant === 'browse' ? '$8' : 0}
     >
       <XStack gap="$4" flexWrap="wrap" rowGap="$2">
         {WORD_LINK_ITEMS.map((item) => {
