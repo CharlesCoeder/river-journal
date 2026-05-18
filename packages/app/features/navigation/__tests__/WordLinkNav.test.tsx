@@ -202,33 +202,30 @@ function renderNav(variant: 'home' | 'browse' = 'home', currentRoute?: string) {
 // Suite 1 — Item count and locked order
 // ===========================================================================
 
+// Temporary: 'streak-profile' and 'account' entries are currently hidden from WORD_LINK_ITEMS;
+// when they are restored, re-add the matching assertions for /streak/ and /account/ below.
 describe('WordLinkNav renders items in locked order (AC 1, AC 3)', () => {
-  it('home variant renders exactly 6 word-link items', () => {
+  it('home variant renders the currently visible word-link items', () => {
     renderNav('home')
-    // Expect all six labels in DOM
     expect(screen.getByText(/past entries/i)).toBeTruthy()
     expect(screen.getByText(/collective/i)).toBeTruthy()
-    expect(screen.getByText(/streak/i)).toBeTruthy()
     expect(screen.getByText(/preferences/i)).toBeTruthy()
-    expect(screen.getByText(/account/i)).toBeTruthy()
     // Log in (unauthenticated default)
     expect(screen.getByText(/log in/i)).toBeTruthy()
   })
 
-  it('browse variant renders exactly 5 non-auth items plus 1 auth item (6 total)', () => {
+  it('browse variant renders 3 non-auth items plus 1 auth item (4 total)', () => {
     renderNav('browse')
-    expect(screen.getAllByRole('link').length).toBe(6)
+    expect(screen.getAllByRole('link').length).toBe(4)
   })
 
-  it('WORD_LINK_ITEMS exports exactly 6 items in the locked order', () => {
+  it('WORD_LINK_ITEMS exports the currently visible items in the locked order', () => {
     if (!WORD_LINK_ITEMS) throw new Error('WORD_LINK_ITEMS not exported — implementation missing')
     const keys = WORD_LINK_ITEMS.map((i) => i.key)
     expect(keys).toEqual([
       expect.stringMatching(/past.?entries/i),
       expect.stringMatching(/collective/i),
-      expect.stringMatching(/streak/i),
       expect.stringMatching(/preferences/i),
-      expect.stringMatching(/account/i),
       expect.stringMatching(/log.?(in|out)/i),
     ])
   })
@@ -239,8 +236,8 @@ describe('WordLinkNav renders items in locked order (AC 1, AC 3)', () => {
     const texts = links.map((el) => el.textContent?.toLowerCase() ?? '')
     expect(texts[0]).toMatch(/past entries/i)
     expect(texts[1]).toMatch(/collective/i)
-    expect(texts[2]).toMatch(/streak/i)
-    expect(texts[3]).toMatch(/preferences/i)
+    expect(texts[2]).toMatch(/preferences/i)
+    expect(texts[3]).toMatch(/log in/i)
   })
 })
 
@@ -252,9 +249,7 @@ describe('each anchor has the correct href attribute (AC 17)', () => {
   const hrefTable = [
     { label: /past entries/i, href: '/day-view' },
     { label: /collective/i, href: '/collective' },
-    { label: /streak/i, href: '/streak' },
     { label: /preferences/i, href: '/settings' },
-    { label: /account/i, href: '/auth' },
     { label: /log in/i, href: '/auth' },
   ] as const
 
@@ -508,9 +503,9 @@ describe('reduced-motion: entry animation collapses immediately (AC 15)', () => 
 
     renderNav('home')
 
-    // All 6 anchors should be visible (no opacity:0 hiding them)
+    // All currently-visible anchors should be visible (no opacity:0 hiding them)
     const links = screen.getAllByRole('link')
-    expect(links.length).toBe(6)
+    expect(links.length).toBe(4)
     // No items should carry a hidden/invisible data attribute
     const hidden = document.querySelectorAll('[data-hidden="true"]')
     expect(hidden.length).toBe(0)

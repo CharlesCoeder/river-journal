@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { View, XStack, YStack, Text } from '@my/ui'
-import { BookOpen, Users, Flame, Settings, User, LogIn, LogOut, FileText } from '@tamagui/lucide-icons'
+import { BookOpen, Users, Settings, LogIn, LogOut, FileText } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -18,13 +18,14 @@ type MenuItem = {
   readonly route: string
 }
 
+// Temporary: 'account' and 'streak-profile' entries hidden — uncomment both rows to re-list.
 export const MENU_ITEMS = Object.freeze([
   { key: 'past-entries', label: 'Past Entries', icon: BookOpen, route: '/day-view' },
   { key: 'collective', label: 'Collective', icon: Users, route: '/collective' },
   { key: 'your-posts', label: 'Your posts', icon: FileText, route: '/collective/your-posts' },
-  { key: 'streak-profile', label: 'Streak/Profile', icon: Flame, route: '/streak' },
+  // { key: 'streak-profile', label: 'Streak/Profile', icon: Flame, route: '/streak' },
   { key: 'preferences', label: 'Preferences', icon: Settings, route: '/settings' },
-  { key: 'account', label: 'Account', icon: User, route: '/account' },
+  // { key: 'account', label: 'Account', icon: User, route: '/account' },
   { key: 'log-in-out', label: 'Log in/out', icon: LogIn, route: '/auth' },
 ] as const satisfies ReadonlyArray<MenuItem>)
 
