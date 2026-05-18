@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { View, XStack, Text, useMedia, useReducedMotion } from '@my/ui'
+import { View, XStack, Text, useReducedMotion } from '@my/ui'
 import { useRouter, usePathname } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -43,16 +43,12 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
   const pathname = currentRoute ?? pathnameFromHook
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const reduceMotion = useReducedMotion()
-  const media = useMedia()
 
   // Press-flood guard — one latch for the whole nav surface
   const isNavigatingRef = useRef(false)
 
-  // Suppress below laptop-width viewports (mobile/tablet).
-  // Tamagui v5 `lg` breakpoint = minWidth: 1024px, matching the "laptop or larger" threshold.
-  // `gtMd` does not exist in Tamagui v5 — use `media.lg` directly.
-  const isWide = media.lg ?? false
-  if (!isWide) return null
+  // Render at every width and let the XStack wrap on narrow viewports. (Previously this returned
+  // null below Tamagui's `lg` breakpoint, which left mobile with no visible primary nav.)
 
   const fontSize = variant === 'home' ? '$3' : '$2'
 
@@ -122,7 +118,7 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
       aria-label="Primary navigation"
       role="navigation"
     >
-      <XStack gap="$4">
+      <XStack gap="$4" flexWrap="wrap" rowGap="$2">
         {WORD_LINK_ITEMS.map((item) => {
           const active = isActive(item)
 
