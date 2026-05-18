@@ -81,9 +81,6 @@ export function DayViewScreen() {
           alignItems="center"
           marginBottom={64}
           $md={{ marginBottom: 96 }}
-          transition="designEnter"
-          opacity={mounted ? 1 : 0}
-          y={mounted ? 0 : 10}
         >
           <Text
             fontFamily="$journalItalic"
@@ -107,7 +104,14 @@ export function DayViewScreen() {
         </XStack>
 
         {/* View-mode toggle */}
-        <XStack gap="$3" marginBottom="$6">
+        <XStack
+          gap="$3"
+          marginBottom="$6"
+          transition="designEnter"
+          enterStyle={{ opacity: 0, y: 10 }}
+          opacity={1}
+          y={0}
+        >
           <ExpandingLineButton
             {...({
               'aria-label': 'Linear',
@@ -152,7 +156,7 @@ export function DayViewScreen() {
                     <XStack
                       key={entry.id}
                       transition="designEnter"
-                      enterStyle={{ opacity: 0, y: 20 }}
+                      enterStyle={{ opacity: 0, y: 10 }}
                       opacity={1}
                       y={0}
                       flexDirection="column"
