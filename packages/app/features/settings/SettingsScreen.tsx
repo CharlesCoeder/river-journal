@@ -133,7 +133,7 @@ export function SettingsScreen() {
       <YStack
         testID="settings-screen"
         width="100%"
-        maxWidth={768}
+        maxWidth={1024}
         alignSelf="center"
         paddingHorizontal="$4"
         paddingTop="$4"
@@ -172,6 +172,8 @@ export function SettingsScreen() {
           </Text>
         </XStack>
 
+        {/* Body content — kept at the original narrow column for readability. */}
+        <YStack width="100%" maxWidth={768}>
         {/* Previous-account banner — non-staggered, sits above all sections.
             Self-renders null when no transition is pending. */}
         <PreviousAccountBanner />
@@ -385,6 +387,7 @@ export function SettingsScreen() {
               </XStack>
             )}
           </AnimatePresence>
+        </YStack>
         </YStack>
       </YStack>
     </ScrollView>
