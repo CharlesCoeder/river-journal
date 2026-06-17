@@ -15,6 +15,8 @@ import { ALL_TRANSFORMERS } from './transformers'
 import { createBaseLexicalConfig } from './lexical-config'
 import type { LexicalEditorProps } from './LexicalEditor.types'
 import { FocusModeParagraphPlugin } from './plugins/FocusModeParagraphPlugin'
+import { SentenceWrapPlugin } from './plugins/SentenceWrapPlugin'
+import { SentenceFocusPlugin } from './plugins/SentenceFocusPlugin'
 
 /**
  * Plugin to set editor to read-only mode
@@ -55,6 +57,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
   readOnly = false,
   initialContent,
   focusMode = false,
+  focusGranularity = 'paragraph',
 }) => {
   const initialConfig = createBaseLexicalConfig()
   const contentFont = fontFamilies?.content || 'Newsreader, Georgia, "Times New Roman", serif'
@@ -118,6 +121,23 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
         {/* Focus mode plugin — dims non-active paragraphs when enabled */}
         {!readOnly && (
           <FocusModeParagraphPlugin focusMode={focusMode} readOnly={readOnly} />
+        )}
+
+        {/* Per-sentence focus mode (Story 2.11) — structure + styling. No-ops
+            unless focusMode is ON and granularity is 'sentence'. */}
+        {!readOnly && (
+          <>
+            <SentenceWrapPlugin
+              focusMode={focusMode}
+              focusGranularity={focusGranularity}
+              readOnly={readOnly}
+            />
+            <SentenceFocusPlugin
+              focusMode={focusMode}
+              focusGranularity={focusGranularity}
+              readOnly={readOnly}
+            />
+          </>
         )}
 
         {/* Render children (our LexicalSync component) inside the provider */}

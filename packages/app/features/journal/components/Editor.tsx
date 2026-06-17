@@ -16,9 +16,16 @@ export interface EditorProps {
   initialContent?: string
   /** When true, dims all paragraphs except the one containing the cursor */
   focusMode?: boolean
+  /** Focus-mode granularity (Story 2.11) — 'sentence' dims non-active sentences */
+  focusGranularity?: 'paragraph' | 'sentence'
 }
 
-export const Editor = ({ readOnly = false, initialContent, focusMode = false }: EditorProps) => {
+export const Editor = ({
+  readOnly = false,
+  initialContent,
+  focusMode = false,
+  focusGranularity = 'paragraph',
+}: EditorProps) => {
   const theme = useTheme()
   const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING
   const families = FONT_PAIRING_FAMILIES[fontPairing]
@@ -92,6 +99,7 @@ export const Editor = ({ readOnly = false, initialContent, focusMode = false }: 
         readOnly={readOnly}
         initialContent={readOnly ? initialContent : undefined}
         focusMode={focusMode}
+        focusGranularity={focusGranularity}
       >
         {!readOnly && <LexicalSync />}
       </UniversalLexicalEditor>

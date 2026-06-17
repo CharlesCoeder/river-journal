@@ -106,6 +106,12 @@ export interface UserProfile {
    */
   editor?: {
     focusMode: boolean
+    /**
+     * Focus-mode granularity (Story 2.11). Optional for back-compat with
+     * profiles persisted before this field existed; consumers read with
+     * `?? 'paragraph'`. `paragraph` (default) is byte-for-byte Story 2.6 behavior.
+     */
+    focusGranularity?: 'paragraph' | 'sentence'
   }
 
   /**

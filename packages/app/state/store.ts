@@ -1035,7 +1035,7 @@ const ensureProfile = () => {
       customTheme: null,
       fontPairing: DEFAULT_FONT_PAIRING,
       hotkeyOverrides: {},
-      editor: { focusMode: false },
+      editor: { focusMode: false, focusGranularity: 'paragraph' },
       unlockedThemes: [],
       sync: {
         word_goal: true,
@@ -1047,7 +1047,10 @@ const ensureProfile = () => {
   } else {
     if (!store$.profile.editor.get()) {
       // Migration: legacy profiles lack the editor sub-object — backfill it.
-      store$.profile.editor.set({ focusMode: false })
+      store$.profile.editor.set({ focusMode: false, focusGranularity: 'paragraph' })
+    } else if (store$.profile.editor.focusGranularity.get() === undefined) {
+      // Migration: editor sub-object predates focusGranularity — backfill it.
+      store$.profile.editor.focusGranularity.set('paragraph')
     }
     if (!store$.profile.unlockedThemes.get()) {
       // Migration: legacy profiles lack unlockedThemes — backfill empty array.
@@ -1070,6 +1073,15 @@ const ensureProfile = () => {
 export const setFocusMode = (value: boolean): void => {
   ensureProfile()
   store$.profile.editor.focusMode.set(value)
+}
+
+/**
+ * Sets the focus-mode granularity preference (Story 2.11).
+ * Creates a profile if none exists (mirrors setFocusMode).
+ */
+export const setFocusGranularity = (value: 'paragraph' | 'sentence'): void => {
+  ensureProfile()
+  store$.profile.editor.focusGranularity.set(value)
 }
 
 /**
