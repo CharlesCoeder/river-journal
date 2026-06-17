@@ -37,7 +37,8 @@ vi.mock('../persistConfig', () => ({
 
 import { store$ } from '../store'
 
-import { setFocusMode, hasReachedAutosaveCheckpoint } from '../store'
+import { setFocusMode, setFocusGranularity, hasReachedAutosaveCheckpoint } from '../store'
+import { DEFAULT_THEME, DEFAULT_FONT_PAIRING } from '../types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test isolation: reset profile and activeFlow before each test.
@@ -134,6 +135,67 @@ describe('FM-5: Round-trip toggle preserves exact boolean values (AC 20)', () =>
     expect(store$.profile.editor.focusMode.peek()).toBe(false)
 
     setFocusMode(true)
+    expect(store$.profile.editor.focusMode.peek()).toBe(true)
+  })
+})
+
+// =============================================================================
+// Story 2.11 AC 22: setFocusGranularity action + default + legacy migration
+// =============================================================================
+
+describe('FG-1: setFocusGranularity is a callable function (AC 22)', () => {
+  it('setFocusGranularity is exported from store as a function', () => {
+    expect(typeof setFocusGranularity).toBe('function')
+  })
+})
+
+describe('FG-2: setFocusGranularity writes to store$.profile.editor.focusGranularity (AC 22)', () => {
+  it('sets focusGranularity to "sentence" when called with "sentence"', () => {
+    setFocusGranularity('sentence')
+    expect(store$.profile.editor.focusGranularity.peek()).toBe('sentence')
+  })
+
+  it('creates a profile if none exists when setting granularity', () => {
+    expect(store$.profile.peek()).toBeNull()
+    setFocusGranularity('sentence')
+    expect(store$.profile.peek()).not.toBeNull()
+  })
+
+  it('round-trips sentence → paragraph → sentence', () => {
+    setFocusGranularity('sentence')
+    expect(store$.profile.editor.focusGranularity.peek()).toBe('sentence')
+    setFocusGranularity('paragraph')
+    expect(store$.profile.editor.focusGranularity.peek()).toBe('paragraph')
+    setFocusGranularity('sentence')
+    expect(store$.profile.editor.focusGranularity.peek()).toBe('sentence')
+  })
+})
+
+describe('FG-3: Default profile has editor.focusGranularity === "paragraph" (AC 22)', () => {
+  it('newly ensured profile defaults focusGranularity to "paragraph"', () => {
+    // setFocusMode triggers ensureProfile, which creates the default profile.
+    setFocusMode(false)
+    expect(store$.profile.editor.focusGranularity.peek()).toBe('paragraph')
+  })
+})
+
+describe('FG-4: Legacy profile missing focusGranularity is backfilled to "paragraph" (AC 22)', () => {
+  it('ensureProfile backfills focusGranularity on a legacy editor sub-object', () => {
+    // Simulate a profile persisted before focusGranularity existed.
+    store$.profile.set({
+      word_goal: 750,
+      themeName: DEFAULT_THEME,
+      customTheme: null,
+      fontPairing: DEFAULT_FONT_PAIRING,
+      hotkeyOverrides: {},
+      editor: { focusMode: true },
+    } as any)
+    expect(store$.profile.editor.focusGranularity.peek()).toBeUndefined()
+
+    // Any action that calls ensureProfile triggers the migration.
+    setFocusMode(true)
+    expect(store$.profile.editor.focusGranularity.peek()).toBe('paragraph')
+    // The pre-existing focusMode value is preserved.
     expect(store$.profile.editor.focusMode.peek()).toBe(true)
   })
 })

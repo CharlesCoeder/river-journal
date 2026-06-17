@@ -2,7 +2,7 @@ import { AnimatePresence, ScrollView, Text, XStack, YStack, View, ExpandingLineB
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
-import { store$, setFocusMode, flows$, entries$, countLocallyExcludedEntries } from 'app/state/store'
+import { store$, setFocusMode, setFocusGranularity, flows$, entries$, countLocallyExcludedEntries } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
 import { signOut } from 'app/utils'
 import { useCallback, useEffect, useState } from 'react'
@@ -98,6 +98,9 @@ export function SettingsScreen() {
   const currentMode = use$(encryptionSetup$.currentMode)
   // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
+  // Focus granularity — read with ?? 'paragraph' (UI-only preference; paragraph
+  // is the correct default under all load conditions, per Story 2.11 Dev Notes)
+  const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph'
   // Subscribe to flows$/entries$ so the row count re-derives when restores happen.
   use$(flows$)
   use$(entries$)
@@ -346,6 +349,34 @@ export function SettingsScreen() {
                   >
                     {focusMode ? 'On' : 'Off'}
                   </ExpandingLineButton>
+                </XStack>
+                {/* Granularity selector — a new ROW inside the existing Editor
+                    section (SECTION_COUNT unchanged). Two calm text-link options;
+                    the current selection is at full strength, the other dimmed. */}
+                <XStack justifyContent="space-between" alignItems="center">
+                  <Text fontFamily="$body" fontSize="$4" color="$color">
+                    Focus granularity
+                  </Text>
+                  <XStack gap="$5" alignItems="center">
+                    <View opacity={focusGranularity === 'paragraph' ? 1 : 0.4}>
+                      <ExpandingLineButton
+                        size="default"
+                        accessibilityLabel="Focus granularity: paragraph"
+                        onPress={() => setFocusGranularity('paragraph')}
+                      >
+                        Paragraph
+                      </ExpandingLineButton>
+                    </View>
+                    <View opacity={focusGranularity === 'sentence' ? 1 : 0.4}>
+                      <ExpandingLineButton
+                        size="default"
+                        accessibilityLabel="Focus granularity: sentence"
+                        onPress={() => setFocusGranularity('sentence')}
+                      >
+                        Sentence
+                      </ExpandingLineButton>
+                    </View>
+                  </XStack>
                 </XStack>
               </YStack>
             )}

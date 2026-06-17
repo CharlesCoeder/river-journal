@@ -39,6 +39,8 @@ export function JournalScreen() {
 
   // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
+  // Focus granularity (Story 2.11) — read with ?? 'paragraph' (UI-only preference)
+  const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph'
 
   const handleBackToHome = () => {
     hidePersistentEditor()
@@ -123,7 +125,7 @@ export function JournalScreen() {
               $lg={{ height: '$12' }}
               onLayout={handleHeaderLayout}
             />
-            <Editor focusMode={focusMode} />
+            <Editor focusMode={focusMode} focusGranularity={focusGranularity} />
           </YStack>
         )}
       </AnimatePresence>

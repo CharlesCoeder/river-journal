@@ -18,6 +18,9 @@ export interface LexicalEditorBaseProps {
   initialContent?: string
   /** When true, dims all paragraphs except the one containing the cursor */
   focusMode?: boolean
+  /** Focus-mode granularity (Story 2.11). 'sentence' additionally dims every
+   *  sentence except the one the cursor is in, inside the active paragraph. */
+  focusGranularity?: 'paragraph' | 'sentence'
 }
 
 // Web version props
