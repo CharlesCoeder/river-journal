@@ -11,6 +11,7 @@ import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
+import { COLLECTIVE_DEV_ROUTE, isCollectiveDevEnabled } from 'app/features/collective/isCollectiveDevEnabled'
 
 export function HomeScreen() {
   const router = useRouter()
@@ -36,6 +37,15 @@ export function HomeScreen() {
   const handleCollectivePress = () => {
     if (showLapsed) dismissLapsed()
     router.push('/collective')
+  }
+
+  // Dev-only convenience link to the real Collective feed at /collective/dev.
+  // Gated by an env flag so it stays hidden on public production builds; the
+  // route itself is always reachable by typing it. See isCollectiveDevEnabled.
+  const showCollectiveDev = isCollectiveDevEnabled()
+  const handleCollectiveDevPress = () => {
+    if (showLapsed) dismissLapsed()
+    router.push(COLLECTIVE_DEV_ROUTE)
   }
 
   return (
@@ -102,6 +112,23 @@ export function HomeScreen() {
                   </Text>
                   {/* CollectiveEntry — below date, inside date YStack */}
                   <HomeCollectiveEntrySlot onPress={handleCollectivePress} />
+                  {/* Dev-only link to the real Collective feed (env-gated) */}
+                  {showCollectiveDev && (
+                    <Text
+                      testID="home-collective-dev-link"
+                      onPress={handleCollectiveDevPress}
+                      fontFamily="$body"
+                      fontSize={13}
+                      color="$color8"
+                      letterSpacing={0.5}
+                      textTransform="uppercase"
+                      cursor="pointer"
+                      pressStyle={{ opacity: 0.6 }}
+                      hoverStyle={{ color: '$color' }}
+                    >
+                      Collective — dev →
+                    </Text>
+                  )}
                 </YStack>
 
                 {/* Lapsed prompt — between date block and action area */}
