@@ -15,6 +15,8 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { injectFontCSS, injectFocusModeCSS, createMobileLexicalConfig } from './utils';
 import type { LexicalEditorNativeProps } from './LexicalEditor.types';
 import { FocusModeParagraphPlugin } from './plugins/FocusModeParagraphPlugin';
+import { SentenceWrapPlugin } from './plugins/SentenceWrapPlugin';
+import { SentenceFocusPlugin } from './plugins/SentenceFocusPlugin';
 
 /**
  * Plugin to set editor to read-only mode
@@ -90,6 +92,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   fontFamilies,
   readOnly = false,
   focusMode = false,
+  focusGranularity = 'paragraph',
 }) => {
   const initialConfig = createMobileLexicalConfig();
   const contentFont = fontFamilies?.content || 'Newsreader';
@@ -119,7 +122,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         minHeight: '100%',
         height: '100%'
       }}>
-              <ContentEditable style={styles.contentEditable} />
+              <ContentEditable className="lex-root" style={styles.contentEditable} />
             </div>} placeholder={readOnly ? null : <div style={styles.placeholder}>{placeholder}</div>} ErrorBoundary={LexicalErrorBoundary} />
 
         {/* Read-only mode plugin */}
@@ -139,6 +142,13 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
 
         {/* Focus mode plugin — dims non-active paragraphs when enabled */}
         {!readOnly && <FocusModeParagraphPlugin focusMode={focusMode} readOnly={readOnly} />}
+
+        {/* Per-sentence focus mode (Story 2.11) — structure + styling. No-ops
+            unless focusMode is ON and granularity is 'sentence'. Mirrors web. */}
+        {!readOnly && <>
+            <SentenceWrapPlugin focusMode={focusMode} focusGranularity={focusGranularity} readOnly={readOnly} />
+            <SentenceFocusPlugin focusMode={focusMode} focusGranularity={focusGranularity} readOnly={readOnly} />
+          </>}
 
         {/* Sync content with Legend State */}
         <ContentSyncer content={initialContent || ''} revision={contentRevision} />

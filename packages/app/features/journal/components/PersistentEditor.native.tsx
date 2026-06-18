@@ -30,6 +30,10 @@ export const PersistentEditor = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING;
   const families = FONT_PAIRING_FAMILIES[fontPairing];
+  // Focus mode — read where the native editor is instantiated (web reads these in
+  // JournalScreen; PersistentEditor.native is the equivalent read site on native).
+  const focusMode = use$(store$.profile?.editor?.focusMode) ?? false;
+  const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph';
   const themeValues = {
     textColor: theme.color.val,
     placeholderColor: theme.placeholderColor.val
@@ -120,7 +124,7 @@ export const PersistentEditor = () => {
     pointerEvents: shouldShow ? 'auto' : 'none'
   }]}>
       <View style={styles.editorWrapper}>
-        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.initialContent} contentRevision={persistentEditor.initialContentRevision} readOnly={persistentEditor.readOnly} dom={{
+        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.initialContent} contentRevision={persistentEditor.initialContentRevision} readOnly={persistentEditor.readOnly} focusMode={focusMode} focusGranularity={focusGranularity} dom={{
         hideKeyboardAccessoryView: true
       }} />
       </View>
