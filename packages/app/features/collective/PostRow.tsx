@@ -32,8 +32,9 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
   // displayName placeholder from user_id slice; future story will JOIN profiles in the RPC
   const displayName = post.user_id?.slice(0, 8) ?? '[deleted]'
 
-  // a11y label: truncated body for screen readers (not full body to avoid bloated announcement)
-  const bodyPreview = post.body.slice(0, 80) + (post.body.length > 80 ? '…' : '')
+  // a11y label: the server-truncated excerpt for screen readers. Story 3-15:
+  // the feed Post no longer carries full `body` — only `excerpt` (≤140 chars).
+  const bodyPreview = post.excerpt.slice(0, 80) + (post.excerpt.length > 80 ? '…' : '')
   const a11yLabel = `${isDeleted ? '[deleted]' : displayName}, posted: ${bodyPreview}`
 
   return (
@@ -62,7 +63,7 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
           '[deleted]' text nodes that confuse a11y queries. */}
       {!selfDeleted ? (
         <Text fontFamily="$journal" fontSize="$4">
-          {post.body}
+          {post.excerpt}
         </Text>
       ) : null}
       {/* ReactionStrip: NOT rendered for self-deleted posts */}

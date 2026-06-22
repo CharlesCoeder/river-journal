@@ -44,8 +44,11 @@ vi.mock('app/utils/supabase', () => ({
 import {
   PAGE_SIZE,
   collectiveThreadKey,
+  collectiveThreadRootKey,
   fetchThreadPage,
+  fetchThreadRoot,
   useThread,
+  useThreadRoot,
 } from 'app/state/collective/thread'
 import { supabase } from 'app/utils/supabase'
 
@@ -68,11 +71,15 @@ function makeRow(overrides: Partial<Record<string, unknown>> & { id: string; cre
     id: overrides.id,
     user_id: 'user-x',
     parent_post_id: 'post-A',
+    // Story 3-15: thread_page rows now carry `title` — always NULL for replies
+    // (guaranteed server-side by the polarised CHECK). Passed through unchanged.
+    title: null,
     body: 'hello',
     created_at: overrides.created_at,
     is_removed: false,
     is_user_deleted: false,
     user_deleted_at: null,
+    descendant_count: 0,
     mode: 'full',
     ...overrides,
   }
@@ -471,5 +478,114 @@ describe('Story 3-4 / Post type structural parity with feed.ts (AC #15)', () => 
     // just asserts neither module throws on import.
     expect(feedMod).toBeDefined()
     expect(threadMod).toBeDefined()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story 3-15 — collective_thread_root: fetchThreadRoot + useThreadRoot (AC #26)
+//
+// The thread ROOT is now its own single-row RPC (the feed dropped `body`).
+// fetchThreadRoot returns the single root row, or `null` for the removed/
+// not-found case (zero rows), and throws on RPC error.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function makeRoot(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: 'post-A',
+    user_id: 'user-x',
+    parent_post_id: null,
+    title: 'Root title',
+    body: 'the full root body',
+    created_at: '2026-05-04T12:00:00Z',
+    is_removed: false,
+    is_user_deleted: false,
+    user_deleted_at: null,
+    descendant_count: 3,
+    reactions: { heart: 2 },
+    mode: 'full',
+    ...overrides,
+  }
+}
+
+describe('Story 3-15 / module exports (AC #20)', () => {
+  it('collectiveThreadRootKey(postId) nests under the thread key', () => {
+    expect(collectiveThreadRootKey('post-A')).toEqual(['collective', 'thread', 'post-A', 'root'])
+  })
+
+  it('fetchThreadRoot and useThreadRoot are exported functions', () => {
+    expect(typeof fetchThreadRoot).toBe('function')
+    expect(typeof useThreadRoot).toBe('function')
+  })
+})
+
+describe('Story 3-15 / fetchThreadRoot (AC #20, #26)', () => {
+  it('calls supabase.rpc("collective_thread_root", { post_id }) and returns the single row', async () => {
+    rpcMock.mockResolvedValueOnce({ data: [makeRoot()], error: null })
+    const root = await fetchThreadRoot('post-A')
+    expect(rpcMock).toHaveBeenCalledWith('collective_thread_root', { post_id: 'post-A' })
+    expect(root).not.toBeNull()
+    expect(root!.id).toBe('post-A')
+    // The root is the body source for the thread view (feed dropped body).
+    expect(root!.body).toBe('the full root body')
+    expect(root!.title).toBe('Root title')
+    expect(root!.descendant_count).toBe(3)
+    expect(root!.reactions).toEqual({ heart: 2 })
+  })
+
+  it('returns null when the RPC returns an empty array (removed / not-found, AC #11)', async () => {
+    rpcMock.mockResolvedValueOnce({ data: [], error: null })
+    const root = await fetchThreadRoot('gone')
+    expect(root).toBeNull()
+  })
+
+  it('returns null when the RPC returns null data', async () => {
+    rpcMock.mockResolvedValueOnce({ data: null, error: null })
+    const root = await fetchThreadRoot('gone')
+    expect(root).toBeNull()
+  })
+
+  it('throws an Error carrying the supabase error message', async () => {
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: 'authentication required' } })
+    await expect(fetchThreadRoot('post-A')).rejects.toThrow(/authentication required/)
+  })
+})
+
+describe('Story 3-15 / useThreadRoot hook (AC #20)', () => {
+  it('registers a single-row query under the root key and resolves the root', async () => {
+    rpcMock.mockResolvedValue({ data: [makeRoot()], error: null })
+    const qc = makeQueryClient()
+    const { result } = renderHook(() => useThreadRoot('post-A'), { wrapper: wrapper(qc) })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.id).toBe('post-A')
+
+    const query = qc.getQueryCache().find({ queryKey: collectiveThreadRootKey('post-A') })
+    expect(query).toBeDefined()
+    const opts = (query as any)?.observers?.[0]?.options
+    expect(opts?.staleTime).toBe(25_000)
+    expect(opts?.refetchInterval).toBe(30_000)
+    expect(opts?.refetchOnWindowFocus).toBe(true)
+    // Root is high-value back-button restore → 24h gcTime.
+    expect(opts?.gcTime).toBe(24 * 60 * 60_000)
+  })
+
+  it('exposes null data for the removed/not-found root', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null })
+    const qc = makeQueryClient()
+    const { result } = renderHook(() => useThreadRoot('gone'), { wrapper: wrapper(qc) })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toBeNull()
+  })
+})
+
+describe('Story 3-15 / thread_page rows carry title (AC #26)', () => {
+  it('fetchThreadPage passes through title on reply rows (always null by CHECK)', async () => {
+    const rows = makeRows(2, 'full')
+    rpcMock.mockResolvedValueOnce({ data: rows, error: null })
+    const result = await fetchThreadPage('post-A', null)
+    expect(result.items).toHaveLength(2)
+    // title is present on the row shape and null for replies.
+    expect('title' in (result.items[0] as Record<string, unknown>)).toBe(true)
+    expect((result.items[0] as Record<string, unknown>).title).toBeNull()
   })
 })

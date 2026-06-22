@@ -149,19 +149,28 @@ function makeInfiniteData(pages: FeedPage[]): InfiniteData<FeedPage> {
   }
 }
 
-/** Build a minimal Post row for feed cache seeding */
-function makePost(overrides: Partial<Post> = {}): Post {
+/**
+ * Build a minimal Post row for feed cache seeding.
+ *
+ * Story 3-15: the feed `Post` no longer has `body` (the feed RPC dropped it in
+ * favour of `excerpt`). The helper still emits a runtime `body` so it can also
+ * seed pre-3-15-shaped rows and prove the delete_own feed branch does NOT stamp
+ * `body` — hence the `& { body?: string }` on the overrides param. The return
+ * is cast `as Post`, so the extra runtime field is harmless.
+ */
+function makePost(overrides: Partial<Post> & { body?: string } = {}): Post {
   return {
     id: 'post-1',
     body: 'hello world',
     parent_post_id: null,
     user_id: 'user-1',
+    title: null,
+    excerpt: '',
+    descendant_count: 0,
+    reactions: {},
     created_at: '2026-05-06T00:00:00.000Z',
-    updated_at: '2026-05-06T00:00:00.000Z',
     is_removed: false,
     is_user_deleted: false,
-    removed_at: null,
-    removed_reason: null,
     user_deleted_at: null,
     mode: 'full',
     ...overrides,
@@ -422,10 +431,12 @@ describe('Story 3-7 / post mutation — optimistic update (AC #7, #18, #25e)', (
     const seedData = makeInfiniteData([makeFeedPage([existingPost])])
     queryClient.setQueryData(collectiveFeedKey, seedData)
 
-    // Simulate onMutate manually
+    // Simulate onMutate manually. Story 3-15: the create-post vars carry a
+    // `title`; the optimistic FEED row is title-led (no body).
     const vars = {
       id: 'new-post-1',
       body: 'hello new post',
+      title: 'a new title',
       parent_post_id: null,
       user_id: 'user-42',
     }
@@ -438,10 +449,12 @@ describe('Story 3-7 / post mutation — optimistic update (AC #7, #18, #25e)', (
     expect(afterMutate).toBeDefined()
     expect(afterMutate!.pages[0].items.length).toBe(2)
 
-    // New optimistic row must be FIRST
+    // New optimistic row must be FIRST. Story 3-15: it carries title/excerpt,
+    // NOT body (the feed Post dropped body).
     const firstItem = afterMutate!.pages[0].items[0] as Post & { __optimistic?: boolean }
     expect(firstItem.id).toBe('new-post-1')
-    expect(firstItem.body).toBe('hello new post')
+    expect(firstItem.title).toBe('a new title')
+    expect((firstItem as Record<string, unknown>).body).toBeUndefined()
     expect(firstItem.__optimistic).toBe(true)
 
     // Original row still present
@@ -1004,6 +1017,7 @@ function makeYourPost(overrides: Partial<YourPost> = {}): YourPost {
     id: 'post-1',
     user_id: 'user-1',
     parent_post_id: null,
+    title: null,
     body: 'hello world',
     created_at: '2026-05-06T00:00:00.000Z',
     is_removed: false,
@@ -1025,10 +1039,15 @@ function makeYourPostsInfiniteData(items: YourPost[]): InfiniteData<YourPostsPag
   }
 }
 
-/** Build InfiniteData<ThreadPageResult> for seeding thread cache */
+/**
+ * Build InfiniteData<ThreadPageResult> for seeding the thread cache. The thread
+ * cache holds `ThreadPost` (which has `body`); makePost yields a feed `Post`
+ * (no `body` in its type) but carries a runtime `body`, so we cast through
+ * `unknown` to faithfully simulate a seeded thread row (Story 3-15).
+ */
 function makeThreadInfiniteData(items: Post[]): InfiniteData<ThreadPageResult> {
   return {
-    pages: [{ items, mode: 'full', nextCursor: null }],
+    pages: [{ items: items as unknown as ThreadPageResult['items'], mode: 'full', nextCursor: null }],
     pageParams: [null],
   }
 }
@@ -1096,8 +1115,7 @@ describe('Story 3-13 / collective.delete_own — hook export (AC #26b)', () => {
 describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)', () => {
   const POST_ID = 'post-to-delete'
 
-  it('AC #26c — onMutate marks body=[deleted], is_user_deleted=true in feed cache', async () => {
-    // RED: fails until onMutate walks collectiveFeedKey and updates matching row.
+  it('AC #26c / Story 3-15 AC #27c — onMutate sets deletion flags in feed cache WITHOUT writing body', async () => {
     const deleteDefaults = queryClient.getMutationDefaults(['collective', 'delete_own'])
     expect(deleteDefaults, 'collective.delete_own defaults must exist').toBeDefined()
 
@@ -1110,7 +1128,9 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
 
     const updated = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
     const updatedPost = updated?.pages[0]?.items[0]
-    expect(updatedPost?.body).toBe('[deleted]')
+    // Story 3-15: the feed Post has no body — the client renders [deleted] from
+    // the flag. The feed branch must NOT stamp '[deleted]' onto a body field.
+    expect((updatedPost as Record<string, unknown> | undefined)?.body).not.toBe('[deleted]')
     expect(updatedPost?.is_user_deleted).toBe(true)
     expect(updatedPost?.user_deleted_at).not.toBeNull()
     // Verify user_deleted_at is a valid ISO string
@@ -1172,9 +1192,13 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
     await queryClient.cancelQueries({ queryKey: ['collective'] })
     const ctx = await deleteDefaults!.onMutate!({ post_id: POST_ID })
 
-    // All three caches updated
+    // All three caches updated. Story 3-15: the feed branch sets only the
+    // deletion flags (no body); thread + yourPosts still write body: '[deleted]'.
     const feedUpdated = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
-    expect(feedUpdated?.pages[0]?.items[0]?.body).toBe('[deleted]')
+    expect(feedUpdated?.pages[0]?.items[0]?.is_user_deleted).toBe(true)
+    expect((feedUpdated?.pages[0]?.items[0] as Record<string, unknown> | undefined)?.body).not.toBe(
+      '[deleted]'
+    )
 
     const threadUpdated = queryClient.getQueryData<InfiniteData<ThreadPageResult>>(collectiveThreadKey(POST_ID))
     expect(threadUpdated?.pages[0]?.items[0]?.body).toBe('[deleted]')
@@ -1191,17 +1215,19 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
 
   it('AC #36 — optimistic update uses literal "[deleted]" (exact match)', async () => {
     // RED: fails if implementation uses any variant (brackets, unicode, etc.)
-    // This guards the string-consistency rule from AC #36.
+    // This guards the string-consistency rule from AC #36. Story 3-15: the feed
+    // cache no longer carries body, so the literal-[deleted] guard is asserted
+    // on the THREAD cache (which still stamps body: '[deleted]').
     const deleteDefaults = queryClient.getMutationDefaults(['collective', 'delete_own'])
     expect(deleteDefaults).toBeDefined()
 
-    const feedPost = makePost({ id: POST_ID, body: 'some content', is_user_deleted: false })
-    queryClient.setQueryData(collectiveFeedKey, makeInfiniteData([makeFeedPage([feedPost])]))
+    const threadPost = makePost({ id: POST_ID, body: 'some content', is_user_deleted: false })
+    queryClient.setQueryData(collectiveThreadKey(POST_ID), makeThreadInfiniteData([threadPost]))
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
     await deleteDefaults!.onMutate!({ post_id: POST_ID })
 
-    const updated = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
+    const updated = queryClient.getQueryData<InfiniteData<ThreadPageResult>>(collectiveThreadKey(POST_ID))
     // EXACT match — not /\[deleted\]/i, not 'deleted', not '[Deleted]'
     expect(updated?.pages[0]?.items[0]?.body).toBe('[deleted]')
   })
@@ -1233,19 +1259,23 @@ describe('Story 3-13 / collective.delete_own — rollback on error (AC #5, #26d)
     await queryClient.cancelQueries({ queryKey: ['collective'] })
     const ctx = await deleteDefaults!.onMutate!({ post_id: POST_ID })
 
-    // Verify optimistic update was applied
+    // Verify optimistic update was applied. Story 3-15: feed carries no body,
+    // so the optimistic marker on the feed row is the is_user_deleted flag.
     expect(
-      queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)?.pages[0]?.items[0]?.body
-    ).toBe('[deleted]')
+      queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)?.pages[0]?.items[0]
+        ?.is_user_deleted
+    ).toBe(true)
 
     // Simulate server error (non-42501 = real error, must rollback)
     const serverError = new Error('network failure')
     await deleteDefaults!.onError!(serverError, { post_id: POST_ID }, ctx)
 
-    // All three caches should be restored
+    // All three caches should be restored. The feed row's flag returns to false
+    // (its body is unchanged throughout — the feed never wrote it).
     expect(
-      queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)?.pages[0]?.items[0]?.body
-    ).toBe('original feed')
+      queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)?.pages[0]?.items[0]
+        ?.is_user_deleted
+    ).toBe(false)
     expect(
       queryClient.getQueryData<InfiniteData<ThreadPageResult>>(collectiveThreadKey(POST_ID))?.pages[0]?.items[0]?.body
     ).toBe('original thread')

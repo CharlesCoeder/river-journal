@@ -38,6 +38,7 @@ export type Database = {
           parent_post_id: string | null
           removed_at: string | null
           removed_reason: string | null
+          title: string | null
           updated_at: string
           user_deleted_at: string | null
           user_id: string | null
@@ -51,6 +52,7 @@ export type Database = {
           parent_post_id?: string | null
           removed_at?: string | null
           removed_reason?: string | null
+          title?: string | null
           updated_at?: string
           user_deleted_at?: string | null
           user_id?: string | null
@@ -64,6 +66,7 @@ export type Database = {
           parent_post_id?: string | null
           removed_at?: string | null
           removed_reason?: string | null
+          title?: string | null
           updated_at?: string
           user_deleted_at?: string | null
           user_id?: string | null
@@ -382,11 +385,17 @@ export type Database = {
           id: string
           user_id: string | null
           parent_post_id: string | null
-          body: string
+          title: string | null
+          excerpt: string
           created_at: string
           is_removed: boolean
           is_user_deleted: boolean
           user_deleted_at: string | null
+          descendant_count: number
+          // Per-kind reaction tally (jsonb_object_agg), COALESCEd to {} server-
+          // side so it is never null. Typed as a precise numeric map (not raw
+          // Json) so the state layer gets a typed tally without a coercion shim.
+          reactions: { [key: string]: number }
           mode: 'full' | 'preview'
         }[]
       }
@@ -396,6 +405,7 @@ export type Database = {
           id: string
           user_id: string | null
           parent_post_id: string | null
+          title: string | null
           body: string
           created_at: string
           is_removed: boolean
@@ -405,12 +415,30 @@ export type Database = {
           mode: 'full' | 'preview'
         }[]
       }
+      collective_thread_root: {
+        Args: { post_id: string }
+        Returns: {
+          id: string
+          user_id: string | null
+          parent_post_id: string | null
+          title: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          descendant_count: number
+          reactions: { [key: string]: number }
+          mode: 'full' | 'preview'
+        }[]
+      }
       collective_your_posts_page: {
         Args: { cursor: string | null; page_size: number }
         Returns: {
           id: string
           user_id: string
           parent_post_id: string | null
+          title: string | null
           body: string
           created_at: string
           is_removed: boolean

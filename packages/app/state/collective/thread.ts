@@ -13,7 +13,7 @@
 // transitively because `['collective']` is a prefix of
 // `['collective', 'thread', postId]`.
 
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { supabase } from 'app/utils/supabase'
 import type { Database } from 'app/types/database'
 import type { Post } from './feed'
@@ -28,8 +28,21 @@ export type { Post }
  * Unlike the feed's `Post` type, ThreadPost includes `descendant_count`
  * (added in Story 3-10 via Pattern B recursive CTE). ThreadView imports
  * this type rather than `Post` for correct type-checking.
+ *
+ * Story 3-15: ThreadPost now also carries `title`. It auto-derives from the
+ * RPC `Returns`, which always emits `NULL` for replies (guaranteed by the
+ * polarised `collective_posts_title_chk` CHECK) — so no manual `title: null`
+ * mapping is needed anywhere; replies are always `title: null` by CHECK.
  */
 export type ThreadPost = Database['public']['Functions']['collective_thread_page']['Returns'][number]
+
+/**
+ * ThreadRoot — the single root row returned by `collective_thread_root`
+ * (Story 3-15). This is the body source for the thread view now that the
+ * feed RPC dropped full `body`. Carries `title` + full `body` +
+ * `descendant_count` + `reactions` tally + `mode`.
+ */
+export type ThreadRoot = Database['public']['Functions']['collective_thread_root']['Returns'][number]
 
 /**
  * Page size for thread reply pagination. Matches the feed page size; the
@@ -46,6 +59,17 @@ export const PAGE_SIZE = 20
  */
 export function collectiveThreadKey(postId: string) {
   return ['collective', 'thread', postId] as const
+}
+
+/**
+ * Query key for a thread's ROOT row (Story 3-15). Nested UNDER the thread key
+ * (`['collective', 'thread', postId, 'root']`) so the existing `['collective']`
+ * prefix invalidation — fired from `feed.ts`'s streak-cross-500 observe and
+ * from every mutation's `onSettled` — drops it transitively, with no new
+ * invalidation wiring.
+ */
+export function collectiveThreadRootKey(postId: string) {
+  return ['collective', 'thread', postId, 'root'] as const
 }
 
 export interface ThreadPageResult {
@@ -155,5 +179,44 @@ export function useThread(
     refetchOnWindowFocus: true,
     staleTime: 25_000,
     gcTime: role === 'expansion' ? 5 * 60_000 : 24 * 60 * 60_000,
+  })
+}
+
+/**
+ * Pure async fetcher for a thread's root row (Story 3-15). Calls
+ * `supabase.rpc('collective_thread_root', { post_id })`, throws on RPC error,
+ * and returns `data?.[0] ?? null`. A `null` return is the removed/not-found
+ * case (AC 11) — the RPC returns zero rows when the root is moderator-removed
+ * or absent — so the consumer renders a removed/not-found state rather than an
+ * error boundary. Exported separately so it is unit-testable in isolation.
+ */
+export async function fetchThreadRoot(postId: string): Promise<ThreadRoot | null> {
+  const { data, error } = await supabase.rpc('collective_thread_root', {
+    post_id: postId,
+  })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data?.[0] ?? null
+}
+
+/**
+ * `useThreadRoot(postId)` — single-row `useQuery` (NOT infinite) for a thread's
+ * root. Calm cadence matching `useThread`'s `'root'` role: `staleTime` (25s) <
+ * `refetchInterval` (30s) so refetches fire; `gcTime` 24h because back-button
+ * restore of a thread the user just opened is high-value. Do NOT poll faster
+ * than 30s. The key nests under the thread key so `['collective']` invalidation
+ * drops it transitively.
+ */
+export function useThreadRoot(postId: string) {
+  return useQuery({
+    queryKey: collectiveThreadRootKey(postId),
+    queryFn: () => fetchThreadRoot(postId),
+    staleTime: 25_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    gcTime: 24 * 60 * 60_000,
   })
 }

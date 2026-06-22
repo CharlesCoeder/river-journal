@@ -65,6 +65,7 @@ import 'app/state/collective/mutations'
 import { queryClient } from 'app/state/queryClient'
 import { collectiveFeedKey, type FeedPage, type Post } from 'app/state/collective/feed'
 import { collectiveThreadKey, type ThreadPageResult } from 'app/state/collective/thread'
+import { yourPostsKey, type YourPost, type YourPostsPage } from 'app/state/collective/yourPosts'
 
 // ─── Types for the new reactions cache shape ─────────────────────────────────
 // These imports will fail until Story 3-11 creates state/collective/reactions.ts
@@ -473,5 +474,159 @@ describe('Story 3-11 / useToggleReaction.onSettled — invalidation preserved (t
       expect.objectContaining({ queryKey: ['collective'] })
     )
     invalidateSpy.mockRestore()
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Story 3-15 — title in the create-post path + title-led optimistic feed row +
+// delete_own feed-cache no-body (AC #27)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function makeYourPost(overrides: Partial<YourPost> = {}): YourPost {
+  return {
+    id: 'post-1',
+    user_id: 'user-1',
+    parent_post_id: null,
+    title: 'my title',
+    body: 'hello world',
+    created_at: '2026-05-06T00:00:00.000Z',
+    is_removed: false,
+    is_user_deleted: false,
+    user_deleted_at: null,
+    reaction_count: 0,
+    descendant_count: 0,
+    tenure_tier: null,
+    mode: 'full',
+    ...overrides,
+  }
+}
+
+// Loosely-typed callback invoker: the resolved MutationDefaults callbacks are
+// typed with broader arities than a direct call supplies, so we cast through a
+// permissive function type (test-only) to invoke them with our literal vars.
+type AnyFn = (...args: any[]) => any
+
+describe('Story 3-15 / useCreatePost insert payload carries title (AC #27a)', () => {
+  it('passes a top-level title through to the insert', async () => {
+    const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
+    expect(postDefaults).toBeDefined()
+
+    await (postDefaults!.mutationFn as AnyFn)({
+      id: 'p-title',
+      body: 'a body',
+      title: 'A real letter title',
+      parent_post_id: null,
+      user_id: 'user-1',
+    })
+
+    expect(fromMock).toHaveBeenCalledWith('collective_posts')
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'p-title', title: 'A real letter title' })
+    )
+  })
+
+  it('inserts title: null when the reply caller omits title', async () => {
+    const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
+    expect(postDefaults).toBeDefined()
+
+    await (postDefaults!.mutationFn as AnyFn)({
+      id: 'reply-1',
+      body: 'a reply body',
+      parent_post_id: 'parent-1',
+      user_id: 'user-1',
+    })
+
+    expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ title: null }))
+  })
+})
+
+describe('Story 3-15 / optimistic feed row is title-led, no body (AC #27b)', () => {
+  it('inserts an optimistic feed row with title/excerpt/descendant_count/reactions and NO body', async () => {
+    const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
+    expect(postDefaults).toBeDefined()
+
+    // Seed an empty feed page so the optimistic row is prepended.
+    queryClient.setQueryData(collectiveFeedKey, makeInfiniteData([makeFeedPage([])]))
+
+    await queryClient.cancelQueries({ queryKey: ['collective'] })
+    await (postDefaults!.onMutate as AnyFn)({
+      id: 'opt-1',
+      body: 'full body that should NOT land in the feed cache',
+      title: 'Optimistic title',
+      parent_post_id: null,
+      user_id: 'user-1',
+    })
+
+    const feed = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
+    const row = feed!.pages[0]!.items[0] as Record<string, unknown>
+    expect(row.id).toBe('opt-1')
+    expect(row.title).toBe('Optimistic title')
+    expect(row.excerpt).toBe('')
+    expect(row.descendant_count).toBe(0)
+    expect(row.reactions).toEqual({})
+    expect(row.__optimistic).toBe(true)
+    // The feed cache must NOT carry a full body (Story 3-15 D5).
+    expect('body' in row).toBe(false)
+  })
+})
+
+describe('Story 3-15 / delete_own feed-cache update omits body (AC #27c)', () => {
+  const POST_ID = 'del-1'
+
+  it('feed cache: sets is_user_deleted + user_deleted_at but does NOT write body', async () => {
+    const deleteDefaults = queryClient.getMutationDefaults(['collective', 'delete_own'])
+    expect(deleteDefaults).toBeDefined()
+
+    // Seed a feed row. makePost yields a runtime `body` (a pre-3-15 leftover in
+    // the helper), so if the feed branch wrongly wrote body it WOULD become
+    // '[deleted]'. We assert it does NOT.
+    queryClient.setQueryData(
+      collectiveFeedKey,
+      makeInfiniteData([makeFeedPage([makePost({ id: POST_ID })])])
+    )
+
+    await queryClient.cancelQueries({ queryKey: ['collective'] })
+    await (deleteDefaults!.onMutate as AnyFn)({ post_id: POST_ID })
+
+    const row = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)!.pages[0]!
+      .items[0] as Record<string, unknown>
+    expect(row.is_user_deleted).toBe(true)
+    expect(row.user_deleted_at).not.toBeNull()
+    // The feed branch must NOT stamp '[deleted]' onto a body field.
+    expect(row.body).not.toBe('[deleted]')
+  })
+
+  it('thread + yourPosts caches still write body: "[deleted]"', async () => {
+    const deleteDefaults = queryClient.getMutationDefaults(['collective', 'delete_own'])
+    expect(deleteDefaults).toBeDefined()
+
+    // Cast: makePost yields a feed `Post` (no `body` in its type), but the
+    // thread cache holds `ThreadPost` (which has `body`). The runtime object
+    // carries a `body` field, so this faithfully simulates a seeded thread row.
+    const threadData = {
+      pages: [{ items: [makePost({ id: POST_ID, parent_post_id: 'root' })], mode: 'full', nextCursor: null }],
+      pageParams: [null],
+    } as unknown as InfiniteData<ThreadPageResult>
+    queryClient.setQueryData(collectiveThreadKey(POST_ID), threadData)
+
+    const yourData: InfiniteData<YourPostsPage> = {
+      pages: [{ items: [makeYourPost({ id: POST_ID })], nextCursor: null }],
+      pageParams: [null],
+    }
+    queryClient.setQueryData(yourPostsKey, yourData)
+
+    await queryClient.cancelQueries({ queryKey: ['collective'] })
+    await (deleteDefaults!.onMutate as AnyFn)({ post_id: POST_ID })
+
+    const threadRow = queryClient.getQueryData<InfiniteData<ThreadPageResult>>(
+      collectiveThreadKey(POST_ID)
+    )!.pages[0]!.items[0]!
+    expect(threadRow.body).toBe('[deleted]')
+    expect(threadRow.is_user_deleted).toBe(true)
+
+    const yourRow = queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)!.pages[0]!
+      .items[0]!
+    expect(yourRow.body).toBe('[deleted]')
+    expect(yourRow.is_user_deleted).toBe(true)
   })
 })
