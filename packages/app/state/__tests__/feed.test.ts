@@ -50,6 +50,9 @@ import path from 'node:path'
 import { renderHook } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+// Type-only import (erased at runtime — does NOT execute feed.ts side-effects):
+// used for the Story 3-15 RPC-shape (type-level) assertions (AC #29).
+import type { Post } from 'app/state/collective/feed'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hoisted Supabase mock — must run before any `await importFeed()`.
@@ -94,7 +97,13 @@ async function importFeed(): Promise<FeedModule> {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Build N synthetic RPC rows with deterministic timestamps, all tagged `mode`. */
+/**
+ * Build N synthetic RPC rows with deterministic timestamps, all tagged `mode`.
+ *
+ * Story 3-15: the feed RPC return is now title-led — rows carry `title`,
+ * server-truncated `excerpt`, `descendant_count`, and a per-kind `reactions`
+ * tally, and NO full `body`. Row 0 exercises the zero-reactions `{}` case.
+ */
 function makeRows(count: number, mode: string = 'full') {
   const rows: Array<Record<string, unknown>> = []
   for (let i = 0; i < count; i++) {
@@ -102,12 +111,16 @@ function makeRows(count: number, mode: string = 'full') {
       id: `post-${i}`,
       user_id: 'u-1',
       parent_post_id: null,
-      body: `body ${i}`,
+      title: `title ${i}`,
+      excerpt: `excerpt ${i}`,
       // Strictly-decreasing created_at timestamps so cursor semantics are realistic.
       created_at: `2026-05-05T12:00:${String(60 - i).padStart(2, '0')}Z`,
       is_removed: false,
       is_user_deleted: false,
       user_deleted_at: null,
+      descendant_count: i,
+      // Row 0 → zero-reactions `{}`; others → a non-empty tally.
+      reactions: i === 0 ? {} : { heart: i },
       mode,
     })
   }
@@ -615,5 +628,66 @@ describe('Story 3-3 / offline cached pages render contract', () => {
 describe('Story 3-3 / repo root resolution sanity', () => {
   it('REPO_ROOT contains a packages directory', () => {
     expect(existsSync(path.join(REPO_ROOT, 'packages'))).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story 3-15 — title-led feed row shape (AC #25, #29)
+//
+// The feed RPC now returns title + excerpt + descendant_count + a per-kind
+// reactions tally, and NO full body. fetchFeedPage passes rows through
+// unchanged, so these fields must surface on returned items and `body` must be
+// absent. The CHECK-constraint ACs (AC 3) are encoded as the migration's
+// `DO $$` self-test (no pgTAP harness in this repo), NOT as a vitest test.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Story 3-15 / fetchFeedPage surfaces title-led row shape (AC #25)', () => {
+  it('surfaces title/excerpt/descendant_count/reactions and NO body', async () => {
+    const { fetchFeedPage } = await importFeed()
+    rpcMock.mockResolvedValueOnce({ data: makeRows(3, 'full'), error: null })
+    const page = await fetchFeedPage(null)
+    const item = page.items[0] as Record<string, unknown>
+    expect(item.title).toBe('title 0')
+    expect(item.excerpt).toBe('excerpt 0')
+    expect(item.descendant_count).toBe(0)
+    // Row 0 is the zero-reactions case — tally is {} (never null).
+    expect(item.reactions).toEqual({})
+    // The feed no longer carries a full body — only the truncated excerpt.
+    expect('body' in item).toBe(false)
+  })
+
+  it('surfaces a non-empty reactions tally on rows that have reactions', async () => {
+    const { fetchFeedPage } = await importFeed()
+    rpcMock.mockResolvedValueOnce({ data: makeRows(3, 'full'), error: null })
+    const page = await fetchFeedPage(null)
+    const item = page.items[1] as Record<string, unknown>
+    expect(item.reactions).toEqual({ heart: 1 })
+    expect(item.descendant_count).toBe(1)
+  })
+})
+
+describe('Story 3-15 / feed Post type shape (AC #29)', () => {
+  it('Post carries title/excerpt/descendant_count/reactions; body is not assignable', () => {
+    // Compile-time contract encoded at runtime via a fully-typed literal: if a
+    // future database.ts regen drifts from the RPC, this stops compiling.
+    const post: Post = {
+      id: 'p',
+      user_id: null,
+      parent_post_id: null,
+      title: 'A title',
+      excerpt: 'an excerpt',
+      created_at: '2026-01-01T00:00:00Z',
+      is_removed: false,
+      is_user_deleted: false,
+      user_deleted_at: null,
+      descendant_count: 2,
+      reactions: { heart: 1 },
+      mode: 'full',
+    }
+    expect(post.title).toBe('A title')
+    expect(post.reactions.heart).toBe(1)
+    // @ts-expect-error — `body` was dropped from the feed Post (Story 3-15 D5)
+    const hasBody = post.body
+    expect(hasBody).toBeUndefined()
   })
 })

@@ -307,3 +307,59 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     })
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story 3-15 — `title` passthrough on YourPost rows (AC #28)
+//
+// `collective_your_posts_page` now returns `title` (the column value: present
+// on top-level own posts, NULL on reply-type own posts). fetchYourPostsPage
+// passes rows through unchanged, so `title` must survive to the mapped rows.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Story 3-15 / fetchYourPostsPage title passthrough (AC #28)', () => {
+  it('surfaces title on a top-level own post and null on a reply-type own post', async () => {
+    const { supabase } = await import('../../../utils/supabase')
+    const rpc = supabase.rpc as ReturnType<typeof vi.fn>
+    rpc.mockReset()
+    rpc.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'top-1',
+          user_id: 'user-A',
+          parent_post_id: null,
+          title: 'A top-level title',
+          body: 'b',
+          created_at: '2026-05-01T00:00:02.000Z',
+          is_removed: false,
+          is_user_deleted: false,
+          user_deleted_at: null,
+          reaction_count: 0,
+          descendant_count: 0,
+          tenure_tier: null,
+          mode: 'full',
+        },
+        {
+          id: 'reply-1',
+          user_id: 'user-A',
+          parent_post_id: 'top-1',
+          title: null,
+          body: 'r',
+          created_at: '2026-05-01T00:00:01.000Z',
+          is_removed: false,
+          is_user_deleted: false,
+          user_deleted_at: null,
+          reaction_count: 0,
+          descendant_count: 0,
+          tenure_tier: null,
+          mode: 'full',
+        },
+      ],
+      error: null,
+    })
+
+    const { fetchYourPostsPage } = await import('../yourPosts')
+    const page = await fetchYourPostsPage(null)
+
+    expect(page.items[0]!.title).toBe('A top-level title')
+    expect(page.items[1]!.title).toBeNull()
+  })
+})

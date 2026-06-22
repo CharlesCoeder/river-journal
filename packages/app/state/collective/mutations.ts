@@ -51,6 +51,10 @@ const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 export type CreatePostVars = {
   id: string
   body: string
+  // Story 3-15: top-level callers pass the post title; reply callers pass
+  // `null`/omit. The server CHECK (collective_posts_title_chk) backstops
+  // correctness (required on top-level, must be NULL on replies).
+  title?: string | null
   parent_post_id?: string | null
   user_id: string
 }
@@ -113,6 +117,7 @@ queryClient.setMutationDefaults(['collective', 'post'], {
     const insert: PostInsert = {
       id: vars.id,
       body: vars.body,
+      title: vars.title ?? null,
       parent_post_id: vars.parent_post_id ?? null,
       user_id: vars.user_id,
     }
@@ -130,18 +135,22 @@ queryClient.setMutationDefaults(['collective', 'post'], {
     const snapshot = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
 
     if (snapshot) {
+      // Story 3-15: the optimistic row matches the new (no-`body`) feed `Post`
+      // shape — `title` + `excerpt` + `descendant_count` + `reactions` instead
+      // of `body`. `excerpt: ''` is acceptable: onSettled invalidation replaces
+      // this row with the canonical RPC row within the poll window.
       const optimisticRow = {
         id: vars.id,
-        body: vars.body,
-        parent_post_id: vars.parent_post_id ?? null,
         user_id: vars.user_id,
+        parent_post_id: vars.parent_post_id ?? null,
+        title: vars.title ?? null,
+        excerpt: '',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         is_removed: false,
         is_user_deleted: false,
-        removed_at: null,
-        removed_reason: null,
         user_deleted_at: null,
+        descendant_count: 0,
+        reactions: {},
         mode: 'full' as const,
         // Client-only pending indicator — removed once onSettled invalidation
         // replaces this row with the canonical RPC-returned row.
@@ -353,6 +362,12 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
 
     // Walk all three caches and update the matching row. The spread preserves
     // all other fields including the discriminated `mode` union literal.
+    //
+    // Story 3-15: the FEED `Post` no longer has `body` (the feed RPC dropped it
+    // in favour of `excerpt`), so the feed-cache update sets ONLY the deletion
+    // flags — the client renders `[deleted]` from `is_user_deleted`, the same
+    // convention the RPCs already rely on. The thread + yourPosts caches still
+    // carry `body`, so those branches below keep writing `body: '[deleted]'`.
     if (feedSnapshot) {
       queryClient.setQueryData<InfiniteData<FeedPage>>(collectiveFeedKey, {
         ...feedSnapshot,
@@ -360,7 +375,7 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
           ...page,
           items: page.items.map(item =>
             item.id === vars.post_id
-              ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
+              ? { ...item, is_user_deleted: true, user_deleted_at: deletedAt }
               : item
           ),
         })),

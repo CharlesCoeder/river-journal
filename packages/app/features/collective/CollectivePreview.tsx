@@ -62,7 +62,8 @@ export function CollectivePreview({ posts, currentUserId }: CollectivePreviewPro
           </Text>
           {teasers.slice(0, 3).map((teaser) => (
             <Text key={teaser.id} fontSize="$1" color="$color9" numberOfLines={1}>
-              {teaser.body}
+              {/* Story 3-15: feed rows expose `excerpt`, not full `body`. */}
+              {teaser.excerpt}
             </Text>
           ))}
         </YStack>

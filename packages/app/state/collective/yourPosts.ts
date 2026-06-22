@@ -43,6 +43,9 @@ export type YourPost = {
   id: string
   user_id: string
   parent_post_id: string | null
+  // Story 3-15: top-level own posts carry their title; reply-type own posts
+  // are NULL (guaranteed by the collective_posts_title_chk CHECK).
+  title: string | null
   body: string
   created_at: string
   is_removed: boolean
