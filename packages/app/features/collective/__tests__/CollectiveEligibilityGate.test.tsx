@@ -228,8 +228,7 @@ describe('CollectiveEligibilityGate — compact variant Cancel affordance', () =
       render(
         React.createElement(
           CollectiveEligibilityGate,
-          { variant: 'compact' as const, onCancel },
-          React.createElement(Child)
+          { variant: 'compact' as const, onCancel, children: React.createElement(Child) }
         )
       )
       const btn = screen.getByText('Cancel')
@@ -244,8 +243,7 @@ describe('CollectiveEligibilityGate — compact variant Cancel affordance', () =
     render(
       React.createElement(
         CollectiveEligibilityGate,
-        { variant: 'full' as const },
-        React.createElement(Child)
+        { variant: 'full' as const, children: React.createElement(Child) }
       )
     )
     expect(screen.queryByText('Cancel')).toBeNull()
@@ -256,8 +254,7 @@ describe('CollectiveEligibilityGate — compact variant Cancel affordance', () =
     render(
       React.createElement(
         CollectiveEligibilityGate,
-        { variant: 'compact' as const },
-        React.createElement(Child)
+        { variant: 'compact' as const, children: React.createElement(Child) }
       )
     )
     expect(screen.queryByText('Cancel')).toBeNull()

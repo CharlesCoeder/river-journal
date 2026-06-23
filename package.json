@@ -32,6 +32,7 @@
   "resolutions": {
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "@types/react": "19.1.17",
     "react-refresh": "^0.14.0",
     "react-native": "0.81.5",
     "react-native-svg": "15.12.1",

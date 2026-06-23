@@ -9,7 +9,7 @@
  * sets is_deleted=true in Supabase rather than hard-deleting.
  */
 
-import { observable } from '@legendapp/state'
+import { observable, type Observable } from '@legendapp/state'
 import { syncedSupabase } from '@legendapp/state/sync-plugins/supabase'
 import type { Flow } from './types'
 import {
@@ -26,7 +26,11 @@ import {
 // FLOWS OBSERVABLE
 // =================================================================
 
-export const flows$ = observable<Record<string, Flow>>(
+// Explicit annotation breaks the self-reference: transform.load below calls
+// flows$.peek() inside this same initializer, so without an explicit type TS
+// cannot infer flows$'s type non-circularly and falls back to `unknown`,
+// cascading `flow is of type unknown` errors throughout store.ts.
+export const flows$: Observable<Record<string, Flow>> = observable<Record<string, Flow>>(
   syncedSupabase({
     supabase,
     collection: 'flows',

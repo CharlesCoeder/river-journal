@@ -66,7 +66,6 @@ import { store$, addLocallyHiddenPost, ensureProfile } from '../store'
  */
 function resetLocallyHiddenPosts(): void {
   try {
-    // @ts-expect-error — locallyHiddenPosts may not exist yet; will pass after implementation
     store$.profile.preferences.locallyHiddenPosts.set(undefined)
   } catch {
     // swallow — field doesn't exist yet in red-phase
@@ -78,7 +77,6 @@ function resetLocallyHiddenPosts(): void {
  */
 function getLocallyHiddenPosts(): string[] | undefined {
   try {
-    // @ts-expect-error — locallyHiddenPosts may not exist yet; will pass after implementation
     return store$.profile.preferences.locallyHiddenPosts.get()
   } catch {
     return undefined

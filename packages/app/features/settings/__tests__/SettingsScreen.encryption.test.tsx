@@ -82,7 +82,7 @@ vi.mock('@my/ui', async () => {
         ? {
             onChange: (event: Event) => {
               const target = event.target as HTMLInputElement
-              onChangeText(target.value)
+              ;(onChangeText as (value: string) => void)(target.value)
             },
           }
         : {}),

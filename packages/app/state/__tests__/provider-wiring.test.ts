@@ -106,9 +106,11 @@ describe('Story 3-2 / DevTools gating (AC #10, #11)', () => {
 
   it('mounts ReactQueryDevtools only when NODE_ENV === "development"', () => {
     const src = providerSrc()
-    // Match: process.env.NODE_ENV === 'development' && <ReactQueryDevtools ...
+    // Match: process.env.NODE_ENV === 'development' && [(] <ReactQueryDevtools ...
+    // Allow an optional opening paren / newline between the guard and the JSX
+    // (the source wraps the element in parens: `&& (\n  <ReactQueryDevtools`).
     expect(src).toMatch(
-      /process\.env\.NODE_ENV\s*===\s*['"]development['"]\s*&&\s*<ReactQueryDevtools/
+      /process\.env\.NODE_ENV\s*===\s*['"]development['"]\s*&&\s*\(?\s*<ReactQueryDevtools/
     )
   })
 

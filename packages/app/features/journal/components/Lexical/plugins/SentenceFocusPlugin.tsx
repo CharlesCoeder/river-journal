@@ -52,7 +52,9 @@ export function applySentenceFocusClasses(editor: LexicalEditor): void {
       anchorOffset = selection.anchor.offset
       let node: LexicalNode | null = anchorNode
       while (node) {
-        const parent = node.getParent()
+        // Explicit annotation breaks a circular-inference (TS7022) that surfaces
+        // under the apps' stricter `noImplicitAny`.
+        const parent: LexicalNode | null = node.getParent()
         if (!parent) break
         if (parent.getKey() === root.getKey() && $isElementNode(node)) {
           activeBlockKey = node.getKey()

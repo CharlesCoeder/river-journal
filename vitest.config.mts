@@ -48,6 +48,16 @@ export default defineConfig({
         import.meta.dirname,
         'packages/app/features/navigation/__mocks__/netinfo.ts'
       ),
+      // Stub @legendapp/state's IndexedDB persist plugin with an inert no-op.
+      // persistConfig.ts builds the plugin at import time and the top-level
+      // syncedSupabase() wraps activate persistence eagerly; the real plugin's
+      // loadTable throws when `indexedDB` is undefined (node + happy-dom both
+      // lack it), surfacing as an async unhandled rejection that lands in
+      // unrelated test files and drives run-to-run flakiness.
+      '@legendapp/state/persist-plugins/indexeddb': path.resolve(
+        import.meta.dirname,
+        'packages/app/features/navigation/__mocks__/legend-persist-indexeddb.ts'
+      ),
       // Map the 'app/*' workspace alias (used in source imports) to the
       // actual package directory so Vitest can resolve it in test environments.
       app: path.resolve(import.meta.dirname, 'packages/app'),
@@ -64,6 +74,12 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
       '**/.claude/worktrees/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
+      // Build-smoke tests shell out to `tamagui build … next build`, which runs
+      // 180s and rewrites tracked packages/app/**/*.tsx in place via static
+      // extraction (no disableExtraction). They must NOT run under the default
+      // `vitest run` — they pollute the working tree and corrupt diffs/stash.
+      // Run them CI-only / on demand instead.
+      '**/__tests__/build.test.ts',
     ],
     poolOptions: {
       threads: {

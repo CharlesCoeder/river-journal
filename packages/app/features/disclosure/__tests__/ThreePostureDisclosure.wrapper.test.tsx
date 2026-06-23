@@ -136,10 +136,11 @@ describe('AC11 — first-time mode: writes acknowledged_at and calls onClose', (
       store$.profile.preferences?.disclosures?.collective_post_v1?.acknowledged_at?.get?.() ??
       store$.profile.preferences.disclosures.collective_post_v1.acknowledged_at.get()
     expect(typeof acknowledgedAt).toBe('string')
-    expect(acknowledgedAt.length).toBeGreaterThan(0)
+    const ackStr = acknowledgedAt as string
+    expect(ackStr.length).toBeGreaterThan(0)
     // Should be a valid ISO string
-    expect(() => new Date(acknowledgedAt)).not.toThrow()
-    expect(new Date(acknowledgedAt).toISOString()).toBe(acknowledgedAt)
+    expect(() => new Date(ackStr)).not.toThrow()
+    expect(new Date(ackStr).toISOString()).toBe(ackStr)
   })
 
   it('calls onClose exactly once after acknowledge', () => {

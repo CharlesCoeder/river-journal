@@ -197,7 +197,7 @@ export function CelebrationScreen() {
             // AC 11: dialog semantics on the outer variant-wrapping stack
             tag="div"
             role="dialog"
-            aria-modal="true"
+            aria-modal={true}
             {...(effectiveVariant === 'handoff'
               ? { 'aria-labelledby': 'celebration-wordcount' }
               : { 'aria-label': 'Celebration' })}

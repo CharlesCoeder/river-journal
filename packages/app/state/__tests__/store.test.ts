@@ -54,7 +54,6 @@ import {
 beforeEach(() => {
   batch(() => {
     ephemeral$.instantWordCount.set(0)
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     ephemeral$.thresholdCrossing.set(null)
   })
 })
@@ -62,7 +61,6 @@ beforeEach(() => {
 afterAll(() => {
   batch(() => {
     ephemeral$.instantWordCount.set(0)
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     ephemeral$.thresholdCrossing.set(null)
   })
 })
@@ -82,7 +80,6 @@ function wordsText(n: number): string {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('T1: ephemeral$.thresholdCrossing initial value (AC12 T1)', () => {
   it('is null on a fresh state load', () => {
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 })
@@ -93,25 +90,21 @@ describe('T1: ephemeral$.thresholdCrossing initial value (AC12 T1)', () => {
 describe('T2: thresholdCrossing stays null for sub-500 word counts (AC12 T2)', () => {
   it('remains null after setting 0 words', () => {
     setInstantWordCountFromText('')
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 
   it('remains null after setting 1 word', () => {
     setInstantWordCountFromText(wordsText(1))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 
   it('remains null after setting 100 words', () => {
     setInstantWordCountFromText(wordsText(100))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 
   it('remains null after setting 499 words — boundary: one below 500', () => {
     setInstantWordCountFromText(wordsText(499))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 })
@@ -122,19 +115,16 @@ describe('T2: thresholdCrossing stays null for sub-500 word counts (AC12 T2)', (
 describe('T3: thresholdCrossing is set on the first crossing of 500 words (AC12 T3)', () => {
   it('is null before crossing 500', () => {
     setInstantWordCountFromText(wordsText(100))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 
   it('is non-null after first crossing 500', () => {
     setInstantWordCountFromText(wordsText(500))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).not.toBeNull()
   })
 
   it('records wordCountAtCrossing === 500 when count is exactly 500', () => {
     setInstantWordCountFromText(wordsText(500))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const crossing = ephemeral$.thresholdCrossing.peek()
     expect(crossing).not.toBeNull()
     expect(crossing!.wordCountAtCrossing).toBe(500)
@@ -144,7 +134,6 @@ describe('T3: thresholdCrossing is set on the first crossing of 500 words (AC12 
     const before = new Date().toISOString()
     setInstantWordCountFromText(wordsText(500))
     const after = new Date().toISOString()
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const crossing = ephemeral$.thresholdCrossing.peek()
     expect(crossing).not.toBeNull()
     // crossedAt must be a valid ISO date string between before and after
@@ -160,7 +149,6 @@ describe('T3: thresholdCrossing is set on the first crossing of 500 words (AC12 
 describe('T4: thresholdCrossing is set only once — idempotency (AC12 T4)', () => {
   it('does not overwrite crossedAt on a second crossing at a higher count', async () => {
     setInstantWordCountFromText(wordsText(500))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const firstCrossing = ephemeral$.thresholdCrossing.peek()
     expect(firstCrossing).not.toBeNull()
     const firstCrossedAt = firstCrossing!.crossedAt
@@ -169,7 +157,6 @@ describe('T4: thresholdCrossing is set only once — idempotency (AC12 T4)', () 
     await new Promise((r) => setTimeout(r, 5))
 
     setInstantWordCountFromText(wordsText(600))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const secondCrossing = ephemeral$.thresholdCrossing.peek()
     expect(secondCrossing).not.toBeNull()
     expect(secondCrossing!.crossedAt).toBe(firstCrossedAt)
@@ -177,13 +164,11 @@ describe('T4: thresholdCrossing is set only once — idempotency (AC12 T4)', () 
 
   it('does not overwrite wordCountAtCrossing on repeated calls above 500', async () => {
     setInstantWordCountFromText(wordsText(500))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const firstCount = ephemeral$.thresholdCrossing.peek()!.wordCountAtCrossing
 
     await new Promise((r) => setTimeout(r, 5))
 
     setInstantWordCountFromText(wordsText(700))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()!.wordCountAtCrossing).toBe(firstCount)
   })
 })
@@ -195,7 +180,6 @@ describe('T5: paste-in past 500 in a single event records actual word count (AC1
   it('records wordCountAtCrossing === 750 when pasting in 750 words from 0', () => {
     // Initial state: count 0, threshold null (enforced by beforeEach)
     setInstantWordCountFromText(wordsText(750))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const crossing = ephemeral$.thresholdCrossing.peek()
     expect(crossing).not.toBeNull()
     expect(crossing!.wordCountAtCrossing).toBe(750)
@@ -203,11 +187,9 @@ describe('T5: paste-in past 500 in a single event records actual word count (AC1
 
   it('records wordCountAtCrossing === 501 when count jumps from 499 to 501', () => {
     setInstantWordCountFromText(wordsText(499))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
 
     setInstantWordCountFromText(wordsText(501))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const crossing = ephemeral$.thresholdCrossing.peek()
     expect(crossing).not.toBeNull()
     expect(crossing!.wordCountAtCrossing).toBe(501)
@@ -220,12 +202,10 @@ describe('T5: paste-in past 500 in a single event records actual word count (AC1
 describe('T6: clearActiveFlow resets thresholdCrossing to null (AC12 T6)', () => {
   it('resets thresholdCrossing to null after clearActiveFlow', () => {
     setInstantWordCountFromText(wordsText(600))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).not.toBeNull()
 
     clearActiveFlow()
 
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 
@@ -245,12 +225,10 @@ describe('T6: clearActiveFlow resets thresholdCrossing to null (AC12 T6)', () =>
 describe('T7: discardActiveFlowSession resets thresholdCrossing to null (AC12 T7)', () => {
   it('resets thresholdCrossing to null after discardActiveFlowSession', () => {
     setInstantWordCountFromText(wordsText(600))
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).not.toBeNull()
 
     discardActiveFlowSession()
 
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 
@@ -276,7 +254,6 @@ describe('T8: threshold-crossing and count update happen in the same synchronous
 
     // No await — synchronous reads immediately after the call
     const count = ephemeral$.instantWordCount.peek()
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const crossing = ephemeral$.thresholdCrossing.peek()
 
     expect(count).toBe(500)
@@ -290,7 +267,6 @@ describe('T8: threshold-crossing and count update happen in the same synchronous
 
     // Capture immediately without any async gap
     const snapshotCount = ephemeral$.instantWordCount.peek()
-    // @ts-expect-error — thresholdCrossing does not exist yet; will pass after implementation
     const snapshotCrossing = ephemeral$.thresholdCrossing.peek()
 
     // If the threshold were recorded asynchronously, snapshotCrossing would be null here
@@ -305,9 +281,7 @@ describe('T8: threshold-crossing and count update happen in the same synchronous
 
 describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {
   // Reset the set before each test in this group for isolation.
-  // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
   beforeEach(() => {
-    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
     ephemeral$.surfacedUnlockMilestones.set(new Set<number>())
   })
 
@@ -319,7 +293,6 @@ describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {
     // Guard: markUnlockSurfaced must be a function — this fails pre-implementation
     // because the import resolves to undefined when the export doesn't exist.
     expect(typeof markUnlockSurfaced).toBe('function')
-    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
     const initial = ephemeral$.surfacedUnlockMilestones.peek()
     expect(initial).toBeInstanceOf(Set)
     expect(initial.size).toBe(0)
@@ -328,7 +301,6 @@ describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {
   // S2 — markUnlockSurfaced(7) adds 7 to the set
   it('S2: markUnlockSurfaced(7) adds 7 to the surfacedUnlockMilestones set', () => {
     markUnlockSurfaced(7)
-    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
     const set = ephemeral$.surfacedUnlockMilestones.peek()
     expect(set.has(7)).toBe(true)
   })
@@ -336,11 +308,9 @@ describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {
   // S3 — Idempotency: calling markUnlockSurfaced(7) twice does not thrash the observable
   it('S3: calling markUnlockSurfaced(7) twice is idempotent — same Set ref, size stays 1', () => {
     markUnlockSurfaced(7)
-    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
     const refAfterFirst = ephemeral$.surfacedUnlockMilestones.peek()
 
     markUnlockSurfaced(7)
-    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
     const refAfterSecond = ephemeral$.surfacedUnlockMilestones.peek()
 
     // The guard `if (current.has(milestone)) return` must prevent a second set() call.
@@ -354,7 +324,6 @@ describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {
   it('S4: multiple calls to markUnlockSurfaced accumulate distinct milestones', () => {
     markUnlockSurfaced(7)
     markUnlockSurfaced(30)
-    // @ts-expect-error — surfacedUnlockMilestones does not exist yet; will pass after implementation
     const set = ephemeral$.surfacedUnlockMilestones.peek()
     expect(set.has(7)).toBe(true)
     expect(set.has(30)).toBe(true)

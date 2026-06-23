@@ -307,7 +307,7 @@ function makePost(overrides: Partial<{
   user_deleted_at: string | null
   mode: 'full' | 'preview'
 }> = {}) {
-  return {
+  const base = {
     id: 'post-default',
     user_id: 'user-abc123',
     parent_post_id: null,
@@ -319,6 +319,11 @@ function makePost(overrides: Partial<{
     mode: 'full' as const,
     ...overrides,
   }
+  // Story 3-15: the feed Post carries a server-truncated `excerpt` (≤140 chars),
+  // not a full `body`. PostRow renders `post.excerpt`. Tests still author posts
+  // via `body`, so mirror it into `excerpt` to keep call sites and text
+  // assertions working without restating every fixture.
+  return { ...base, excerpt: base.body }
 }
 
 function makeFeedData(items: any[], mode: 'full' | 'preview', nextCursor: string | null = null) {

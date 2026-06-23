@@ -1089,7 +1089,10 @@ describe('Story 3-9 / t22 — D14 boundary: no PersistentEditor or ephemeral$.pe
   it('PostComposer.tsx does NOT import PersistentEditor', () => {
     if (!existsSync(POST_COMPOSER_PATH)) return
     const src = readFileSync(POST_COMPOSER_PATH, 'utf8')
-    expect(src).not.toMatch(/PersistentEditor/)
+    // Scope to import statements so a comment that merely references the
+    // PersistentEditor source path (e.g. documenting a shared pattern) is not a
+    // false positive. The D14 boundary forbids importing it, not naming it.
+    expect(src).not.toMatch(/^\s*import[^\n]*PersistentEditor/m)
   })
 
   it('PostComposer.tsx does NOT read ephemeral$.persistentEditor paths', () => {
@@ -1101,7 +1104,7 @@ describe('Story 3-9 / t22 — D14 boundary: no PersistentEditor or ephemeral$.pe
   it('CollectiveLexicalEditor.tsx does NOT import PersistentEditor', () => {
     if (!existsSync(COLLECTIVE_LEXICAL_EDITOR_PATH)) return
     const src = readFileSync(COLLECTIVE_LEXICAL_EDITOR_PATH, 'utf8')
-    expect(src).not.toMatch(/PersistentEditor/)
+    expect(src).not.toMatch(/^\s*import[^\n]*PersistentEditor/m)
   })
 
   it('LexicalContextProbe is NOT referenced in any app entry point', () => {

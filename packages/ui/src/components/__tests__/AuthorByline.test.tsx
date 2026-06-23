@@ -59,14 +59,26 @@ vi.mock('tamagui', () => {
       children
     )
 
-  const XStack = ({ children, accessible, accessibilityRole, accessibilityLabel, ...rest }: any) =>
+  const XStack = ({
+    children,
+    accessible,
+    accessibilityRole,
+    accessibilityLabel,
+    role,
+    'aria-label': ariaLabel,
+    ...rest
+  }: any) =>
     ReactModule.createElement(
       'div',
       {
         'data-stack': 'x',
         ...(accessible ? { 'data-accessible': 'true' } : {}),
-        ...(accessibilityRole ? { role: accessibilityRole } : {}),
-        ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
+        // AuthorByline uses web a11y props (role / aria-label); accept both the
+        // RN (accessibility*) and web spellings so the rendered DOM carries them.
+        ...(accessibilityRole || role ? { role: accessibilityRole ?? role } : {}),
+        ...(accessibilityLabel || ariaLabel
+          ? { 'aria-label': accessibilityLabel ?? ariaLabel }
+          : {}),
       },
       children
     )
@@ -113,14 +125,26 @@ vi.mock('@my/ui', async () => {
       children
     )
 
-  const XStack = ({ children, accessible, accessibilityRole, accessibilityLabel, ...rest }: any) =>
+  const XStack = ({
+    children,
+    accessible,
+    accessibilityRole,
+    accessibilityLabel,
+    role,
+    'aria-label': ariaLabel,
+    ...rest
+  }: any) =>
     ReactModule.createElement(
       'div',
       {
         'data-stack': 'x',
         ...(accessible ? { 'data-accessible': 'true' } : {}),
-        ...(accessibilityRole ? { role: accessibilityRole } : {}),
-        ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
+        // AuthorByline uses web a11y props (role / aria-label); accept both the
+        // RN (accessibility*) and web spellings so the rendered DOM carries them.
+        ...(accessibilityRole || role ? { role: accessibilityRole ?? role } : {}),
+        ...(accessibilityLabel || ariaLabel
+          ? { 'aria-label': accessibilityLabel ?? ariaLabel }
+          : {}),
       },
       children
     )

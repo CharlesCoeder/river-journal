@@ -66,7 +66,9 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 // ─── Path constants ───────────────────────────────────────────────────────────
 const STATE_DIR = path.resolve(__dirname, '..')
 const MUTATIONS_PATH = path.join(STATE_DIR, 'collective/mutations.ts')
-const QUERY_CLIENT_PATH = path.join(STATE_DIR, 'queryClient.ts')
+// queryClient.ts is now a thin platform re-export; PERSIST_IN_FLIGHT_KEYS and
+// the mutation-defaults registration live in the shared singleton module.
+const QUERY_CLIENT_PATH = path.join(STATE_DIR, 'queryClient.shared.ts')
 
 // ─── Supabase mock — hoisted before SUT import ───────────────────────────────
 // The chainable pattern: supabase.from('...').insert({...}) returns a promise.
@@ -122,6 +124,11 @@ import { queryClient, dehydrateOptions } from 'app/state/queryClient'
 import { collectiveFeedKey, type FeedPage, type Post } from 'app/state/collective/feed'
 import { collectiveThreadKey, type ThreadPageResult } from 'app/state/collective/thread'
 import { yourPostsKey, type YourPost, type YourPostsPage } from 'app/state/collective/yourPosts'
+
+// TanStack Query v5.100: mutation lifecycle callbacks take a trailing
+// MutationFunctionContext. Tests invoke the registered defaults manually, so
+// supply a minimal context. The registered impls ignore it.
+const MUTATION_FN_CONTEXT = { client: queryClient, meta: undefined }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -443,7 +450,7 @@ describe('Story 3-7 / post mutation — optimistic update (AC #7, #18, #25e)', (
 
     // Cancel outgoing queries and run onMutate
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await postDefaults!.onMutate!(vars)
+    const context = await postDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const afterMutate = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
     expect(afterMutate).toBeDefined()
@@ -475,14 +482,14 @@ describe('Story 3-7 / post mutation — optimistic update (AC #7, #18, #25e)', (
 
     // Run onMutate to insert optimistic row and get snapshot
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await postDefaults!.onMutate!({ id: 'new-1', body: 'new', parent_post_id: null, user_id: 'u1' })
+    const context = await postDefaults!.onMutate!({ id: 'new-1', body: 'new', parent_post_id: null, user_id: 'u1' }, MUTATION_FN_CONTEXT)
 
     // Verify optimistic row was inserted
     const afterOptimistic = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
     expect(afterOptimistic!.pages[0].items.length).toBe(2)
 
     // Simulate error + rollback
-    await postDefaults!.onError!(new Error('insert failed'), { id: 'new-1', body: 'new', parent_post_id: null, user_id: 'u1' }, context)
+    await postDefaults!.onError!(new Error('insert failed'), { id: 'new-1', body: 'new', parent_post_id: null, user_id: 'u1' }, context, MUTATION_FN_CONTEXT)
 
     // Cache should be restored to original state
     const afterRollback = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
@@ -502,7 +509,8 @@ describe('Story 3-7 / post mutation — optimistic update (AC #7, #18, #25e)', (
       undefined,
       null,
       { id: 'x', body: 'x', parent_post_id: null, user_id: 'u' },
-      undefined
+      undefined,
+      MUTATION_FN_CONTEXT
     )
 
     expect(invalidateSpy).toHaveBeenCalledWith(
@@ -528,7 +536,7 @@ describe('Story 3-7 / post mutation — empty-cache safety (AC #31)', () => {
 
     // Must not throw
     await expect(
-      postDefaults!.onMutate!({ id: 'x', body: 'hello', parent_post_id: null, user_id: 'u' })
+      postDefaults!.onMutate!({ id: 'x', body: 'hello', parent_post_id: null, user_id: 'u' }, MUTATION_FN_CONTEXT)
     ).resolves.toBeDefined()
   })
 
@@ -545,7 +553,8 @@ describe('Story 3-7 / post mutation — empty-cache safety (AC #31)', () => {
     await postDefaults!.onError!(
       new Error('failed'),
       { id: 'x', body: 'y', parent_post_id: null, user_id: 'u' },
-      emptyContext
+      emptyContext,
+      MUTATION_FN_CONTEXT
     )
 
     // Must NOT have called setQueryData with undefined
@@ -569,7 +578,7 @@ describe('Story 3-7 / post mutationFn (AC #6)', () => {
     fromMock.mockReturnValue({ insert: insertMock, delete: deleteMock })
 
     const vars = { id: 'post-uuid', body: 'test body', parent_post_id: null, user_id: 'user-1' }
-    await postDefaults!.mutationFn!(vars)
+    await postDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)
 
     expect(fromMock).toHaveBeenCalledWith('collective_posts')
     expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -588,7 +597,7 @@ describe('Story 3-7 / post mutationFn (AC #6)', () => {
     fromMock.mockReturnValue({ insert: insertMock })
 
     const vars = { id: 'post-uuid', body: 'test body', parent_post_id: null, user_id: 'user-1' }
-    await expect(postDefaults!.mutationFn!(vars)).rejects.toBeDefined()
+    await expect(postDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)).rejects.toBeDefined()
   })
 })
 
@@ -606,7 +615,7 @@ describe('Story 3-7 / post mutation — replay idempotency (AC #30)', () => {
     fromMock.mockReturnValue({ insert: insertMock })
 
     const vars = { id: 'existing-uuid', body: 'already on server', parent_post_id: null, user_id: 'u1' }
-    await expect(postDefaults!.mutationFn!(vars)).resolves.not.toThrow()
+    await expect(postDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)).resolves.not.toThrow()
   })
 
   it('onSettled fires invalidateQueries after idempotent replay (AC #30)', async () => {
@@ -621,7 +630,8 @@ describe('Story 3-7 / post mutation — replay idempotency (AC #30)', () => {
       [],
       null,
       { id: 'existing-uuid', body: 'already on server', parent_post_id: null, user_id: 'u1' },
-      undefined
+      undefined,
+      MUTATION_FN_CONTEXT
     )
 
     expect(invalidateSpy).toHaveBeenCalled()
@@ -645,7 +655,15 @@ describe('Story 3-7 / react mutation — onMutate snapshots (AC #10, #11)', () =
     queryClient.setQueryData(collectiveFeedKey, makeInfiniteData([makeFeedPage([feedPost])]))
 
     const threadData: InfiniteData<ThreadPageResult> = {
-      pages: [{ items: [makePost({ id: 'reply-1', parent_post_id: POST_ID })], mode: 'full', nextCursor: null }],
+      pages: [
+        {
+          // Thread cache holds `ThreadPost` (has `body`); makePost yields a feed
+          // `Post`, so cast through `unknown` to simulate a seeded thread row.
+          items: [makePost({ id: 'reply-1', parent_post_id: POST_ID })] as unknown as ThreadPageResult['items'],
+          mode: 'full',
+          nextCursor: null,
+        },
+      ],
       pageParams: [null],
     }
     queryClient.setQueryData(collectiveThreadKey(POST_ID), threadData)
@@ -653,7 +671,7 @@ describe('Story 3-7 / react mutation — onMutate snapshots (AC #10, #11)', () =
     const vars = { id: 'rxn-1', post_id: POST_ID, kind: 'heart' as const, user_id: 'u1', toggle: 'add' as const }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await reactDefaults!.onMutate!(vars)
+    const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     // context must contain both snapshots
     const ctx = context as { feedSnapshot?: unknown; threadSnapshot?: unknown }
@@ -678,14 +696,14 @@ describe('Story 3-7 / react mutation — onMutate snapshots (AC #10, #11)', () =
     await localQc.cancelQueries({ queryKey: ['collective'] })
     const context = await reactDefaults!.onMutate!({
       id: 'rxn-1', post_id: POST_ID, kind: 'heart' as const, user_id: 'u1', toggle: 'add' as const
-    })
+    }, MUTATION_FN_CONTEXT)
 
     setQueryDataSpy.mockClear()
 
     // Simulate error rollback
     await reactDefaults!.onError!(new Error('failed'), {
       id: 'rxn-1', post_id: POST_ID, kind: 'heart' as const, user_id: 'u1', toggle: 'add' as const
-    }, context)
+    }, context, MUTATION_FN_CONTEXT)
 
     // setQueryData must NOT be called with undefined
     const undefinedCalls = setQueryDataSpy.mock.calls.filter((call) => call[1] === undefined)
@@ -707,7 +725,7 @@ describe('Story 3-7 / react mutationFn (AC #9)', () => {
 
     await reactDefaults!.mutationFn!({
       id: 'rxn-uuid', post_id: 'p1', kind: 'heart', user_id: 'u1', toggle: 'add'
-    })
+    }, MUTATION_FN_CONTEXT)
 
     expect(fromMock).toHaveBeenCalledWith('collective_reactions')
     expect(insertMock).toHaveBeenCalled()
@@ -723,7 +741,7 @@ describe('Story 3-7 / react mutationFn (AC #9)', () => {
 
     await reactDefaults!.mutationFn!({
       id: 'rxn-uuid', post_id: 'p1', kind: 'heart', user_id: 'u1', toggle: 'remove'
-    })
+    }, MUTATION_FN_CONTEXT)
 
     expect(fromMock).toHaveBeenCalledWith('collective_reactions')
     expect(deleteMock).toHaveBeenCalled()
@@ -749,7 +767,7 @@ describe('Story 3-7 / report mutationFn — 23505 swallow scope (AC #12, #20, #3
     fromMock.mockReturnValue({ insert: insertMock })
 
     const vars = { id: 'r1', post_id: 'p1', reporter_user_id: 'u1', reason_code: 'spam', note: null }
-    await expect(reportDefaults!.mutationFn!(vars)).resolves.not.toThrow()
+    await expect(reportDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)).resolves.not.toThrow()
   })
 
   it('AC #36 — re-throws 23505 on a different/unexpected constraint for report', async () => {
@@ -766,7 +784,7 @@ describe('Story 3-7 / report mutationFn — 23505 swallow scope (AC #12, #20, #3
     fromMock.mockReturnValue({ insert: insertMock })
 
     const vars = { id: 'r1', post_id: 'p1', reporter_user_id: 'u1', reason_code: 'spam', note: null }
-    await expect(reportDefaults!.mutationFn!(vars)).rejects.toBeDefined()
+    await expect(reportDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)).rejects.toBeDefined()
   })
 
   it('AC #35/36 — react mutationFn swallows 23505 on collective_reactions UNIQUE constraint', async () => {
@@ -783,7 +801,7 @@ describe('Story 3-7 / report mutationFn — 23505 swallow scope (AC #12, #20, #3
     fromMock.mockReturnValue({ insert: insertMock, delete: deleteMock })
 
     const vars = { id: 'rxn-1', post_id: 'p1', kind: 'heart', user_id: 'u1', toggle: 'add' as const }
-    await expect(reactDefaults!.mutationFn!(vars)).resolves.not.toThrow()
+    await expect(reactDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)).resolves.not.toThrow()
   })
 
   it('AC #36 — react mutationFn re-throws 23505 on an unexpected constraint', async () => {
@@ -800,7 +818,7 @@ describe('Story 3-7 / report mutationFn — 23505 swallow scope (AC #12, #20, #3
     fromMock.mockReturnValue({ insert: insertMock, delete: deleteMock })
 
     const vars = { id: 'rxn-1', post_id: 'p1', kind: 'heart', user_id: 'u1', toggle: 'add' as const }
-    await expect(reactDefaults!.mutationFn!(vars)).rejects.toBeDefined()
+    await expect(reactDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)).rejects.toBeDefined()
   })
 
   it('AC #36 — post mutationFn re-throws non-23505 errors (not a swallow candidate)', async () => {
@@ -817,7 +835,7 @@ describe('Story 3-7 / report mutationFn — 23505 swallow scope (AC #12, #20, #3
     fromMock.mockReturnValue({ insert: insertMock })
 
     const vars = { id: 'x', body: 'y', parent_post_id: null, user_id: 'bad-user' }
-    await expect(postDefaults!.mutationFn!(vars)).rejects.toBeDefined()
+    await expect(postDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)).rejects.toBeDefined()
   })
 })
 
@@ -835,7 +853,7 @@ describe('Story 3-7 / report mutation (AC #12, #13)', () => {
     fromMock.mockReturnValue({ insert: insertMock })
 
     const vars = { id: 'r1', post_id: 'p1', reporter_user_id: 'u1', reason_code: 'spam', note: null }
-    await reportDefaults!.mutationFn!(vars)
+    await reportDefaults!.mutationFn!(vars, MUTATION_FN_CONTEXT)
 
     expect(fromMock).toHaveBeenCalledWith('collective_reports')
     expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -862,7 +880,7 @@ describe('Story 3-7 / report mutation (AC #12, #13)', () => {
 
     await reportDefaults!.onMutate!({
       id: 'r1', post_id: 'p1', reporter_user_id: 'u1', reason_code: 'spam', note: null
-    })
+    }, MUTATION_FN_CONTEXT)
 
     // onMutate for report must NOT touch any cache
     expect(setQueryDataSpy).not.toHaveBeenCalled()
@@ -880,7 +898,8 @@ describe('Story 3-7 / report mutation (AC #12, #13)', () => {
     await reportDefaults!.onError!(
       new Error('failed'),
       { id: 'r1', post_id: 'p1', reporter_user_id: 'u1', reason_code: 'spam', note: null },
-      undefined
+      undefined,
+      MUTATION_FN_CONTEXT
     )
 
     expect(setQueryDataSpy).not.toHaveBeenCalled()
@@ -920,38 +939,38 @@ describe('Story 3-7 / dehydrateOptions.shouldDehydrateMutation (AC #33, #21)', (
     return {
       options: { mutationKey },
       state: { status, isPaused },
-    } as Parameters<typeof dehydrateOptions.shouldDehydrateMutation>[0]
+    } as unknown as Parameters<NonNullable<typeof dehydrateOptions.shouldDehydrateMutation>>[0]
   }
 
   it('AC #33 — collective.post pending mutation IS included in dehydrated cache', () => {
     const mutation = fakeMutation(['collective', 'post'], 'pending')
-    expect(dehydrateOptions.shouldDehydrateMutation(mutation)).toBe(true)
+    expect(dehydrateOptions.shouldDehydrateMutation!(mutation)).toBe(true)
   })
 
   it('AC #21 — collective.react pending mutation is NOT included in dehydrated cache', () => {
     const mutation = fakeMutation(['collective', 'react'], 'pending')
-    expect(dehydrateOptions.shouldDehydrateMutation(mutation)).toBe(false)
+    expect(dehydrateOptions.shouldDehydrateMutation!(mutation)).toBe(false)
   })
 
   it('AC #33 — collective.report pending mutation IS included in dehydrated cache', () => {
     const mutation = fakeMutation(['collective', 'report'], 'pending')
-    expect(dehydrateOptions.shouldDehydrateMutation(mutation)).toBe(true)
+    expect(dehydrateOptions.shouldDehydrateMutation!(mutation)).toBe(true)
   })
 
   it('paused collective.react mutation IS included (isPaused default behavior)', () => {
     // Paused mutations (offline-queued) are always persisted regardless of key.
     const mutation = fakeMutation(['collective', 'react'], 'pending', true)
-    expect(dehydrateOptions.shouldDehydrateMutation(mutation)).toBe(true)
+    expect(dehydrateOptions.shouldDehydrateMutation!(mutation)).toBe(true)
   })
 
   it('paused collective.post mutation IS included (isPaused → always true)', () => {
     const mutation = fakeMutation(['collective', 'post'], 'pending', true)
-    expect(dehydrateOptions.shouldDehydrateMutation(mutation)).toBe(true)
+    expect(dehydrateOptions.shouldDehydrateMutation!(mutation)).toBe(true)
   })
 
   it('non-pending collective.post mutation is NOT included (only pending is in-flight)', () => {
     const mutation = fakeMutation(['collective', 'post'], 'success')
-    expect(dehydrateOptions.shouldDehydrateMutation(mutation)).toBe(false)
+    expect(dehydrateOptions.shouldDehydrateMutation!(mutation)).toBe(false)
   })
 })
 
@@ -980,7 +999,7 @@ describe('Story 3-7 / onSettled prefix invalidation (AC #37)', () => {
       // We test the singleton queryClient's defaults directly.
       const singletonInvalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-      await defaults!.onSettled!(undefined, null, {} as never, undefined)
+      await defaults!.onSettled!(undefined, null, {} as never, undefined, MUTATION_FN_CONTEXT)
 
       expect(singletonInvalidateSpy).toHaveBeenCalledWith(
         expect.objectContaining({ queryKey: ['collective'] })
@@ -1124,7 +1143,7 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
     queryClient.setQueryData(collectiveFeedKey, makeInfiniteData([makeFeedPage([feedPost])]))
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await deleteDefaults!.onMutate!({ post_id: POST_ID })
+    await deleteDefaults!.onMutate!({ post_id: POST_ID }, MUTATION_FN_CONTEXT)
 
     const updated = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
     const updatedPost = updated?.pages[0]?.items[0]
@@ -1147,7 +1166,7 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
     queryClient.setQueryData(collectiveThreadKey(POST_ID), makeThreadInfiniteData([threadPost]))
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await deleteDefaults!.onMutate!({ post_id: POST_ID })
+    await deleteDefaults!.onMutate!({ post_id: POST_ID }, MUTATION_FN_CONTEXT)
 
     const updated = queryClient.getQueryData<InfiniteData<ThreadPageResult>>(collectiveThreadKey(POST_ID))
     const updatedPost = updated?.pages[0]?.items[0]
@@ -1165,7 +1184,7 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
     queryClient.setQueryData(yourPostsKey, makeYourPostsInfiniteData([yourPost]))
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await deleteDefaults!.onMutate!({ post_id: POST_ID })
+    await deleteDefaults!.onMutate!({ post_id: POST_ID }, MUTATION_FN_CONTEXT)
 
     const updated = queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)
     const updatedPost = updated?.pages[0]?.items[0]
@@ -1190,7 +1209,7 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
     queryClient.setQueryData(yourPostsKey, makeYourPostsInfiniteData([yourPost]))
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const ctx = await deleteDefaults!.onMutate!({ post_id: POST_ID })
+    const ctx = await deleteDefaults!.onMutate!({ post_id: POST_ID }, MUTATION_FN_CONTEXT)
 
     // All three caches updated. Story 3-15: the feed branch sets only the
     // deletion flags (no body); thread + yourPosts still write body: '[deleted]'.
@@ -1225,7 +1244,7 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
     queryClient.setQueryData(collectiveThreadKey(POST_ID), makeThreadInfiniteData([threadPost]))
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await deleteDefaults!.onMutate!({ post_id: POST_ID })
+    await deleteDefaults!.onMutate!({ post_id: POST_ID }, MUTATION_FN_CONTEXT)
 
     const updated = queryClient.getQueryData<InfiniteData<ThreadPageResult>>(collectiveThreadKey(POST_ID))
     // EXACT match — not /\[deleted\]/i, not 'deleted', not '[Deleted]'
@@ -1257,7 +1276,7 @@ describe('Story 3-13 / collective.delete_own — rollback on error (AC #5, #26d)
 
     // Run onMutate to get optimistic context (snapshots)
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const ctx = await deleteDefaults!.onMutate!({ post_id: POST_ID })
+    const ctx = await deleteDefaults!.onMutate!({ post_id: POST_ID }, MUTATION_FN_CONTEXT)
 
     // Verify optimistic update was applied. Story 3-15: feed carries no body,
     // so the optimistic marker on the feed row is the is_user_deleted flag.
@@ -1268,7 +1287,7 @@ describe('Story 3-13 / collective.delete_own — rollback on error (AC #5, #26d)
 
     // Simulate server error (non-42501 = real error, must rollback)
     const serverError = new Error('network failure')
-    await deleteDefaults!.onError!(serverError, { post_id: POST_ID }, ctx)
+    await deleteDefaults!.onError!(serverError, { post_id: POST_ID }, ctx, MUTATION_FN_CONTEXT)
 
     // All three caches should be restored. The feed row's flag returns to false
     // (its body is unchanged throughout — the feed never wrote it).
@@ -1294,7 +1313,7 @@ describe('Story 3-13 / collective.delete_own — rollback on error (AC #5, #26d)
 
     // mutationFn should re-throw
     await expect(
-      deleteDefaults!.mutationFn!({ post_id: POST_ID })
+      deleteDefaults!.mutationFn!({ post_id: POST_ID }, MUTATION_FN_CONTEXT)
     ).rejects.toBeDefined()
   })
 })
@@ -1316,7 +1335,7 @@ describe('Story 3-13 / collective.delete_own — 42501 swallow (AC #2, #11, #26e
     })
 
     // Must resolve cleanly — no throw
-    await expect(deleteDefaults!.mutationFn!({ post_id: 'some-post-id' })).resolves.not.toThrow()
+    await expect(deleteDefaults!.mutationFn!({ post_id: 'some-post-id' }, MUTATION_FN_CONTEXT)).resolves.not.toThrow()
   })
 
   it('AC #32 — 42501 with DIFFERENT message is NOT swallowed (re-throws)', async () => {
@@ -1331,7 +1350,7 @@ describe('Story 3-13 / collective.delete_own — 42501 swallow (AC #2, #11, #26e
     })
 
     // Must re-throw — different 42501 message means different failure mode
-    await expect(deleteDefaults!.mutationFn!({ post_id: 'some-post-id' })).rejects.toBeDefined()
+    await expect(deleteDefaults!.mutationFn!({ post_id: 'some-post-id' }, MUTATION_FN_CONTEXT)).rejects.toBeDefined()
   })
 
   it('AC #32 — 42501 with correct code but wrong message field variant also re-throws', async () => {
@@ -1344,7 +1363,7 @@ describe('Story 3-13 / collective.delete_own — 42501 swallow (AC #2, #11, #26e
       error: { code: '42501', message: 'you cannot delete this post' },
     })
 
-    await expect(deleteDefaults!.mutationFn!({ post_id: 'some-post-id' })).rejects.toBeDefined()
+    await expect(deleteDefaults!.mutationFn!({ post_id: 'some-post-id' }, MUTATION_FN_CONTEXT)).rejects.toBeDefined()
   })
 
   it('AC #26e — no console.error called on 42501 swallow (clean replay)', async () => {
@@ -1359,7 +1378,7 @@ describe('Story 3-13 / collective.delete_own — 42501 swallow (AC #2, #11, #26e
       error: { code: '42501', message: 'cannot delete this post' },
     })
 
-    await deleteDefaults!.mutationFn!({ post_id: 'idempotent-post-id' })
+    await deleteDefaults!.mutationFn!({ post_id: 'idempotent-post-id' }, MUTATION_FN_CONTEXT)
 
     expect(consoleErrorSpy).not.toHaveBeenCalled()
     consoleErrorSpy.mockRestore()
@@ -1380,7 +1399,7 @@ describe('Story 3-13 / collective.delete_own — empty-cache safety (AC #5, #26f
     queryClient.clear()
 
     await expect(
-      deleteDefaults!.onMutate!({ post_id: 'ghost-post-id' })
+      deleteDefaults!.onMutate!({ post_id: 'ghost-post-id' }, MUTATION_FN_CONTEXT)
     ).resolves.toBeDefined()
   })
 
@@ -1403,7 +1422,8 @@ describe('Story 3-13 / collective.delete_own — empty-cache safety (AC #5, #26f
     await deleteDefaults!.onError!(
       new Error('failed'),
       { post_id: 'ghost-id' },
-      emptyContext
+      emptyContext,
+      MUTATION_FN_CONTEXT
     )
 
     // Must NOT have been called with undefined as value
@@ -1481,7 +1501,7 @@ describe('Story 3-13 / collective.delete_own — onSettled prefix invalidation (
 
     const singletonInvalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-    await deleteDefaults!.onSettled!(undefined, null, { post_id: 'p1' }, undefined)
+    await deleteDefaults!.onSettled!(undefined, null, { post_id: 'p1' }, undefined, MUTATION_FN_CONTEXT)
 
     expect(singletonInvalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ['collective'] })
@@ -1503,7 +1523,7 @@ describe('Story 3-13 / collective.delete_own — mutationFn RPC contract (AC #2)
 
     rpcMock.mockResolvedValue({ data: null, error: null })
 
-    await deleteDefaults!.mutationFn!({ post_id: 'target-post-uuid' })
+    await deleteDefaults!.mutationFn!({ post_id: 'target-post-uuid' }, MUTATION_FN_CONTEXT)
 
     expect(rpcMock).toHaveBeenCalledWith('delete_my_post', { post_id: 'target-post-uuid' })
   })
@@ -1515,7 +1535,7 @@ describe('Story 3-13 / collective.delete_own — mutationFn RPC contract (AC #2)
 
     rpcMock.mockResolvedValue({ data: null, error: { code: '42000', message: 'some rpc error' } })
 
-    await expect(deleteDefaults!.mutationFn!({ post_id: 'post-uuid' })).rejects.toBeDefined()
+    await expect(deleteDefaults!.mutationFn!({ post_id: 'post-uuid' }, MUTATION_FN_CONTEXT)).rejects.toBeDefined()
   })
 
   it('AC #2 — mutationFn resolves cleanly on success (null error)', async () => {
@@ -1525,6 +1545,6 @@ describe('Story 3-13 / collective.delete_own — mutationFn RPC contract (AC #2)
 
     rpcMock.mockResolvedValue({ data: null, error: null })
 
-    await expect(deleteDefaults!.mutationFn!({ post_id: 'clean-post-uuid' })).resolves.not.toThrow()
+    await expect(deleteDefaults!.mutationFn!({ post_id: 'clean-post-uuid' }, MUTATION_FN_CONTEXT)).resolves.not.toThrow()
   })
 })

@@ -46,16 +46,22 @@ export const Editor = ({
   }, [readOnly])
 
   const themeValues = {
-    textColor: theme.color.val,
-    placeholderColor: theme.placeholderColor.val,
+    textColor: theme.color?.val ?? '#000000',
+    placeholderColor: theme.placeholderColor?.val ?? '#999999',
   }
 
+  const contentFont = isWeb ? families.web : families.native
   const fontFamilies = {
-    content: isWeb ? families.web : families.native,
+    content: contentFont,
+    placeholder: contentFont,
   }
 
-  // Cast to universal props to handle platform-specific prop differences
-  const UniversalLexicalEditor = LexicalEditor as React.FC<LexicalEditorUniversalProps>
+  // Cast to universal props to handle platform-specific prop differences.
+  // `dom` is an Expo DOM-component prop (forwarded to the underlying WebView on
+  // native) that is not part of the shared Lexical prop types.
+  const UniversalLexicalEditor = LexicalEditor as React.FC<
+    LexicalEditorUniversalProps & { dom?: Record<string, unknown> }
+  >
 
   // On native editable: transparent placeholder, PersistentEditor overlay handles rendering.
   // On native readOnly: render Lexical inline (no persistent overlay needed, avoids

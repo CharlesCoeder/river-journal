@@ -122,6 +122,13 @@ let mockHiddenPostIds: Set<string> = new Set()
 const mockRouterPush = vi.fn()
 let mockSearchParams: Record<string, string> = {}
 
+// Platform.OS for the react-native mock below. Mutable so per-suite blocks can
+// flip to 'ios' to exercise the mobile depth cap. ThreadView reads Platform.OS
+// fresh on every render, so updating this between renders is sufficient — no
+// module re-import (vi.doMock) is needed, which would not affect the statically
+// imported ThreadView anyway.
+let mockPlatformOS: 'web' | 'ios' = 'web'
+
 let capturedPostRowProps: any[] = []
 let capturedComposerProps: any[] = []
 let capturedFlagAffordanceProps: Map<string, any> = new Map()
@@ -157,13 +164,10 @@ vi.mock('app/state/collective/locallyHidden', () => ({
   useLocallyHiddenPostIds: () => mockHiddenPostIds,
 }))
 
-// ─── solito/router mock ───────────────────────────────────────────────────────
-vi.mock('solito/router', () => ({
-  useRouter: () => ({ push: mockRouterPush }),
-}))
-
-// ─── Search params mock (Solito useSearchParams or equivalent) ────────────────
+// ─── solito/navigation mock (useRouter + useSearchParams) ─────────────────────
+// ThreadView imports both useRouter and useSearchParams from 'solito/navigation'.
 vi.mock('solito/navigation', () => ({
+  useRouter: () => ({ push: mockRouterPush }),
   useSearchParams: () => ({
     get: (key: string) => mockSearchParams[key] ?? null,
   }),
@@ -175,11 +179,23 @@ vi.mock('react-native', async () => {
   return {
     ...actual,
     Platform: {
-      OS: 'web',
-      select: (obj: any) => obj.web ?? obj.default,
+      get OS() {
+        return mockPlatformOS
+      },
+      select: (obj: any) => obj[mockPlatformOS] ?? obj.default,
     },
   }
 })
+
+// ─── CollectiveEligibilityGate mock — pass-through wrapper ────────────────────
+// The real gate calls useEligibleToPost() → useQuery, which needs a QueryClient
+// provider that these tests do not set up. ThreadView tests only care that the
+// composer mounts inside the gate; eligibility gating is covered by the gate's
+// own tests. Render children directly.
+vi.mock('app/features/collective/CollectiveEligibilityGate', () => ({
+  CollectiveEligibilityGate: (props: any) => props.children ?? null,
+  default: (props: any) => props.children ?? null,
+}))
 
 // ─── PostRow mock — captures props for assertions ─────────────────────────────
 vi.mock('app/features/collective/PostRow', () => ({
@@ -343,6 +359,7 @@ afterEach(() => {
   capturedPostRowProps = []
   capturedComposerProps = []
   capturedFlagAffordanceProps.clear()
+  mockPlatformOS = 'web'
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -510,10 +527,7 @@ describe('t5 — Hide replies / re-expand toggle', () => {
 
 describe('t6 — depth cap = 6 on web', () => {
   beforeEach(() => {
-    vi.doMock('react-native', async () => {
-      const actual = await vi.importActual<typeof import('react-native')>('react-native')
-      return { ...actual, Platform: { OS: 'web', select: (o: any) => o.web ?? o.default } }
-    })
+    mockPlatformOS = 'web'
   })
 
   it('shows "Continue this thread →" at depth 6 leaf with descendants', () => {
@@ -545,10 +559,7 @@ describe('t6 — depth cap = 6 on web', () => {
 
 describe('t7 — depth cap = 4 on mobile', () => {
   beforeEach(() => {
-    vi.doMock('react-native', async () => {
-      const actual = await vi.importActual<typeof import('react-native')>('react-native')
-      return { ...actual, Platform: { OS: 'ios', select: (o: any) => o.ios ?? o.default } }
-    })
+    mockPlatformOS = 'ios'
   })
 
   it('shows "Continue this thread →" at depth 4 leaf on mobile', () => {

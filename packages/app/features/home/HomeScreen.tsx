@@ -102,11 +102,10 @@ export function HomeScreen() {
                   <Text
                     fontFamily="$journal"
                     fontSize={60}
-                    $sm={{ fontSize: 48 }}
                     color="$color"
                     letterSpacing={-1}
                     lineHeight={68}
-                    $sm={{ lineHeight: 56 }}
+                    $sm={{ fontSize: 48, lineHeight: 56 }}
                   >
                     {today}.
                   </Text>
@@ -177,13 +176,17 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
       cursor="pointer"
       transition={reduceMotion ? undefined : 'ctaSpring'}
       x={!reduceMotion && active ? 5 : 0}
-      onHoverIn={() => setHovered(true)}
-      onHoverOut={() => setHovered(false)}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={onPress}
       aria-label="Begin writing"
       role="button"
+      // onHoverIn/onHoverOut are handled at runtime by Tamagui's web component
+      // but are absent from the Text prop types (only present on Stack-based types).
+      {...({
+        onHoverIn: () => setHovered(true),
+        onHoverOut: () => setHovered(false),
+      } as object)}
     >
       Begin writing
     </Text>

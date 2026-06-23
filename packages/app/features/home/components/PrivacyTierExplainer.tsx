@@ -73,7 +73,6 @@ function TierCard({
       borderWidth={1}
       borderColor={selected ? '$color8' : '$color4'}
       borderRadius="$4"
-      pressTheme={interactive}
       transition={interactive ? 'quick' : null}
       onPress={interactive ? () => onSelect?.(mode) : undefined}
       cursor={interactive ? 'pointer' : 'default'}
@@ -144,11 +143,11 @@ export function PrivacyTierExplainer({
             size="$3"
             chromeless
             onPress={() => setLearnMoreOpen((prev) => !prev)}
-            fontFamily="$body"
             alignSelf="flex-start"
-            color="$color10"
           >
-            {learnMoreOpen ? 'Show less' : 'Learn more'}
+            <Text fontFamily="$body" color="$color10">
+              {learnMoreOpen ? 'Show less' : 'Learn more'}
+            </Text>
           </Button>
 
           <AnimatePresence>

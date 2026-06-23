@@ -74,7 +74,9 @@ const installReactNativeRandomValuesFallback = () => {
       const cryptoObject = (globalThis.crypto ?? {}) as Crypto
       ;(globalThis as typeof globalThis & { crypto: Crypto }).crypto = {
         ...cryptoObject,
-        getRandomValues: expoCrypto.getRandomValues,
+        // expo-crypto's getRandomValues has a narrower generic constraint than
+        // the DOM `Crypto.getRandomValues`; cast to the lib signature.
+        getRandomValues: expoCrypto.getRandomValues as Crypto['getRandomValues'],
       }
       return
     }
@@ -84,11 +86,11 @@ const installReactNativeRandomValuesFallback = () => {
       const cryptoObject = (globalThis.crypto ?? {}) as Crypto
       ;(globalThis as typeof globalThis & { crypto: Crypto }).crypto = {
         ...cryptoObject,
-        getRandomValues: <T extends ArrayBufferView>(array: T): T => {
+        getRandomValues: (<T extends ArrayBufferView>(array: T): T => {
           const target = new Uint8Array(array.buffer, array.byteOffset, array.byteLength)
           target.set(getRandomBytes(array.byteLength))
           return array
-        },
+        }) as Crypto['getRandomValues'],
       }
     }
   } catch (installError) {

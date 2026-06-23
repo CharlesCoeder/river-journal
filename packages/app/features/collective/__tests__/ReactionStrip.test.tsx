@@ -25,7 +25,6 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 
 // ─── Controlled state for mocks ───────────────────────────────────────────────
 
@@ -166,7 +165,6 @@ describe('Story 3-11 / t1 — ReactionStrip renders 5 icon buttons (AC #1, #3, #
 
   it('renders all 5 Lucide icons with stable identifiers', () => {
     render(React.createElement(ReactionStrip, { postId: 'post-1', userId: 'user-1' }))
-    expect(screen.getByTestId ? screen.queryByText : screen.getByTitle)
     // Check icon data attributes
     const iconNames = ['Heart', 'Sparkles', 'Flame', 'Leaf', 'Waves']
     for (const name of iconNames) {

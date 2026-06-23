@@ -36,7 +36,8 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
   // the feed Post no longer carries full `body` — only `excerpt` (≤140 chars).
   // Deleted posts announce only '[deleted]' so the screen-reader label never
   // carries body text (mirrors the visible-body suppression below).
-  const bodyPreview = post.excerpt.slice(0, 80) + (post.excerpt.length > 80 ? '…' : '')
+  const excerpt = post.excerpt ?? ''
+  const bodyPreview = excerpt.slice(0, 80) + (excerpt.length > 80 ? '…' : '')
   const a11yLabel = isDeleted ? '[deleted]' : `${displayName}, posted: ${bodyPreview}`
 
   return (
@@ -49,13 +50,14 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
         justifyContent="space-between"
         alignItems="center"
       >
-        <AuthorByline
-          displayName={displayName}
-          postedAt={post.created_at}
-          tenureTier={undefined}
-          deletedDisplay={isDeleted}
-          flexShrink={1}
-        />
+        <View flexShrink={1}>
+          <AuthorByline
+            displayName={displayName}
+            postedAt={post.created_at}
+            tenureTier={undefined}
+            deletedDisplay={isDeleted}
+          />
+        </View>
         <FlagAffordance
           postId={post.id}
           reporterUserId={currentUserId ?? null}
@@ -75,7 +77,7 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
           fontFamily="$journal"
           fontSize="$4"
         >
-          {post.excerpt}
+          {excerpt}
         </Text>
       ) : null}
       {/* ReactionStrip: NOT rendered for self-deleted posts */}

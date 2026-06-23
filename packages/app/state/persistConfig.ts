@@ -35,7 +35,9 @@ export const TABLE_NAMES = [
 export const persistPlugin = observablePersistIndexedDB({
   databaseName: DB_NAME,
   version: DB_VERSION,
-  tableNames: TABLE_NAMES,
+  // Spread to a mutable copy: TABLE_NAMES is a readonly `as const` tuple but
+  // the plugin's tableNames param is a mutable string[].
+  tableNames: [...TABLE_NAMES],
 })
 
 export const configurePersistence = configureSynced({

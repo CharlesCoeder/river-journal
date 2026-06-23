@@ -2,7 +2,7 @@
  * React Native download handler for journal export.
  * Writes ZIP to temp file and opens the native share sheet.
  */
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
 import { encode } from 'base64-arraybuffer'
 

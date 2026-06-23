@@ -577,7 +577,9 @@ describe('GraceDay transforms', () => {
     const encryptionModule = await import('../../utils/encryption')
     const spies = Object.entries(encryptionModule)
       .filter(([, v]) => typeof v === 'function')
-      .map(([name, fn]) => vi.spyOn(encryptionModule, name as keyof typeof encryptionModule, 'get').mockReturnValue(fn as never))
+      .map(([name]) =>
+        vi.spyOn(encryptionModule, name as keyof typeof encryptionModule as never)
+      ) as ReturnType<typeof vi.spyOn>[]
 
     // Clear call counts by creating fresh spies on the actual functions
     const encryptSpy = vi.spyOn(encryptionModule, 'encryptFlowContent')
