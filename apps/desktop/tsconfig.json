@@ -14,7 +14,16 @@
     },
     "allowJs": true,
     "skipLibCheck": true,
+    "downlevelIteration": true,
+    "preserveSymlinks": true,
     "strict": true,
+    // The shared workspace source (packages/app, @my/config) is written to the
+    // repo-standard `tsconfig.base` which sets `noImplicitAny: false`; some
+    // dependencies (react-dom, @tamagui/config subpath exports) have no
+    // node-resolvable declarations. Match the project standard so consuming the
+    // shared code here doesn't surface implicit-any/missing-decl errors that the
+    // rest of the repo intentionally allows.
+    "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,

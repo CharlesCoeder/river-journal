@@ -1027,7 +1027,7 @@ export const updatePersistentEditorContent = (content: string): void => {
  * Creates a default profile if none exists, or backfills missing optional fields
  * on legacy profiles loaded from persistence.
  */
-const ensureProfile = () => {
+export const ensureProfile = () => {
   if (!store$.profile.get()) {
     store$.profile.set({
       word_goal: 750,
@@ -1224,7 +1224,7 @@ export const resetHotkeyOverride = (id: HotkeyActionId): void => {
 /**
  * Gets the current theme name, with fallback to default
  */
-export const getCurrentTheme = (): ThemeName => {
+export const getCurrentTheme = (): ThemeName | 'custom' => {
   return store$.profile.themeName.get() ?? DEFAULT_THEME
 }
 

@@ -4,11 +4,13 @@ import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
+import type { CustomThemeDef } from 'app/state/types'
+
 // --- Mocks ---
 
 const mockSetCustomTheme = vi.fn()
 const mockClearCustomTheme = vi.fn()
-const mockCustomTheme = vi.fn(() => null)
+const mockCustomTheme = vi.fn<() => CustomThemeDef | null>(() => null)
 const mockThemeName = vi.fn(() => 'ink')
 const mockOnClose = vi.fn()
 

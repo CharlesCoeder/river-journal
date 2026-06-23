@@ -7,7 +7,7 @@ import { LIGHT_THEMES, DARK_THEMES } from 'app/state/types'
 import type { ThemeName } from 'app/state/types'
 import { THEME_DEFS } from '@my/config/src/themes'
 import { useUnlockedThemes, getThemePickerTier } from 'app/state/streak'
-import type { SubscriptionTier } from 'app/state/streak'
+import type { SubscriptionTier, StreakState } from 'app/state/streak'
 import { useRouter } from 'solito/navigation'
 import { CustomThemeEditor } from './CustomThemeEditor'
 
@@ -80,7 +80,7 @@ function ThemeRow({
 export function ThemePicker() {
   const currentTheme = use$(store$.profile.themeName) ?? 'ink'
   const customTheme = use$(store$.profile.customTheme)
-  const streak = use$(store$.views.streak!)
+  const streak = use$(store$.views.streak!) as unknown as StreakState
   // Direct read from profile for "is this theme unlocked?" — single source of truth
   // for unlock-state in the picker. See AC 27: this and useUnlockedThemes('free') are
   // the same data routed differently; direct read avoids a streak-recompute round-trip.

@@ -204,7 +204,10 @@ queryClient.setMutationDefaults(['collective', 'react'], {
         // replay of an add that already landed.
         if (
           error.code === '23505' &&
-          error.constraint === 'collective_reactions_post_id_user_id_kind_key'
+          // `constraint` is present at runtime on Postgres errors but is not in
+          // the PostgrestError type, so read it through a narrow cast.
+          (error as { constraint?: string }).constraint ===
+            'collective_reactions_post_id_user_id_kind_key'
         ) {
           return
         }
@@ -298,7 +301,10 @@ queryClient.setMutationDefaults(['collective', 'report'], {
       // no-op on the server rather than returning an error to the user.
       if (
         error.code === '23505' &&
-        error.constraint === 'collective_reports_post_id_reporter_user_id_key'
+        // `constraint` is present at runtime on Postgres errors but is not in
+        // the PostgrestError type, so read it through a narrow cast.
+        (error as { constraint?: string }).constraint ===
+          'collective_reports_post_id_reporter_user_id_key'
       ) {
         return
       }

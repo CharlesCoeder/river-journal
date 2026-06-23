@@ -57,7 +57,6 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
             <AlertDialog.Action asChild>
               <Button
                 backgroundColor="$red10"
-                color="white"
                 onPress={onConfirm}
                 hoverStyle={{ backgroundColor: '$red11' }}
                 pressStyle={{ backgroundColor: '$red11' }}

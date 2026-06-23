@@ -68,14 +68,12 @@ afterEach(() => {
 
 function makeRow(overrides: Partial<Record<string, unknown>> & { id: string; created_at: string }) {
   return {
-    id: overrides.id,
     user_id: 'user-x',
     parent_post_id: 'post-A',
     // Story 3-15: thread_page rows now carry `title` — always NULL for replies
     // (guaranteed server-side by the polarised CHECK). Passed through unchanged.
     title: null,
     body: 'hello',
-    created_at: overrides.created_at,
     is_removed: false,
     is_user_deleted: false,
     user_deleted_at: null,

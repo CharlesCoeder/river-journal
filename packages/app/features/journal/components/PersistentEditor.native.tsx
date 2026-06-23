@@ -35,11 +35,12 @@ export const PersistentEditor = () => {
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false;
   const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph';
   const themeValues = {
-    textColor: theme.color.val,
-    placeholderColor: theme.placeholderColor.val
+    textColor: theme.color?.val ?? '#000000',
+    placeholderColor: theme.placeholderColor?.val ?? '#999999'
   };
   const fontFamilies = {
-    content: families.native
+    content: families.native,
+    placeholder: families.native
   };
 
   // Debounced function to update Legend State from editor changes
@@ -69,8 +70,12 @@ export const PersistentEditor = () => {
     recordThresholdCrossingIfNeeded(count);
   };
 
-  // Cast to universal props to handle platform differences
-  const UniversalLexicalEditor = LexicalEditor as React.FC<LexicalEditorUniversalProps>;
+  // Cast to universal props to handle platform differences.
+  // `dom` is an Expo DOM-component prop (forwarded to the underlying WebView)
+  // that is not part of the shared Lexical prop types.
+  const UniversalLexicalEditor = LexicalEditor as React.FC<
+    LexicalEditorUniversalProps & { dom?: Record<string, unknown> }
+  >;
 
   // Show when visible AND we know the header height (to prevent flash at top)
   const shouldShow = persistentEditor.isVisible && persistentEditor.headerHeight > 0;

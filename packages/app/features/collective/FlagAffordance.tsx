@@ -293,8 +293,6 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
               <ExpandingLineButton
                 onPress={handleSubmit}
                 disabled={submitDisabled}
-                aria-disabled={submitDisabled ? 'true' : 'false'}
-                opacity={submitDisabled ? 0.5 : 1}
               >
                 Submit
               </ExpandingLineButton>

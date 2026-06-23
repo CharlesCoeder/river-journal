@@ -6,7 +6,7 @@
 import 'app/state/collective/mutations'
 import { __collectiveMutationsLoadedAt } from 'app/state/collective/mutations'
 
-import { useLayoutEffect, useState } from 'react'
+import { useLayoutEffect, useState, type FC, type ReactNode } from 'react'
 import {
   CustomToast,
   TamaguiProvider,
@@ -16,7 +16,18 @@ import {
   config,
   isWeb,
 } from '@my/ui'
-import { FontLanguage } from 'tamagui'
+import { FontLanguage as FontLanguageBase } from 'tamagui'
+
+// Under the generic Tamagui config, FontLanguage's props degenerate to an index
+// signature (`Partial<Record<string, FontLanguages>>`) that rejects `children`.
+// Cast to the precise prop shape it accepts at runtime.
+const FontLanguage = FontLanguageBase as unknown as FC<{
+  body?: string
+  heading?: string
+  journal?: string
+  journalItalic?: string
+  children?: ReactNode
+}>
 import { addTheme, updateTheme } from '@tamagui/theme'
 import {
   PersistQueryClientProvider,

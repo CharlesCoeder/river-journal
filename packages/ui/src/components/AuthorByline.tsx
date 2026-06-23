@@ -79,7 +79,9 @@ export function AuthorByline({
 
   return (
     <XStack
-      role="text"
+      // 'text' is a non-standard-but-AT-supported role (groups children into a
+      // single announcement); Tamagui's `Role` union omits it, so cast.
+      role={'text' as never}
       aria-label={a11yLabel}
     >
       <Text

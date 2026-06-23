@@ -13,7 +13,7 @@ const mockResetHotkeyOverride = vi.fn()
 const mockStartRecording = vi.fn()
 const mockStopRecording = vi.fn()
 const mockCancelRecording = vi.fn()
-const mockOverrides = vi.fn<[], Record<string, string | undefined>>(() => ({}))
+const mockOverrides = vi.fn<() => Record<string, string | undefined>>(() => ({}))
 
 // Capture the latest options passed to useHotkeyRecorder so tests can drive
 // onRecord / onCancel callbacks.

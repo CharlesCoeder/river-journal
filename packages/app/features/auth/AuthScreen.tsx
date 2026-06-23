@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, YStack, XStack, Text, ScrollView, View, Spinner } from '@my/ui'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useRouter } from 'solito/navigation'
+import type { Observable } from '@legendapp/state'
 import { useObservable, use$ } from '@legendapp/state/react'
 import { DesignInput } from './components/DesignInput'
 import { GoogleSignInButton } from './components/GoogleSignInButton'
@@ -24,6 +25,8 @@ export interface AuthFormState {
   password: string
   confirmPassword: string
 }
+
+export type AuthFormObservable = Observable<AuthFormState>
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -326,7 +329,7 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
               cursor={canSubmit ? 'pointer' : 'not-allowed'}
               hoverStyle={canSubmit ? { backgroundColor: '$color' } : {}}
               marginTop="$5"
-              group="submitBtn"
+              group={'submitBtn' as never}
             >
               {isLoading ? (
                 <Spinner />

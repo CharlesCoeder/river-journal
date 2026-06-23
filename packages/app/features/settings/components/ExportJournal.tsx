@@ -102,7 +102,7 @@ function CheckboxRow({
 // ---------------------------------------------------------------------------
 
 export function ExportJournal() {
-  const allEntries = use$(store$.views.allEntriesSorted)
+  const allEntries = use$(store$.views.allEntriesSorted())
   const [mode, setMode] = useState<ExportMode>('idle')
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
   const [exportedCount, setExportedCount] = useState(0)

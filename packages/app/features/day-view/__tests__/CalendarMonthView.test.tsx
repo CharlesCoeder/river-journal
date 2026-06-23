@@ -329,7 +329,7 @@ describe('Prior/next-month spillover cells are disabled', () => {
       return label.startsWith('March') || label.startsWith('May')
     })
     spilloverCells.forEach((cell) => {
-      expect(cell).toBeDisabled()
+      expect((cell as HTMLButtonElement).disabled).toBe(true)
     })
   })
 

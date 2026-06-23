@@ -73,6 +73,11 @@ import { yourPostsKey, type YourPost, type YourPostsPage } from 'app/state/colle
 import { collectiveReactionsKey } from 'app/state/collective/reactions'
 import type { ReactionKind } from 'app/state/collective/types'
 
+// TanStack Query v5.100: mutation lifecycle callbacks take a trailing
+// MutationFunctionContext. Tests invoke the registered defaults manually, so
+// supply a minimal context. The registered impls ignore it.
+const MUTATION_FN_CONTEXT = { client: queryClient, meta: undefined }
+
 type ReactionCounts = Record<ReactionKind, number>
 type UserReactions = Record<ReactionKind, string | null>
 type ReactionsCache = { counts: ReactionCounts; userReactions: UserReactions }
@@ -150,7 +155,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await reactDefaults!.onMutate!(vars)
+    const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     // Context must include reactionsSnapshot
     const ctx = context as { reactionsSnapshot?: ReactionsCache }
@@ -179,7 +184,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await reactDefaults!.onMutate!(vars)
+    await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const after = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
     expect(after).toBeDefined()
@@ -203,7 +208,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await reactDefaults!.onMutate!(vars)
+    await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const after = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
     expect(after!.userReactions.sparkle).toBe('rxn-uuid-sparkle')
@@ -226,7 +231,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await reactDefaults!.onMutate!(vars)
+    const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const ctx = context as { feedSnapshot?: unknown; threadSnapshot?: unknown; reactionsSnapshot?: unknown }
     expect(ctx.feedSnapshot).toBeDefined()
@@ -257,7 +262,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new2)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await reactDefaults!.onMutate!(vars)
+    await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const after = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
     expect(after).toBeDefined()
@@ -283,7 +288,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new2)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await reactDefaults!.onMutate!(vars)
+    await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const after = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
     expect(after!.userReactions.wave).toBeNull()
@@ -307,7 +312,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new2)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    await reactDefaults!.onMutate!(vars)
+    await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const after = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
     expect(after!.counts.heart).toBeGreaterThanOrEqual(0)
@@ -332,7 +337,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new2)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await reactDefaults!.onMutate!(vars)
+    const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     const ctx = context as { reactionsSnapshot?: ReactionsCache }
     expect(ctx.reactionsSnapshot).toBeDefined()
@@ -367,14 +372,14 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await reactDefaults!.onMutate!(vars)
+    const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     // Verify optimistic update was applied
     const afterOptimistic = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
     expect(afterOptimistic!.counts.heart).toBe(4)
 
     // Simulate error — should rollback
-    await reactDefaults!.onError!(new Error('failed'), vars, context)
+    await reactDefaults!.onError!(new Error('failed'), vars, context, MUTATION_FN_CONTEXT)
 
     const afterRollback = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
     expect(afterRollback!.counts.heart).toBe(3)
@@ -405,7 +410,7 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
       toggle: 'add' as const,
     }
 
-    await reactDefaults!.onError!(new Error('failed'), vars, ctx)
+    await reactDefaults!.onError!(new Error('failed'), vars, ctx, MUTATION_FN_CONTEXT)
 
     // Must NOT have called setQueryData with undefined as the value argument
     const undefinedCalls = setQueryDataSpy.mock.calls.filter((call) => call[1] === undefined)
@@ -429,7 +434,7 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
     }
 
     await queryClient.cancelQueries({ queryKey: ['collective'] })
-    const context = await reactDefaults!.onMutate!(vars)
+    const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     // After onMutate feed snapshot should be preserved
     const ctx = context as { feedSnapshot?: unknown }
@@ -437,7 +442,7 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
 
     // Spy to assert setQueryData is called with the snapshot
     const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
-    await reactDefaults!.onError!(new Error('fail'), vars, context)
+    await reactDefaults!.onError!(new Error('fail'), vars, context, MUTATION_FN_CONTEXT)
 
     const feedRestoreCalls = setQueryDataSpy.mock.calls.filter(
       (call) => JSON.stringify(call[0]) === JSON.stringify(collectiveFeedKey)
@@ -467,7 +472,8 @@ describe('Story 3-11 / useToggleReaction.onSettled — invalidation preserved (t
         user_id: 'u1',
         toggle: 'add' as const,
       },
-      undefined
+      undefined,
+      MUTATION_FN_CONTEXT
     )
 
     expect(invalidateSpy).toHaveBeenCalledWith(

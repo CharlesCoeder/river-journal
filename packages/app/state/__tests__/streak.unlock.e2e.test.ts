@@ -110,8 +110,8 @@ describe('chosenUnlocks wiring', () => {
 
     // CRITICAL SEMANTIC: chosenUnlocks = [] → chosen-slice branch → []
     // NOT the passive-map output ['forest-morning', 'leather']
-    expect(streakState.unlockedThemes).toEqual([])
-    expect(streakState.unlockTokensEarned).toBe(2)
+    expect(streakState!.unlockedThemes).toEqual([])
+    expect(streakState!.unlockTokensEarned).toBe(2)
   })
 
   it('reflects chosen theme after profile mutation', () => {
@@ -129,7 +129,7 @@ describe('chosenUnlocks wiring', () => {
     } as any)
 
     // Initially []
-    expect(store$.views.streak.get().unlockedThemes).toEqual([])
+    expect(store$.views.streak.get()!.unlockedThemes).toEqual([])
 
     // Mutate profile to add 'fireside'
     batch(() => {
@@ -138,7 +138,7 @@ describe('chosenUnlocks wiring', () => {
 
     // After mutation: chosen-slice(['fireside']).slice(0, 2) → ['fireside']
     const updated = store$.views.streak.get()
-    expect(updated.unlockedThemes).toEqual(['fireside'])
+    expect(updated!.unlockedThemes).toEqual(['fireside'])
   })
 
   it('passes unknown strings verbatim without crashing (JSONB tolerance)', () => {

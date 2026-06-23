@@ -198,7 +198,7 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
         cursor={canSubmit ? 'pointer' : 'not-allowed'}
         hoverStyle={canSubmit ? { backgroundColor: '$color' } : {}}
         marginTop="$3"
-        group="submitBtn"
+        group={'submitBtn' as never}
       >
         {isLoading ? (
           <Spinner />

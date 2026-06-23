@@ -35,7 +35,7 @@ export function StreakChip({ dayCount, state = 'pending' }: StreakChipProps) {
         fontSize="$3"
         color={color}
         aria-label={label}
-        role="text"
+        role={'text' as never}
         transition={transition as any}
         enterStyle={enterStyle as any}
       >

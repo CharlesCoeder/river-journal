@@ -57,11 +57,13 @@ function SetHTMLBackgroundColor() {
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      const backgroundColor = theme.background.val
-      document.documentElement.style.backgroundColor = backgroundColor
-      document.body.style.backgroundColor = backgroundColor
+      const backgroundColor = theme.background?.val
+      if (backgroundColor) {
+        document.documentElement.style.backgroundColor = backgroundColor
+        document.body.style.backgroundColor = backgroundColor
+      }
     }
-  }, [theme.background.val])
+  }, [theme.background?.val])
 
   return null
 }

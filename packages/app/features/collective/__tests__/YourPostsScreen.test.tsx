@@ -96,9 +96,10 @@ vi.mock('@tanstack/react-query', async () => {
   }
 })
 
-// ─── useRouter mock (solito/router) ──────────────────────────────────────────
+// ─── useRouter mock (solito/navigation) ──────────────────────────────────────
+// YourPostsScreen imports useRouter from 'solito/navigation' (not 'solito/router').
 const mockRouterPush = vi.fn()
-vi.mock('solito/router', () => ({
+vi.mock('solito/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
 }))
 
