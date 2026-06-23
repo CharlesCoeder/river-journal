@@ -130,10 +130,10 @@ BEGIN
       -- match on [.!?] followed by whitespace) OR first 140 chars,
       -- whichever is shorter.
       CASE
-        WHEN substring(cp.body FROM '^[^.!?]*[.!?](\s|$)') IS NOT NULL
-         AND length(substring(cp.body FROM '^[^.!?]*[.!?](\s|$)'))
+        WHEN substring(cp.body FROM '^[^.!?]*[.!?](?:\s|$)') IS NOT NULL
+         AND length(substring(cp.body FROM '^[^.!?]*[.!?](?:\s|$)'))
              <= LEAST(length(cp.body), 140)
-        THEN substring(cp.body FROM '^[^.!?]*[.!?](\s|$)')
+        THEN substring(cp.body FROM '^[^.!?]*[.!?](?:\s|$)')
         ELSE substring(cp.body FROM 1 FOR 140)
       END AS body,
       cp.created_at,

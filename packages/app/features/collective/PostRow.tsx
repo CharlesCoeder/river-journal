@@ -34,8 +34,10 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
 
   // a11y label: the server-truncated excerpt for screen readers. Story 3-15:
   // the feed Post no longer carries full `body` — only `excerpt` (≤140 chars).
+  // Deleted posts announce only '[deleted]' so the screen-reader label never
+  // carries body text (mirrors the visible-body suppression below).
   const bodyPreview = post.excerpt.slice(0, 80) + (post.excerpt.length > 80 ? '…' : '')
-  const a11yLabel = `${isDeleted ? '[deleted]' : displayName}, posted: ${bodyPreview}`
+  const a11yLabel = isDeleted ? '[deleted]' : `${displayName}, posted: ${bodyPreview}`
 
   return (
     <View
@@ -43,7 +45,10 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
       role="article"
       aria-label={a11yLabel}
     >
-      <XStack justifyContent="space-between" alignItems="center">
+      <XStack
+        justifyContent="space-between"
+        alignItems="center"
+      >
         <AuthorByline
           displayName={displayName}
           postedAt={post.created_at}
@@ -55,14 +60,21 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
           postId={post.id}
           reporterUserId={currentUserId ?? null}
           canSelfDelete={post.user_id === currentUserId && post.is_user_deleted === false}
-          canReport={post.user_id !== currentUserId && post.is_user_deleted === false && post.user_id !== null}
+          canReport={
+            post.user_id !== currentUserId &&
+            post.is_user_deleted === false &&
+            post.user_id !== null
+          }
         />
       </XStack>
       {/* For self-deleted posts, body is the literal '[deleted]' — AuthorByline already
           communicates this. Render body only for non-self-deleted posts to avoid duplicate
           '[deleted]' text nodes that confuse a11y queries. */}
       {!selfDeleted ? (
-        <Text fontFamily="$journal" fontSize="$4">
+        <Text
+          fontFamily="$journal"
+          fontSize="$4"
+        >
           {post.excerpt}
         </Text>
       ) : null}
