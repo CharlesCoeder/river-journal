@@ -237,10 +237,10 @@ BEGIN
       -- 20260506000006:132-138): first sentence-end OR first 140 chars,
       -- whichever is shorter. The ONLY body-derived text the feed emits.
       CASE
-        WHEN substring(pp.body FROM '^[^.!?]*[.!?](\s|$)') IS NOT NULL
-         AND length(substring(pp.body FROM '^[^.!?]*[.!?](\s|$)'))
+        WHEN substring(pp.body FROM '^[^.!?]*[.!?](?:\s|$)') IS NOT NULL
+         AND length(substring(pp.body FROM '^[^.!?]*[.!?](?:\s|$)'))
              <= LEAST(length(pp.body), 140)
-        THEN substring(pp.body FROM '^[^.!?]*[.!?](\s|$)')
+        THEN substring(pp.body FROM '^[^.!?]*[.!?](?:\s|$)')
         ELSE substring(pp.body FROM 1 FOR 140)
       END AS excerpt,
       pp.created_at,
@@ -296,10 +296,10 @@ BEGIN
     pp.parent_post_id,
     pp.title,
     CASE
-      WHEN substring(pp.body FROM '^[^.!?]*[.!?](\s|$)') IS NOT NULL
-       AND length(substring(pp.body FROM '^[^.!?]*[.!?](\s|$)'))
+      WHEN substring(pp.body FROM '^[^.!?]*[.!?](?:\s|$)') IS NOT NULL
+       AND length(substring(pp.body FROM '^[^.!?]*[.!?](?:\s|$)'))
            <= LEAST(length(pp.body), 140)
-      THEN substring(pp.body FROM '^[^.!?]*[.!?](\s|$)')
+      THEN substring(pp.body FROM '^[^.!?]*[.!?](?:\s|$)')
       ELSE substring(pp.body FROM 1 FOR 140)
     END AS excerpt,
     pp.created_at,
