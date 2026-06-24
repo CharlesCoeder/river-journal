@@ -34,7 +34,8 @@ export type { Post }
  * polarised `collective_posts_title_chk` CHECK) — so no manual `title: null`
  * mapping is needed anywhere; replies are always `title: null` by CHECK.
  */
-export type ThreadPost = Database['public']['Functions']['collective_thread_page']['Returns'][number]
+export type ThreadPost =
+  Database['public']['Functions']['collective_thread_page']['Returns'][number]
 
 /**
  * ThreadRoot — the single root row returned by `collective_thread_root`
@@ -42,7 +43,8 @@ export type ThreadPost = Database['public']['Functions']['collective_thread_page
  * feed RPC dropped full `body`. Carries `title` + full `body` +
  * `descendant_count` + `reactions` tally + `mode`.
  */
-export type ThreadRoot = Database['public']['Functions']['collective_thread_root']['Returns'][number]
+export type ThreadRoot =
+  Database['public']['Functions']['collective_thread_root']['Returns'][number]
 
 /**
  * Page size for thread reply pagination. Matches the feed page size; the
@@ -159,10 +161,7 @@ export async function fetchThreadPage(
  *   - `'root'` → `gcTime: 24 * 60 * 60_000` (24 h). Back-button restore
  *     of a thread the user just navigated into is high-value UX.
  */
-export function useThread(
-  postId: string,
-  { role }: { role: 'root' | 'expansion' }
-) {
+export function useThread(postId: string, { role }: { role: 'root' | 'expansion' }) {
   return useInfiniteQuery<
     ThreadPageResult,
     Error,
@@ -214,6 +213,11 @@ export function useThreadRoot(postId: string) {
   return useQuery({
     queryKey: collectiveThreadRootKey(postId),
     queryFn: () => fetchThreadRoot(postId),
+    // Consumer-side guard (Story 3-16): a falsy postId would fire
+    // collective_thread_root({ post_id: '' }) → invalid-UUID error. Skip the
+    // query until we have a real id. This is the single state-hook touch the
+    // UI-port task is authorised to make (the deferred-note guard).
+    enabled: !!postId,
     staleTime: 25_000,
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,

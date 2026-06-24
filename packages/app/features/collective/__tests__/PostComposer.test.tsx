@@ -55,7 +55,10 @@ const PROJECT_ROOT = path.resolve(__dirname, '../../../../..')
 const POST_COMPOSER_PATH = path.join(FEATURES_DIR, 'PostComposer.tsx')
 const COLLECTIVE_LEXICAL_EDITOR_PATH = path.join(FEATURES_DIR, 'CollectiveLexicalEditor.tsx')
 const WEB_COMPOSE_ROUTE_PATH = path.join(PROJECT_ROOT, 'apps/web/app/collective/compose/page.tsx')
-const DESKTOP_COMPOSE_ROUTE_PATH = path.join(PROJECT_ROOT, 'apps/desktop/app/collective/compose/page.tsx')
+const DESKTOP_COMPOSE_ROUTE_PATH = path.join(
+  PROJECT_ROOT,
+  'apps/desktop/app/collective/compose/page.tsx'
+)
 const MOBILE_COMPOSE_ROUTE_PATH = path.join(PROJECT_ROOT, 'apps/mobile/app/collective/compose.tsx')
 
 // ─── Controlled mock state ─────────────────────────────────────────────────────
@@ -102,16 +105,22 @@ vi.mock('app/features/disclosure/ThreePostureDisclosure', () => {
         onClose: props.onClose,
       }
       if (!props.open) return null
-      return ReactMod.createElement('div', {
-        'data-testid': 'disclosure-modal',
-        'data-mode': props.mode,
-        'data-boundary': props.boundary,
-        role: 'dialog',
-      },
-        ReactMod.createElement('button', {
-          'data-testid': 'disclosure-acknowledge-btn',
-          onClick: () => props.onClose?.(),
-        }, 'Got it, post')
+      return ReactMod.createElement(
+        'div',
+        {
+          'data-testid': 'disclosure-modal',
+          'data-mode': props.mode,
+          'data-boundary': props.boundary,
+          role: 'dialog',
+        },
+        ReactMod.createElement(
+          'button',
+          {
+            'data-testid': 'disclosure-acknowledge-btn',
+            onClick: () => props.onClose?.(),
+          },
+          'Got it, post'
+        )
       )
     },
   }
@@ -123,11 +132,15 @@ vi.mock('app/features/disclosure/AmbientPrivacyLabel', () => {
   return {
     AmbientPrivacyLabel: (props: any) => {
       capturedLabelOnPress = props.onPress
-      return ReactMod.createElement('button', {
-        'data-testid': 'ambient-label',
-        'data-boundary': props.boundary,
-        onClick: () => props.onPress?.(),
-      }, 'VISIBLE TO THE COLLECTIVE')
+      return ReactMod.createElement(
+        'button',
+        {
+          'data-testid': 'ambient-label',
+          'data-boundary': props.boundary,
+          onClick: () => props.onPress?.(),
+        },
+        'VISIBLE TO THE COLLECTIVE'
+      )
     },
   }
 })
@@ -208,6 +221,18 @@ vi.mock('@my/ui', async () => {
     Text: ({ children, fontSize, color, ...props }: any) =>
       ReactModule.createElement('span', mapA11y(props), children),
 
+    // TextArea — maps Tamagui props onto a native <textarea>. Title-led redesign
+    // (Story 3-16) uses this for the required "Letter title" field. We surface
+    // value/placeholder/aria-label and translate onChangeText to an onChange that
+    // passes e.target.value (Tamagui's onChangeText is value-first, not event-first).
+    TextArea: ({ value, onChangeText, placeholder, ...props }: any) =>
+      ReactModule.createElement('textarea', {
+        value: value ?? '',
+        placeholder,
+        onChange: (e: any) => onChangeText?.(e.target.value),
+        ...mapA11y(props),
+      }),
+
     View: ({ children, tag, onPress, ...props }: any) => {
       const a11y: Record<string, unknown> = {}
       if (onPress) a11y['onClick'] = onPress
@@ -223,20 +248,29 @@ vi.mock('@my/ui', async () => {
     Separator: () => ReactModule.createElement('hr'),
 
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>
-      ReactModule.createElement('button', {
-        onClick: onPress,
-        disabled: !!disabled,
-        'aria-disabled': disabled ? 'true' : 'false',
-        'data-testid': props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
-      }, children),
+      ReactModule.createElement(
+        'button',
+        {
+          onClick: onPress,
+          disabled: !!disabled,
+          'aria-disabled': disabled ? 'true' : 'false',
+          'data-testid':
+            props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
+        },
+        children
+      ),
 
     AuthorByline: ({ displayName, postedAt, tenureTier, ...props }: any) =>
-      ReactModule.createElement('span', {
-        'data-testid': 'author-byline-preview',
-        'data-display-name': displayName,
-        'data-tenure-tier': tenureTier ?? 'none',
-        'data-posted-at': postedAt,
-      }, displayName),
+      ReactModule.createElement(
+        'span',
+        {
+          'data-testid': 'author-byline-preview',
+          'data-display-name': displayName,
+          'data-tenure-tier': tenureTier ?? 'none',
+          'data-posted-at': postedAt,
+        },
+        displayName
+      ),
 
     useReducedMotion: () => false,
   }
@@ -253,10 +287,12 @@ vi.mock('app/features/collective/CollectiveLexicalEditor', () => {
       if (__contextProbeRef) {
         __contextProbeRef.current = { __lexicalEditorId: instanceId }
       }
-      return ReactMod.createElement('div', {
-        'data-testid': 'collective-lexical-editor',
-        'data-min-height': minHeight,
-      },
+      return ReactMod.createElement(
+        'div',
+        {
+          'data-testid': 'collective-lexical-editor',
+          'data-min-height': minHeight,
+        },
         ReactMod.createElement('div', {
           role: 'textbox',
           contentEditable: true,
@@ -430,7 +466,9 @@ describe('Story 3-9 / t3 — Lexical isolation regression D14 (AC #7, #9)', () =
     const ref1 = { current: null as unknown }
     const ref2 = { current: null as unknown }
 
-    const { unmount } = render(React.createElement(PostComposer, { __contextProbeRef: ref1 } as any))
+    const { unmount } = render(
+      React.createElement(PostComposer, { __contextProbeRef: ref1 } as any)
+    )
     const id1 = (ref1.current as any)?.__lexicalEditorId
     unmount()
 
@@ -520,17 +558,21 @@ describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
     mockIsPending = false
   })
 
-  it('tapping Submit calls mutate with body, parent_post_id: null, and a uuid id', () => {
+  it('tapping submit calls mutate with title, body, parent_post_id: null, and a uuid id', () => {
     render(React.createElement(PostComposer))
+    // Top-level letters are title-led: provide a required title first.
+    const titleField = screen.getByLabelText('Letter title')
+    fireEvent.change(titleField, { target: { value: 'A morning letter' } })
     // Type into the writing surface
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     expect(editor).not.toBeNull()
     fireEvent.input(editor!, { target: { innerText: 'Hello collective.' } })
-    // Tap Submit
-    const submitBtn = screen.getByText('Submit')
+    // Tap submit (top-level label is "Leave it for the room")
+    const submitBtn = screen.getByText('Leave it for the room')
     fireEvent.click(submitBtn)
     expect(mockMutate).toHaveBeenCalledTimes(1)
     const callArg = mockMutate.mock.calls[0]![0]
+    expect(callArg.title).toBe('A morning letter')
     expect(callArg.body).toBe('Hello collective.')
     expect(callArg.parent_post_id).toBeNull()
     expect(callArg.user_id).toBe('user-xyz')
@@ -540,9 +582,10 @@ describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
 
   it('calls router.push("/collective") synchronously after mutate (never router.back)', () => {
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'Post body text.' } })
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.click(screen.getByText('Leave it for the room'))
     expect(mockRouterPush).toHaveBeenCalledTimes(1)
     expect(mockRouterPush).toHaveBeenCalledWith('/collective')
     expect(mockRouterBack).not.toHaveBeenCalled()
@@ -559,10 +602,29 @@ describe('Story 3-9 / t7 — submit disabled when body empty (AC #13)', () => {
     mockHasAcknowledgedBoundaryA = true
   })
 
-  it('Submit button is disabled with no typed text', () => {
+  it('submit button is disabled with no typed text', () => {
     render(React.createElement(PostComposer))
-    const submitBtn = screen.getByText('Submit')
+    const submitBtn = screen.getByText('Leave it for the room')
     expect(submitBtn.closest('button')?.disabled).toBe(true)
+  })
+
+  it('submit stays disabled when only the body is typed (title still required)', () => {
+    // Title-led redesign: a non-blank body alone is NOT enough to enable the
+    // top-level submit — the required title must also be present.
+    render(React.createElement(PostComposer))
+    const editor = document.querySelector('[data-testid="lexical-content-editable"]')
+    fireEvent.input(editor!, { target: { innerText: 'A body with no title yet.' } })
+    const submitBtn = screen.getByText('Leave it for the room')
+    expect(submitBtn.closest('button')?.disabled).toBe(true)
+  })
+
+  it('submit becomes enabled once BOTH title and body are non-blank', () => {
+    render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'My title' } })
+    const editor = document.querySelector('[data-testid="lexical-content-editable"]')
+    fireEvent.input(editor!, { target: { innerText: 'Some body text.' } })
+    const submitBtn = screen.getByText('Leave it for the room')
+    expect(submitBtn.closest('button')?.disabled).toBe(false)
   })
 
   it('does NOT render empty-state microcopy when body is empty (AC #13 spec: no message)', () => {
@@ -584,9 +646,9 @@ describe('Story 3-9 / t8 — submit disabled when pending (AC #13)', () => {
     mockIsPending = true
   })
 
-  it('Submit button is disabled when isPending===true', () => {
+  it('submit button is disabled when isPending===true', () => {
     render(React.createElement(PostComposer))
-    const submitBtn = screen.getByText('Submit')
+    const submitBtn = screen.getByText('Leave it for the room')
     expect(submitBtn.closest('button')?.disabled).toBe(true)
   })
 
@@ -622,9 +684,10 @@ describe('Story 3-9 / t10 — error path (AC #16)', () => {
       opts?.onError?.(new Error('RLS rejection'), _vars, undefined)
     })
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'test post body' } })
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.click(screen.getByText('Leave it for the room'))
     expect(screen.getByText(/Couldn't post\. Try again\./i)).not.toBeNull()
   })
 
@@ -633,9 +696,10 @@ describe('Story 3-9 / t10 — error path (AC #16)', () => {
       opts?.onError?.(new Error('error'), _vars, undefined)
     })
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'draft text' } })
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.click(screen.getByText('Leave it for the room'))
     // No navigation on error
     expect(mockRouterBack).not.toHaveBeenCalled()
     expect(mockRouterPush).not.toHaveBeenCalled()
@@ -648,9 +712,10 @@ describe('Story 3-9 / t10 — error path (AC #16)', () => {
       opts?.onError?.(new Error('error'), _vars, undefined)
     })
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'x' } })
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.click(screen.getByText('Leave it for the room'))
     // No modal/dialog should appear
     expect(document.querySelector('[role="alertdialog"]')).toBeNull()
   })
@@ -695,11 +760,13 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
 
   it('writing surface has compact minHeight when compact===true', () => {
     const onSubmitted = vi.fn()
-    render(React.createElement(PostComposer, {
-      compact: true,
-      replyContext: { parentPostId: 'parent-post-id-1' },
-      onSubmitted,
-    }))
+    render(
+      React.createElement(PostComposer, {
+        compact: true,
+        replyContext: { parentPostId: 'parent-post-id-1' },
+        onSubmitted,
+      })
+    )
     const editor = document.querySelector('[data-testid="collective-lexical-editor"]')
     expect(editor).not.toBeNull()
     // minHeight:120 for compact vs 300 for full
@@ -708,11 +775,13 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
 
   it('compact Submit calls mutate with parent_post_id from replyContext', () => {
     const onSubmitted = vi.fn()
-    render(React.createElement(PostComposer, {
-      compact: true,
-      replyContext: { parentPostId: 'parent-post-id-1' },
-      onSubmitted,
-    }))
+    render(
+      React.createElement(PostComposer, {
+        compact: true,
+        replyContext: { parentPostId: 'parent-post-id-1' },
+        onSubmitted,
+      })
+    )
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'reply body' } })
     fireEvent.click(screen.getByText('Submit'))
@@ -723,11 +792,13 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
 
   it('compact Submit calls onSubmitted callback (not router.back)', () => {
     const onSubmitted = vi.fn()
-    render(React.createElement(PostComposer, {
-      compact: true,
-      replyContext: { parentPostId: 'parent-post-id-1' },
-      onSubmitted,
-    }))
+    render(
+      React.createElement(PostComposer, {
+        compact: true,
+        replyContext: { parentPostId: 'parent-post-id-1' },
+        onSubmitted,
+      })
+    )
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'reply body' } })
     fireEvent.click(screen.getByText('Submit'))
@@ -736,11 +807,13 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
   })
 
   it('AmbientPrivacyLabel is rendered in compact mode (privacy guarantee maintained)', () => {
-    render(React.createElement(PostComposer, {
-      compact: true,
-      replyContext: { parentPostId: 'p1' },
-      onSubmitted: vi.fn(),
-    }))
+    render(
+      React.createElement(PostComposer, {
+        compact: true,
+        replyContext: { parentPostId: 'p1' },
+        onSubmitted: vi.fn(),
+      })
+    )
     const label = document.querySelector('[data-testid="ambient-label"]')
     expect(label).not.toBeNull()
   })
@@ -842,17 +915,19 @@ describe('Story 3-9 / t15 — per-call UUID generation (AC #12)', () => {
     // In a real implementation, after submit navigates away, a new mount would occur.
     // We simulate two separate mounts:
     const { unmount } = render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'First title' } })
     const editor1 = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor1!, { target: { innerText: 'first post' } })
     // Mock router to not crash on back
     mockRouterBack.mockImplementation(() => {})
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.click(screen.getByText('Leave it for the room'))
     unmount()
 
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'Second title' } })
     const editor2 = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor2!, { target: { innerText: 'second post' } })
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.click(screen.getByText('Leave it for the room'))
 
     expect(mockMutate).toHaveBeenCalledTimes(2)
     const id1 = mockMutate.mock.calls[0]![0].id
@@ -881,9 +956,10 @@ describe('Story 3-9 / t16 — submit closes synchronously (offline-safe) (AC #14
       // Intentionally NOT calling onSuccess or onError
     })
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'Offline title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'offline post' } })
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.click(screen.getByText('Leave it for the room'))
     expect(mockRouterPush).toHaveBeenCalledTimes(1)
     expect(mockRouterPush).toHaveBeenCalledWith('/collective')
     expect(mockRouterBack).not.toHaveBeenCalled()
@@ -895,11 +971,13 @@ describe('Story 3-9 / t16 — submit closes synchronously (offline-safe) (AC #14
       _opts?.onMutate?.(_vars)
       // Intentionally NOT calling onSuccess
     })
-    render(React.createElement(PostComposer, {
-      compact: true,
-      replyContext: { parentPostId: 'p1' },
-      onSubmitted,
-    }))
+    render(
+      React.createElement(PostComposer, {
+        compact: true,
+        replyContext: { parentPostId: 'p1' },
+        onSubmitted,
+      })
+    )
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'offline reply' } })
     fireEvent.click(screen.getByText('Submit'))
@@ -924,9 +1002,10 @@ describe('Story 3-9 / t17 — double-tap submit guard (AC #13)', () => {
       // Does NOT call onSettled synchronously (simulating in-flight)
     })
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'rapid post' } })
-    const submitBtn = screen.getByText('Submit')
+    const submitBtn = screen.getByText('Leave it for the room')
     // Two rapid clicks in the same tick
     fireEvent.click(submitBtn)
     fireEvent.click(submitBtn)
@@ -939,9 +1018,10 @@ describe('Story 3-9 / t17 — double-tap submit guard (AC #13)', () => {
       capturedOnSettled = () => opts?.onSettled?.()
     })
     render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'rapid post' } })
-    const submitBtn = screen.getByText('Submit')
+    const submitBtn = screen.getByText('Leave it for the room')
     fireEvent.click(submitBtn)
     fireEvent.click(submitBtn) // second tap, should be blocked
     expect(mockMutate).toHaveBeenCalledTimes(1)
@@ -1151,21 +1231,25 @@ describe('Story 3-9 / t24 — compact Cancel button (AC #17)', () => {
 
   it('renders Cancel button in compact mode', () => {
     const onCancelled = vi.fn()
-    render(React.createElement(PostComposer, {
-      compact: true,
-      replyContext: { parentPostId: 'p1' },
-      onCancelled,
-    }))
+    render(
+      React.createElement(PostComposer, {
+        compact: true,
+        replyContext: { parentPostId: 'p1' },
+        onCancelled,
+      })
+    )
     expect(screen.getByText('Cancel')).not.toBeNull()
   })
 
   it('tapping Cancel calls onCancelled prop', () => {
     const onCancelled = vi.fn()
-    render(React.createElement(PostComposer, {
-      compact: true,
-      replyContext: { parentPostId: 'p1' },
-      onCancelled,
-    }))
+    render(
+      React.createElement(PostComposer, {
+        compact: true,
+        replyContext: { parentPostId: 'p1' },
+        onCancelled,
+      })
+    )
     fireEvent.click(screen.getByText('Cancel'))
     expect(onCancelled).toHaveBeenCalledTimes(1)
   })

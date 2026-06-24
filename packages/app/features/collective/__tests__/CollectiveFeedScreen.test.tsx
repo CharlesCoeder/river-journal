@@ -94,7 +94,8 @@ vi.mock('app/state/collective/currentUser', () => ({
 
 // ─── onlineManager mock ───────────────────────────────────────────────────────
 vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
+  const actual =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
   return {
     ...actual,
     onlineManager: {
@@ -103,11 +104,36 @@ vi.mock('@tanstack/react-query', async () => {
   }
 })
 
-// ─── useRouter mock (solito/router) ──────────────────────────────────────────
+// ─── useRouter mock (solito/navigation) ──────────────────────────────────────
+// NOTE: the title-led redesign uses `useRouter` from `solito/navigation` in both
+// CollectiveFeedScreen and CollectivePreview (router.push(...)). Mock that path.
 const mockRouterPush = vi.fn()
-vi.mock('solito/router', () => ({
+vi.mock('solito/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
 }))
+
+// ─── @tamagui/lucide-icons mock ──────────────────────────────────────────────
+// FeedPostRow (Heart/Sparkles/Flame/Leaf/Waves/ArrowRight), CollectivePreview
+// (Lock/ArrowRight), the feed header (PenLine), and the REAL FlagAffordance
+// (MoreHorizontal, rendered directly in the t-3-13-e..g dialog tests) all import
+// icons. Stub them as simple spans so the real components render in happy-dom.
+vi.mock('@tamagui/lucide-icons', () => {
+  const icon =
+    (name: string) =>
+    ({ size, color, ...props }: any) =>
+      React.createElement('span', { 'data-icon': name, 'data-size': size }, null)
+  return {
+    Heart: icon('Heart'),
+    Sparkles: icon('Sparkles'),
+    Flame: icon('Flame'),
+    Leaf: icon('Leaf'),
+    Waves: icon('Waves'),
+    ArrowRight: icon('ArrowRight'),
+    Lock: icon('Lock'),
+    PenLine: icon('PenLine'),
+    MoreHorizontal: icon('MoreHorizontal'),
+  }
+})
 
 // ─── useDeleteOwnPost mock — Story 3-13 ──────────────────────────────────────
 // Controlled mock for the delete mutation. The Story 3-13 UI tests drive this
@@ -117,7 +143,9 @@ vi.mock('solito/router', () => ({
 const mockDeleteMutate = vi.fn()
 let mockDeleteIsPending = false
 vi.mock('app/state/collective/mutations', async () => {
-  const actual = await vi.importActual<typeof import('app/state/collective/mutations')>('app/state/collective/mutations')
+  const actual = await vi.importActual<typeof import('app/state/collective/mutations')>(
+    'app/state/collective/mutations'
+  )
   return {
     ...actual,
     useDeleteOwnPost: () => ({
@@ -140,11 +168,15 @@ vi.mock('app/state/collective/mutations', async () => {
 // ─── ReactionStrip mock — renders as button for a11y assertions ───────────────
 vi.mock('app/features/collective/ReactionStrip', () => ({
   ReactionStrip: ({ postId, userId, disabled }: any) =>
-    React.createElement('button', {
-      'data-testid': `reaction-strip-${postId}`,
-      'aria-disabled': disabled ? 'true' : 'false',
-      'data-disabled': disabled ? 'true' : 'false',
-    }, 'reactions'),
+    React.createElement(
+      'button',
+      {
+        'data-testid': `reaction-strip-${postId}`,
+        'aria-disabled': disabled ? 'true' : 'false',
+        'data-disabled': disabled ? 'true' : 'false',
+      },
+      'reactions'
+    ),
 }))
 
 // ─── FlagAffordance mock — renders as a button for a11y assertions ────────────
@@ -158,11 +190,12 @@ vi.mock('app/features/collective/FlagAffordance', () => ({
     // null reporterUserId → null
     // !canReport && !canSelfDelete → null (nothing to show)
     if (!reporterUserId || (!canReport && !canSelfDelete)) return null
-    const ariaLabel = canReport && canSelfDelete
-      ? 'Post actions'
-      : canSelfDelete
-        ? 'Delete your post'
-        : 'Report this post'
+    const ariaLabel =
+      canReport && canSelfDelete
+        ? 'Post actions'
+        : canSelfDelete
+          ? 'Delete your post'
+          : 'Report this post'
     return React.createElement('button', {
       'aria-label': ariaLabel,
       'aria-haspopup': 'menu',
@@ -194,10 +227,24 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
-    Text: ({ children, fontSize, color, textAlign, ...props }: any) =>
-      ReactModule.createElement('span', mapA11y(props), children),
+    Text: ({ children, fontSize, color, textAlign, tag, ...props }: any) => {
+      // FeedPostRow renders its title as <Text tag="h2">. Honor `tag` so the
+      // title is queryable as an <h2>; otherwise fall back to <span>.
+      const htmlTag = typeof tag === 'string' ? tag : 'span'
+      return ReactModule.createElement(htmlTag, mapA11y(props), children)
+    },
 
-    View: ({ children, tag, onPress, accessible, accessibilityRole, accessibilityLabel, role, 'aria-label': ariaLabel, ...props }: any) => {
+    View: ({
+      children,
+      tag,
+      onPress,
+      accessible,
+      accessibilityRole,
+      accessibilityLabel,
+      role,
+      'aria-label': ariaLabel,
+      ...props
+    }: any) => {
       const htmlTag = tag === 'article' ? 'article' : 'div'
       const a11y: Record<string, unknown> = {}
       if (accessible) a11y['data-accessible'] = 'true'
@@ -219,26 +266,34 @@ vi.mock('@my/ui', async () => {
     YStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
 
-    Separator: (props: any) =>
-      ReactModule.createElement('hr', { 'data-testid': 'separator' }),
+    Separator: (props: any) => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
 
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>
-      ReactModule.createElement('button', {
-        onClick: onPress,
-        disabled: !!disabled,
-        'aria-disabled': disabled ? 'true' : 'false',
-        'data-testid': props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
-      }, children),
+      ReactModule.createElement(
+        'button',
+        {
+          onClick: onPress,
+          disabled: !!disabled,
+          'aria-disabled': disabled ? 'true' : 'false',
+          'data-testid':
+            props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
+        },
+        children
+      ),
 
     useReducedMotion: () => false,
 
     AuthorByline: ({ displayName, postedAt, tenureTier, deletedDisplay }: any) =>
-      ReactModule.createElement('span', {
-        'data-testid': 'author-byline',
-        'data-display-name': displayName,
-        'data-deleted-display': deletedDisplay ? 'true' : 'false',
-        'data-tenure-tier': tenureTier ?? 'none',
-      }, deletedDisplay ? '[deleted]' : displayName),
+      ReactModule.createElement(
+        'span',
+        {
+          'data-testid': 'author-byline',
+          'data-display-name': displayName,
+          'data-deleted-display': deletedDisplay ? 'true' : 'false',
+          'data-tenure-tier': tenureTier ?? 'none',
+        },
+        deletedDisplay ? '[deleted]' : displayName
+      ),
 
     // Story 3-13: Dialog and sub-components for delete confirmation dialog tests.
     // These are needed so AC #27e–g assertions (screen.getByText, button presses)
@@ -246,10 +301,15 @@ vi.mock('@my/ui', async () => {
     Dialog: Object.assign(
       ({ children, open, onOpenChange, modal }: any) => {
         if (!open) return null
-        return ReactModule.createElement('div', { role: 'dialog', 'data-modal': modal ? 'true' : 'false' }, children)
+        return ReactModule.createElement(
+          'div',
+          { role: 'dialog', 'data-modal': modal ? 'true' : 'false' },
+          children
+        )
       },
       {
-        Portal: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+        Portal: ({ children }: any) =>
+          ReactModule.createElement(ReactModule.Fragment, null, children),
         Overlay: ({ children, ...props }: any) =>
           ReactModule.createElement('div', { 'data-testid': 'dialog-overlay' }, children),
         Content: ({ children, ...props }: any) =>
@@ -263,7 +323,11 @@ vi.mock('@my/ui', async () => {
 
     Popover: Object.assign(
       ({ children, open, onOpenChange, placement }: any) =>
-        ReactModule.createElement('div', { 'data-testid': 'popover', 'data-open': open ? 'true' : 'false' }, children),
+        ReactModule.createElement(
+          'div',
+          { 'data-testid': 'popover', 'data-open': open ? 'true' : 'false' },
+          children
+        ),
       {
         Trigger: ({ children, asChild }: any) =>
           ReactModule.createElement('div', { 'data-testid': 'popover-trigger' }, children),
@@ -296,17 +360,22 @@ vi.mock('@my/ui', async () => {
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-function makePost(overrides: Partial<{
-  id: string
-  user_id: string | null
-  parent_post_id: string | null
-  body: string
-  created_at: string
-  is_removed: boolean
-  is_user_deleted: boolean
-  user_deleted_at: string | null
-  mode: 'full' | 'preview'
-}> = {}) {
+function makePost(
+  overrides: Partial<{
+    id: string
+    user_id: string | null
+    parent_post_id: string | null
+    body: string
+    title: string
+    created_at: string
+    is_removed: boolean
+    is_user_deleted: boolean
+    user_deleted_at: string | null
+    reactions: { [kind: string]: number }
+    descendant_count: number
+    mode: 'full' | 'preview'
+  }> = {}
+) {
   const base = {
     id: 'post-default',
     user_id: 'user-abc123',
@@ -319,11 +388,21 @@ function makePost(overrides: Partial<{
     mode: 'full' as const,
     ...overrides,
   }
-  // Story 3-15: the feed Post carries a server-truncated `excerpt` (≤140 chars),
-  // not a full `body`. PostRow renders `post.excerpt`. Tests still author posts
-  // via `body`, so mirror it into `excerpt` to keep call sites and text
-  // assertions working without restating every fixture.
-  return { ...base, excerpt: base.body }
+  // Title-led redesign (Story 3-16): the feed RPC now returns `title`, a
+  // server-truncated `excerpt` (no full body in the list), a per-kind
+  // `reactions` tally map, and `descendant_count`. FeedPostRow renders the
+  // title as the lead and the excerpt only inside the a11y label.
+  //   - `excerpt` mirrors `body` so existing fixtures keep working.
+  //   - `title` defaults from any override or a stable per-id label; tests that
+  //     assert title text pass an explicit `title`.
+  //   - `reactions` / `descendant_count` default to empty/0.
+  return {
+    ...base,
+    excerpt: base.body,
+    title: (overrides as any).title ?? `Letter ${base.id}`,
+    reactions: (overrides as any).reactions ?? {},
+    descendant_count: (overrides as any).descendant_count ?? 0,
+  }
 }
 
 function makeFeedData(items: any[], mode: 'full' | 'preview', nextCursor: string | null = null) {
@@ -377,16 +456,31 @@ describe('Story 3-8 / t1 — full mode dispatch (AC #8, #11)', () => {
     expect(articles.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders AuthorByline in full mode', () => {
+  it('renders the post TITLE as an <h2> in full mode (title-led row)', () => {
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'post-full-1', mode: 'full', title: 'On quiet mornings' })],
+      'full'
+    )
     render(React.createElement(CollectiveFeedScreen))
-    const byline = document.querySelector('[data-testid="author-byline"]')
-    expect(byline).not.toBeNull()
+    const heading = screen.getByText('On quiet mornings')
+    expect(heading.tagName.toLowerCase()).toBe('h2')
   })
 
-  it('renders ReactionStrip in full mode', () => {
+  it('renders a metadata byline including the reply count in full mode', () => {
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'post-full-1', mode: 'full', descendant_count: 5 })],
+      'full'
+    )
+    render(React.createElement(CollectiveFeedScreen))
+    // Byline text is split across nodes inside one <span>; assert the reply count
+    // fragment is present.
+    expect(screen.getByText(/5 replies/)).not.toBeNull()
+  })
+
+  it('does NOT render an interactive ReactionStrip in feed rows (moved to thread)', () => {
     render(React.createElement(CollectiveFeedScreen))
     const strip = document.querySelector('[data-testid^="reaction-strip-"]')
-    expect(strip).not.toBeNull()
+    expect(strip).toBeNull()
   })
 
   it('does NOT render CollectivePreview content ("Write 500 today") in full mode', () => {
@@ -407,11 +501,29 @@ describe('Story 3-8 / t1 — full mode dispatch (AC #8, #11)', () => {
 
 describe('Story 3-8 / t2 — preview mode dispatch (AC #9, #10)', () => {
   beforeEach(() => {
-    mockFeedData = makeFeedData([
-      makePost({ id: 'preview-most-recent', mode: 'preview', body: 'Most recent post body.' }),
-      makePost({ id: 'preview-teaser-1', mode: 'preview', body: 'Teaser one.' }),
-      makePost({ id: 'preview-teaser-2', mode: 'preview', body: 'Teaser two.' }),
-    ], 'preview')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'preview-most-recent',
+          mode: 'preview',
+          title: 'First glimpse',
+          body: 'Most recent post body.',
+        }),
+        makePost({
+          id: 'preview-teaser-1',
+          mode: 'preview',
+          title: 'Second glimpse',
+          body: 'Teaser one.',
+        }),
+        makePost({
+          id: 'preview-teaser-2',
+          mode: 'preview',
+          title: 'Third glimpse',
+          body: 'Teaser two.',
+        }),
+      ],
+      'preview'
+    )
     mockIsLoading = false
   })
 
@@ -425,27 +537,32 @@ describe('Story 3-8 / t2 — preview mode dispatch (AC #9, #10)', () => {
     expect(screen.getByText('Begin writing')).not.toBeNull()
   })
 
-  it('renders the most-recent post with ReactionStrip disabled (aria-disabled="true")', () => {
+  it('renders the redesigned heading and "A glimpse inside" label', () => {
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.getByText(/A quiet room, just through here\./i)).not.toBeNull()
+    expect(screen.getByText(/A glimpse inside/i)).not.toBeNull()
+  })
+
+  it('renders up to 3 recent post TITLES in the glimpse', () => {
+    render(React.createElement(CollectiveFeedScreen))
+    expect(screen.getByText('First glimpse')).not.toBeNull()
+    expect(screen.getByText('Second glimpse')).not.toBeNull()
+    expect(screen.getByText('Third glimpse')).not.toBeNull()
+  })
+
+  it('does NOT render an interactive ReactionStrip in preview mode', () => {
     render(React.createElement(CollectiveFeedScreen))
     const strip = document.querySelector('[data-testid^="reaction-strip-"]')
-    expect(strip).not.toBeNull()
-    expect(strip?.getAttribute('aria-disabled')).toBe('true')
+    expect(strip).toBeNull()
   })
 
-  it('renders teaser bodies', () => {
+  it('does NOT render the old "Other recent posts" header (removed in redesign)', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText(/Teaser one\./i)).not.toBeNull()
-    expect(screen.getByText(/Teaser two\./i)).not.toBeNull()
+    expect(screen.queryByText(/Other recent posts/i)).toBeNull()
   })
 
-  it('renders "Other recent posts" header when teasers exist', () => {
+  it('does NOT render the full-feed empty state in preview mode', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText(/Other recent posts/i)).not.toBeNull()
-  })
-
-  it('does NOT render the full-feed article list structure in preview mode', () => {
-    render(React.createElement(CollectiveFeedScreen))
-    // No PostComposer affordance (Story 3-9) — no compose CTA
     expect(screen.queryByText(/Quiet here/i)).toBeNull()
   })
 })
@@ -458,9 +575,7 @@ describe('Story 3-8 / t2 — preview mode dispatch (AC #9, #10)', () => {
 describe('Story 3-8 / t3 — server-driven mode defense-in-depth (AC #8)', () => {
   it('renders preview mode even when local streak says today qualifies (trusts RPC, not streak)', () => {
     // RPC says preview
-    mockFeedData = makeFeedData([
-      makePost({ id: 'server-preview-1', mode: 'preview' }),
-    ], 'preview')
+    mockFeedData = makeFeedData([makePost({ id: 'server-preview-1', mode: 'preview' })], 'preview')
     mockIsLoading = false
 
     // Simulate: local streak says today — user has written 500 words
@@ -546,13 +661,16 @@ describe('Story 3-8 / t6 — offline microcopy (AC #15)', () => {
     mockIsOnline = false
     // 5 minutes ago
     mockDataUpdatedAt = Date.now() - 5 * 60 * 1000
-    mockFeedData = makeFeedData([makePost({ id: 'offline-post-1' })], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'offline-post-1', title: 'A calm letter' })],
+      'full'
+    )
     mockIsLoading = false
   })
 
   it('renders "Offline" microcopy strip when offline', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText(/Offline/i)).not.toBeNull()
+    expect(screen.getByText(/Offline · last synced/i)).not.toBeNull()
   })
 
   it('renders "last synced" text in offline strip', () => {
@@ -560,12 +678,12 @@ describe('Story 3-8 / t6 — offline microcopy (AC #15)', () => {
     expect(screen.getByText(/last synced/i)).not.toBeNull()
   })
 
-  it('ReactionStrip is NOT disabled when offline (submissions queue)', () => {
+  it('does NOT render an interactive reaction strip in the feed row when offline', () => {
+    // The interactive ReactionStrip moved to the thread (title-led redesign);
+    // the feed row only carries a read-only tally, so no strip is present here.
     render(React.createElement(CollectiveFeedScreen))
     const strip = document.querySelector('[data-testid^="reaction-strip-"]')
-    expect(strip).not.toBeNull()
-    // When offline, strip should NOT be disabled
-    expect(strip?.getAttribute('aria-disabled')).toBe('false')
+    expect(strip).toBeNull()
   })
 })
 
@@ -577,10 +695,10 @@ describe('Story 3-8 / t6 — offline microcopy (AC #15)', () => {
 describe('Story 3-8 / t7 — suspended user rendering (AC #16)', () => {
   beforeEach(() => {
     mockIsSuspended = true
-    mockFeedData = makeFeedData([
-      makePost({ id: 'susp-post-1' }),
-      makePost({ id: 'susp-post-2' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'susp-post-1' }), makePost({ id: 'susp-post-2' })],
+      'full'
+    )
     mockIsLoading = false
   })
 
@@ -589,13 +707,15 @@ describe('Story 3-8 / t7 — suspended user rendering (AC #16)', () => {
     expect(screen.getByText(/Posting and reacting are paused for this account/i)).not.toBeNull()
   })
 
-  it('each ReactionStrip receives disabled={true} when suspended (aria-disabled="true")', () => {
+  it('still renders the title-led rows when suspended (read-only feed; no interactive strips)', () => {
+    // Suspension pauses posting/reacting, surfaced via the microcopy above. The
+    // feed rows themselves remain readable title-led <article>s, and carry no
+    // interactive ReactionStrip (that moved to the thread).
     render(React.createElement(CollectiveFeedScreen))
+    const articles = document.querySelectorAll('article')
+    expect(articles.length).toBe(2)
     const strips = document.querySelectorAll('[data-testid^="reaction-strip-"]')
-    expect(strips.length).toBeGreaterThanOrEqual(1)
-    for (const strip of Array.from(strips)) {
-      expect(strip.getAttribute('aria-disabled')).toBe('true')
-    }
+    expect(strips.length).toBe(0)
   })
 })
 
@@ -606,33 +726,35 @@ describe('Story 3-8 / t7 — suspended user rendering (AC #16)', () => {
 
 describe('Story 3-8 / t8 — self-deleted post rendering (AC #17)', () => {
   beforeEach(() => {
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'deleted-post-1',
-        is_user_deleted: true,
-        body: '[deleted]',
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'deleted-post-1',
+          is_user_deleted: true,
+          body: '[deleted]',
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
   })
 
-  it('renders AuthorByline with deletedDisplay=true for self-deleted post', () => {
+  it('renders the "This letter was withdrawn." tombstone for self-deleted post', () => {
     render(React.createElement(CollectiveFeedScreen))
-    const byline = document.querySelector('[data-testid="author-byline"]')
-    expect(byline).not.toBeNull()
-    expect(byline?.getAttribute('data-deleted-display')).toBe('true')
+    expect(screen.getByText(/This letter was withdrawn\./i)).not.toBeNull()
   })
 
-  it('AuthorByline shows "[deleted]" text for self-deleted post', () => {
+  it('uses the "[deleted]" a11y label on the article for self-deleted post', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText('[deleted]')).not.toBeNull()
+    const article = document.querySelector('article')
+    expect(article?.getAttribute('aria-label')).toBe('[deleted]')
   })
 
-  it('does NOT render ReactionStrip for self-deleted post', () => {
+  it('does NOT render a reaction tally for self-deleted post', () => {
     render(React.createElement(CollectiveFeedScreen))
-    const strip = document.querySelector('[data-testid="reaction-strip-deleted-post-1"]')
-    expect(strip).toBeNull()
+    const tally = document.querySelector('[aria-label="Reaction tally"]')
+    expect(tally).toBeNull()
   })
 
   it('still renders the post article wrapper for self-deleted post', () => {
@@ -649,33 +771,40 @@ describe('Story 3-8 / t8 — self-deleted post rendering (AC #17)', () => {
 
 describe('Story 3-8 / t9 — account-anonymized post (user_id===null) (AC #18)', () => {
   beforeEach(() => {
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'anon-post-1',
-        user_id: null,
-        is_user_deleted: false,
-        body: 'original content',
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'anon-post-1',
+          user_id: null,
+          is_user_deleted: false,
+          title: 'Anonymized letter',
+          body: 'original content',
+          reactions: { heart: 2 },
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
   })
 
-  it('renders AuthorByline with deletedDisplay=true for anonymized post', () => {
+  it('renders the title for an anonymized post (title preserved)', () => {
     render(React.createElement(CollectiveFeedScreen))
-    const byline = document.querySelector('[data-testid="author-byline"]')
-    expect(byline).not.toBeNull()
-    expect(byline?.getAttribute('data-deleted-display')).toBe('true')
+    const heading = screen.getByText('Anonymized letter')
+    expect(heading.tagName.toLowerCase()).toBe('h2')
   })
 
-  it('renders original body content for anonymized post', () => {
+  it('renders a "[deleted]" byline for anonymized post (author anonymized)', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText('original content')).not.toBeNull()
+    // The byline is a single span; its text starts with "[deleted]".
+    expect(screen.getByText(/\[deleted\]/)).not.toBeNull()
   })
 
-  it('renders ReactionStrip for anonymized post (reactions preserved)', () => {
+  it('renders the reaction tally for anonymized post (reactions preserved)', () => {
     render(React.createElement(CollectiveFeedScreen))
-    const strip = document.querySelector('[data-testid="reaction-strip-anon-post-1"]')
-    expect(strip).not.toBeNull()
+    const tally = document.querySelector('[aria-label="Reaction tally"]')
+    expect(tally).not.toBeNull()
+    // heart count of 2 is shown
+    expect(screen.getByText('2')).not.toBeNull()
   })
 })
 
@@ -686,16 +815,19 @@ describe('Story 3-8 / t9 — account-anonymized post (user_id===null) (AC #18)',
 
 describe('Story 3-8 / t10 — removed-post defensive filter (AC #19)', () => {
   it('does not render a post with is_removed===true even if RPC leaks it', () => {
-    mockFeedData = makeFeedData([
-      makePost({ id: 'removed-post-1', is_removed: true, body: 'This should not render' }),
-      makePost({ id: 'visible-post-1', is_removed: false, body: 'This should render' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({ id: 'removed-post-1', is_removed: true, title: 'Removed title' }),
+        makePost({ id: 'visible-post-1', is_removed: false, title: 'Visible title' }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    expect(screen.queryByText('This should not render')).toBeNull()
-    expect(screen.getByText('This should render')).not.toBeNull()
+    expect(screen.queryByText('Removed title')).toBeNull()
+    expect(screen.getByText('Visible title')).not.toBeNull()
   })
 })
 
@@ -749,7 +881,10 @@ describe('Story 3-8 / t11 — load more button (AC #12)', () => {
 
 describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
   it('CollectiveFeedScreen.tsx exists', () => {
-    expect(existsSync(FEED_SCREEN_PATH), `CollectiveFeedScreen.tsx must exist at ${FEED_SCREEN_PATH}`).toBe(true)
+    expect(
+      existsSync(FEED_SCREEN_PATH),
+      `CollectiveFeedScreen.tsx must exist at ${FEED_SCREEN_PATH}`
+    ).toBe(true)
   })
 
   it('CollectiveFeedScreen.tsx does NOT contain @legendapp/state import', () => {
@@ -765,7 +900,9 @@ describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
   })
 
   it('CollectivePreview.tsx exists', () => {
-    expect(existsSync(PREVIEW_PATH), `CollectivePreview.tsx must exist at ${PREVIEW_PATH}`).toBe(true)
+    expect(existsSync(PREVIEW_PATH), `CollectivePreview.tsx must exist at ${PREVIEW_PATH}`).toBe(
+      true
+    )
   })
 
   it('CollectivePreview.tsx does NOT contain @legendapp/state import', () => {
@@ -775,7 +912,10 @@ describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
   })
 
   it('AuthorByline.tsx does NOT contain @legendapp/state import', () => {
-    expect(existsSync(AUTHOR_BYLINE_PATH), `AuthorByline.tsx must exist at ${AUTHOR_BYLINE_PATH}`).toBe(true)
+    expect(
+      existsSync(AUTHOR_BYLINE_PATH),
+      `AuthorByline.tsx must exist at ${AUTHOR_BYLINE_PATH}`
+    ).toBe(true)
     const src = readFileSync(AUTHOR_BYLINE_PATH, 'utf8')
     expect(src).not.toMatch(/@legendapp\/state/)
   })
@@ -787,7 +927,9 @@ describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
   })
 
   it('currentUser.ts does NOT contain @legendapp/state import', () => {
-    expect(existsSync(CURRENT_USER_PATH), `currentUser.ts must exist at ${CURRENT_USER_PATH}`).toBe(true)
+    expect(existsSync(CURRENT_USER_PATH), `currentUser.ts must exist at ${CURRENT_USER_PATH}`).toBe(
+      true
+    )
     const src = readFileSync(CURRENT_USER_PATH, 'utf8')
     expect(src).not.toMatch(/@legendapp\/state/)
   })
@@ -805,54 +947,61 @@ describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Story 3-8 / t13 — deletion precedence: both flags set (AC #17, #18)', () => {
-  it('body renders "[deleted]" when both is_user_deleted AND user_id===null', () => {
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'both-flags-post-1',
-        is_user_deleted: true,
-        user_id: null,
-        body: '[deleted]',
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+  it('renders the withdrawn tombstone when both is_user_deleted AND user_id===null (self-delete wins)', () => {
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'both-flags-post-1',
+          is_user_deleted: true,
+          user_id: null,
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText('[deleted]')).not.toBeNull()
+    expect(screen.getByText(/This letter was withdrawn\./i)).not.toBeNull()
   })
 
-  it('AuthorByline renders deletedDisplay=true when both flags set', () => {
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'both-flags-post-2',
-        is_user_deleted: true,
-        user_id: null,
-        body: '[deleted]',
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+  it('uses the "[deleted]" article a11y label when both flags set', () => {
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'both-flags-post-2',
+          is_user_deleted: true,
+          user_id: null,
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    const byline = document.querySelector('[data-testid="author-byline"]')
-    expect(byline?.getAttribute('data-deleted-display')).toBe('true')
+    const article = document.querySelector('article')
+    expect(article?.getAttribute('aria-label')).toBe('[deleted]')
   })
 
-  it('ReactionStrip is NOT rendered when both flags set (self-delete wins)', () => {
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'both-flags-post-3',
-        is_user_deleted: true,
-        user_id: null,
-        body: '[deleted]',
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+  it('reaction tally is NOT rendered when both flags set (self-delete wins)', () => {
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'both-flags-post-3',
+          is_user_deleted: true,
+          user_id: null,
+          reactions: { heart: 3 },
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    const strip = document.querySelector('[data-testid="reaction-strip-both-flags-post-3"]')
-    expect(strip).toBeNull()
+    const tally = document.querySelector('[aria-label="Reaction tally"]')
+    expect(tally).toBeNull()
   })
 })
 
@@ -880,23 +1029,27 @@ describe('Story 3-8 / t14 — empty-preview guard (AC #34)', () => {
     expect(screen.getByText('Begin writing')).not.toBeNull()
   })
 
-  it('does NOT render any PostRow when preview posts are empty', () => {
+  it('does NOT render the "A glimpse inside" section when preview posts are empty', () => {
     mockFeedData = makeFeedData([], 'preview')
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
+    // No glimpse section (guarded on glimpse.length > 0) and no reaction strips.
+    expect(screen.queryByText(/A glimpse inside/i)).toBeNull()
     const strips = document.querySelectorAll('[data-testid^="reaction-strip-"]')
     expect(strips.length).toBe(0)
   })
 
-  it('does NOT render "Other recent posts" header when preview has only 1 post (no teasers)', () => {
-    mockFeedData = makeFeedData([
-      makePost({ id: 'preview-only', mode: 'preview' }),
-    ], 'preview')
+  it('renders the glimpse with a single title when preview has 1 post', () => {
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'preview-only', mode: 'preview', title: 'Lone glimpse' })],
+      'preview'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.queryByText(/Other recent posts/i)).toBeNull()
+    expect(screen.getByText(/A glimpse inside/i)).not.toBeNull()
+    expect(screen.getByText('Lone glimpse')).not.toBeNull()
   })
 })
 
@@ -908,18 +1061,17 @@ describe('Story 3-8 / t14 — empty-preview guard (AC #34)', () => {
 describe('Story 3-8 / t15 — mode-flip re-mount (AC #32)', () => {
   it('transitions from preview to full mode correctly on re-render', () => {
     // Initial render: preview mode
-    mockFeedData = makeFeedData([
-      makePost({ id: 'flip-post-1', mode: 'preview' }),
-    ], 'preview')
+    mockFeedData = makeFeedData([makePost({ id: 'flip-post-1', mode: 'preview' })], 'preview')
     mockIsLoading = false
 
     const { rerender } = render(React.createElement(CollectiveFeedScreen))
     expect(screen.getByText(/Write 500 today to join the conversation/i)).not.toBeNull()
 
     // Re-render with full mode (simulate streak crossing 500)
-    mockFeedData = makeFeedData([
-      makePost({ id: 'flip-post-1', mode: 'full', body: 'My first full post.' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'flip-post-1', mode: 'full', body: 'My first full post.' })],
+      'full'
+    )
 
     rerender(React.createElement(CollectiveFeedScreen))
 
@@ -974,13 +1126,16 @@ describe('Story 3-8 / t16 — error state blank screen avoidance (AC #33)', () =
 describe('Story 3-8 / t17 — error with cached data (AC #33)', () => {
   beforeEach(() => {
     mockIsError = true
-    mockFeedData = makeFeedData([makePost({ id: 'cached-post-1', body: 'Cached post content.' })], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'cached-post-1', title: 'Cached letter title' })],
+      'full'
+    )
     mockIsLoading = false
   })
 
   it('renders cached posts when error occurs but data exists', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText('Cached post content.')).not.toBeNull()
+    expect(screen.getByText('Cached letter title')).not.toBeNull()
   })
 
   it('renders "Couldn\'t refresh" error strip alongside cached posts', () => {
@@ -1022,27 +1177,33 @@ describe('Story 3-8 / t18 — Load more hidden when hasNextPage===false (AC #12)
 describe('Story 3-12 / t-new1 — locally-hidden filter hides post from feed (AC #10, #18)', () => {
   it('post with id in hiddenIds does not render an <article>', () => {
     mockHiddenPostIds = new Set(['p2'])
-    mockFeedData = makeFeedData([
-      makePost({ id: 'p1', body: 'Post one visible.' }),
-      makePost({ id: 'p2', body: 'Post two hidden.' }),
-      makePost({ id: 'p3', body: 'Post three visible.' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({ id: 'p1', title: 'Post one visible' }),
+        makePost({ id: 'p2', title: 'Post two hidden' }),
+        makePost({ id: 'p3', title: 'Post three visible' }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    expect(screen.getByText('Post one visible.')).not.toBeNull()
-    expect(screen.queryByText('Post two hidden.')).toBeNull()
-    expect(screen.getByText('Post three visible.')).not.toBeNull()
+    expect(screen.getByText('Post one visible')).not.toBeNull()
+    expect(screen.queryByText('Post two hidden')).toBeNull()
+    expect(screen.getByText('Post three visible')).not.toBeNull()
   })
 
   it('article count matches posts minus hidden', () => {
     mockHiddenPostIds = new Set(['p2'])
-    mockFeedData = makeFeedData([
-      makePost({ id: 'p1', body: 'Visible 1.' }),
-      makePost({ id: 'p2', body: 'Hidden.' }),
-      makePost({ id: 'p3', body: 'Visible 2.' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({ id: 'p1', title: 'Visible 1' }),
+        makePost({ id: 'p2', title: 'Hidden' }),
+        makePost({ id: 'p3', title: 'Visible 2' }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
@@ -1052,15 +1213,13 @@ describe('Story 3-12 / t-new1 — locally-hidden filter hides post from feed (AC
 
   it('does not throw when hiddenIds contains an id not in feed', () => {
     mockHiddenPostIds = new Set(['nonexistent-id'])
-    mockFeedData = makeFeedData([
-      makePost({ id: 'p1', body: 'Visible post.' }),
-    ], 'full')
+    mockFeedData = makeFeedData([makePost({ id: 'p1', title: 'Visible post' })], 'full')
     mockIsLoading = false
 
     expect(() => {
       render(React.createElement(CollectiveFeedScreen))
     }).not.toThrow()
-    expect(screen.getByText('Visible post.')).not.toBeNull()
+    expect(screen.getByText('Visible post')).not.toBeNull()
   })
 })
 
@@ -1072,24 +1231,27 @@ describe('Story 3-12 / t-new1 — locally-hidden filter hides post from feed (AC
 describe('Story 3-12 / t-new2 — empty hidden set is no-op (AC #10, #18)', () => {
   it('all posts render when hiddenIds is empty', () => {
     mockHiddenPostIds = new Set()
-    mockFeedData = makeFeedData([
-      makePost({ id: 'q1', body: 'Alpha post.' }),
-      makePost({ id: 'q2', body: 'Beta post.' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'q1', title: 'Alpha post' }), makePost({ id: 'q2', title: 'Beta post' })],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText('Alpha post.')).not.toBeNull()
-    expect(screen.getByText('Beta post.')).not.toBeNull()
+    expect(screen.getByText('Alpha post')).not.toBeNull()
+    expect(screen.getByText('Beta post')).not.toBeNull()
   })
 
   it('article count equals total posts when hiddenIds is empty', () => {
     mockHiddenPostIds = new Set()
-    mockFeedData = makeFeedData([
-      makePost({ id: 'q1', body: 'Alpha post.' }),
-      makePost({ id: 'q2', body: 'Beta post.' }),
-      makePost({ id: 'q3', body: 'Gamma post.' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({ id: 'q1', title: 'Alpha post' }),
+        makePost({ id: 'q2', title: 'Beta post' }),
+        makePost({ id: 'q3', title: 'Gamma post' }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
@@ -1106,26 +1268,30 @@ describe('Story 3-12 / t-new2 — empty hidden set is no-op (AC #10, #18)', () =
 describe('Story 3-12 / t-new3 — is_removed filter runs before local-hide (AC #10, #18)', () => {
   it('post with is_removed===true does not render even when NOT in hiddenIds', () => {
     mockHiddenPostIds = new Set() // NOT locally hidden
-    mockFeedData = makeFeedData([
-      makePost({ id: 'removed-id', is_removed: true, body: 'Globally removed post.' }),
-      makePost({ id: 'visible-id', is_removed: false, body: 'Visible post.' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({ id: 'removed-id', is_removed: true, title: 'Globally removed post' }),
+        makePost({ id: 'visible-id', is_removed: false, title: 'Visible post' }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.queryByText('Globally removed post.')).toBeNull()
-    expect(screen.getByText('Visible post.')).not.toBeNull()
+    expect(screen.queryByText('Globally removed post')).toBeNull()
+    expect(screen.getByText('Visible post')).not.toBeNull()
   })
 
   it('post with is_removed===true AND in hiddenIds does not render (both filters agree)', () => {
     mockHiddenPostIds = new Set(['overlap-id'])
-    mockFeedData = makeFeedData([
-      makePost({ id: 'overlap-id', is_removed: true, body: 'Overlap post.' }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'overlap-id', is_removed: true, title: 'Overlap post' })],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.queryByText('Overlap post.')).toBeNull()
+    expect(screen.queryByText('Overlap post')).toBeNull()
   })
 })
 
@@ -1134,20 +1300,34 @@ describe('Story 3-12 / t-new3 — is_removed filter runs before local-hide (AC #
 // AC #11, #19 t-new4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t-new4 — FlagAffordance present on normal post (AC #11, #19)', () => {
-  it('renders a button with aria-label="Report this post" for a normal (others) post', () => {
-    // After Story 3-13 AC #22: the trigger label is context-aware.
-    // canReport=true, canSelfDelete=false → "Report this post".
+describe('Story 3-16 / t-new4 — others post renders a normal title-led row (was FlagAffordance) (AC #11, #19)', () => {
+  it('renders the title + author-slice byline for an others non-deleted post', () => {
+    // Title-led redesign: the feed row no longer hosts FlagAffordance (moderation
+    // moved to the thread). A normal others-post renders as a normal title-led
+    // row: title in an <h2>, byline shows the user_id slice (not "You"), and the
+    // moderation/post-actions affordance is absent from the feed.
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'normal-post', user_id: 'other-user', is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'normal-post',
+          user_id: 'other-user',
+          is_user_deleted: false,
+          title: 'Others letter',
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    // Story 3-13 AC #22: only-Report case renders "Report this post" label.
-    const flagBtn = screen.queryByRole('button', { name: /report this post/i })
-    expect(flagBtn).not.toBeNull()
+    const heading = screen.getByText('Others letter')
+    expect(heading.tagName.toLowerCase()).toBe('h2')
+    // byline shows the first-8 slice of the other user's id (not "You")
+    expect(screen.getByText(/other-us/)).not.toBeNull()
+    // No moderation / post-actions affordance in the feed row anymore.
+    expect(screen.queryByRole('button', { name: /report this post/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
   })
 })
 
@@ -1156,15 +1336,27 @@ describe('Story 3-12 / t-new4 — FlagAffordance present on normal post (AC #11,
 // AC #1, #11, #19 t-new5
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t-new5 — FlagAffordance hidden on own post (AC #1, #11, #19)', () => {
-  it('no "Post actions" button when post.user_id === currentUserId', () => {
+describe('Story 3-16 / t-new5 — own post renders "You" byline, no feed-row actions (AC #1, #11, #19)', () => {
+  it('byline reads "You" for own post and no post-actions affordance is in the feed row', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'own-post', user_id: 'user-abc123', is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'own-post',
+          user_id: 'user-abc123',
+          is_user_deleted: false,
+          title: 'My letter',
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
+    // Own post byline displayName is "You" (uppercased via CSS). The article
+    // a11y label is "<title>, by You: <excerpt>".
+    const article = document.querySelector('article')
+    expect(article?.getAttribute('aria-label')).toMatch(/by You:/)
     expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
   })
 })
@@ -1174,20 +1366,24 @@ describe('Story 3-12 / t-new5 — FlagAffordance hidden on own post (AC #1, #11,
 // AC #1, #11, #19 t-new6
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t-new6 — FlagAffordance hidden on self-deleted post (AC #1, #11, #19)', () => {
-  it('no "Post actions" button when post.is_user_deleted===true', () => {
+describe('Story 3-16 / t-new6 — self-deleted post renders tombstone, no feed-row actions (AC #1, #11, #19)', () => {
+  it('renders the withdrawn tombstone and no post-actions affordance', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'deleted-post',
-        user_id: 'other-user',
-        is_user_deleted: true,
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'deleted-post',
+          user_id: 'other-user',
+          is_user_deleted: true,
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
+    expect(screen.getByText(/This letter was withdrawn\./i)).not.toBeNull()
     expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
   })
 })
@@ -1197,15 +1393,18 @@ describe('Story 3-12 / t-new6 — FlagAffordance hidden on self-deleted post (AC
 // AC #1, #11, #19 t-new7
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t-new7 — FlagAffordance hidden on anonymized post (AC #1, #11, #19)', () => {
-  it('no "Post actions" button when post.user_id===null', () => {
+describe('Story 3-16 / t-new7 — anonymized post renders title + "[deleted]" byline, no feed-row actions (AC #1, #11, #19)', () => {
+  it('renders the title and "[deleted]" byline, with no post-actions affordance', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'anon-post', user_id: null, is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'anon-post', user_id: null, is_user_deleted: false, title: 'Anon letter' })],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
+    expect(screen.getByText('Anon letter')).not.toBeNull()
+    expect(screen.getByText(/\[deleted\]/)).not.toBeNull()
     expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
   })
 })
@@ -1237,37 +1436,52 @@ describe('Story 3-12 / t-new7 — FlagAffordance hidden on anonymized post (AC #
 // AC #27a — Delete menu item renders for own non-deleted post
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-13 / t-3-13-a — Delete affordance on own non-deleted post (AC #13, #14, #27a)', () => {
-  it('renders "Delete your post" button when post.user_id === currentUserId && !is_user_deleted', () => {
-    // RED: fails until PostRow passes canSelfDelete=true for own non-deleted posts
-    // and FlagAffordance mock returns the "Delete your post" aria-label variant.
+describe('Story 3-16 / t-3-13-a — own non-deleted post renders a normal row, no feed-row self-delete (AC #13, #14, #27a)', () => {
+  it('renders a normal title-led row (no "Delete your post" affordance in the feed)', () => {
+    // Title-led redesign: the self-delete affordance moved out of the feed row
+    // into the thread. An own non-deleted post renders as a normal title-led
+    // row; the feed row carries NO self-delete / post-actions button.
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'own-fresh-post', user_id: 'user-abc123', is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'own-fresh-post',
+          user_id: 'user-abc123',
+          is_user_deleted: false,
+          title: 'My fresh letter',
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    // The updated FlagAffordance mock renders aria-label="Delete your post"
-    // when canSelfDelete=true and canReport=false (own post, non-deleted).
-    const deleteBtn = screen.queryByRole('button', { name: /delete your post/i })
-    expect(deleteBtn).not.toBeNull()
+    expect(screen.getByText('My fresh letter')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
   })
 
-  it('FlagAffordance trigger is present for own non-deleted post', () => {
-    // RED: confirms the FlagAffordance trigger renders (not null) for own posts.
-    // Pre-3-13, the trigger was null for own posts (disabled=true early return).
+  it('opens the thread (router.push) when an own non-deleted row is pressed', () => {
+    // The feed-row interaction is now "open the thread", not "post actions".
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'own-post-trigger', user_id: 'user-abc123', is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'own-post-trigger',
+          user_id: 'user-abc123',
+          is_user_deleted: false,
+          title: 'Open me',
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    const flagBtn = document.querySelector('[data-testid="flag-affordance-own-post-trigger"]')
-    expect(flagBtn).not.toBeNull()
+    const article = document.querySelector('article') as HTMLElement
+    fireEvent.click(article)
+    expect(mockRouterPush).toHaveBeenCalledWith('/collective/thread/own-post-trigger')
   })
 })
 
@@ -1275,13 +1489,13 @@ describe('Story 3-13 / t-3-13-a — Delete affordance on own non-deleted post (A
 // AC #27b — Delete menu item absent for other user's post
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-13 / t-3-13-b — Delete affordance absent on others post (AC #14, #27b)', () => {
-  it('does NOT render "Delete your post" button when post.user_id !== currentUserId', () => {
-    // RED: fails if PostRow computes canSelfDelete incorrectly and passes true for others' posts.
+describe('Story 3-16 / t-3-13-b — others post: no self-delete in feed row (AC #14, #27b)', () => {
+  it('does NOT render "Delete your post" button for an others post', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'others-post', user_id: 'other-user-xyz', is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'others-post', user_id: 'other-user-xyz', is_user_deleted: false })],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
@@ -1289,18 +1503,28 @@ describe('Story 3-13 / t-3-13-b — Delete affordance absent on others post (AC 
     expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
   })
 
-  it('still renders "Report this post" button for others non-deleted post (canReport=true)', () => {
-    // Confirms the existing report affordance still works after the prop rename.
+  it('does NOT render a "Report this post" affordance in the feed row (moderation moved to thread)', () => {
+    // The feed row no longer hosts the report affordance; it renders a plain
+    // title-led row that opens the thread on press.
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'others-post-2', user_id: 'other-user-xyz', is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'others-post-2',
+          user_id: 'other-user-xyz',
+          is_user_deleted: false,
+          title: 'Others letter 2',
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    const reportBtn = screen.queryByRole('button', { name: /report this post/i })
-    expect(reportBtn).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /report this post/i })).toBeNull()
+    // but the row itself is present and openable
+    expect(screen.getByText('Others letter 2')).not.toBeNull()
   })
 })
 
@@ -1308,18 +1532,20 @@ describe('Story 3-13 / t-3-13-b — Delete affordance absent on others post (AC 
 // AC #27c — Delete menu item absent when is_user_deleted === true
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-13 / t-3-13-c — Delete affordance absent on already-deleted post (AC #14, #27c)', () => {
+describe('Story 3-16 / t-3-13-c — own already-deleted post renders tombstone (AC #14, #27c)', () => {
   it('does NOT render "Delete your post" button when post.is_user_deleted === true', () => {
-    // RED: fails if PostRow computes canSelfDelete as true even for already-deleted posts.
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'already-deleted',
-        user_id: 'user-abc123', // own post
-        is_user_deleted: true, // already deleted
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'already-deleted',
+          user_id: 'user-abc123', // own post
+          is_user_deleted: true, // already deleted
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
@@ -1327,23 +1553,25 @@ describe('Story 3-13 / t-3-13-c — Delete affordance absent on already-deleted 
     expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
   })
 
-  it('no FlagAffordance trigger at all for own already-deleted post (nothing to show)', () => {
-    // The canReport=false AND canSelfDelete=false case — trigger must be null.
+  it('renders the withdrawn tombstone (and no post-actions) for own already-deleted post', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'own-deleted',
-        user_id: 'user-abc123',
-        is_user_deleted: true,
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'own-deleted',
+          user_id: 'user-abc123',
+          is_user_deleted: true,
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    const flagBtn = document.querySelector('[data-testid="flag-affordance-own-deleted"]')
-    expect(flagBtn).toBeNull()
+    expect(screen.getByText(/This letter was withdrawn\./i)).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
   })
 })
 
@@ -1352,49 +1580,61 @@ describe('Story 3-13 / t-3-13-c — Delete affordance absent on already-deleted 
 // (The FlagAffordance mock update must not break existing t-new4–t-new7 semantics)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-13 / t-3-13-d — prop rename backward-compat guards (AC #16, #27d)', () => {
-  it('t-new4 still passes: FlagAffordance present on others normal post', () => {
-    // Re-asserts t-new4 semantics with updated mock. canReport=true → "Report this post".
+describe('Story 3-16 / t-3-13-d — feed row never hosts moderation affordances (AC #16, #27d)', () => {
+  it('others normal post: title-led row, no report/post-actions affordance in feed', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'normal-post-d', user_id: 'other-user', is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'normal-post-d',
+          user_id: 'other-user',
+          is_user_deleted: false,
+          title: 'Normal D',
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    // "Report this post" because canReport=true, canSelfDelete=false
-    const reportBtn = screen.queryByRole('button', { name: /report this post/i })
-    expect(reportBtn).not.toBeNull()
+    expect(screen.getByText('Normal D')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /report this post/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
   })
 
-  it('t-new6 still passes: FlagAffordance hidden on self-deleted post (others)', () => {
-    // After prop rename: canReport=false (is_user_deleted=true), canSelfDelete=false → null.
+  it('others self-deleted post: tombstone, no moderation affordance', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'deleted-others',
-        user_id: 'other-user',
-        is_user_deleted: true,
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'deleted-others',
+          user_id: 'other-user',
+          is_user_deleted: true,
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
+    expect(screen.getByText(/This letter was withdrawn\./i)).not.toBeNull()
     expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /report this post/i })).toBeNull()
   })
 
-  it('t-new7 still passes: FlagAffordance hidden on anonymized post (user_id=null)', () => {
-    // canReport=false (user_id=null), canSelfDelete=false → null.
+  it('anonymized post (user_id=null): title + "[deleted]" byline, no moderation affordance', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({ id: 'anon-post-d', user_id: null, is_user_deleted: false }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [makePost({ id: 'anon-post-d', user_id: null, is_user_deleted: false, title: 'Anon D' })],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
+    expect(screen.getByText('Anon D')).not.toBeNull()
+    expect(screen.getByText(/\[deleted\]/)).not.toBeNull()
     expect(screen.queryByRole('button', { name: /post actions/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /delete your post/i })).toBeNull()
   })
@@ -1425,12 +1665,14 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
     // RED: fails until FlagAffordance renders a Delete menu item that opens a Dialog.
     if (!FlagAffordance) return
 
-    render(React.createElement(FlagAffordance, {
-      postId: 'dialog-test-post',
-      reporterUserId: 'user-abc123',
-      canReport: false,
-      canSelfDelete: true,
-    }))
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'dialog-test-post',
+        reporterUserId: 'user-abc123',
+        canReport: false,
+        canSelfDelete: true,
+      })
+    )
 
     // Find and click the Delete trigger (popover button or menu item)
     // The trigger renders "Delete your post" aria-label per AC #22 (only canSelfDelete)
@@ -1456,12 +1698,14 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
     // RED: fails until Dialog description copy is wired.
     if (!FlagAffordance) return
 
-    render(React.createElement(FlagAffordance, {
-      postId: 'dialog-desc-post',
-      reporterUserId: 'user-abc123',
-      canReport: false,
-      canSelfDelete: true,
-    }))
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'dialog-desc-post',
+        reporterUserId: 'user-abc123',
+        canReport: false,
+        canSelfDelete: true,
+      })
+    )
 
     const trigger = screen.queryByRole('button', { name: /delete your post/i })
     if (trigger) fireEvent.click(trigger)
@@ -1478,12 +1722,14 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
     // RED: fails until Dialog footer has two ExpandingLineButton actions.
     if (!FlagAffordance) return
 
-    render(React.createElement(FlagAffordance, {
-      postId: 'dialog-buttons-post',
-      reporterUserId: 'user-abc123',
-      canReport: false,
-      canSelfDelete: true,
-    }))
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'dialog-buttons-post',
+        reporterUserId: 'user-abc123',
+        canReport: false,
+        canSelfDelete: true,
+      })
+    )
 
     const trigger = screen.queryByRole('button', { name: /delete your post/i })
     if (trigger) fireEvent.click(trigger)
@@ -1491,8 +1737,14 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
     const deleteMenuItem = screen.queryByText(/^Delete$/i)
     if (deleteMenuItem) fireEvent.click(deleteMenuItem)
 
-    expect(screen.queryByRole('button', { name: /cancel/i }), 'Cancel button must be present').not.toBeNull()
-    expect(screen.queryByRole('button', { name: /^delete$/i }), 'Delete button must be present').not.toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /cancel/i }),
+      'Cancel button must be present'
+    ).not.toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /^delete$/i }),
+      'Delete button must be present'
+    ).not.toBeNull()
   })
 })
 
@@ -1501,12 +1753,14 @@ describe('Story 3-13 / t-3-13-f — Cancel in Dialog fires no mutation (AC #19, 
     // RED: fails until Cancel handler is wired to close Dialog without mutating.
     if (!FlagAffordance) return
 
-    render(React.createElement(FlagAffordance, {
-      postId: 'cancel-test-post',
-      reporterUserId: 'user-abc123',
-      canReport: false,
-      canSelfDelete: true,
-    }))
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'cancel-test-post',
+        reporterUserId: 'user-abc123',
+        canReport: false,
+        canSelfDelete: true,
+      })
+    )
 
     // Open the dialog
     const trigger = screen.queryByRole('button', { name: /delete your post/i })
@@ -1536,12 +1790,14 @@ describe('Story 3-13 / t-3-13-g — Delete in Dialog fires mutation with correct
     // RED: fails until Delete button handler is wired to call deleteMutation.mutate.
     if (!FlagAffordance) return
 
-    render(React.createElement(FlagAffordance, {
-      postId: 'mutate-test-post',
-      reporterUserId: 'user-abc123',
-      canReport: false,
-      canSelfDelete: true,
-    }))
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'mutate-test-post',
+        reporterUserId: 'user-abc123',
+        canReport: false,
+        canSelfDelete: true,
+      })
+    )
 
     // Open the dialog
     const trigger = screen.queryByRole('button', { name: /delete your post/i })
@@ -1568,12 +1824,14 @@ describe('Story 3-13 / t-3-13-g — Delete in Dialog fires mutation with correct
     // RED: fails until handleDeleteConfirm calls setDeleteDialogOpen(false).
     if (!FlagAffordance) return
 
-    render(React.createElement(FlagAffordance, {
-      postId: 'close-after-delete-post',
-      reporterUserId: 'user-abc123',
-      canReport: false,
-      canSelfDelete: true,
-    }))
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'close-after-delete-post',
+        reporterUserId: 'user-abc123',
+        canReport: false,
+        canSelfDelete: true,
+      })
+    )
 
     const trigger = screen.queryByRole('button', { name: /delete your post/i })
     if (trigger) fireEvent.click(trigger)
@@ -1597,64 +1855,68 @@ describe('Story 3-13 / t-3-13-g — Delete in Dialog fires mutation with correct
 // This re-uses the existing t8 deletion-state assertions pattern.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-13 / t-3-13-h — post renders deleted state after optimistic update (AC #17, #27h)', () => {
-  it('post with is_user_deleted=true (optimistic) renders AuthorByline deletedDisplay=true', () => {
-    // RED: The deletion-state matrix (from Story 3-8 PostRow) must render correctly
-    // for a post that was optimistically marked deleted. This re-uses t8's assertion
-    // pattern — confirming the optimistic update produces the expected render.
-    // The optimistic update sets is_user_deleted=true; PostRow uses that to render deleted state.
+describe('Story 3-16 / t-3-13-h — post renders deleted state after optimistic update (AC #17, #27h)', () => {
+  it('post with is_user_deleted=true (optimistic) renders the withdrawn tombstone + "[deleted]" a11y label', () => {
+    // The deletion-state matrix (now in FeedPostRow) must render the title-led
+    // tombstone for a post optimistically marked deleted: "This letter was
+    // withdrawn." and an article a11y label of exactly "[deleted]".
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'optimistically-deleted',
-        user_id: 'user-abc123',
-        is_user_deleted: true, // simulates post-optimistic-update state
-        body: '[deleted]',
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'optimistically-deleted',
+          user_id: 'user-abc123',
+          is_user_deleted: true, // simulates post-optimistic-update state
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    // AuthorByline should show deletedDisplay=true
-    const byline = document.querySelector('[data-testid="author-byline"]')
-    expect(byline).not.toBeNull()
-    expect(byline?.getAttribute('data-deleted-display')).toBe('true')
+    expect(screen.getByText(/This letter was withdrawn\./i)).not.toBeNull()
+    const article = document.querySelector('article')
+    expect(article?.getAttribute('aria-label')).toBe('[deleted]')
   })
 
-  it('post with is_user_deleted=true (optimistic) does NOT render ReactionStrip', () => {
-    // Deletion-state matrix: ReactionStrip suppressed when is_user_deleted=true.
+  it('post with is_user_deleted=true (optimistic) does NOT render a reaction tally', () => {
+    // Deletion-state matrix: the tally is suppressed when is_user_deleted=true.
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'optimistic-deleted-no-reactions',
-        user_id: 'user-abc123',
-        is_user_deleted: true,
-        body: '[deleted]',
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'optimistic-deleted-no-reactions',
+          user_id: 'user-abc123',
+          is_user_deleted: true,
+          reactions: { heart: 4 },
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
 
-    const strip = document.querySelector('[data-testid="reaction-strip-optimistic-deleted-no-reactions"]')
-    expect(strip).toBeNull()
+    const tally = document.querySelector('[aria-label="Reaction tally"]')
+    expect(tally).toBeNull()
   })
 
-  it('post with is_user_deleted=true (optimistic) does NOT render Delete affordance (canSelfDelete=false)', () => {
-    // Once deleted, canSelfDelete=false → no Delete affordance shown.
+  it('post with is_user_deleted=true (optimistic) does NOT render a Delete affordance in the feed', () => {
     mockCurrentUserId = 'user-abc123'
-    mockFeedData = makeFeedData([
-      makePost({
-        id: 'no-redelete-post',
-        user_id: 'user-abc123',
-        is_user_deleted: true,
-        body: '[deleted]',
-        user_deleted_at: new Date().toISOString(),
-      }),
-    ], 'full')
+    mockFeedData = makeFeedData(
+      [
+        makePost({
+          id: 'no-redelete-post',
+          user_id: 'user-abc123',
+          is_user_deleted: true,
+          user_deleted_at: new Date().toISOString(),
+        }),
+      ],
+      'full'
+    )
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))

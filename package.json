@@ -28,6 +28,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:migrations": "supabase test db",
+    "parity:db": "supabase start",
+    "parity:reset": "supabase db reset",
+    "parity:design": "cd docs/collective-design-reference && node_modules/.bin/vite preview --port 4174 --strictPort",
+    "parity:web": "yarn workspace web-app dev",
+    "parity:session": "node docs/collective-parity/seed-session.mjs",
     "prepare": "husky"
   },
   "resolutions": {

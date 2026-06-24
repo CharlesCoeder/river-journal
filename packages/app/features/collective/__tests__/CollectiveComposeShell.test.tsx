@@ -47,8 +47,7 @@ vi.mock('app/features/disclosure/ThreePostureDisclosure', () => ({
 vi.mock('app/features/disclosure/AmbientPrivacyLabel', () => {
   const ReactMod = require('react')
   return {
-    AmbientPrivacyLabel: () =>
-      ReactMod.createElement('span', { 'data-testid': 'ambient-label' }),
+    AmbientPrivacyLabel: () => ReactMod.createElement('span', { 'data-testid': 'ambient-label' }),
   }
 })
 
@@ -80,13 +79,16 @@ vi.mock('@my/ui', async () => {
     YStack: ({ children, ...p }: any) =>
       ReactMod.createElement('div', { ...p, 'data-stack': 'y' }, children),
     ExpandingLineButton: ({ children, onPress, disabled }: any) =>
-      ReactMod.createElement(
-        'button',
-        { onClick: onPress, disabled: !!disabled },
-        children
-      ),
+      ReactMod.createElement('button', { onClick: onPress, disabled: !!disabled }, children),
     AuthorByline: ({ displayName }: any) =>
       ReactMod.createElement('span', { 'data-testid': 'byline' }, displayName),
+    TextArea: ({ value, onChangeText, placeholder, 'aria-label': ariaLabel }: any) =>
+      ReactMod.createElement('textarea', {
+        value,
+        placeholder,
+        'aria-label': ariaLabel,
+        onChange: (e: any) => onChangeText?.(e.target.value),
+      }),
   }
 })
 
@@ -99,9 +101,7 @@ afterEach(() => {
 describe('CollectiveComposeShell — eligible-state integration (iteration 2)', () => {
   it('renders PostComposer (editor mounted) when gate reports eligible', () => {
     render(React.createElement(CollectiveComposeShell))
-    const editor = document.querySelector(
-      '[data-testid="collective-lexical-editor"]'
-    )
+    const editor = document.querySelector('[data-testid="collective-lexical-editor"]')
     expect(editor).not.toBeNull()
   })
 })
