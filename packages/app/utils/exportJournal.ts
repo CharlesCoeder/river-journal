@@ -163,7 +163,9 @@ export function getAvailableMonths(
   return Array.from(monthSet)
     .sort((a, b) => b.localeCompare(a))
     .map((key) => {
+      // `key` is always 'YYYY-MM' (built via entryDate.slice(0, 7)), so the
+      // split yields both parts — `month!` is always valid.
       const [year, month] = key.split('-')
-      return { key, label: `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}` }
+      return { key, label: `${MONTH_NAMES[parseInt(month!, 10) - 1]} ${year}` }
     })
 }

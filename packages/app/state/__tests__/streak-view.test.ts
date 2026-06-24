@@ -81,7 +81,7 @@ const mkGrace = (
 /** Add `delta` calendar days to a 'YYYY-MM-DD' string using UTC arithmetic. */
 function shiftDay(yyyymmdd: string, delta: number): string {
   const [y, m, d] = yyyymmdd.split('-').map(Number)
-  const ms = Date.UTC(y, m - 1, d) + delta * 86_400_000
+  const ms = Date.UTC(y!, m! - 1, d) + delta * 86_400_000
   const dt = new Date(ms)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`

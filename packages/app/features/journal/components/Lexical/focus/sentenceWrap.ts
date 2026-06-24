@@ -44,8 +44,9 @@ function matchesDesired(children: LexicalNode[], desired: SentenceSpan[]): boole
   if (children.length !== desired.length) return false
   for (let i = 0; i < desired.length; i++) {
     const child = children[i]
+    const span = desired[i]! // i < desired.length ⇒ present
     if (!$isSentenceNode(child)) return false
-    if (child.getTextContentSize() !== desired[i].end - desired[i].start) return false
+    if (child.getTextContentSize() !== span.end - span.start) return false
   }
   return true
 }
@@ -146,14 +147,14 @@ export function reconcileBlockSentences(block: ElementNode): void {
   let li = 0
   let pos = 0
   for (let i = 0; i < desired.length; i++) {
-    const span = desired[i]
+    const span = desired[i]! // i < desired.length ⇒ present
     let wrapper = existingWrappers[i]
     if (wrapper === undefined) {
       wrapper = $createSentenceNode()
       block.append(wrapper)
     }
     while (li < leaves.length) {
-      const leaf = leaves[li]
+      const leaf = leaves[li]! // li < leaves.length ⇒ present
       const size = leaf.getTextContentSize()
       if (pos + size <= span.end) {
         wrapper.append(leaf)
@@ -167,14 +168,14 @@ export function reconcileBlockSentences(block: ElementNode): void {
 
   // Remove now-unused trailing wrappers (a merge left them empty).
   for (let i = desired.length; i < existingWrappers.length; i++) {
-    existingWrappers[i].remove()
+    existingWrappers[i]!.remove() // i < existingWrappers.length ⇒ present
   }
 
   // Defensive: any leftover leaves go into the last wrapper so no text is lost.
   const wrappers = block.getChildren().filter($isSentenceNode) as SentenceNode[]
   const last = wrappers[wrappers.length - 1]
   while (li < leaves.length && last) {
-    last.append(leaves[li])
+    last.append(leaves[li]!) // li < leaves.length ⇒ present
     li++
   }
 }

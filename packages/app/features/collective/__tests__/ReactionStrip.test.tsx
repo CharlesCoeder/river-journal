@@ -212,7 +212,7 @@ describe('Story 3-11 / t2 — tap unreacted icon fires toggle:add (AC #6)', () =
     fireEvent.click(buttons[0]!)
 
     expect(mutateSpy).toHaveBeenCalledTimes(1)
-    const callArgs = mutateSpy.mock.calls[0][0]
+    const callArgs = mutateSpy.mock.calls[0]![0]
     expect(callArgs.toggle).toBe('add')
     expect(callArgs.post_id).toBe('post-2')
     expect(callArgs.user_id).toBe('user-1')
@@ -245,7 +245,7 @@ describe('Story 3-11 / t3 — tap reacted icon fires toggle:remove (AC #7)', () 
     fireEvent.click(buttons[0]!)
 
     expect(mutateSpy).toHaveBeenCalledTimes(1)
-    const callArgs = mutateSpy.mock.calls[0][0]
+    const callArgs = mutateSpy.mock.calls[0]![0]
     expect(callArgs.toggle).toBe('remove')
     expect(callArgs.id).toBe('existing-rxn-id')
     expect(callArgs.post_id).toBe('post-3')

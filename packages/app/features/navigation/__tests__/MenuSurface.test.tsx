@@ -227,8 +227,8 @@ describe('MenuSurface renders the currently visible items in the locked order', 
 
   it('MENU_ITEMS[2] is the your-posts entry with route /collective/your-posts (AC 24, AC 25)', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
-    expect(MENU_ITEMS[2].key).toBe('your-posts')
-    expect(MENU_ITEMS[2].route).toBe('/collective/your-posts')
+    expect(MENU_ITEMS[2]!.key).toBe('your-posts')
+    expect(MENU_ITEMS[2]!.route).toBe('/collective/your-posts')
   })
 })
 

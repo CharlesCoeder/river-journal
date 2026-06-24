@@ -215,20 +215,23 @@ export const clearUserData = () => {
   // transform.save returns undefined for !user_id, so any sync operations
   // Legend-State generates for these items will be skipped.
   batch(() => {
+    // `flows$[id]` / `entries$[id]` / `graceDays$[id]` are Legend-State proxies:
+    // indexing always returns a child observable (even for absent keys), and
+    // here `id` is a live key of the snapshot, so the `!` is always valid.
     for (const [id, flow] of Object.entries(allFlows)) {
       if (flow.sync_excluded !== true && flow.user_id) {
-        flows$[id].user_id.set(null)
+        flows$[id]!.user_id.set(null)
       }
     }
     for (const [id, entry] of Object.entries(allEntries)) {
       if (entry.sync_excluded !== true && entry.user_id) {
-        entries$[id].user_id.set(null)
+        entries$[id]!.user_id.set(null)
       }
     }
     // Grace days have no sync_excluded — nullify userId so save transform skips them
     for (const [id, gd] of Object.entries(allGraceDays)) {
       if (gd.userId === currentUserId) {
-        graceDays$[id].userId.set(null as unknown as string)
+        graceDays$[id]!.userId.set(null as unknown as string)
       }
     }
   })
@@ -293,7 +296,7 @@ export const adoptOrphanFlows = (userId: string): void => {
   batch(() => {
     for (const [entryId, entry] of Object.entries(allEntries)) {
       if (!entry.user_id && !entry.sync_excluded) {
-        entries$[entryId].user_id.set(userId)
+        entries$[entryId]!.user_id.set(userId)
         adoptedEntries++
       }
     }
@@ -312,7 +315,7 @@ export const adoptOrphanFlows = (userId: string): void => {
           skippedForeignParent++
           continue
         }
-        flows$[flowId].user_id.set(userId)
+        flows$[flowId]!.user_id.set(userId)
         adoptedFlows++
       }
     }
@@ -349,13 +352,13 @@ export const countUndecidedOrphans = (): { flowCount: number; entryCount: number
   let entryCount = 0
   for (const id in allEntries) {
     const e = allEntries[id]
-    if (isUndecidedOrphanEntry(e)) entryCount++
+    if (e && isUndecidedOrphanEntry(e)) entryCount++
   }
 
   let flowCount = 0
   for (const id in allFlows) {
     const f = allFlows[id]
-    if (isUndecidedOrphanFlow(f)) flowCount++
+    if (f && isUndecidedOrphanFlow(f)) flowCount++
   }
 
   return { flowCount, entryCount }
@@ -373,13 +376,13 @@ export const excludeOrphanFlows = (): void => {
   batch(() => {
     for (const [entryId, entry] of Object.entries(allEntries)) {
       if (isUndecidedOrphanEntry(entry)) {
-        entries$[entryId].sync_excluded.set(true)
+        entries$[entryId]!.sync_excluded.set(true)
       }
     }
 
     for (const [flowId, flow] of Object.entries(allFlows)) {
       if (isUndecidedOrphanFlow(flow)) {
-        flows$[flowId].sync_excluded.set(true)
+        flows$[flowId]!.sync_excluded.set(true)
       }
     }
   })
@@ -466,7 +469,7 @@ export const getLocallyExcludedEntries = (): LocallyExcludedEntrySummary[] => {
 
   for (const flowId in allFlows) {
     const flow = allFlows[flowId]
-    if (flow.sync_excluded !== true) continue
+    if (!flow || flow.sync_excluded !== true) continue
     const entry = allEntries[flow.dailyEntryId]
     if (!entry) continue
     const existing = byEntry.get(entry.id)
@@ -525,12 +528,13 @@ export const restoreExcludedEntries = (entryIds: string[], userId: string): void
         skippedForeignEntries++
         continue
       }
-      entries$[entryId].sync_excluded.set(false)
-      entries$[entryId].user_id.set(userId)
+      // entries$[entryId] proxy always resolves; entryId is a live key here.
+      entries$[entryId]!.sync_excluded.set(false)
+      entries$[entryId]!.user_id.set(userId)
     }
     for (const flowId in allFlows) {
       const flow = allFlows[flowId]
-      if (flow.sync_excluded === true && idSet.has(flow.dailyEntryId)) {
+      if (flow && flow.sync_excluded === true && idSet.has(flow.dailyEntryId)) {
         // Same defense applied via the flow's parent entry (the flow itself
         // may have user_id === null even when the parent is owned).
         const parent = allEntries[flow.dailyEntryId]
@@ -544,8 +548,8 @@ export const restoreExcludedEntries = (entryIds: string[], userId: string): void
           skippedForeignFlows++
           continue
         }
-        flows$[flowId].sync_excluded.set(false)
-        flows$[flowId].user_id.set(userId)
+        flows$[flowId]!.sync_excluded.set(false)
+        flows$[flowId]!.user_id.set(userId)
       }
     }
   })
@@ -579,11 +583,11 @@ export const countPreviousUserData = (
 
   let entryCount = 0
   for (const id in allEntries) {
-    if (allEntries[id].user_id === userId) entryCount++
+    if (allEntries[id]?.user_id === userId) entryCount++
   }
   let flowCount = 0
   for (const id in allFlows) {
-    if (allFlows[id].user_id === userId) flowCount++
+    if (allFlows[id]?.user_id === userId) flowCount++
   }
   return { entryCount, flowCount }
 }
@@ -614,28 +618,29 @@ export const deletePreviousUserData = (userId: string): void => {
   // proxy-backed `allFlows[id].user_id` we'd filter on later reads as null).
   const targetFlowIds = new Set<string>()
   for (const id in allFlows) {
-    if (allFlows[id].user_id === userId) targetFlowIds.add(id)
+    if (allFlows[id]?.user_id === userId) targetFlowIds.add(id)
   }
   const targetEntryIds = new Set<string>()
   for (const id in allEntries) {
-    if (allEntries[id].user_id === userId) targetEntryIds.add(id)
+    if (allEntries[id]?.user_id === userId) targetEntryIds.add(id)
   }
   const targetGraceIds = new Set<string>()
   for (const id in allGraceDays) {
-    if (allGraceDays[id].userId === userId) targetGraceIds.add(id)
+    if (allGraceDays[id]?.userId === userId) targetGraceIds.add(id)
   }
 
   // Phase 1: nullify user_id on items we're about to remove so transform.save
   // returns undefined and Legend-State will not queue Supabase delete ops.
   batch(() => {
+    // Proxies always resolve; these ids were just collected from the snapshots.
     for (const id of targetFlowIds) {
-      flows$[id].user_id.set(null)
+      flows$[id]!.user_id.set(null)
     }
     for (const id of targetEntryIds) {
-      entries$[id].user_id.set(null)
+      entries$[id]!.user_id.set(null)
     }
     for (const id of targetGraceIds) {
-      graceDays$[id].userId.set(null as unknown as string)
+      graceDays$[id]!.userId.set(null as unknown as string)
     }
   })
 
@@ -696,11 +701,11 @@ export const previousAccountBanner$ = observable<PreviousAccountBannerState | nu
     const allFlows = flows$.get() ?? {}
     let entryCount = 0
     for (const id in allEntries) {
-      if (allEntries[id].user_id === previousUserId) entryCount++
+      if (allEntries[id]?.user_id === previousUserId) entryCount++
     }
     let flowCount = 0
     for (const id in allFlows) {
-      if (allFlows[id].user_id === previousUserId) flowCount++
+      if (allFlows[id]?.user_id === previousUserId) flowCount++
     }
     if (entryCount === 0 && flowCount === 0) return null
 
@@ -800,8 +805,9 @@ export const saveActiveFlowSession = (): void => {
         local_session_id: store$.session.localSessionId.get(),
         user_id: store$.session.userId.get(), // Add userId on creation
       }
-      // Directly set the new entry in the entries map
-      entries$[todayEntryId].set(newEntry)
+      // Directly set the new entry in the entries map.
+      // Proxy index always resolves to a writable child observable.
+      entries$[todayEntryId]!.set(newEntry)
     }
 
     // Create the new flow session
@@ -821,10 +827,10 @@ export const saveActiveFlowSession = (): void => {
     }
 
     // Directly add the new flow to the flows map
-    flows$[newFlowId].set(newFlow)
+    flows$[newFlowId]!.set(newFlow)
 
     // Update the entry's lastModified timestamp
-    entries$[todayEntryId].lastModified.set(timestamp)
+    entries$[todayEntryId]!.lastModified.set(timestamp)
 
     // NOTE: activeFlow is NOT cleared here - it will be cleared by CelebrationScreen
     // on mount to prevent the placeholder flash during navigation
@@ -882,7 +888,7 @@ export const discardActiveFlowSession = (): void => {
  * - no sync: hard delete from local storage
  */
 export const deleteFlow = (flowId: string): void => {
-  const flow = flows$[flowId].peek()
+  const flow = flows$[flowId]!.peek()
   if (!flow) {
     console.warn(`[deleteFlow] Flow ${flowId} not found`)
     return
@@ -893,7 +899,7 @@ export const deleteFlow = (flowId: string): void => {
     // When syncedSupabase has fieldDeleted configured, .delete() automatically
     // sets is_deleted=true for the remote sync. When sync is disabled (waitFor
     // blocks remote ops), it still removes the item from the local observable.
-    flows$[flowId].delete()
+    flows$[flowId]!.delete()
     store$.lastUpdated.set(new Date().toISOString())
   })
 }

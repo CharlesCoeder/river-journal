@@ -58,10 +58,10 @@ describe('segmentSentences (AC 16)', () => {
   it('spans are contiguous and cover the full text length', () => {
     const text = 'One. Two. Three.'
     const spans = segmentSentences(text)
-    expect(spans[0].start).toBe(0)
-    expect(spans[spans.length - 1].end).toBe(text.length)
+    expect(spans[0]!.start).toBe(0)
+    expect(spans[spans.length - 1]!.end).toBe(text.length)
     for (let i = 1; i < spans.length; i++) {
-      expect(spans[i].start).toBe(spans[i - 1].end)
+      expect(spans[i]!.start).toBe(spans[i - 1]!.end)
     }
   })
 })

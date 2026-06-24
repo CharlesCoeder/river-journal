@@ -107,12 +107,12 @@ describe('Synced Observables Initialization', () => {
   it('allows local mutations on flows$', () => {
     const testFlow = makeFlow('test-flow-1')
 
-    flows$![testFlow.id].set(testFlow)
+    flows$![testFlow.id]!.set(testFlow)
 
     const flows = flows$.get()
     expect(flows[testFlow.id]).toEqual(testFlow)
 
-    flows$![testFlow.id].delete()
+    flows$![testFlow.id]!.delete()
   })
 })
 
@@ -132,42 +132,42 @@ describe('adoptOrphanFlows', () => {
   })
 
   it('stamps user_id on entries with null user_id', () => {
-    entries$!['entry-1'].set(makeEntry('entry-1'))
+    entries$!['entry-1']!.set(makeEntry('entry-1'))
     adoptOrphanFlows('user-123')
-    expect(entries$!['entry-1'].user_id.get()).toBe('user-123')
+    expect(entries$!['entry-1']!.user_id.get()).toBe('user-123')
   })
 
   it('stamps user_id on flows with null user_id', () => {
-    flows$!['flow-1'].set(makeFlow('flow-1'))
+    flows$!['flow-1']!.set(makeFlow('flow-1'))
     adoptOrphanFlows('user-123')
-    expect(flows$!['flow-1'].user_id.get()).toBe('user-123')
+    expect(flows$!['flow-1']!.user_id.get()).toBe('user-123')
   })
 
   it('skips entries and flows that already have a user_id', () => {
-    entries$!['entry-1'].set(makeEntry('entry-1', { user_id: 'other-user' }))
-    flows$!['flow-1'].set(makeFlow('flow-1', { user_id: 'other-user' }))
+    entries$!['entry-1']!.set(makeEntry('entry-1', { user_id: 'other-user' }))
+    flows$!['flow-1']!.set(makeFlow('flow-1', { user_id: 'other-user' }))
 
     adoptOrphanFlows('user-123')
 
-    expect(entries$!['entry-1'].user_id.get()).toBe('other-user')
-    expect(flows$!['flow-1'].user_id.get()).toBe('other-user')
+    expect(entries$!['entry-1']!.user_id.get()).toBe('other-user')
+    expect(flows$!['flow-1']!.user_id.get()).toBe('other-user')
   })
 
   it('skips entries and flows with sync_excluded: true (AC #4)', () => {
-    entries$!['entry-excluded'].set(makeEntry('entry-excluded', { sync_excluded: true }))
-    flows$!['flow-excluded'].set(makeFlow('flow-excluded', { sync_excluded: true }))
+    entries$!['entry-excluded']!.set(makeEntry('entry-excluded', { sync_excluded: true }))
+    flows$!['flow-excluded']!.set(makeFlow('flow-excluded', { sync_excluded: true }))
 
     adoptOrphanFlows('user-123')
 
     // sync_excluded items must NOT get a user_id stamped
-    expect(entries$!['entry-excluded'].user_id.get()).toBeNull()
-    expect(flows$!['flow-excluded'].user_id.get()).toBeNull()
+    expect(entries$!['entry-excluded']!.user_id.get()).toBeNull()
+    expect(flows$!['flow-excluded']!.user_id.get()).toBeNull()
   })
 
   it('is a no-op when no orphans exist', () => {
-    entries$!['entry-1'].set(makeEntry('entry-1', { user_id: 'user-123' }))
+    entries$!['entry-1']!.set(makeEntry('entry-1', { user_id: 'user-123' }))
     adoptOrphanFlows('user-123')
-    expect(entries$!['entry-1'].user_id.get()).toBe('user-123')
+    expect(entries$!['entry-1']!.user_id.get()).toBe('user-123')
   })
 })
 
@@ -191,34 +191,34 @@ describe('countUndecidedOrphans', () => {
   })
 
   it('counts entries and flows without user_id or sync_excluded (AC #1)', () => {
-    entries$!['e1'].set(makeEntry('e1'))
-    entries$!['e2'].set(makeEntry('e2'))
-    flows$!['f1'].set(makeFlow('f1'))
+    entries$!['e1']!.set(makeEntry('e1'))
+    entries$!['e2']!.set(makeEntry('e2'))
+    flows$!['f1']!.set(makeFlow('f1'))
 
     const result = countUndecidedOrphans()
     expect(result).toEqual({ flowCount: 1, entryCount: 2 })
   })
 
   it('ignores entries/flows that have user_id', () => {
-    entries$!['e1'].set(makeEntry('e1', { user_id: 'user-123' }))
-    flows$!['f1'].set(makeFlow('f1', { user_id: 'user-123' }))
+    entries$!['e1']!.set(makeEntry('e1', { user_id: 'user-123' }))
+    flows$!['f1']!.set(makeFlow('f1', { user_id: 'user-123' }))
 
     const result = countUndecidedOrphans()
     expect(result).toEqual({ flowCount: 0, entryCount: 0 })
   })
 
   it('ignores entries/flows with sync_excluded: true (AC #4)', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { sync_excluded: true }))
 
     const result = countUndecidedOrphans()
     expect(result).toEqual({ flowCount: 0, entryCount: 0 })
   })
 
   it('counts only undecided orphans when mixed data present (AC #8)', () => {
-    entries$!['e-decided'].set(makeEntry('e-decided', { sync_excluded: true }))
-    entries$!['e-new'].set(makeEntry('e-new'))
-    flows$!['f-new'].set(makeFlow('f-new'))
+    entries$!['e-decided']!.set(makeEntry('e-decided', { sync_excluded: true }))
+    entries$!['e-new']!.set(makeEntry('e-new'))
+    flows$!['f-new']!.set(makeFlow('f-new'))
 
     const result = countUndecidedOrphans()
     expect(result).toEqual({ flowCount: 1, entryCount: 1 })
@@ -227,11 +227,11 @@ describe('countUndecidedOrphans', () => {
   it('does NOT count flows downloaded from Supabase (local_session_id: "")', () => {
     // dbFlowToLocal() sets local_session_id: '' for all Supabase-downloaded flows.
     // These are already in the cloud and must not trigger the consent dialog.
-    flows$!['f-from-supabase-1'].set(makeFlow('f-from-supabase-1', { local_session_id: '' }))
-    flows$!['f-from-supabase-2'].set(makeFlow('f-from-supabase-2', { local_session_id: '' }))
-    entries$!['e-from-supabase'].set(makeEntry('e-from-supabase', { local_session_id: '', user_id: 'user-123' }))
+    flows$!['f-from-supabase-1']!.set(makeFlow('f-from-supabase-1', { local_session_id: '' }))
+    flows$!['f-from-supabase-2']!.set(makeFlow('f-from-supabase-2', { local_session_id: '' }))
+    entries$!['e-from-supabase']!.set(makeEntry('e-from-supabase', { local_session_id: '', user_id: 'user-123' }))
     // One real local orphan
-    flows$!['f-local'].set(makeFlow('f-local'))
+    flows$!['f-local']!.set(makeFlow('f-local'))
 
     const result = countUndecidedOrphans()
     expect(result).toEqual({ flowCount: 1, entryCount: 0 })
@@ -253,51 +253,51 @@ describe('excludeOrphanFlows', () => {
   })
 
   it('sets sync_excluded: true on all undecided orphan entries and flows (AC #3)', () => {
-    entries$!['e1'].set(makeEntry('e1'))
-    flows$!['f1'].set(makeFlow('f1'))
+    entries$!['e1']!.set(makeEntry('e1'))
+    flows$!['f1']!.set(makeFlow('f1'))
 
     excludeOrphanFlows()
 
-    expect(entries$!['e1'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f1'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e1']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f1']!.sync_excluded.get()).toBe(true)
     // user_id must remain null
-    expect(entries$!['e1'].user_id.get()).toBeNull()
-    expect(flows$!['f1'].user_id.get()).toBeNull()
+    expect(entries$!['e1']!.user_id.get()).toBeNull()
+    expect(flows$!['f1']!.user_id.get()).toBeNull()
   })
 
   it('skips already-excluded items (AC #4)', () => {
-    entries$!['e-excluded'].set(makeEntry('e-excluded', { sync_excluded: true }))
-    flows$!['f-excluded'].set(makeFlow('f-excluded', { sync_excluded: true }))
+    entries$!['e-excluded']!.set(makeEntry('e-excluded', { sync_excluded: true }))
+    flows$!['f-excluded']!.set(makeFlow('f-excluded', { sync_excluded: true }))
 
     excludeOrphanFlows()
 
     // Should remain excluded (no change, no error)
-    expect(entries$!['e-excluded'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f-excluded'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e-excluded']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f-excluded']!.sync_excluded.get()).toBe(true)
   })
 
   it('skips items that already have a user_id', () => {
-    entries$!['e-synced'].set(makeEntry('e-synced', { user_id: 'user-123' }))
-    flows$!['f-synced'].set(makeFlow('f-synced', { user_id: 'user-123' }))
+    entries$!['e-synced']!.set(makeEntry('e-synced', { user_id: 'user-123' }))
+    flows$!['f-synced']!.set(makeFlow('f-synced', { user_id: 'user-123' }))
 
     excludeOrphanFlows()
 
-    expect(entries$!['e-synced'].sync_excluded.get()).toBeUndefined()
-    expect(flows$!['f-synced'].sync_excluded.get()).toBeUndefined()
+    expect(entries$!['e-synced']!.sync_excluded.get()).toBeUndefined()
+    expect(flows$!['f-synced']!.sync_excluded.get()).toBeUndefined()
   })
 
   it('does NOT mark Supabase-downloaded flows as sync_excluded (local_session_id: "")', () => {
     // Flows downloaded from Supabase via dbFlowToLocal() have local_session_id: ''.
     // They're already in the cloud — marking them sync_excluded would be wrong.
-    flows$!['f-from-supabase'].set(makeFlow('f-from-supabase', { local_session_id: '' }))
-    entries$!['e-from-supabase'].set(
+    flows$!['f-from-supabase']!.set(makeFlow('f-from-supabase', { local_session_id: '' }))
+    entries$!['e-from-supabase']!.set(
       makeEntry('e-from-supabase', { local_session_id: '', user_id: 'user-123' })
     )
 
     excludeOrphanFlows()
 
-    expect(flows$!['f-from-supabase'].sync_excluded.get()).toBeUndefined()
-    expect(entries$!['e-from-supabase'].sync_excluded.get()).toBeUndefined()
+    expect(flows$!['f-from-supabase']!.sync_excluded.get()).toBeUndefined()
+    expect(entries$!['e-from-supabase']!.sync_excluded.get()).toBeUndefined()
   })
 })
 
@@ -340,8 +340,8 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
   // The shared scenario builder: an adopted parent entry with a logged-out
   // flow written under it.
   const seedLogoutWindowState = () => {
-    entries$!['e-today'].set(makeEntry('e-today', { user_id: 'user-123' }))
-    flows$!['f-logged-out'].set(
+    entries$!['e-today']!.set(makeEntry('e-today', { user_id: 'user-123' }))
+    flows$!['f-logged-out']!.set(
       makeFlow('f-logged-out', { dailyEntryId: 'e-today' })
       // makeFlow defaults: user_id: null, sync_excluded: undefined,
       // local_session_id: 'sess-1' — exactly the logout-window shape.
@@ -359,10 +359,10 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
 
     resolveOrphanFlows(true)
 
-    expect(flows$!['f-logged-out'].user_id.get()).toBe('user-123')
+    expect(flows$!['f-logged-out']!.user_id.get()).toBe('user-123')
     // Parent entry was already adopted — must remain so.
-    expect(entries$!['e-today'].user_id.get()).toBe('user-123')
-    expect(entries$!['e-today'].sync_excluded.get()).toBeUndefined()
+    expect(entries$!['e-today']!.user_id.get()).toBe('user-123')
+    expect(entries$!['e-today']!.sync_excluded.get()).toBeUndefined()
     expect(isSyncReady$.get()).toBe(true)
   })
 
@@ -372,12 +372,12 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
 
     resolveOrphanFlows(false)
 
-    expect(flows$!['f-logged-out'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f-logged-out'].user_id.get()).toBeNull()
+    expect(flows$!['f-logged-out']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f-logged-out']!.user_id.get()).toBeNull()
     // Entry must NOT be excluded — it has other legitimately synced flows
     // (the per-entry summary row in Settings is enough to surface recovery).
-    expect(entries$!['e-today'].sync_excluded.get()).toBeUndefined()
-    expect(entries$!['e-today'].user_id.get()).toBe('user-123')
+    expect(entries$!['e-today']!.sync_excluded.get()).toBeUndefined()
+    expect(entries$!['e-today']!.user_id.get()).toBe('user-123')
     expect(isSyncReady$.get()).toBe(true)
   })
 
@@ -386,8 +386,8 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
 
     excludeOrphanFlows()
 
-    expect(flows$!['f-logged-out'].sync_excluded.get()).toBe(true)
-    expect(entries$!['e-today'].sync_excluded.get()).toBeUndefined()
+    expect(flows$!['f-logged-out']!.sync_excluded.get()).toBe(true)
+    expect(entries$!['e-today']!.sync_excluded.get()).toBeUndefined()
   })
 
   it('Settings recovery surface picks up the parent entry once the flow is excluded', () => {
@@ -396,8 +396,8 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
 
     const summaries = getLocallyExcludedEntries()
     expect(summaries).toHaveLength(1)
-    expect(summaries[0].entryId).toBe('e-today')
-    expect(summaries[0].flowIds).toEqual(['f-logged-out'])
+    expect(summaries[0]!.entryId).toBe('e-today')
+    expect(summaries[0]!.flowIds).toEqual(['f-logged-out'])
   })
 
   // I/O Matrix scenario #4: cloud-downloaded ghost flow (local_session_id: '')
@@ -405,30 +405,30 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
   // logout-window cases so the symmetry — same predicate in count + exclude —
   // is visible in one block.
   it('cloud-downloaded ghost flow (local_session_id: "") is neither counted nor excluded', () => {
-    flows$!['f-ghost'].set(makeFlow('f-ghost', { local_session_id: '' }))
-    entries$!['e-ghost'].set(
+    flows$!['f-ghost']!.set(makeFlow('f-ghost', { local_session_id: '' }))
+    entries$!['e-ghost']!.set(
       makeEntry('e-ghost', { local_session_id: '', user_id: 'user-123' })
     )
 
     expect(countUndecidedOrphans()).toEqual({ flowCount: 0, entryCount: 0 })
 
     excludeOrphanFlows()
-    expect(flows$!['f-ghost'].sync_excluded.get()).toBeUndefined()
-    expect(entries$!['e-ghost'].sync_excluded.get()).toBeUndefined()
+    expect(flows$!['f-ghost']!.sync_excluded.get()).toBeUndefined()
+    expect(entries$!['e-ghost']!.sync_excluded.get()).toBeUndefined()
   })
 
   // I/O Matrix scenario #5: fully anonymous (pre-login) flow under anonymous
   // entry — both should still be counted and excluded together via their
   // respective predicates. Confirms the entry-level path is preserved.
   it('fully anonymous flow under anonymous entry: both counted; both excluded together', () => {
-    entries$!['e-anon'].set(makeEntry('e-anon'))
-    flows$!['f-anon'].set(makeFlow('f-anon', { dailyEntryId: 'e-anon' }))
+    entries$!['e-anon']!.set(makeEntry('e-anon'))
+    flows$!['f-anon']!.set(makeFlow('f-anon', { dailyEntryId: 'e-anon' }))
 
     expect(countUndecidedOrphans()).toEqual({ flowCount: 1, entryCount: 1 })
 
     excludeOrphanFlows()
-    expect(entries$!['e-anon'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f-anon'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e-anon']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f-anon']!.sync_excluded.get()).toBe(true)
   })
 })
 
@@ -455,28 +455,28 @@ describe('resolveOrphanFlows', () => {
 
   it('adopt=true: stamps user_id, clears pending, opens sync gate (AC #2)', () => {
     orphanFlowsPending$.set({ flowCount: 1, entryCount: 1, userId: 'user-123' })
-    entries$!['e1'].set(makeEntry('e1'))
-    flows$!['f1'].set(makeFlow('f1'))
+    entries$!['e1']!.set(makeEntry('e1'))
+    flows$!['f1']!.set(makeFlow('f1'))
 
     resolveOrphanFlows(true)
 
-    expect(entries$!['e1'].user_id.get()).toBe('user-123')
-    expect(flows$!['f1'].user_id.get()).toBe('user-123')
+    expect(entries$!['e1']!.user_id.get()).toBe('user-123')
+    expect(flows$!['f1']!.user_id.get()).toBe('user-123')
     expect(orphanFlowsPending$.get()).toBeNull()
     expect(isSyncReady$.get()).toBe(true)
   })
 
   it('adopt=false: marks sync_excluded, clears pending, opens sync gate (AC #3)', () => {
     orphanFlowsPending$.set({ flowCount: 1, entryCount: 1, userId: 'user-123' })
-    entries$!['e1'].set(makeEntry('e1'))
-    flows$!['f1'].set(makeFlow('f1'))
+    entries$!['e1']!.set(makeEntry('e1'))
+    flows$!['f1']!.set(makeFlow('f1'))
 
     resolveOrphanFlows(false)
 
-    expect(entries$!['e1'].sync_excluded.get()).toBe(true)
-    expect(entries$!['e1'].user_id.get()).toBeNull()
-    expect(flows$!['f1'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f1'].user_id.get()).toBeNull()
+    expect(entries$!['e1']!.sync_excluded.get()).toBe(true)
+    expect(entries$!['e1']!.user_id.get()).toBeNull()
+    expect(flows$!['f1']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f1']!.user_id.get()).toBeNull()
     expect(orphanFlowsPending$.get()).toBeNull()
     expect(isSyncReady$.get()).toBe(true)
   })
@@ -506,61 +506,61 @@ describe('restoreExcludedEntries', () => {
   })
 
   it('clears sync_excluded and stamps user_id on entry and its flows', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
-    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2']!.set(makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true }))
 
     restoreExcludedEntries(['e1'], 'user-123')
 
-    expect(entries$!['e1'].sync_excluded.get()).toBe(false)
-    expect(entries$!['e1'].user_id.get()).toBe('user-123')
-    expect(flows$!['f1'].sync_excluded.get()).toBe(false)
-    expect(flows$!['f1'].user_id.get()).toBe('user-123')
-    expect(flows$!['f2'].sync_excluded.get()).toBe(false)
-    expect(flows$!['f2'].user_id.get()).toBe('user-123')
+    expect(entries$!['e1']!.sync_excluded.get()).toBe(false)
+    expect(entries$!['e1']!.user_id.get()).toBe('user-123')
+    expect(flows$!['f1']!.sync_excluded.get()).toBe(false)
+    expect(flows$!['f1']!.user_id.get()).toBe('user-123')
+    expect(flows$!['f2']!.sync_excluded.get()).toBe(false)
+    expect(flows$!['f2']!.user_id.get()).toBe('user-123')
   })
 
   it('only restores entries listed in entryIds; leaves others excluded', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
-    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e2', sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    entries$!['e2']!.set(makeEntry('e2', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2']!.set(makeFlow('f2', { dailyEntryId: 'e2', sync_excluded: true }))
 
     restoreExcludedEntries(['e1'], 'user-123')
 
-    expect(entries$!['e1'].sync_excluded.get()).toBe(false)
-    expect(flows$!['f1'].sync_excluded.get()).toBe(false)
+    expect(entries$!['e1']!.sync_excluded.get()).toBe(false)
+    expect(flows$!['f1']!.sync_excluded.get()).toBe(false)
     // e2 untouched
-    expect(entries$!['e2'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f2'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f2'].user_id.get()).toBeNull()
+    expect(entries$!['e2']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f2']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f2']!.user_id.get()).toBeNull()
   })
 
   it('is a no-op on empty input', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
 
     restoreExcludedEntries([], 'user-123')
 
-    expect(entries$!['e1'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f1'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e1']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f1']!.sync_excluded.get()).toBe(true)
   })
 
   it('is a no-op when userId is empty', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
 
     restoreExcludedEntries(['e1'], '')
 
-    expect(entries$!['e1'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f1'].user_id.get()).toBeNull()
+    expect(entries$!['e1']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f1']!.user_id.get()).toBeNull()
   })
 
   it('multi-entry call uses a single batch (subscriber fires once)', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
-    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e2', sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    entries$!['e2']!.set(makeEntry('e2', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2']!.set(makeFlow('f2', { dailyEntryId: 'e2', sync_excluded: true }))
 
     const flowSubscriber = vi.fn()
     const unsub = flows$.onChange(flowSubscriber)
@@ -572,15 +572,15 @@ describe('restoreExcludedEntries', () => {
   })
 
   it('getLocallyExcludedEntries groups flows by entry and sums word counts', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true, entryDate: '2026-03-01' }))
-    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true, entryDate: '2026-03-05' }))
-    flows$!['f1'].set(
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true, entryDate: '2026-03-01' }))
+    entries$!['e2']!.set(makeEntry('e2', { sync_excluded: true, entryDate: '2026-03-05' }))
+    flows$!['f1']!.set(
       makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 100 })
     )
-    flows$!['f2'].set(
+    flows$!['f2']!.set(
       makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 200 })
     )
-    flows$!['f3'].set(
+    flows$!['f3']!.set(
       makeFlow('f3', { dailyEntryId: 'e2', sync_excluded: true, wordCount: 50 })
     )
 
@@ -588,32 +588,32 @@ describe('restoreExcludedEntries', () => {
 
     expect(summaries).toHaveLength(2)
     // Sorted desc by entryDate
-    expect(summaries[0].entryId).toBe('e2')
-    expect(summaries[1].entryId).toBe('e1')
-    expect(summaries[1].totalWordCount).toBe(300)
-    expect(summaries[1].flowIds.sort()).toEqual(['f1', 'f2'])
+    expect(summaries[0]!.entryId).toBe('e2')
+    expect(summaries[1]!.entryId).toBe('e1')
+    expect(summaries[1]!.totalWordCount).toBe(300)
+    expect(summaries[1]!.flowIds.sort()).toEqual(['f1', 'f2'])
   })
 
   it('getLocallyExcludedEntries skips flows whose parent entry was deleted', () => {
-    flows$!['f-orphan'].set(
+    flows$!['f-orphan']!.set(
       makeFlow('f-orphan', { dailyEntryId: 'missing', sync_excluded: true })
     )
     expect(getLocallyExcludedEntries()).toHaveLength(0)
   })
 
   it('countLocallyExcludedEntries returns the number of distinct affected entries', () => {
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    entries$!['e2'].set(makeEntry('e2', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
-    flows$!['f2'].set(makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true }))
-    flows$!['f3'].set(makeFlow('f3', { dailyEntryId: 'e2', sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    entries$!['e2']!.set(makeEntry('e2', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f2']!.set(makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true }))
+    flows$!['f3']!.set(makeFlow('f3', { dailyEntryId: 'e2', sync_excluded: true }))
 
     expect(countLocallyExcludedEntries()).toBe(2)
   })
 
   it('countLocallyExcludedEntries is zero when no flows are excluded', () => {
-    flows$!['f1'].set(makeFlow('f1', { user_id: 'user-123' }))
-    entries$!['e1'].set(makeEntry('e1', { user_id: 'user-123' }))
+    flows$!['f1']!.set(makeFlow('f1', { user_id: 'user-123' }))
+    entries$!['e1']!.set(makeEntry('e1', { user_id: 'user-123' }))
     expect(countLocallyExcludedEntries()).toBe(0)
   })
 })
@@ -633,10 +633,10 @@ describe('clearUserData', () => {
   })
 
   it('preserves sync_excluded flows and entries on logout (AC #7)', () => {
-    entries$!['e-excluded'].set(makeEntry('e-excluded', { sync_excluded: true }))
-    flows$!['f-excluded'].set(makeFlow('f-excluded', { sync_excluded: true }))
-    entries$!['e-synced'].set(makeEntry('e-synced', { user_id: 'user-123' }))
-    flows$!['f-synced'].set(makeFlow('f-synced', { user_id: 'user-123' }))
+    entries$!['e-excluded']!.set(makeEntry('e-excluded', { sync_excluded: true }))
+    flows$!['f-excluded']!.set(makeFlow('f-excluded', { sync_excluded: true }))
+    entries$!['e-synced']!.set(makeEntry('e-synced', { user_id: 'user-123' }))
+    flows$!['f-synced']!.set(makeFlow('f-synced', { user_id: 'user-123' }))
 
     clearUserData()
 
@@ -653,8 +653,8 @@ describe('clearUserData', () => {
   })
 
   it('clears all data when nothing is sync_excluded', () => {
-    entries$!['e1'].set(makeEntry('e1', { user_id: 'user-123' }))
-    flows$!['f1'].set(makeFlow('f1', { user_id: 'user-123' }))
+    entries$!['e1']!.set(makeEntry('e1', { user_id: 'user-123' }))
+    flows$!['f1']!.set(makeFlow('f1', { user_id: 'user-123' }))
 
     clearUserData()
 
@@ -686,8 +686,8 @@ describe('Integration: sync gate with orphan pending state', () => {
     const storeModule = await import('../store')
     const { countUndecidedOrphans } = storeModule
 
-    entries$!['e1'].set(makeEntry('e1', { user_id: 'user-123' }))
-    flows$!['f1'].set(makeFlow('f1', { user_id: 'user-123' }))
+    entries$!['e1']!.set(makeEntry('e1', { user_id: 'user-123' }))
+    flows$!['f1']!.set(makeFlow('f1', { user_id: 'user-123' }))
 
     const { flowCount, entryCount } = countUndecidedOrphans()
     expect(flowCount).toBe(0)
@@ -703,8 +703,8 @@ describe('Integration: sync gate with orphan pending state', () => {
     const storeModule = await import('../store')
     const { countUndecidedOrphans } = storeModule
 
-    entries$!['e1'].set(makeEntry('e1', { sync_excluded: true }))
-    flows$!['f1'].set(makeFlow('f1', { sync_excluded: true }))
+    entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
+    flows$!['f1']!.set(makeFlow('f1', { sync_excluded: true }))
 
     const { flowCount, entryCount } = countUndecidedOrphans()
     expect(flowCount).toBe(0)
@@ -720,12 +720,12 @@ describe('Integration: sync gate with orphan pending state', () => {
     const { countUndecidedOrphans } = storeModule
 
     // Previous decline: entries/flows are sync_excluded
-    entries$!['e-old'].set(makeEntry('e-old', { sync_excluded: true }))
-    flows$!['f-old'].set(makeFlow('f-old', { sync_excluded: true }))
+    entries$!['e-old']!.set(makeEntry('e-old', { sync_excluded: true }))
+    flows$!['f-old']!.set(makeFlow('f-old', { sync_excluded: true }))
 
     // New flows created after decline (no sync_excluded, no user_id)
-    entries$!['e-new'].set(makeEntry('e-new'))
-    flows$!['f-new'].set(makeFlow('f-new'))
+    entries$!['e-new']!.set(makeEntry('e-new'))
+    flows$!['f-new']!.set(makeFlow('f-new'))
 
     const { flowCount, entryCount } = countUndecidedOrphans()
     // Only new undecided orphans counted
@@ -749,8 +749,8 @@ describe('clearUserData ghost deletion prevention', () => {
   })
 
   it('strips user_id before removing synced items to prevent ghost sync deletes', () => {
-    entries$!['e-synced'].set(makeEntry('e-synced', { user_id: 'user-123' }))
-    flows$!['f-synced'].set(makeFlow('f-synced', { user_id: 'user-123' }))
+    entries$!['e-synced']!.set(makeEntry('e-synced', { user_id: 'user-123' }))
+    flows$!['f-synced']!.set(makeFlow('f-synced', { user_id: 'user-123' }))
 
     clearUserData()
 
@@ -809,61 +809,61 @@ describe('restoreExcludedEntries — cross-user defense', () => {
   })
 
   it('refuses to restore an entry owned by a different user (I/O matrix: Restore foreign row)', () => {
-    entries$!['e-foreign'].set(makeEntry('e-foreign', { user_id: 'user-A', sync_excluded: true }))
-    flows$!['f-foreign'].set(
+    entries$!['e-foreign']!.set(makeEntry('e-foreign', { user_id: 'user-A', sync_excluded: true }))
+    flows$!['f-foreign']!.set(
       makeFlow('f-foreign', { dailyEntryId: 'e-foreign', user_id: 'user-A', sync_excluded: true })
     )
 
     restoreExcludedEntries(['e-foreign'], 'user-B')
 
     // Entry untouched: still excluded, still owned by A
-    expect(entries$!['e-foreign'].sync_excluded.get()).toBe(true)
-    expect(entries$!['e-foreign'].user_id.get()).toBe('user-A')
+    expect(entries$!['e-foreign']!.sync_excluded.get()).toBe(true)
+    expect(entries$!['e-foreign']!.user_id.get()).toBe('user-A')
     // Flow under foreign-owned parent also untouched
-    expect(flows$!['f-foreign'].sync_excluded.get()).toBe(true)
-    expect(flows$!['f-foreign'].user_id.get()).toBe('user-A')
+    expect(flows$!['f-foreign']!.sync_excluded.get()).toBe(true)
+    expect(flows$!['f-foreign']!.user_id.get()).toBe('user-A')
   })
 
   it('skips a flow whose PARENT entry is foreign-owned, even if the flow itself has user_id null', () => {
     // Parent entry owned by A; new flow written under it (logout-window shape)
-    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A', sync_excluded: true }))
-    flows$!['f-null-under-A'].set(
+    entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A', sync_excluded: true }))
+    flows$!['f-null-under-A']!.set(
       makeFlow('f-null-under-A', { dailyEntryId: 'e-A', sync_excluded: true })
     )
 
     restoreExcludedEntries(['e-A'], 'user-B')
 
     // Both untouched — defense covers the flow via parent ownership.
-    expect(entries$!['e-A'].user_id.get()).toBe('user-A')
-    expect(flows$!['f-null-under-A'].user_id.get()).toBeNull()
-    expect(flows$!['f-null-under-A'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e-A']!.user_id.get()).toBe('user-A')
+    expect(flows$!['f-null-under-A']!.user_id.get()).toBeNull()
+    expect(flows$!['f-null-under-A']!.sync_excluded.get()).toBe(true)
   })
 
   it('still restores an anonymous (user_id === null) entry — null is the legitimate adoption path', () => {
-    entries$!['e-anon'].set(makeEntry('e-anon', { sync_excluded: true }))
-    flows$!['f-anon'].set(
+    entries$!['e-anon']!.set(makeEntry('e-anon', { sync_excluded: true }))
+    flows$!['f-anon']!.set(
       makeFlow('f-anon', { dailyEntryId: 'e-anon', sync_excluded: true })
     )
 
     restoreExcludedEntries(['e-anon'], 'user-B')
 
-    expect(entries$!['e-anon'].sync_excluded.get()).toBe(false)
-    expect(entries$!['e-anon'].user_id.get()).toBe('user-B')
-    expect(flows$!['f-anon'].sync_excluded.get()).toBe(false)
-    expect(flows$!['f-anon'].user_id.get()).toBe('user-B')
+    expect(entries$!['e-anon']!.sync_excluded.get()).toBe(false)
+    expect(entries$!['e-anon']!.user_id.get()).toBe('user-B')
+    expect(flows$!['f-anon']!.sync_excluded.get()).toBe(false)
+    expect(flows$!['f-anon']!.user_id.get()).toBe('user-B')
   })
 
   it('mixed batch: restores own + anonymous, leaves foreign untouched', () => {
-    entries$!['e-own'].set(makeEntry('e-own', { user_id: 'user-B', sync_excluded: true }))
-    entries$!['e-anon'].set(makeEntry('e-anon', { sync_excluded: true }))
-    entries$!['e-foreign'].set(makeEntry('e-foreign', { user_id: 'user-A', sync_excluded: true }))
+    entries$!['e-own']!.set(makeEntry('e-own', { user_id: 'user-B', sync_excluded: true }))
+    entries$!['e-anon']!.set(makeEntry('e-anon', { sync_excluded: true }))
+    entries$!['e-foreign']!.set(makeEntry('e-foreign', { user_id: 'user-A', sync_excluded: true }))
 
     restoreExcludedEntries(['e-own', 'e-anon', 'e-foreign'], 'user-B')
 
-    expect(entries$!['e-own'].sync_excluded.get()).toBe(false)
-    expect(entries$!['e-anon'].user_id.get()).toBe('user-B')
-    expect(entries$!['e-foreign'].user_id.get()).toBe('user-A')
-    expect(entries$!['e-foreign'].sync_excluded.get()).toBe(true)
+    expect(entries$!['e-own']!.sync_excluded.get()).toBe(false)
+    expect(entries$!['e-anon']!.user_id.get()).toBe('user-B')
+    expect(entries$!['e-foreign']!.user_id.get()).toBe('user-A')
+    expect(entries$!['e-foreign']!.sync_excluded.get()).toBe(true)
   })
 })
 
@@ -882,33 +882,33 @@ describe('adoptOrphanFlows — foreign-parent defense', () => {
   })
 
   it('skips a null-user_id flow whose parent entry is owned by a different user (I/O matrix: Adopt foreign parent)', () => {
-    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
-    flows$!['f-orphan-under-A'].set(makeFlow('f-orphan-under-A', { dailyEntryId: 'e-A' }))
+    entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A' }))
+    flows$!['f-orphan-under-A']!.set(makeFlow('f-orphan-under-A', { dailyEntryId: 'e-A' }))
 
     adoptOrphanFlows('user-B')
 
     // Parent untouched, flow remains orphan (no FK/RLS violation will be queued).
-    expect(entries$!['e-A'].user_id.get()).toBe('user-A')
-    expect(flows$!['f-orphan-under-A'].user_id.get()).toBeNull()
+    expect(entries$!['e-A']!.user_id.get()).toBe('user-A')
+    expect(flows$!['f-orphan-under-A']!.user_id.get()).toBeNull()
   })
 
   it('still adopts a null-user_id flow whose parent entry is also null (anonymous lineage)', () => {
-    entries$!['e-anon'].set(makeEntry('e-anon'))
-    flows$!['f-anon'].set(makeFlow('f-anon', { dailyEntryId: 'e-anon' }))
+    entries$!['e-anon']!.set(makeEntry('e-anon'))
+    flows$!['f-anon']!.set(makeFlow('f-anon', { dailyEntryId: 'e-anon' }))
 
     adoptOrphanFlows('user-B')
 
-    expect(entries$!['e-anon'].user_id.get()).toBe('user-B')
-    expect(flows$!['f-anon'].user_id.get()).toBe('user-B')
+    expect(entries$!['e-anon']!.user_id.get()).toBe('user-B')
+    expect(flows$!['f-anon']!.user_id.get()).toBe('user-B')
   })
 
   it('still adopts a null-user_id flow whose parent entry is owned by the SAME user (logout-window adoption)', () => {
-    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
-    flows$!['f-orphan-under-B'].set(makeFlow('f-orphan-under-B', { dailyEntryId: 'e-B' }))
+    entries$!['e-B']!.set(makeEntry('e-B', { user_id: 'user-B' }))
+    flows$!['f-orphan-under-B']!.set(makeFlow('f-orphan-under-B', { dailyEntryId: 'e-B' }))
 
     adoptOrphanFlows('user-B')
 
-    expect(flows$!['f-orphan-under-B'].user_id.get()).toBe('user-B')
+    expect(flows$!['f-orphan-under-B']!.user_id.get()).toBe('user-B')
   })
 })
 
@@ -934,23 +934,23 @@ describe('countPreviousUserData / deletePreviousUserData', () => {
   })
 
   it('countPreviousUserData counts only rows owned by the given userId', () => {
-    entries$!['e-A1'].set(makeEntry('e-A1', { user_id: 'user-A' }))
-    entries$!['e-A2'].set(makeEntry('e-A2', { user_id: 'user-A' }))
-    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
-    entries$!['e-anon'].set(makeEntry('e-anon'))
-    flows$!['f-A'].set(makeFlow('f-A', { user_id: 'user-A' }))
-    flows$!['f-B'].set(makeFlow('f-B', { user_id: 'user-B' }))
+    entries$!['e-A1']!.set(makeEntry('e-A1', { user_id: 'user-A' }))
+    entries$!['e-A2']!.set(makeEntry('e-A2', { user_id: 'user-A' }))
+    entries$!['e-B']!.set(makeEntry('e-B', { user_id: 'user-B' }))
+    entries$!['e-anon']!.set(makeEntry('e-anon'))
+    flows$!['f-A']!.set(makeFlow('f-A', { user_id: 'user-A' }))
+    flows$!['f-B']!.set(makeFlow('f-B', { user_id: 'user-B' }))
 
     expect(countPreviousUserData('user-A')).toEqual({ entryCount: 2, flowCount: 1 })
   })
 
   it('deletePreviousUserData removes only the targeted user\'s rows; leaves current user + anonymous intact', () => {
-    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
-    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
-    entries$!['e-anon'].set(makeEntry('e-anon'))
-    flows$!['f-A'].set(makeFlow('f-A', { user_id: 'user-A' }))
-    flows$!['f-B'].set(makeFlow('f-B', { user_id: 'user-B' }))
-    flows$!['f-anon'].set(makeFlow('f-anon'))
+    entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A' }))
+    entries$!['e-B']!.set(makeEntry('e-B', { user_id: 'user-B' }))
+    entries$!['e-anon']!.set(makeEntry('e-anon'))
+    flows$!['f-A']!.set(makeFlow('f-A', { user_id: 'user-A' }))
+    flows$!['f-B']!.set(makeFlow('f-B', { user_id: 'user-B' }))
+    flows$!['f-anon']!.set(makeFlow('f-anon'))
 
     deletePreviousUserData('user-A')
 
@@ -964,14 +964,14 @@ describe('countPreviousUserData / deletePreviousUserData', () => {
   })
 
   it('deletePreviousUserData also wipes grace days owned by the targeted user', () => {
-    graceDays$!['g-A'].set({
+    graceDays$!['g-A']!.set({
       id: 'g-A',
       userId: 'user-A',
       earnedAt: '2026-01-01T00:00:00Z',
       earnedForMilestone: 7,
       usedForDate: null,
     })
-    graceDays$!['g-B'].set({
+    graceDays$!['g-B']!.set({
       id: 'g-B',
       userId: 'user-B',
       earnedAt: '2026-01-01T00:00:00Z',
@@ -986,7 +986,7 @@ describe('countPreviousUserData / deletePreviousUserData', () => {
   })
 
   it('deletePreviousUserData is a no-op when userId is empty', () => {
-    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A' }))
     deletePreviousUserData('')
     expect(entries$.get()['e-A']).toBeDefined()
   })
@@ -1017,7 +1017,7 @@ describe('previousAccountBanner$ derivation', () => {
     const { previousAccountBanner$ } = await import('../store')
     deviceState$.lastAuthedUserId.set('user-A')
     store$.session.userId.set('user-A')
-    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A' }))
     expect(previousAccountBanner$.get() ?? null).toBeNull()
   })
 
@@ -1025,7 +1025,7 @@ describe('previousAccountBanner$ derivation', () => {
     const { previousAccountBanner$ } = await import('../store')
     deviceState$.lastAuthedUserId.set('user-A')
     store$.session.userId.set(null)
-    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A' }))
     expect(previousAccountBanner$.get() ?? null).toBeNull()
   })
 
@@ -1033,7 +1033,7 @@ describe('previousAccountBanner$ derivation', () => {
     const { previousAccountBanner$ } = await import('../store')
     deviceState$.lastAuthedUserId.set('user-A')
     store$.session.userId.set('user-B')
-    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
+    entries$!['e-B']!.set(makeEntry('e-B', { user_id: 'user-B' }))
     expect(previousAccountBanner$.get() ?? null).toBeNull()
   })
 
@@ -1041,9 +1041,9 @@ describe('previousAccountBanner$ derivation', () => {
     const { previousAccountBanner$ } = await import('../store')
     deviceState$.lastAuthedUserId.set('user-A')
     store$.session.userId.set('user-B')
-    entries$!['e-A1'].set(makeEntry('e-A1', { user_id: 'user-A' }))
-    entries$!['e-A2'].set(makeEntry('e-A2', { user_id: 'user-A' }))
-    flows$!['f-A'].set(makeFlow('f-A', { user_id: 'user-A' }))
+    entries$!['e-A1']!.set(makeEntry('e-A1', { user_id: 'user-A' }))
+    entries$!['e-A2']!.set(makeEntry('e-A2', { user_id: 'user-A' }))
+    flows$!['f-A']!.set(makeFlow('f-A', { user_id: 'user-A' }))
 
     const banner = previousAccountBanner$.get()
     expect(banner).toEqual({
@@ -1058,12 +1058,12 @@ describe('previousAccountBanner$ derivation', () => {
     const { previousAccountBanner$ } = await import('../store')
     deviceState$.lastAuthedUserId.set('user-A')
     store$.session.userId.set('user-B')
-    entries$!['e-A'].set(makeEntry('e-A', { user_id: 'user-A' }))
+    entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A' }))
 
     // Banner visible initially
     expect(previousAccountBanner$.get()).not.toBeNull()
 
-    deviceState$.acknowledgedAccountTransitions['user-A->user-B'].set(true)
+    deviceState$.acknowledgedAccountTransitions['user-A->user-B']!.set(true)
 
     expect(previousAccountBanner$.get() ?? null).toBeNull()
   })
@@ -1074,7 +1074,7 @@ describe('previousAccountBanner$ derivation', () => {
     deviceState$.lastAuthedUserId.set('user-B')
     deviceState$.acknowledgedAccountTransitions.set({ 'user-A->user-B': true })
     store$.session.userId.set('user-C')
-    entries$!['e-B'].set(makeEntry('e-B', { user_id: 'user-B' }))
+    entries$!['e-B']!.set(makeEntry('e-B', { user_id: 'user-B' }))
 
     const banner = previousAccountBanner$.get()
     expect(banner).not.toBeNull()

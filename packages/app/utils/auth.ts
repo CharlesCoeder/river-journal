@@ -16,7 +16,7 @@ import { deleteTrustedBrowserByHash } from './userEncryption'
 /**
  * Common Supabase auth error codes mapped to user-friendly messages
  */
-export const AUTH_ERROR_MESSAGES: Record<string, string> = {
+export const AUTH_ERROR_MESSAGES = {
   user_already_exists: 'An account with this email already exists.',
   weak_password: 'Password must be at least 8 characters.',
   invalid_email: 'Please enter a valid email address.',
@@ -31,7 +31,7 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
   identity_already_exists: 'This Google account is already linked to another account.',
   identity_not_found: 'Identity not found.',
   single_identity_not_deletable: 'You must keep at least one sign-in method.',
-}
+} satisfies Record<string, string>
 
 /**
  * Gets a user-friendly error message from a Supabase AuthError

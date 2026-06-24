@@ -81,7 +81,8 @@ export async function fetchYourPostsPage(
   const rows = (data ?? []) as YourPost[]
   const hasMore = rows.length > PAGE_SIZE
   const items = hasMore ? rows.slice(0, PAGE_SIZE) : rows
-  const nextCursor = hasMore ? rows[PAGE_SIZE - 1].created_at : null
+  // hasMore ⇒ rows.length > PAGE_SIZE, so index PAGE_SIZE-1 is always present.
+  const nextCursor = hasMore ? rows[PAGE_SIZE - 1]!.created_at : null
   return { items, nextCursor }
 }
 

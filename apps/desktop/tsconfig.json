@@ -17,6 +17,10 @@
     "downlevelIteration": true,
     "preserveSymlinks": true,
     "strict": true,
+    // `strict` does NOT include noUncheckedIndexedAccess; set it explicitly so
+    // this standalone config (which does not extend tsconfig.base) enforces the
+    // same index-safety the rest of the repo does.
+    "noUncheckedIndexedAccess": true,
     // The shared workspace source (packages/app, @my/config) is written to the
     // repo-standard `tsconfig.base` which sets `noImplicitAny: false`; some
     // dependencies (react-dom, @tamagui/config subpath exports) have no
