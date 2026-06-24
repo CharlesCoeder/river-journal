@@ -1,22 +1,22 @@
 /**
  * React Native download handler for journal export.
- * Writes ZIP to temp file and opens the native share sheet.
+ * Writes the export to a file in the document directory and opens the native share sheet.
  */
-import * as FileSystem from 'expo-file-system/legacy'
+import { File, Paths } from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
-import { encode } from 'base64-arraybuffer'
+import { exportBlobToBytes } from 'app/utils/exportBlob'
 
 export async function downloadExport(
   blob: Blob,
   filename = 'river-journal-export.zip',
   mimeType?: string
 ): Promise<void> {
-  const arrayBuffer = await blob.arrayBuffer()
-  const base64 = encode(arrayBuffer)
+  const bytes = await exportBlobToBytes(blob)
 
-  const fileUri = FileSystem.documentDirectory + filename
-  await FileSystem.writeAsStringAsync(fileUri, base64, {
-    encoding: FileSystem.EncodingType.Base64,
-  })
-  await Sharing.shareAsync(fileUri, { mimeType: mimeType ?? blob.type })
+  const file = new File(Paths.document, filename)
+  // overwrite so re-exporting the same filename doesn't throw on an existing file.
+  file.create({ overwrite: true })
+  file.write(bytes)
+
+  await Sharing.shareAsync(file.uri, { mimeType: mimeType ?? blob.type })
 }
