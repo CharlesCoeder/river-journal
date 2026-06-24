@@ -106,6 +106,7 @@ export function ExportJournal() {
   const [mode, setMode] = useState<ExportMode>('idle')
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
   const [exportedCount, setExportedCount] = useState(0)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS)
   const exportingRef = useRef(false)
 
@@ -158,7 +159,9 @@ export function ExportJournal() {
         await downloadExport(blob, filename)
         setExportedCount(entries.length)
         setMode('done')
-      } catch {
+      } catch (err) {
+        console.error('[ExportJournal] export failed:', err)
+        setErrorMessage(err instanceof Error ? err.message : String(err))
         setMode('error')
       } finally {
         exportingRef.current = false
@@ -182,6 +185,7 @@ export function ExportJournal() {
     setMode('options')
     setSelectedMonths(new Set())
     setExportedCount(0)
+    setErrorMessage(null)
   }, [])
 
   // ---------------------------------------------------------------------------
@@ -223,6 +227,17 @@ export function ExportJournal() {
         <Text fontFamily="$body" fontSize={13} color="$color8">
           Export failed. Please try again.
         </Text>
+        {errorMessage && (
+          <Text
+            testID="export-error-detail"
+            fontFamily="$body"
+            fontSize={12}
+            color="$color"
+            marginTop="$1"
+          >
+            {errorMessage}
+          </Text>
+        )}
         <Text
           fontFamily="$body"
           fontSize={11}
