@@ -1,5 +1,6 @@
 import { zipSync, strToU8 } from 'fflate'
 import type { DailyEntryView } from 'app/state/types'
+import { toExportBlob } from 'app/utils/exportBlob'
 
 // ---------------------------------------------------------------------------
 // Export options
@@ -107,7 +108,7 @@ export function exportJournal(
   }
 
   const zipped = zipSync(files)
-  return new Blob([zipped], { type: 'application/zip' })
+  return toExportBlob(zipped, 'application/zip')
 }
 
 // ---------------------------------------------------------------------------
@@ -136,7 +137,7 @@ export function exportJournalSingleFile(
     ? `\n${sanitizeSeparator(opts.separatorText)}\n\n`
     : '\n\n'
   const result = sections.join(entrySeparator)
-  return new Blob([result], { type: 'text/markdown' })
+  return toExportBlob(result, 'text/markdown')
 }
 
 // ---------------------------------------------------------------------------
