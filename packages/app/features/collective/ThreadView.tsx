@@ -1,11 +1,20 @@
 // packages/app/features/collective/ThreadView.tsx
 //
-// Flagship Collective thread surface. Renders a post-and-replies hierarchy with
-// depth rails, per-subtree lazy expansion, inline reply composer, and focus routing.
+// Flagship Collective thread surface — title-led redesign (Story 3-16).
+//
+// Shape (mirrors docs/collective-design-reference CollectiveThread.tsx):
+//   • a "Back to the room" link
+//   • the ROOT letter: title (h1) + byline + full body + interactive reactions
+//     + reply, sourced from useThreadRoot() (the feed RPC no longer carries
+//     `body`, so the root's body has no other source — Story 3-16 follow-up #1)
+//   • a branching reply tree: each reply is byline + body + reactions, nested
+//     under left depth rails, with a depth cap + "view N more replies" affordance
 //
 // Architecture invariant: ThreadView is a RENDERER, not a state owner.
-// All data fetching is delegated to useThread(); mutation optimistic UX to
-// PostComposer + useCreatePost(); deletion rendering to PostRow.
+//   • root data → useThreadRoot(postId)
+//   • reply tree → useThread(postId) (+ lazy useThread per expanded subtree)
+//   • mutation optimistic UX → PostComposer + useCreatePost()
+//   • reactions → ReactionStrip / useToggleReaction
 //
 // Boundary rule (D7): no Legend-State imports in this file.
 // This file does NOT touch PersistentEditor or ephemeral$.persistentEditor.* (D14).
@@ -28,23 +37,24 @@ function safeFlushSync(fn: () => void): void {
   }
 }
 import { View, XStack, YStack, Text, ExpandingLineButton } from '@my/ui'
+import { ArrowLeft, CornerUpLeft } from '@tamagui/lucide-icons'
 import { useRouter, useSearchParams } from 'solito/navigation'
-import { useThread } from 'app/state/collective/thread'
+import { useThread, useThreadRoot } from 'app/state/collective/thread'
 import type { ThreadPost } from 'app/state/collective/thread'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useIsSuspended } from 'app/state/collective/suspension'
 import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
-import { PostRow } from 'app/features/collective/PostRow'
+import { ReactionStrip } from 'app/features/collective/ReactionStrip'
 import { FlagAffordance } from 'app/features/collective/FlagAffordance'
 import PostComposer from 'app/features/collective/PostComposer'
 import { CollectiveEligibilityGate } from 'app/features/collective/CollectiveEligibilityGate'
+import { timeAgoCasual } from './_shared'
 
 // ─── Depth cap ────────────────────────────────────────────────────────────────
 // Depth caps tuned for: mobile rail-stack readability, web content-density.
 // Revisit after dogfood feedback (deferred-decisions #2).
 const WEB_DEPTH_CAP = 6
 const MOBILE_DEPTH_CAP = 4
-
 
 // Hard recursion safety cap (defense-in-depth for any data cycle; well above visible cap).
 const MAX_SAFE_DEPTH = 100
@@ -71,9 +81,36 @@ function countLoadedDescendants(
   childrenByParent: Map<string, ThreadPost[]>
 ): number {
   const children = childrenByParent.get(postId) ?? []
-  return children.reduce(
-    (sum, c) => sum + 1 + countLoadedDescendants(c.id, childrenByParent),
-    0
+  return children.reduce((sum, c) => sum + 1 + countLoadedDescendants(c.id, childrenByParent), 0)
+}
+
+// ─── Byline ───────────────────────────────────────────────────────────────────
+// Interim identity (architecture §9 / D7): the design shows pen names; the real
+// RPC returns only user_id + tenure. Render "You" for your own posts, the
+// user_id slice otherwise, "[deleted]" for withdrawn/anonymized authors.
+
+function NodeByline({
+  post,
+  currentUserId,
+}: {
+  post: ThreadPost
+  currentUserId: string | null | undefined
+}) {
+  const isDeleted = post.is_user_deleted || post.user_id === null
+  const mine = post.user_id != null && post.user_id === currentUserId
+  const name = isDeleted ? '[deleted]' : mine ? 'You' : (post.user_id?.slice(0, 8) ?? '[deleted]')
+  return (
+    <Text
+      fontFamily="$body"
+      fontSize="$1"
+      color="$color9"
+      textTransform="uppercase"
+      letterSpacing={1}
+    >
+      {name}
+      {'  ·  '}
+      {timeAgoCasual(post.created_at)}
+    </Text>
   )
 }
 
@@ -131,9 +168,7 @@ function ThreadExpansion({ postId, depth, renderPost }: ThreadExpansionProps) {
   return (
     <>
       {children.map((child) => (
-        <React.Fragment key={child.id}>
-          {renderPost(child, depth, false)}
-        </React.Fragment>
+        <React.Fragment key={child.id}>{renderPost(child, depth, false)}</React.Fragment>
       ))}
     </>
   )
@@ -149,7 +184,11 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   const currentUserId = useCurrentUserId()
   const isSuspended = useIsSuspended(currentUserId ?? null)
   const hiddenIds = useLocallyHiddenPostIds()
-  const root = useThread(postId, { role: 'root' })
+  // Root post (title + full body) — the feed RPC dropped `body`, so this is the
+  // ONLY source for the root's body. Story 3-16 follow-up #1.
+  const rootQuery = useThreadRoot(postId)
+  // Reply tree (direct children of the root; deeper levels lazy-load).
+  const tree = useThread(postId, { role: 'root' })
 
   // Per-session collapse state — Set of post ids whose subtrees are collapsed.
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set())
@@ -164,22 +203,22 @@ export default function ThreadView({ postId }: ThreadViewProps) {
 
   // ─── focusedFromRoot — read from query param ───────────────────────────────
   const rawFocusedFromRoot = getParam('focusedFromRoot')
-  const focusedFromRoot = rawFocusedFromRoot && SAFE_ID_RE.test(rawFocusedFromRoot)
-    ? rawFocusedFromRoot
-    : null
+  const focusedFromRoot =
+    rawFocusedFromRoot && SAFE_ID_RE.test(rawFocusedFromRoot) ? rawFocusedFromRoot : null
 
   // ─── Reply guard ───────────────────────────────────────────────────────────
-  const mode = root.data?.pages[0]?.mode
-  const canReply = currentUserId !== null
-    && currentUserId !== undefined
-    && isSuspended !== true
-    && mode !== 'preview'
+  const mode = rootQuery.data?.mode
+  const canReply =
+    currentUserId !== null &&
+    currentUserId !== undefined &&
+    isSuspended !== true &&
+    mode !== 'preview'
 
   // ─── Full child-index map from the flat RPC result ────────────────────────
-  // The RPC returns a flat list of posts. We index ALL items by parent_post_id
-  // for recursive rendering. Items are rendered inline when the subtree is
-  // fully loaded (allLoaded). Items requiring more data use ThreadExpansion.
-  const allItems = root.data?.pages.flatMap((p) => p.items) ?? []
+  // useThread(root) returns the root's direct children (deeper levels arrive via
+  // ThreadExpansion). We index ALL loaded items by parent_post_id for recursive
+  // rendering.
+  const allItems = tree.data?.pages.flatMap((p) => p.items) ?? []
   const childrenByParent = new Map<string, ThreadPost[]>()
   for (const item of allItems) {
     if (item.parent_post_id) {
@@ -202,7 +241,12 @@ export default function ThreadView({ postId }: ThreadViewProps) {
       if (post.is_removed && isRoot) {
         return (
           <View key={post.id}>
-            <Text fontSize="$3" color="$color9" textAlign="center" paddingVertical="$4">
+            <Text
+              fontSize="$3"
+              color="$color9"
+              textAlign="center"
+              paddingVertical="$4"
+            >
               This thread was removed.
             </Text>
           </View>
@@ -215,8 +259,9 @@ export default function ThreadView({ postId }: ThreadViewProps) {
       const atCap = depth >= cap
 
       // Direct children from the flat list (filter hidden).
-      const loadedChildren = (childrenByParent.get(post.id) ?? [])
-        .filter((c) => !hiddenIds.has(c.id))
+      const loadedChildren = (childrenByParent.get(post.id) ?? []).filter(
+        (c) => !hiddenIds.has(c.id)
+      )
 
       // Compute how many total descendants are present in the flat list (recursively).
       // This is compared with descendant_count (which counts ALL descendants at all levels).
@@ -230,43 +275,137 @@ export default function ThreadView({ postId }: ThreadViewProps) {
       // aria-expanded: omit when there is no content to expand/collapse (AC #6).
       const ariaExpanded = hasDescendants ? !isCollapsed : undefined
 
+      // Deletion state: self-deleted → tombstone; anonymized → body shown, author
+      // anonymised; normal → body shown.
+      const selfDeleted = post.is_user_deleted === true
+
+      // ─── The letter / reply content ────────────────────────────────────────
+      const nodeContent = selfDeleted ? (
+        <Text
+          fontFamily="$journal"
+          fontSize={isRoot ? '$6' : '$5'}
+          color="$color8"
+          fontStyle="italic"
+        >
+          {isRoot ? 'This letter was withdrawn.' : 'This reply was withdrawn.'}
+        </Text>
+      ) : (
+        <YStack gap="$3">
+          {isRoot && post.title ? (
+            <Text
+              tag="h1"
+              fontFamily="$journal"
+              fontSize="$9"
+              lineHeight="$9"
+              color="$color12"
+            >
+              {post.title}
+            </Text>
+          ) : null}
+          <NodeByline
+            post={post}
+            currentUserId={currentUserId}
+          />
+          <Text
+            fontFamily="$journal"
+            fontSize={isRoot ? '$6' : '$5'}
+            color="$color12"
+            whiteSpace="pre-wrap"
+          >
+            {post.body}
+          </Text>
+          {/* Action row: reactions on the left, reply + moderation on the right */}
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            gap="$5"
+            flexWrap="wrap"
+            marginTop="$1"
+          >
+            {currentUserId !== undefined ? (
+              <ReactionStrip
+                postId={post.id}
+                userId={currentUserId ?? null}
+                disabled={isSuspended === true}
+              />
+            ) : (
+              <View />
+            )}
+            <XStack
+              alignItems="center"
+              gap="$4"
+            >
+              {canReply ? (
+                <View
+                  role="button"
+                  aria-label={isRoot ? 'Reply to this thread' : 'Reply to this post'}
+                  onPress={() => setActiveReplyId(post.id)}
+                  cursor="pointer"
+                >
+                  <XStack
+                    alignItems="center"
+                    gap="$1.5"
+                  >
+                    <CornerUpLeft
+                      size={14}
+                      color="$color9"
+                    />
+                    <Text
+                      fontSize="$1"
+                      color="$color9"
+                      fontFamily="$body"
+                      textTransform="uppercase"
+                      letterSpacing={1}
+                    >
+                      Reply
+                    </Text>
+                  </XStack>
+                </View>
+              ) : null}
+              <FlagAffordance
+                postId={post.id}
+                reporterUserId={currentUserId ?? null}
+                canReport={
+                  post.user_id !== currentUserId && !post.is_user_deleted && post.user_id !== null
+                }
+                canSelfDelete={post.user_id === currentUserId && !post.is_user_deleted}
+                canFocus={!isRoot}
+                onFocus={
+                  !isRoot
+                    ? () => {
+                        const rootId = focusedFromRoot ?? postId
+                        router.push(`/collective/thread/${post.id}?focusedFromRoot=${rootId}`)
+                      }
+                    : undefined
+                }
+              />
+            </XStack>
+          </XStack>
+        </YStack>
+      )
+
       // ─── Inner content (shared at all depths) ──────────────────────────────
       const innerContent = (
         <>
-          {/* PostRow — delegation for all post body rendering */}
-          <PostRow
-            post={post as any}
-            currentUserId={currentUserId}
-            disabled={isSuspended === true}
-          />
+          {nodeContent}
 
-          {/* FlagAffordance — replies get canFocus=true; root gets canFocus=false */}
-          <FlagAffordance
-            postId={post.id}
-            reporterUserId={currentUserId ?? null}
-            canReport={post.user_id !== currentUserId && !post.is_user_deleted && post.user_id !== null}
-            canSelfDelete={post.user_id === currentUserId && !post.is_user_deleted}
-            canFocus={!isRoot}
-            onFocus={!isRoot ? () => {
-              const rootId = focusedFromRoot ?? postId
-              router.push(`/collective/thread/${post.id}?focusedFromRoot=${rootId}`)
-            } : undefined}
-          />
-
-          {/* Reply affordance — visible for authenticated, non-suspended users.
-              Root post uses "Reply to this thread" label; replies use "Reply to this post"
-              so that aria-label queries can uniquely target each context. */}
-          {canReply ? (
-            <View
-              role="button"
-              aria-label={isRoot ? 'Reply to this thread' : 'Reply to this post'}
-              onPress={() => setActiveReplyId(post.id)}
-              cursor="pointer"
+          {/* Reply-count label — shown under the root only, mirrors the design. */}
+          {isRoot ? (
+            <Text
+              fontFamily="$body"
+              fontSize="$1"
+              color="$color9"
+              textTransform="uppercase"
+              letterSpacing={1}
+              marginTop="$8"
+              marginBottom="$2"
             >
-              <Text fontSize="$1" color="$color9" fontFamily="$body">
-                Reply
-              </Text>
-            </View>
+              {(post.descendant_count ?? 0) === 0
+                ? 'No replies yet'
+                : (post.descendant_count ?? 0) === 1
+                  ? '1 reply'
+                  : `${post.descendant_count} replies`}
+            </Text>
           ) : null}
 
           {/* Inline composer — one at a time. key ensures state teardown on post change.
@@ -298,36 +437,63 @@ export default function ThreadView({ postId }: ThreadViewProps) {
                 router.push(`/collective/thread/${post.id}?focusedFromRoot=${rootId}`)
               }}
               cursor="pointer"
+              marginTop="$4"
             >
-              <Text fontSize="$1" color="$color9" fontFamily="$body">
+              <Text
+                fontSize="$1"
+                color="$color9"
+                fontFamily="$body"
+                textTransform="uppercase"
+                letterSpacing={1}
+              >
                 Continue this thread →
               </Text>
             </View>
           ) : isCollapsed && hasDescendants ? (
             /* Collapsed via rail tap — re-expand */
             <View
-              onPress={() => setCollapsedIds((prev) => {
-                const next = new Set(prev)
-                next.delete(post.id)
-                return next
-              })}
+              onPress={() =>
+                setCollapsedIds((prev) => {
+                  const next = new Set(prev)
+                  next.delete(post.id)
+                  return next
+                })
+              }
               cursor="pointer"
+              marginTop="$4"
             >
-              <Text fontSize="$1" color="$color9" fontFamily="$body">
-                {post.descendant_count === 1 ? 'View 1 more reply' : `View ${post.descendant_count} more replies`}
+              <Text
+                fontSize="$1"
+                color="$color9"
+                fontFamily="$body"
+                textTransform="uppercase"
+                letterSpacing={1}
+              >
+                {post.descendant_count === 1
+                  ? 'View 1 more reply'
+                  : `View ${post.descendant_count} more replies`}
               </Text>
             </View>
           ) : isExpanded && hasUnloaded ? (
             /* User-triggered expansion is active — allow collapsing */
             <View
-              onPress={() => setExpandedSubtreeIds((prev) => {
-                const next = new Set(prev)
-                next.delete(post.id)
-                return next
-              })}
+              onPress={() =>
+                setExpandedSubtreeIds((prev) => {
+                  const next = new Set(prev)
+                  next.delete(post.id)
+                  return next
+                })
+              }
               cursor="pointer"
+              marginTop="$4"
             >
-              <Text fontSize="$1" color="$color9" fontFamily="$body">
+              <Text
+                fontSize="$1"
+                color="$color9"
+                fontFamily="$body"
+                textTransform="uppercase"
+                letterSpacing={1}
+              >
                 Hide replies
               </Text>
             </View>
@@ -336,24 +502,37 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             <View
               onPress={() => setExpandedSubtreeIds((prev) => new Set(prev).add(post.id))}
               cursor="pointer"
+              marginTop="$4"
             >
-              <Text fontSize="$1" color="$color9" fontFamily="$body">
-                {post.descendant_count === 1 ? 'View 1 more reply' : `View ${post.descendant_count} more replies`}
+              <Text
+                fontSize="$1"
+                color="$color9"
+                fontFamily="$body"
+                textTransform="uppercase"
+                letterSpacing={1}
+              >
+                {post.descendant_count === 1
+                  ? 'View 1 more reply'
+                  : `View ${post.descendant_count} more replies`}
               </Text>
             </View>
           ) : null}
 
           {/* Children rendering — only when not at cap and not collapsed */}
           {!atCap && !isCollapsed && (allLoaded || (isExpanded && hasUnloaded)) ? (
-            <View tag="ul" role="group">
+            <View
+              tag="ul"
+              role="group"
+              marginTop="$6"
+            >
               {/* Inline render when all descendants are loaded (allLoaded) */}
-              {allLoaded ? (
-                loadedChildren.map((child) => (
-                  <React.Fragment key={child.id}>
-                    {renderPost(child, depth + 1, false)}
-                  </React.Fragment>
-                ))
-              ) : null}
+              {allLoaded
+                ? loadedChildren.map((child) => (
+                    <React.Fragment key={child.id}>
+                      {renderPost(child, depth + 1, false)}
+                    </React.Fragment>
+                  ))
+                : null}
               {/* ThreadExpansion for user-triggered loading of unloaded subtrees */}
               {isExpanded && hasUnloaded ? (
                 <ThreadExpansion
@@ -368,6 +547,8 @@ export default function ThreadView({ postId }: ThreadViewProps) {
       )
 
       // ─── Wrap in li[role="treeitem"] ──────────────────────────────────────
+      // Replies (depth >= 1) sit inside a left depth rail that doubles as the
+      // tappable collapse target. The root (depth 0) has no rail.
       if (depth >= 1) {
         return (
           <View
@@ -375,6 +556,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             tag="li"
             role="treeitem"
             aria-level={depth + 1}
+            marginTop="$8"
             {...(ariaExpanded !== undefined ? { 'aria-expanded': ariaExpanded } : {})}
           >
             <XStack>
@@ -383,23 +565,28 @@ export default function ThreadView({ postId }: ThreadViewProps) {
               <View
                 data-testid={`depth-rail-${post.id}`}
                 data-depth={depth}
-                width={12}
+                width={20}
                 borderLeftWidth={1}
-                borderLeftColor="$color3"
+                borderLeftColor="$color4"
                 role="button"
                 aria-label={isCollapsed ? 'Expand subtree' : 'Collapse subtree'}
-                onPress={() => setCollapsedIds((prev) => {
-                  const next = new Set(prev)
-                  if (next.has(post.id)) {
-                    next.delete(post.id)
-                  } else {
-                    next.add(post.id)
-                  }
-                  return next
-                })}
+                onPress={() =>
+                  setCollapsedIds((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(post.id)) {
+                      next.delete(post.id)
+                    } else {
+                      next.add(post.id)
+                    }
+                    return next
+                  })
+                }
               />
               {/* Post content — sibling to the rail, not a child, so clicks don't bubble up to rail */}
-              <View flex={1} paddingLeft="$2">
+              <View
+                flex={1}
+                paddingLeft="$3"
+              >
                 {innerContent}
               </View>
             </XStack>
@@ -416,59 +603,145 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           aria-level={1}
           {...(ariaExpanded !== undefined ? { 'aria-expanded': ariaExpanded } : {})}
         >
-          <View flex={1}>
-            {innerContent}
-          </View>
+          <View flex={1}>{innerContent}</View>
         </View>
       )
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      cap, hiddenIds, collapsedIds, expandedSubtreeIds, activeReplyId,
-      canReply, currentUserId, isSuspended, focusedFromRoot, postId, router,
+      cap,
+      hiddenIds,
+      collapsedIds,
+      expandedSubtreeIds,
+      activeReplyId,
+      canReply,
+      currentUserId,
+      isSuspended,
+      focusedFromRoot,
+      postId,
+      router,
       childrenByParent,
     ]
   )
 
   // ─── Loading state (cold cache) ────────────────────────────────────────────
-  if (root.isLoading && !root.data) {
+  if (rootQuery.isLoading && !rootQuery.data) {
     return (
-      <View tag="ul" role="tree" maxWidth={720} marginHorizontal="auto" width="100%">
+      <View
+        tag="ul"
+        role="tree"
+        maxWidth={720}
+        marginHorizontal="auto"
+        width="100%"
+        padding="$5"
+      >
         <SkeletonRows />
       </View>
     )
   }
 
   // ─── Error state ───────────────────────────────────────────────────────────
-  if (root.error && !root.data) {
+  if (rootQuery.error && !rootQuery.data) {
     return (
-      <View tag="ul" role="tree" maxWidth={720} marginHorizontal="auto" width="100%">
-        <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
+      <View
+        tag="ul"
+        role="tree"
+        maxWidth={720}
+        marginHorizontal="auto"
+        width="100%"
+        padding="$5"
+      >
+        <Text
+          fontSize="$2"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$4"
+        >
           Couldn&apos;t load this thread.
         </Text>
-        <ExpandingLineButton onPress={() => root.refetch()}>
-          Retry
-        </ExpandingLineButton>
+        <ExpandingLineButton onPress={() => rootQuery.refetch()}>Retry</ExpandingLineButton>
       </View>
     )
   }
 
-  // ─── Find the root post ────────────────────────────────────────────────────
-  const rootPost = allItems.find((p) => p.id === postId) ?? allItems[0]
+  // ─── Removed / not-found root ──────────────────────────────────────────────
+  // collective_thread_root returns null when the root is moderator-removed or
+  // does not exist (AC 11).
+  if (rootQuery.data === null) {
+    return (
+      <View
+        tag="ul"
+        role="tree"
+        maxWidth={720}
+        marginHorizontal="auto"
+        width="100%"
+        padding="$5"
+      >
+        <Text
+          fontSize="$3"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$4"
+        >
+          This thread was removed.
+        </Text>
+      </View>
+    )
+  }
+
+  const rootPost = rootQuery.data
 
   return (
-    <View tag="ul" role="tree" maxWidth={720} marginHorizontal="auto" width="100%">
-      {/* Back to full thread — shown when this is a focused subthread */}
-      {focusedFromRoot && focusedFromRoot !== postId ? (
-        <ExpandingLineButton
-          onPress={() => router.push(`/collective/thread/${focusedFromRoot}`)}
+    <YStack
+      maxWidth={720}
+      marginHorizontal="auto"
+      width="100%"
+      paddingHorizontal="$5"
+      paddingVertical="$8"
+    >
+      {/* Back to the room (or to the full thread when focused on a subthread) */}
+      <View
+        role="button"
+        aria-label={
+          focusedFromRoot && focusedFromRoot !== postId ? 'Back to full thread' : 'Back to the room'
+        }
+        onPress={() =>
+          router.push(
+            focusedFromRoot && focusedFromRoot !== postId
+              ? `/collective/thread/${focusedFromRoot}`
+              : '/collective/dev'
+          )
+        }
+        cursor="pointer"
+        marginBottom="$9"
+      >
+        <XStack
+          alignItems="center"
+          gap="$2"
         >
-          Back to full thread
-        </ExpandingLineButton>
-      ) : null}
+          <ArrowLeft
+            size={16}
+            color="$color9"
+          />
+          <Text
+            fontSize="$2"
+            color="$color9"
+            fontFamily="$body"
+          >
+            {focusedFromRoot && focusedFromRoot !== postId
+              ? 'Back to full thread'
+              : 'Back to the room'}
+          </Text>
+        </XStack>
+      </View>
 
-      {/* Root post at depth 0; its descendants rendered recursively via renderPost */}
-      {rootPost ? renderPost(rootPost, 0, true) : null}
-    </View>
+      {/* Root letter at depth 0; its descendants rendered recursively via renderPost */}
+      <View
+        tag="ul"
+        role="tree"
+      >
+        {rootPost ? renderPost(rootPost, 0, true) : null}
+      </View>
+    </YStack>
   )
 }

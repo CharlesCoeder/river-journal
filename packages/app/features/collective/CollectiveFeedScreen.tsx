@@ -1,5 +1,10 @@
 // packages/app/features/collective/CollectiveFeedScreen.tsx
 //
+// The Collective "room" — a title-led forum feed (title-led redesign, Story 3-16).
+// Renders a scannable list of letter TITLES + metadata + a read-only reaction
+// tally; tapping a title opens the thread. Bodies are NOT shown in the list
+// (the feed RPC dropped `body`; see FeedPostRow).
+//
 // Defense-in-depth: NEVER read store$.streak.* for mode dispatch —
 // feed.data.pages[0].mode is the SOLE source of truth (server has already
 // returned the correct shape). Local streak state may lag or be tampered with.
@@ -8,16 +13,35 @@
 // features/collective/** MUST NOT import Legend-State or app/state/store.
 
 import { useMemo } from 'react'
-import { YStack, View, Text, Separator, ExpandingLineButton, useReducedMotion } from '@my/ui'
+import {
+  YStack,
+  View,
+  Text,
+  XStack,
+  Separator,
+  ExpandingLineButton,
+  useReducedMotion,
+} from '@my/ui'
+import { PenLine } from '@tamagui/lucide-icons'
 import { onlineManager } from '@tanstack/react-query'
 import { useFeed } from 'app/state/collective/feed'
 import { useIsSuspended } from 'app/state/collective/suspension'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
 import { CollectivePreview } from 'app/features/collective/CollectivePreview'
-import { PostRow } from 'app/features/collective/PostRow'
+import { FeedPostRow } from 'app/features/collective/FeedPostRow'
 import { useRouter } from 'solito/navigation'
 import { SkeletonRows, formatTimeAgo } from './_shared'
+
+// ─── Header date ──────────────────────────────────────────────────────────────
+// "Tuesday, June 23" — weekday + month + day, to anchor the daily room.
+function todayLong(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -35,9 +59,7 @@ export default function CollectiveFeedScreen() {
   // runs second (user preference).
   const allPosts = useMemo(() => {
     const flat = feed.data?.pages.flatMap((p) => p.items) ?? []
-    return flat
-      .filter((p) => !p.is_removed)
-      .filter((p) => !hiddenIds.has(p.id))
+    return flat.filter((p) => !p.is_removed).filter((p) => !hiddenIds.has(p.id))
   }, [feed.data, hiddenIds])
 
   const isOnline = onlineManager.isOnline()
@@ -55,12 +77,15 @@ export default function CollectiveFeedScreen() {
   if (feed.isError && feed.data === undefined) {
     return (
       <YStack>
-        <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
+        <Text
+          fontSize="$2"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$4"
+        >
           Couldn&apos;t load the feed. Pull to retry.
         </Text>
-        <ExpandingLineButton onPress={() => feed.refetch()}>
-          Retry
-        </ExpandingLineButton>
+        <ExpandingLineButton onPress={() => feed.refetch()}>Retry</ExpandingLineButton>
       </YStack>
     )
   }
@@ -75,7 +100,10 @@ export default function CollectiveFeedScreen() {
     return (
       // key={mode} ensures clean re-mount on mode flip (preview ↔ full)
       <View key={mode}>
-        <CollectivePreview posts={posts} currentUserId={currentUserId} />
+        <CollectivePreview
+          posts={posts}
+          currentUserId={currentUserId}
+        />
       </View>
     )
   }
@@ -83,6 +111,7 @@ export default function CollectiveFeedScreen() {
   // ─── Full-feed mode ───────────────────────────────────────────────────────
 
   const isEmptyFull = allPosts.length === 0 && !feed.isLoading
+  const letterCount = allPosts.length
 
   // ─── Ambient strip precedence: error > offline > empty ────────────────────
   // Only the highest-precedence strip renders to avoid cluttered UI when
@@ -94,36 +123,161 @@ export default function CollectiveFeedScreen() {
   return (
     // key={mode} ensures clean re-mount on mode flip (preview ↔ full)
     <View key={mode}>
-      <YStack width="100%" maxWidth={720} marginHorizontal="auto">
+      <YStack
+        width="100%"
+        maxWidth={720}
+        marginHorizontal="auto"
+        paddingHorizontal="$5"
+        paddingVertical="$8"
+      >
+        {/* ─── Room header ──────────────────────────────────────────────── */}
+        <YStack marginBottom="$9">
+          <Text
+            fontFamily="$body"
+            fontSize="$1"
+            color="$color9"
+            textTransform="uppercase"
+            letterSpacing={2}
+          >
+            The Collective · {todayLong()}
+          </Text>
+          <Text
+            fontFamily="$journalItalic"
+            fontStyle="italic"
+            fontSize="$10"
+            lineHeight="$10"
+            color="$color12"
+            marginTop="$3"
+          >
+            The room is open.
+          </Text>
+          <Text
+            fontFamily="$journal"
+            fontSize="$5"
+            color="$color10"
+            marginTop="$3"
+            maxWidth={460}
+          >
+            You did the work today. So did everyone here. Read slowly; write back when something
+            moves you.
+          </Text>
+        </YStack>
+
+        {/* ─── Compose + filter row ─────────────────────────────────────── */}
+        <XStack
+          justifyContent="space-between"
+          alignItems="center"
+          flexWrap="wrap"
+          gap="$4"
+          paddingBottom="$4"
+          marginBottom="$7"
+          borderBottomWidth={1}
+          borderBottomColor="$color4"
+        >
+          <XStack
+            role="button"
+            aria-label="Write a letter"
+            onPress={() => router.push('/collective/compose')}
+            cursor="pointer"
+            alignItems="center"
+            gap="$3"
+            flexShrink={0}
+          >
+            <PenLine
+              size={20}
+              color="$color12"
+            />
+            <Text
+              fontFamily="$journalItalic"
+              fontStyle="italic"
+              fontSize="$7"
+              color="$color12"
+              numberOfLines={1}
+            >
+              Write a letter
+            </Text>
+          </XStack>
+
+          <XStack
+            alignItems="center"
+            gap="$5"
+            flexShrink={0}
+          >
+            <Text
+              fontFamily="$body"
+              fontSize="$1"
+              color="$color12"
+              textTransform="uppercase"
+              letterSpacing={1}
+            >
+              All letters
+            </Text>
+            <View
+              role="button"
+              aria-label="Your letters"
+              onPress={() => router.push('/collective/your-posts')}
+              cursor="pointer"
+            >
+              <Text
+                fontFamily="$body"
+                fontSize="$1"
+                color="$color9"
+                textTransform="uppercase"
+                letterSpacing={1}
+              >
+                Your letters
+              </Text>
+            </View>
+          </XStack>
+        </XStack>
+
         {/* Error with cached data — show refresh error strip (highest precedence) */}
         {showErrorStrip ? (
-          <Text fontSize="$1" color="$color9" textAlign="center" paddingVertical="$2">
+          <Text
+            fontSize="$1"
+            color="$color9"
+            textAlign="center"
+            paddingVertical="$2"
+          >
             Couldn&apos;t refresh. Showing cached posts.
           </Text>
         ) : null}
 
         {/* Offline microcopy — only when error strip is not shown and timestamp is valid */}
         {showOfflineStrip ? (
-          <Text fontSize="$1" color="$color9" paddingVertical="$2" textAlign="center">
+          <Text
+            fontSize="$1"
+            color="$color9"
+            paddingVertical="$2"
+            textAlign="center"
+          >
             Offline · last synced {formatTimeAgo(feed.dataUpdatedAt)}
           </Text>
         ) : null}
 
         {/* Suspended user microcopy */}
         {isSuspended === true ? (
-          <Text fontSize="$2" color="$color11" textAlign="center" paddingVertical="$3">
+          <Text
+            fontSize="$2"
+            color="$color11"
+            textAlign="center"
+            paddingVertical="$3"
+          >
             Posting and reacting are paused for this account.
           </Text>
         ) : null}
 
         {/* Empty state */}
         {showEmptyState ? (
-          <YStack>
+          <YStack
+            paddingVertical="$8"
+            gap="$5"
+          >
             <Text
-              fontSize="$5"
-              color="$color11"
-              textAlign="center"
-              marginTop="$8"
+              fontFamily="$journal"
+              fontSize="$7"
+              color="$color10"
+              fontStyle="italic"
             >
               Quiet here. Be the first.
             </Text>
@@ -133,19 +287,37 @@ export default function CollectiveFeedScreen() {
           </YStack>
         ) : null}
 
-        {/* Post list */}
+        {/* Post list — title-led rows */}
         {allPosts.map((post, index) => (
           <View key={post.id}>
-            <PostRow
+            <FeedPostRow
               post={post}
               currentUserId={currentUserId}
-              disabled={isSuspended === true}
+              onOpen={(id) => router.push(`/collective/thread/${id}`)}
             />
             {index < allPosts.length - 1 ? (
-              <Separator borderColor="$color3" borderBottomWidth={1} />
+              <Separator
+                borderColor="$color3"
+                borderBottomWidth={1}
+              />
             ) : null}
           </View>
         ))}
+
+        {/* Footer tally */}
+        {!showEmptyState ? (
+          <Text
+            fontFamily="$body"
+            fontSize="$1"
+            color="$color8"
+            textTransform="uppercase"
+            letterSpacing={2}
+            marginTop="$9"
+          >
+            {letterCount} {letterCount === 1 ? 'letter' : 'letters'} in the room · access resets at
+            midnight
+          </Text>
+        ) : null}
 
         {/* Load more pagination trigger */}
         {feed.hasNextPage ? (

@@ -1,12 +1,25 @@
 // @vitest-environment happy-dom
 /**
- * TDD red-phase unit tests for `features/collective/ThreadView.tsx`.
+ * Unit tests for `features/collective/ThreadView.tsx` — title-led redesign.
  *
- * Red-phase contract: every test MUST fail until ThreadView.tsx is implemented
- * (the file does not exist yet). Tests describe user-observable behavior only —
- * no story IDs, AC numbers, epic references, or BMAD labels in identifiers.
+ * Tests describe user-observable behavior only — no story IDs, AC numbers,
+ * epic references, or BMAD labels in identifiers.
  *
- * Coverage map (t1–t25 + t26):
+ * Architecture under test (post Story 3-16 title-led port):
+ *   • The ROOT post is sourced from `useThreadRoot(postId)` (single-row query
+ *     returning `{ data, isLoading, error, refetch }` where `data` is ONE object
+ *     or `null`/`undefined`). The root is NO LONGER part of `useThread`'s items.
+ *   • The reply tree (direct children + lazily-loaded subtrees) is sourced from
+ *     `useThread(postId, { role:'root' })` returning the infinite-query shape
+ *     `{ data: { pages: [{ items, mode, nextCursor }] } }`. `items` contains
+ *     ONLY descendants now (no root row).
+ *   • ThreadView renders bodies directly (NOT via PostRow): the root renders an
+ *     <h1> title, a byline, the body text, a ReactionStrip (mocked), a reply
+ *     affordance, a FlagAffordance (mocked), and a reply-count label. Replies
+ *     render the same minus the title, wrapped in a left depth rail
+ *     (`data-testid="depth-rail-<id>"`).
+ *
+ * Coverage map (t1–t26):
  *   t1  — basic root + replies render
  *   t2  — depth rail rendering (data-depth attribute)
  *   t3  — "View N more replies" affordance for collapsed subtree (plural + singular)
@@ -29,15 +42,15 @@
  *   t20 — depth-rail tap toggles per-session collapse
  *   t21 — locally-hidden post and its children are filtered from render
  *   t22 — accessibility: ul[role="tree"] wraps hierarchy; li[role="treeitem"] with aria-level
- *   t23 — deletion-state at root: PostRow receives is_user_deleted=true; children still render
- *   t24 — anonymized root (user_id=null): PostRow receives anonymized post; children still render
+ *   t23 — deletion-state at root: self-deleted root renders tombstone; children still render
+ *   t24 — anonymized root (user_id=null): byline anonymized + body shown; children still render
  *   t25 — telemetry redaction grep: ThreadView.tsx has no console.*+body substring
- *   t26 — error state renders error microcopy and Retry button
+ *   t26 — error state renders error microcopy and Retry button (calls root query refetch)
  *
- * Mock strategy: vi.mock for useThread, useCurrentUserId, useIsSuspended,
- * useLocallyHiddenPostIds, solito/router, useSearchParams, PostComposer,
- * FlagAffordance, PostRow, react-native Platform, @my/ui.
- * Mirrors CollectiveFeedScreen.test.tsx patterns.
+ * Mock strategy: vi.mock for useThread + useThreadRoot, useCurrentUserId,
+ * useIsSuspended, useLocallyHiddenPostIds, solito/navigation, PostComposer,
+ * FlagAffordance, ReactionStrip, CollectiveEligibilityGate, react-native
+ * Platform, @my/ui.
  */
 
 import React from 'react'
@@ -53,49 +66,75 @@ const THREAD_VIEW_PATH = path.resolve(__dirname, '..', 'ThreadView.tsx')
 
 /**
  * buildPost — minimal ThreadPost-shaped fixture (includes descendant_count).
- * ThreadView uses ThreadPost (not Post) so descendant_count is present.
+ * Used both for `useThread` descendant items and as the basis for the
+ * `useThreadRoot` root object (which is a single object, not an array).
  */
-function buildPost(overrides: Partial<{
-  id: string
-  user_id: string | null
-  parent_post_id: string | null
-  body: string
-  created_at: string
-  is_removed: boolean
-  is_user_deleted: boolean
-  user_deleted_at: string | null
-  descendant_count: number
-  mode: 'full' | 'preview'
-}> = {}) {
+function buildPost(
+  overrides: Partial<{
+    id: string
+    user_id: string | null
+    parent_post_id: string | null
+    title: string | null
+    body: string
+    created_at: string
+    is_removed: boolean
+    is_user_deleted: boolean
+    user_deleted_at: string | null
+    descendant_count: number
+    reactions: unknown
+    mode: 'full' | 'preview'
+  }> = {}
+) {
   return {
     id: 'post-root',
     user_id: 'user-abc',
     parent_post_id: null,
+    title: null,
     body: 'Root post body.',
     created_at: new Date(Date.now() - 3600_000).toISOString(),
     is_removed: false,
     is_user_deleted: false,
     user_deleted_at: null,
     descendant_count: 0,
+    reactions: {},
     mode: 'full' as const,
     ...overrides,
   }
 }
 
 /**
- * buildDeepTree — builds a flat array of posts forming a chain of `depth` levels.
+ * buildRoot — a ThreadRoot-shaped fixture for `useThreadRoot`. The root carries
+ * a `title` (h1) and full `body`. Defaults to a non-deleted, full-mode root.
+ */
+function buildRoot(overrides: Partial<ReturnType<typeof buildPost>> = {}) {
+  return buildPost({
+    id: 'root',
+    parent_post_id: null,
+    title: 'Root Title',
+    body: 'Root post body.',
+    ...overrides,
+  })
+}
+
+/**
+ * buildDeepTree — builds a flat array of DESCENDANT posts forming a chain.
+ * The root itself lives in `useThreadRoot`, so index 0 here is the root and the
+ * remaining entries are its descendant chain. The caller routes index 0 to the
+ * root mock and the rest to the useThread items.
  * root → child → grandchild … all the way down.
  * descendant_count on each ancestor is set to indicate further children exist.
  */
 function buildDeepTree(depth: number): ReturnType<typeof buildPost>[] {
   const posts: ReturnType<typeof buildPost>[] = []
   for (let i = 0; i < depth; i++) {
-    posts.push(buildPost({
-      id: `post-depth-${i}`,
-      parent_post_id: i === 0 ? null : `post-depth-${i - 1}`,
-      body: `Body at depth ${i}`,
-      descendant_count: depth - i - 1, // ancestors have children
-    }))
+    posts.push(
+      buildPost({
+        id: `post-depth-${i}`,
+        parent_post_id: i === 0 ? null : `post-depth-${i - 1}`,
+        body: `Body at depth ${i}`,
+        descendant_count: depth - i - 1, // ancestors have children
+      })
+    )
   }
   return posts
 }
@@ -109,11 +148,19 @@ function makeThreadData(items: ReturnType<typeof buildPost>[], mode: 'full' | 'p
 
 // ─── Spy / controlled state holders ───────────────────────────────────────────
 
+// useThread (reply tree — DESCENDANTS only)
 let mockThreadData: any = undefined
 let mockThreadIsLoading = false
 let mockThreadError: Error | null = null
 const mockThreadRefetch = vi.fn()
 const mockUseThreadCalls: Array<[string, object]> = []
+
+// useThreadRoot (single root object)
+let mockRootData: any = undefined
+let mockRootLoading = false
+let mockRootError: Error | null = null
+const mockRootRefetch = vi.fn()
+const mockUseThreadRootCalls: string[] = []
 
 let mockCurrentUserId: string | null = 'user-abc'
 let mockIsSuspended: boolean | undefined = false
@@ -124,16 +171,14 @@ let mockSearchParams: Record<string, string> = {}
 
 // Platform.OS for the react-native mock below. Mutable so per-suite blocks can
 // flip to 'ios' to exercise the mobile depth cap. ThreadView reads Platform.OS
-// fresh on every render, so updating this between renders is sufficient — no
-// module re-import (vi.doMock) is needed, which would not affect the statically
-// imported ThreadView anyway.
+// fresh on every render, so updating this between renders is sufficient.
 let mockPlatformOS: 'web' | 'ios' = 'web'
 
-let capturedPostRowProps: any[] = []
 let capturedComposerProps: any[] = []
 let capturedFlagAffordanceProps: Map<string, any> = new Map()
+let capturedReactionStripProps: Map<string, any> = new Map()
 
-// ─── useThread mock ───────────────────────────────────────────────────────────
+// ─── useThread + useThreadRoot mock ───────────────────────────────────────────
 vi.mock('app/state/collective/thread', () => ({
   useThread: (postId: string, opts: object) => {
     mockUseThreadCalls.push([postId, opts])
@@ -145,6 +190,15 @@ vi.mock('app/state/collective/thread', () => ({
       fetchNextPage: vi.fn(),
       hasNextPage: false,
       isFetchingNextPage: false,
+    }
+  },
+  useThreadRoot: (postId: string) => {
+    mockUseThreadRootCalls.push(postId)
+    return {
+      data: mockRootData,
+      isLoading: mockRootLoading,
+      error: mockRootError,
+      refetch: mockRootRefetch,
     }
   },
 }))
@@ -197,25 +251,34 @@ vi.mock('app/features/collective/CollectiveEligibilityGate', () => ({
   default: (props: any) => props.children ?? null,
 }))
 
-// ─── PostRow mock — captures props for assertions ─────────────────────────────
-vi.mock('app/features/collective/PostRow', () => ({
-  default: (props: any) => {
-    capturedPostRowProps.push(props)
+// ─── ReactionStrip mock — captures props for assertions ───────────────────────
+// ThreadView calls <ReactionStrip postId userId disabled />. The real component
+// pulls useToggleReaction/usePostReactions which need a QueryClient. Render a
+// testable stand-in keyed by postId so tombstone-suppression can be asserted.
+vi.mock('app/features/collective/ReactionStrip', () => ({
+  ReactionStrip: (props: any) => {
+    capturedReactionStripProps.set(props.postId, props)
     const React = require('react')
-    return React.createElement('article', {
-      'data-testid': `post-row-${props.post?.id}`,
-      'data-is-deleted': props.post?.is_user_deleted ? 'true' : 'false',
-      'data-user-id': props.post?.user_id ?? 'null',
-    }, props.post?.body ?? '[deleted]')
+    return React.createElement(
+      'div',
+      {
+        'data-testid': `reaction-strip-${props.postId}`,
+        'data-disabled': props.disabled ? 'true' : 'false',
+      },
+      'reactions'
+    )
   },
-  PostRow: (props: any) => {
-    capturedPostRowProps.push(props)
+  default: (props: any) => {
+    capturedReactionStripProps.set(props.postId, props)
     const React = require('react')
-    return React.createElement('article', {
-      'data-testid': `post-row-${props.post?.id}`,
-      'data-is-deleted': props.post?.is_user_deleted ? 'true' : 'false',
-      'data-user-id': props.post?.user_id ?? 'null',
-    }, props.post?.body ?? '[deleted]')
+    return React.createElement(
+      'div',
+      {
+        'data-testid': `reaction-strip-${props.postId}`,
+        'data-disabled': props.disabled ? 'true' : 'false',
+      },
+      'reactions'
+    )
   },
 }))
 
@@ -224,20 +287,28 @@ vi.mock('app/features/collective/PostComposer', () => ({
   default: (props: any) => {
     capturedComposerProps.push(props)
     const React = require('react')
-    return React.createElement('div', {
-      'data-testid': 'post-composer',
-      'data-parent-post-id': props.replyContext?.parentPostId ?? '',
-      'data-compact': props.compact ? 'true' : 'false',
-    }, 'composer')
+    return React.createElement(
+      'div',
+      {
+        'data-testid': 'post-composer',
+        'data-parent-post-id': props.replyContext?.parentPostId ?? '',
+        'data-compact': props.compact ? 'true' : 'false',
+      },
+      'composer'
+    )
   },
   PostComposer: (props: any) => {
     capturedComposerProps.push(props)
     const React = require('react')
-    return React.createElement('div', {
-      'data-testid': 'post-composer',
-      'data-parent-post-id': props.replyContext?.parentPostId ?? '',
-      'data-compact': props.compact ? 'true' : 'false',
-    }, 'composer')
+    return React.createElement(
+      'div',
+      {
+        'data-testid': 'post-composer',
+        'data-parent-post-id': props.replyContext?.parentPostId ?? '',
+        'data-compact': props.compact ? 'true' : 'false',
+      },
+      'composer'
+    )
   },
 }))
 
@@ -246,20 +317,40 @@ vi.mock('app/features/collective/FlagAffordance', () => ({
   default: (props: any) => {
     capturedFlagAffordanceProps.set(props.postId, props)
     const React = require('react')
-    return React.createElement('button', {
-      'data-testid': `flag-affordance-${props.postId}`,
-      'data-can-focus': props.canFocus ? 'true' : 'false',
-    }, 'flag')
+    return React.createElement(
+      'button',
+      {
+        'data-testid': `flag-affordance-${props.postId}`,
+        'data-can-focus': props.canFocus ? 'true' : 'false',
+      },
+      'flag'
+    )
   },
   FlagAffordance: (props: any) => {
     capturedFlagAffordanceProps.set(props.postId, props)
     const React = require('react')
-    return React.createElement('button', {
-      'data-testid': `flag-affordance-${props.postId}`,
-      'data-can-focus': props.canFocus ? 'true' : 'false',
-    }, 'flag')
+    return React.createElement(
+      'button',
+      {
+        'data-testid': `flag-affordance-${props.postId}`,
+        'data-can-focus': props.canFocus ? 'true' : 'false',
+      },
+      'flag'
+    )
   },
 }))
+
+// ─── lucide icon mock — ThreadView renders ArrowLeft + CornerUpLeft inline ────
+// happy-dom has no SVG renderer for the real icons; stub them as no-op spans so
+// the affordances they decorate (back link, reply button) still render.
+vi.mock('@tamagui/lucide-icons', () => {
+  const React = require('react')
+  const Stub = (_props: any) => React.createElement('span', { 'data-icon': true })
+  return {
+    ArrowLeft: Stub,
+    CornerUpLeft: Stub,
+  }
+})
 
 // ─── @my/ui mock — map Tamagui primitives to testable HTML elements ───────────
 vi.mock('@my/ui', async () => {
@@ -282,14 +373,30 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
-    Text: ({ children, ...props }: any) =>
-      ReactModule.createElement('span', mapA11y(props), children),
+    // Text supports `tag` (e.g. tag="h1" for the root title) so the title-led
+    // root renders a real <h1> in the DOM.
+    Text: ({ children, tag, ...props }: any) => {
+      const htmlTag = tag === 'h1' ? 'h1' : tag === 'h2' ? 'h2' : 'span'
+      return ReactModule.createElement(htmlTag, mapA11y(props), children)
+    },
 
-    View: ({ children, tag, onPress, accessible, accessibilityRole, accessibilityLabel,
-             role, 'aria-label': ariaLabel, 'aria-level': ariaLevel,
-             'aria-expanded': ariaExpanded, 'data-testid': dtid,
-             'data-depth': dataDepth, ...props }: any) => {
-      const htmlTag = tag === 'ul' ? 'ul' : tag === 'li' ? 'li' : tag === 'article' ? 'article' : 'div'
+    View: ({
+      children,
+      tag,
+      onPress,
+      accessible,
+      accessibilityRole,
+      accessibilityLabel,
+      role,
+      'aria-label': ariaLabel,
+      'aria-level': ariaLevel,
+      'aria-expanded': ariaExpanded,
+      'data-testid': dtid,
+      'data-depth': dataDepth,
+      ...props
+    }: any) => {
+      const htmlTag =
+        tag === 'ul' ? 'ul' : tag === 'li' ? 'li' : tag === 'article' ? 'article' : 'div'
       const a11y: Record<string, unknown> = {}
       if (accessibilityRole) a11y['role'] = accessibilityRole
       if (role) a11y['role'] = role
@@ -304,12 +411,21 @@ vi.mock('@my/ui', async () => {
       return ReactModule.createElement(htmlTag, a11y, children)
     },
 
-    XStack: ({ children, onPress, 'aria-label': ariaLabel, accessibilityRole,
-               'data-testid': dtid, 'data-depth': dataDepth, ...props }: any) => {
+    XStack: ({
+      children,
+      onPress,
+      'aria-label': ariaLabel,
+      accessibilityRole,
+      role,
+      'data-testid': dtid,
+      'data-depth': dataDepth,
+      ...props
+    }: any) => {
       const a11y: Record<string, unknown> = { 'data-stack': 'x' }
       if (onPress) a11y['onClick'] = onPress
       if (ariaLabel) a11y['aria-label'] = ariaLabel
       if (accessibilityRole) a11y['role'] = accessibilityRole
+      if (role) a11y['role'] = role
       if (dtid) a11y['data-testid'] = dtid
       if (dataDepth !== undefined) a11y['data-depth'] = dataDepth
       return ReactModule.createElement('div', a11y, children)
@@ -319,30 +435,53 @@ vi.mock('@my/ui', async () => {
       ReactModule.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
 
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>
-      ReactModule.createElement('button', {
-        onClick: onPress,
-        disabled: !!disabled,
-        'aria-disabled': disabled ? 'true' : 'false',
-        'data-testid': props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
-      }, children),
+      ReactModule.createElement(
+        'button',
+        {
+          onClick: onPress,
+          disabled: !!disabled,
+          'aria-disabled': disabled ? 'true' : 'false',
+          'data-testid':
+            props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
+        },
+        children
+      ),
 
     Separator: () => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
 
     useReducedMotion: () => false,
 
     AuthorByline: ({ displayName, deletedDisplay, ...props }: any) =>
-      ReactModule.createElement('span', {
-        'data-testid': 'author-byline',
-        'data-deleted-display': deletedDisplay ? 'true' : 'false',
-      }, deletedDisplay ? '[deleted]' : displayName),
+      ReactModule.createElement(
+        'span',
+        {
+          'data-testid': 'author-byline',
+          'data-deleted-display': deletedDisplay ? 'true' : 'false',
+        },
+        deletedDisplay ? '[deleted]' : displayName
+      ),
   }
 })
 
-// ─── Import under test (will fail until ThreadView.tsx exists) ────────────────
+// ─── Import under test ────────────────────────────────────────────────────────
 // eslint-disable-next-line import/first
 import ThreadView from '../ThreadView'
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Local helpers for the title-led DOM ──────────────────────────────────────
+// ThreadView no longer renders posts via PostRow / <article>. Each post's
+// presence is detected by its DOM footprint:
+//   • every non-deleted post renders a FlagAffordance → flag-affordance-<id>
+//   • every reply (depth >= 1) is wrapped in a depth rail → depth-rail-<id>
+//   • the root renders an <h1> with its title + a reply-count label
+// `postPresent` asserts a post id is rendered (via its flag or depth rail).
+
+function flagFor(id: string): HTMLElement | null {
+  return screen.queryByTestId(`flag-affordance-${id}`)
+}
+
+function railFor(container: HTMLElement, id: string): Element | null {
+  return container.querySelector(`[data-testid="depth-rail-${id}"]`)
+}
 
 afterEach(() => {
   cleanup()
@@ -351,14 +490,19 @@ afterEach(() => {
   mockThreadError = null
   mockThreadRefetch.mockReset()
   mockUseThreadCalls.length = 0
+  mockRootData = undefined
+  mockRootLoading = false
+  mockRootError = null
+  mockRootRefetch.mockReset()
+  mockUseThreadRootCalls.length = 0
   mockCurrentUserId = 'user-abc'
   mockIsSuspended = false
   mockHiddenPostIds = new Set()
   mockRouterPush.mockReset()
   mockSearchParams = {}
-  capturedPostRowProps = []
   capturedComposerProps = []
   capturedFlagAffordanceProps.clear()
+  capturedReactionStripProps.clear()
   mockPlatformOS = 'web'
 })
 
@@ -367,34 +511,55 @@ afterEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t1 — basic root and replies render', () => {
-  it('renders one PostRow for the root and two PostRows for direct-child replies', () => {
-    const root = buildPost({ id: 'root', parent_post_id: null, body: 'Root', descendant_count: 2 })
-    const child1 = buildPost({ id: 'child-1', parent_post_id: 'root', body: 'Child 1', descendant_count: 0 })
-    const child2 = buildPost({ id: 'child-2', parent_post_id: 'root', body: 'Child 2', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child1, child2])
+  it('renders the root (h1 title + body) and two direct-child replies', () => {
+    const root = buildRoot({ id: 'root', title: 'Root Title', body: 'Root', descendant_count: 2 })
+    const child1 = buildPost({
+      id: 'child-1',
+      parent_post_id: 'root',
+      body: 'Child 1',
+      descendant_count: 0,
+    })
+    const child2 = buildPost({
+      id: 'child-2',
+      parent_post_id: 'root',
+      body: 'Child 2',
+      descendant_count: 0,
+    })
+    mockRootData = root
+    mockThreadData = makeThreadData([child1, child2])
 
-    render(React.createElement(ThreadView, { postId: 'root' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.getByTestId('post-row-root')).toBeTruthy()
-    expect(screen.getByTestId('post-row-child-1')).toBeTruthy()
-    expect(screen.getByTestId('post-row-child-2')).toBeTruthy()
+    // Root renders an <h1> title + its body
+    expect(container.querySelector('h1')?.textContent).toBe('Root Title')
+    expect(screen.getByText('Root')).toBeTruthy()
+    // Root's own flag affordance is present
+    expect(flagFor('root')).toBeTruthy()
+    // Two replies render (detected by their flag affordances + bodies)
+    expect(flagFor('child-1')).toBeTruthy()
+    expect(flagFor('child-2')).toBeTruthy()
+    expect(screen.getByText('Child 1')).toBeTruthy()
+    expect(screen.getByText('Child 2')).toBeTruthy()
   })
 
-  it('mounts useThread with role root for the given postId', () => {
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+  it('mounts useThread with role root AND useThreadRoot for the given postId', () => {
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    const rootCall = mockUseThreadCalls.find(([id, opts]: [string, any]) =>
-      id === 'root' && (opts as any).role === 'root'
+    const rootCall = mockUseThreadCalls.find(
+      ([id, opts]: [string, any]) => id === 'root' && (opts as any).role === 'root'
     )
     expect(rootCall).toBeTruthy()
+    expect(mockUseThreadRootCalls).toContain('root')
   })
 
   it('renders the root post at depth 0 (aria-level=1)', () => {
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -409,27 +574,31 @@ describe('t1 — basic root and replies render', () => {
 
 describe('t2 — depth rail at correct depth level', () => {
   it('renders a depth-2 reply wrapper with data-depth="2" attribute', () => {
-    const root = buildPost({ id: 'root', parent_post_id: null, descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 2 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 1 })
     const grandchild = buildPost({ id: 'grandchild', parent_post_id: 'child', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child, grandchild])
+    mockRootData = root
+    mockThreadData = makeThreadData([child, grandchild])
 
     const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
-    // The grandchild's wrapper should carry data-depth="2"
+    // The grandchild's rail should carry data-depth="2"
     const depth2Wrapper = container.querySelector('[data-depth="2"]')
     expect(depth2Wrapper).toBeTruthy()
+    expect(railFor(container, 'grandchild')?.getAttribute('data-depth')).toBe('2')
   })
 
   it('depth-1 child wrapper has data-depth="1" (depth rail)', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
     const depth1Wrapper = container.querySelector('[data-depth="1"]')
     expect(depth1Wrapper).toBeTruthy()
+    expect(railFor(container, 'child')?.getAttribute('data-depth')).toBe('1')
   })
 })
 
@@ -439,9 +608,10 @@ describe('t2 — depth rail at correct depth level', () => {
 
 describe('t3 — View N more replies affordance text', () => {
   it('shows "View 5 more replies" below a child with descendant_count=5', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 5 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -449,9 +619,10 @@ describe('t3 — View N more replies affordance text', () => {
   })
 
   it('shows "View 1 more reply" (singular) when descendant_count=1', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 1 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -459,9 +630,10 @@ describe('t3 — View N more replies affordance text', () => {
   })
 
   it('does NOT show "View N more replies" when descendant_count=0', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -475,17 +647,18 @@ describe('t3 — View N more replies affordance text', () => {
 
 describe('t4 — tap "View N more replies" mounts expansion useThread', () => {
   it('calls useThread with child id and role=expansion after tap', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 3 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
     const affordance = screen.getByText('View 3 more replies')
     fireEvent.click(affordance)
 
-    const expansionCall = mockUseThreadCalls.find(([id, opts]: [string, any]) =>
-      id === 'child' && (opts as any).role === 'expansion'
+    const expansionCall = mockUseThreadCalls.find(
+      ([id, opts]: [string, any]) => id === 'child' && (opts as any).role === 'expansion'
     )
     expect(expansionCall).toBeTruthy()
   })
@@ -497,13 +670,15 @@ describe('t4 — tap "View N more replies" mounts expansion useThread', () => {
 
 describe('t5 — Hide replies / re-expand toggle', () => {
   it('shows "Hide replies" after expanding, then hides children when tapped', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 2 })
     const grandchild = buildPost({ id: 'grandchild', parent_post_id: 'child', descendant_count: 0 })
-    // When expanded, mockThreadData is shared; grandchild is already in tree
-    mockThreadData = makeThreadData([root, child, grandchild])
+    // child reports descendant_count=2 but only the grandchild is loaded, so the
+    // subtree is not fully loaded → "View N more replies" → tap mounts expansion.
+    mockRootData = root
+    mockThreadData = makeThreadData([child, grandchild])
 
-    render(React.createElement(ThreadView, { postId: 'root' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
     // Expand
     const expandAffordance = screen.getByText('View 2 more replies')
@@ -517,7 +692,8 @@ describe('t5 — Hide replies / re-expand toggle', () => {
     fireEvent.click(hideAffordance)
 
     // Grandchild should no longer be rendered
-    expect(screen.queryByTestId('post-row-grandchild')).toBeNull()
+    expect(railFor(container, 'grandchild')).toBeNull()
+    expect(flagFor('grandchild')).toBeNull()
   })
 })
 
@@ -534,7 +710,8 @@ describe('t6 — depth cap = 6 on web', () => {
     // 7 posts: depths 0–6; depth-6 leaf has descendant_count > 0
     const posts = buildDeepTree(7)
     posts[6]!.descendant_count = 3
-    mockThreadData = makeThreadData(posts)
+    mockRootData = posts[0]
+    mockThreadData = makeThreadData(posts.slice(1))
 
     render(React.createElement(ThreadView, { postId: 'post-depth-0' }))
 
@@ -544,12 +721,14 @@ describe('t6 — depth cap = 6 on web', () => {
   it('does NOT render a 7th-level post inline on web', () => {
     const posts = buildDeepTree(8)
     posts[6]!.descendant_count = 2
-    mockThreadData = makeThreadData(posts)
+    mockRootData = posts[0]
+    mockThreadData = makeThreadData(posts.slice(1))
 
-    render(React.createElement(ThreadView, { postId: 'post-depth-0' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'post-depth-0' }))
 
     // depth-7 post must not be in DOM
-    expect(screen.queryByTestId('post-row-post-depth-7')).toBeNull()
+    expect(railFor(container, 'post-depth-7')).toBeNull()
+    expect(flagFor('post-depth-7')).toBeNull()
   })
 })
 
@@ -565,7 +744,8 @@ describe('t7 — depth cap = 4 on mobile', () => {
   it('shows "Continue this thread →" at depth 4 leaf on mobile', () => {
     const posts = buildDeepTree(5)
     posts[4]!.descendant_count = 2
-    mockThreadData = makeThreadData(posts)
+    mockRootData = posts[0]
+    mockThreadData = makeThreadData(posts.slice(1))
 
     render(React.createElement(ThreadView, { postId: 'post-depth-0' }))
 
@@ -575,11 +755,13 @@ describe('t7 — depth cap = 4 on mobile', () => {
   it('does NOT render a 5th-level post inline on mobile', () => {
     const posts = buildDeepTree(6)
     posts[4]!.descendant_count = 1
-    mockThreadData = makeThreadData(posts)
+    mockRootData = posts[0]
+    mockThreadData = makeThreadData(posts.slice(1))
 
-    render(React.createElement(ThreadView, { postId: 'post-depth-0' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'post-depth-0' }))
 
-    expect(screen.queryByTestId('post-row-post-depth-5')).toBeNull()
+    expect(railFor(container, 'post-depth-5')).toBeNull()
+    expect(flagFor('post-depth-5')).toBeNull()
   })
 })
 
@@ -591,7 +773,8 @@ describe('t8 — Continue this thread routes with focusedFromRoot', () => {
   it('calls router.push with /collective/thread/<capPostId>?focusedFromRoot=<rootId>', () => {
     const posts = buildDeepTree(7)
     posts[6]!.descendant_count = 1
-    mockThreadData = makeThreadData(posts)
+    mockRootData = posts[0]
+    mockThreadData = makeThreadData(posts.slice(1))
 
     render(React.createElement(ThreadView, { postId: 'post-depth-0' }))
 
@@ -611,12 +794,13 @@ describe('t8 — Continue this thread routes with focusedFromRoot', () => {
 describe('t9 — Reply affordance hidden when unauthenticated', () => {
   it('renders no Reply button when currentUserId is null', () => {
     mockCurrentUserId = null
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.queryByRole('button', { name: /Reply/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Reply to this/i })).toBeNull()
     expect(screen.queryByText('Reply')).toBeNull()
   })
 })
@@ -628,12 +812,13 @@ describe('t9 — Reply affordance hidden when unauthenticated', () => {
 describe('t10 — Reply affordance hidden when user is suspended', () => {
   it('renders no Reply button when isSuspended is true', () => {
     mockIsSuspended = true
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.queryByRole('button', { name: /Reply/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Reply to this/i })).toBeNull()
     expect(screen.queryByText('Reply')).toBeNull()
   })
 })
@@ -644,16 +829,14 @@ describe('t10 — Reply affordance hidden when user is suspended', () => {
 
 describe('t11 — Reply tap mounts inline composer with correct replyContext', () => {
   it('mounts PostComposer compact with parentPostId of tapped post', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    // Tap Reply on the child post — find by accessible name + proximity
-    // The Reply button should be associated with/near child
     const replyButtons = screen.getAllByText('Reply')
-    // Find the one for the child — it renders below child's PostRow
     expect(replyButtons.length).toBeGreaterThanOrEqual(1)
     fireEvent.click(replyButtons[0]!)
 
@@ -661,34 +844,22 @@ describe('t11 — Reply tap mounts inline composer with correct replyContext', (
     expect(composer).toBeTruthy()
     expect(composer.getAttribute('data-compact')).toBe('true')
     const parentPostId = composer.getAttribute('data-parent-post-id')
-    // Must be either root or child id — depending on which Reply was clicked
     expect(['root', 'child']).toContain(parentPostId)
   })
 
   it('mounts composer for child post with parentPostId=child when child Reply is tapped', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    // Use aria-label to target the specific Reply button
-    const childReplyBtn = screen.getByRole('button', {
-      name: /Reply to this post/i,
-    })
-    // There may be multiple; target the one near child
-    // Fall back: find all and click the second (child's)
-    const allReplyBtns = screen.getAllByText('Reply')
-    // Click the child's Reply — it should be the second button
-    if (allReplyBtns.length >= 2) {
-      fireEvent.click(allReplyBtns[1]!)
-      const composer = screen.getByTestId('post-composer')
-      expect(composer.getAttribute('data-parent-post-id')).toBe('child')
-    } else {
-      // If only root Reply is present, verify the single composer exists
-      fireEvent.click(allReplyBtns[0]!)
-      expect(screen.getByTestId('post-composer')).toBeTruthy()
-    }
+    // The child's reply affordance carries aria-label "Reply to this post"
+    const childReplyBtn = screen.getByRole('button', { name: /Reply to this post/i })
+    fireEvent.click(childReplyBtn)
+    const composer = screen.getByTestId('post-composer')
+    expect(composer.getAttribute('data-parent-post-id')).toBe('child')
   })
 })
 
@@ -698,22 +869,26 @@ describe('t11 — Reply tap mounts inline composer with correct replyContext', (
 
 describe('t12 — only one composer at a time across the tree', () => {
   it('unmounts the first composer and mounts a new one when Reply is tapped on a different post', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    const replyButtons = screen.getAllByText('Reply')
-    expect(replyButtons.length).toBeGreaterThanOrEqual(2)
+    // Target the root's reply affordance and the child's reply affordance by their
+    // distinct aria-labels.
+    const rootReplyBtn = screen.getByRole('button', { name: /Reply to this thread/i })
+    const childReplyBtn = screen.getByRole('button', { name: /Reply to this post/i })
 
     // Open composer for root
-    fireEvent.click(replyButtons[0]!)
+    fireEvent.click(rootReplyBtn)
     const firstComposer = screen.getByTestId('post-composer')
     const firstParentId = firstComposer.getAttribute('data-parent-post-id')
+    expect(firstParentId).toBe('root')
 
     // Open composer for child (a different post)
-    fireEvent.click(replyButtons[1]!)
+    fireEvent.click(childReplyBtn)
 
     // Only one composer should be in the DOM
     const composers = screen.getAllByTestId('post-composer')
@@ -721,6 +896,7 @@ describe('t12 — only one composer at a time across the tree', () => {
 
     // The new composer's parentPostId must differ from the first
     const newParentId = composers[0]!.getAttribute('data-parent-post-id')
+    expect(newParentId).toBe('child')
     expect(newParentId).not.toBe(firstParentId)
   })
 })
@@ -731,8 +907,9 @@ describe('t12 — only one composer at a time across the tree', () => {
 
 describe('t13 — composer onSubmitted unmounts composer', () => {
   it('removes the composer from DOM when onSubmitted is invoked', () => {
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -758,8 +935,9 @@ describe('t13 — composer onSubmitted unmounts composer', () => {
 
 describe('t14 — composer onCancelled unmounts composer', () => {
   it('removes the composer from DOM when onCancelled is invoked', () => {
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -779,15 +957,21 @@ describe('t14 — composer onCancelled unmounts composer', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // t15 — Reply on a deleted parent still mounts composer
 // ─────────────────────────────────────────────────────────────────────────────
+// NOTE: a self-deleted node renders a tombstone with NO reply affordance, so a
+// reply cannot originate from the withdrawn node itself. An ANONYMIZED parent
+// (user_id=null, not self-deleted) still renders its body + reply affordance —
+// that is the "deleted parent" a user can still reply to. This test asserts the
+// reply path survives on an anonymized root.
 
-describe('t15 — Reply on a deleted parent still works', () => {
-  it('Reply button is present on a deleted post and mounts composer', () => {
-    const deletedRoot = buildPost({ id: 'root', is_user_deleted: true })
-    mockThreadData = makeThreadData([deletedRoot])
+describe('t15 — Reply on an anonymized (deleted-author) parent still works', () => {
+  it('Reply button is present on an anonymized post and mounts composer', () => {
+    const anonRoot = buildRoot({ id: 'root', user_id: null })
+    mockRootData = anonRoot
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    // Reply should still be visible on deleted post
+    // Reply should still be visible on an anonymized post
     const replyBtn = screen.getByText('Reply')
     expect(replyBtn).toBeTruthy()
 
@@ -804,9 +988,10 @@ describe('t15 — Reply on a deleted parent still works', () => {
 
 describe('t16 — Focus menu item: root has canFocus=false, replies have canFocus=true', () => {
   it('root FlagAffordance has data-can-focus="false"', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -815,9 +1000,10 @@ describe('t16 — Focus menu item: root has canFocus=false, replies have canFocu
   })
 
   it('child reply FlagAffordance has data-can-focus="true"', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -826,9 +1012,10 @@ describe('t16 — Focus menu item: root has canFocus=false, replies have canFocu
   })
 
   it('captured FlagAffordance props: root canFocus is false', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -846,9 +1033,10 @@ describe('t16 — Focus menu item: root has canFocus=false, replies have canFocu
 
 describe('t17 — Focus routes reply with focusedFromRoot param', () => {
   it('invoking onFocus for a child routes to /collective/thread/<childId>?focusedFromRoot=<rootId>', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -869,8 +1057,9 @@ describe('t17 — Focus routes reply with focusedFromRoot param', () => {
 describe('t18 — Back to full thread rendered when focusedFromRoot query param present', () => {
   it('renders "Back to full thread" button when focusedFromRoot is set', () => {
     mockSearchParams = { focusedFromRoot: 'original-root-id' }
-    const subroot = buildPost({ id: 'sub-root' })
-    mockThreadData = makeThreadData([subroot])
+    const subroot = buildRoot({ id: 'sub-root' })
+    mockRootData = subroot
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'sub-root' }))
 
@@ -879,8 +1068,9 @@ describe('t18 — Back to full thread rendered when focusedFromRoot query param 
 
   it('tapping "Back to full thread" routes to the original root thread', () => {
     mockSearchParams = { focusedFromRoot: 'original-root-id' }
-    const subroot = buildPost({ id: 'sub-root' })
-    mockThreadData = makeThreadData([subroot])
+    const subroot = buildRoot({ id: 'sub-root' })
+    mockRootData = subroot
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'sub-root' }))
 
@@ -898,12 +1088,15 @@ describe('t18 — Back to full thread rendered when focusedFromRoot query param 
 describe('t19 — no Back to full thread without focusedFromRoot param', () => {
   it('does NOT render "Back to full thread" when no focusedFromRoot query param', () => {
     mockSearchParams = {}
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
     expect(screen.queryByText('Back to full thread')).toBeNull()
+    // The default back affordance is "Back to the room"
+    expect(screen.getByText('Back to the room')).toBeTruthy()
   })
 })
 
@@ -913,27 +1106,31 @@ describe('t19 — no Back to full thread without focusedFromRoot param', () => {
 
 describe('t20 — depth rail tap toggles per-session collapse', () => {
   it('tapping depth rail hides grandchildren; re-tapping shows them again', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 2 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 1 })
     const grandchild = buildPost({ id: 'grandchild', parent_post_id: 'child', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child, grandchild])
+    mockRootData = root
+    mockThreadData = makeThreadData([child, grandchild])
 
     const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
     // Grandchild should be in DOM initially
-    expect(screen.getByTestId('post-row-grandchild')).toBeTruthy()
+    expect(railFor(container, 'grandchild')).toBeTruthy()
+    expect(flagFor('grandchild')).toBeTruthy()
 
     // Find the depth rail for the child (depth-1 wrapper with onClick)
-    const depthRail = container.querySelector('[data-testid="depth-rail-child"]')
+    const depthRail = railFor(container, 'child')
     expect(depthRail).toBeTruthy()
 
     // Collapse by tapping the rail
     fireEvent.click(depthRail!)
-    expect(screen.queryByTestId('post-row-grandchild')).toBeNull()
+    expect(railFor(container, 'grandchild')).toBeNull()
+    expect(flagFor('grandchild')).toBeNull()
 
     // Re-expand
     fireEvent.click(depthRail!)
-    expect(screen.getByTestId('post-row-grandchild')).toBeTruthy()
+    expect(railFor(container, 'grandchild')).toBeTruthy()
+    expect(flagFor('grandchild')).toBeTruthy()
   })
 })
 
@@ -944,37 +1141,64 @@ describe('t20 — depth rail tap toggles per-session collapse', () => {
 describe('t21 — locally-hidden post is filtered from render with its descendants', () => {
   it('hidden post is not in DOM', () => {
     mockHiddenPostIds = new Set(['hidden-child'])
-    const root = buildPost({ id: 'root', descendant_count: 1 })
-    const hiddenChild = buildPost({ id: 'hidden-child', parent_post_id: 'root', descendant_count: 1 })
-    const grandchild = buildPost({ id: 'grandchild', parent_post_id: 'hidden-child', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, hiddenChild, grandchild])
+    const root = buildRoot({ id: 'root', descendant_count: 2 })
+    const hiddenChild = buildPost({
+      id: 'hidden-child',
+      parent_post_id: 'root',
+      descendant_count: 1,
+    })
+    const grandchild = buildPost({
+      id: 'grandchild',
+      parent_post_id: 'hidden-child',
+      descendant_count: 0,
+    })
+    mockRootData = root
+    mockThreadData = makeThreadData([hiddenChild, grandchild])
 
-    render(React.createElement(ThreadView, { postId: 'root' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.queryByTestId('post-row-hidden-child')).toBeNull()
+    expect(railFor(container, 'hidden-child')).toBeNull()
+    expect(flagFor('hidden-child')).toBeNull()
   })
 
   it('children of hidden post are also filtered', () => {
     mockHiddenPostIds = new Set(['hidden-child'])
-    const root = buildPost({ id: 'root', descendant_count: 1 })
-    const hiddenChild = buildPost({ id: 'hidden-child', parent_post_id: 'root', descendant_count: 1 })
-    const grandchild = buildPost({ id: 'grandchild', parent_post_id: 'hidden-child', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, hiddenChild, grandchild])
+    const root = buildRoot({ id: 'root', descendant_count: 2 })
+    const hiddenChild = buildPost({
+      id: 'hidden-child',
+      parent_post_id: 'root',
+      descendant_count: 1,
+    })
+    const grandchild = buildPost({
+      id: 'grandchild',
+      parent_post_id: 'hidden-child',
+      descendant_count: 0,
+    })
+    mockRootData = root
+    mockThreadData = makeThreadData([hiddenChild, grandchild])
 
-    render(React.createElement(ThreadView, { postId: 'root' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.queryByTestId('post-row-grandchild')).toBeNull()
+    expect(railFor(container, 'grandchild')).toBeNull()
+    expect(flagFor('grandchild')).toBeNull()
   })
 
   it('root post is still rendered when other posts are hidden', () => {
     mockHiddenPostIds = new Set(['hidden-child'])
-    const root = buildPost({ id: 'root', descendant_count: 1 })
-    const hiddenChild = buildPost({ id: 'hidden-child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, hiddenChild])
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
+    const hiddenChild = buildPost({
+      id: 'hidden-child',
+      parent_post_id: 'root',
+      descendant_count: 0,
+    })
+    mockRootData = root
+    mockThreadData = makeThreadData([hiddenChild])
 
-    render(React.createElement(ThreadView, { postId: 'root' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.getByTestId('post-row-root')).toBeTruthy()
+    // Root renders its title + flag affordance
+    expect(container.querySelector('h1')?.textContent).toBe('Root Title')
+    expect(flagFor('root')).toBeTruthy()
   })
 })
 
@@ -984,8 +1208,9 @@ describe('t21 — locally-hidden post is filtered from render with its descendan
 
 describe('t22 — accessibility tree semantics', () => {
   it('outer container has role="tree"', () => {
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+    const root = buildRoot({ id: 'root' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -994,9 +1219,10 @@ describe('t22 — accessibility tree semantics', () => {
   })
 
   it('each post wrapper has role="treeitem" with aria-level', () => {
-    const root = buildPost({ id: 'root', descendant_count: 1 })
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([root, child])
+    mockRootData = root
+    mockThreadData = makeThreadData([child])
 
     const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -1010,14 +1236,18 @@ describe('t22 — accessibility tree semantics', () => {
     expect(childItem).toBeTruthy()
   })
 
-  it('each post body is rendered inside an <article> element (via PostRow)', () => {
-    const root = buildPost({ id: 'root' })
-    mockThreadData = makeThreadData([root])
+  it('the root body is rendered as a title-led <h1> + body text (no PostRow article)', () => {
+    const root = buildRoot({ id: 'root', title: 'My Letter', body: 'The letter body.' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
 
     const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
-    const article = container.querySelector('article')
-    expect(article).toBeTruthy()
+    // New DOM: the root renders an <h1> title and its body text.
+    expect(container.querySelector('h1')?.textContent).toBe('My Letter')
+    expect(screen.getByText('The letter body.')).toBeTruthy()
+    // PostRow is gone — there is no <article> for post bodies anymore.
+    expect(container.querySelector('article')).toBeNull()
   })
 })
 
@@ -1026,24 +1256,56 @@ describe('t22 — accessibility tree semantics', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t23 — deletion-state at root', () => {
-  it('PostRow receives is_user_deleted=true for a self-deleted root', () => {
-    const deletedRoot = buildPost({ id: 'root', is_user_deleted: true })
-    mockThreadData = makeThreadData([deletedRoot])
+  it('a self-deleted root renders the "This letter was withdrawn." tombstone and no reactions', () => {
+    const deletedRoot = buildRoot({ id: 'root', is_user_deleted: true, body: 'secret body' })
+    mockRootData = deletedRoot
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    const postRow = screen.getByTestId('post-row-root')
-    expect(postRow.getAttribute('data-is-deleted')).toBe('true')
+    // Tombstone copy is shown; the original body is NOT rendered.
+    expect(screen.getByText('This letter was withdrawn.')).toBeTruthy()
+    expect(screen.queryByText('secret body')).toBeNull()
+    // A withdrawn node renders NO ReactionStrip and NO flag affordance.
+    expect(screen.queryByTestId('reaction-strip-root')).toBeNull()
+    expect(flagFor('root')).toBeNull()
+  })
+
+  it('a self-deleted reply renders the "This reply was withdrawn." tombstone', () => {
+    const root = buildRoot({ id: 'root', descendant_count: 1 })
+    const deletedChild = buildPost({
+      id: 'child',
+      parent_post_id: 'root',
+      is_user_deleted: true,
+      body: 'reply secret',
+    })
+    mockRootData = root
+    mockThreadData = makeThreadData([deletedChild])
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(screen.getByText('This reply was withdrawn.')).toBeTruthy()
+    expect(screen.queryByText('reply secret')).toBeNull()
+    expect(screen.queryByTestId('reaction-strip-child')).toBeNull()
   })
 
   it('children of a deleted root still render', () => {
-    const deletedRoot = buildPost({ id: 'root', is_user_deleted: true, descendant_count: 1 })
-    const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([deletedRoot, child])
+    const deletedRoot = buildRoot({ id: 'root', is_user_deleted: true, descendant_count: 1 })
+    const child = buildPost({
+      id: 'child',
+      parent_post_id: 'root',
+      body: 'Child body',
+      descendant_count: 0,
+    })
+    mockRootData = deletedRoot
+    mockThreadData = makeThreadData([child])
 
-    render(React.createElement(ThreadView, { postId: 'root' }))
+    const { container } = render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.getByTestId('post-row-child')).toBeTruthy()
+    // The root is a tombstone, but its descendant reply still renders normally.
+    expect(flagFor('child')).toBeTruthy()
+    expect(railFor(container, 'child')).toBeTruthy()
+    expect(screen.getByText('Child body')).toBeTruthy()
   })
 })
 
@@ -1052,24 +1314,31 @@ describe('t23 — deletion-state at root', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t24 — anonymized root (user_id null)', () => {
-  it('PostRow receives user_id=null for an anonymized root post', () => {
-    const anonRoot = buildPost({ id: 'root', user_id: null })
-    mockThreadData = makeThreadData([anonRoot])
+  it('an anonymized root renders its body + a "[deleted]" byline (not a tombstone)', () => {
+    const anonRoot = buildRoot({ id: 'root', user_id: null, body: 'anon body' })
+    mockRootData = anonRoot
+    mockThreadData = makeThreadData([])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    const postRow = screen.getByTestId('post-row-root')
-    expect(postRow.getAttribute('data-user-id')).toBe('null')
+    // Anonymized (NOT self-deleted): body is still shown, author shows "[deleted]".
+    expect(screen.getByText('anon body')).toBeTruthy()
+    // The byline renders the anonymized author marker "[deleted]".
+    const byline = screen.getByText(/\[deleted\]/)
+    expect(byline).toBeTruthy()
+    // It is not the tombstone.
+    expect(screen.queryByText('This letter was withdrawn.')).toBeNull()
   })
 
   it('children of anonymized root still render', () => {
-    const anonRoot = buildPost({ id: 'root', user_id: null, descendant_count: 1 })
+    const anonRoot = buildRoot({ id: 'root', user_id: null, descendant_count: 1 })
     const child = buildPost({ id: 'child', parent_post_id: 'root', descendant_count: 0 })
-    mockThreadData = makeThreadData([anonRoot, child])
+    mockRootData = anonRoot
+    mockThreadData = makeThreadData([child])
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
-    expect(screen.getByTestId('post-row-child')).toBeTruthy()
+    expect(flagFor('child')).toBeTruthy()
   })
 })
 
@@ -1080,8 +1349,7 @@ describe('t24 — anonymized root (user_id null)', () => {
 describe('t25 — telemetry redaction: post body never logged', () => {
   it('ThreadView.tsx does not contain console.log/warn/error with .body content', () => {
     if (!existsSync(THREAD_VIEW_PATH)) {
-      // File does not exist yet — test fails by design (red phase)
-      throw new Error('ThreadView.tsx does not exist yet — red phase')
+      throw new Error('ThreadView.tsx does not exist')
     }
     const src = readFileSync(THREAD_VIEW_PATH, 'utf8')
 
@@ -1096,22 +1364,24 @@ describe('t25 — telemetry redaction: post body never logged', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // t26 — error state renders error microcopy and Retry button
 // ─────────────────────────────────────────────────────────────────────────────
+// Retry now calls the ROOT query's refetch (the root is the body source), not
+// useThread's refetch.
 
 describe('t26 — error state renders microcopy and retry', () => {
-  it('renders "Couldn\'t load this thread." when useThread returns an error', () => {
-    mockThreadError = new Error('Network error')
-    mockThreadData = undefined
-    mockThreadIsLoading = false
+  it('renders "Couldn\'t load this thread." when useThreadRoot returns an error', () => {
+    mockRootError = new Error('Network error')
+    mockRootData = undefined
+    mockRootLoading = false
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
     expect(screen.getByText(/Couldn't load this thread\./i)).toBeTruthy()
   })
 
-  it('renders a Retry button on error and calls refetch when tapped', () => {
-    mockThreadError = new Error('Network error')
-    mockThreadData = undefined
-    mockThreadIsLoading = false
+  it('renders a Retry button on error and calls the root query refetch when tapped', () => {
+    mockRootError = new Error('Network error')
+    mockRootData = undefined
+    mockRootLoading = false
 
     render(React.createElement(ThreadView, { postId: 'root' }))
 
@@ -1119,6 +1389,7 @@ describe('t26 — error state renders microcopy and retry', () => {
     expect(retryBtn).toBeTruthy()
 
     fireEvent.click(retryBtn)
-    expect(mockThreadRefetch).toHaveBeenCalledTimes(1)
+    expect(mockRootRefetch).toHaveBeenCalledTimes(1)
+    expect(mockThreadRefetch).not.toHaveBeenCalled()
   })
 })

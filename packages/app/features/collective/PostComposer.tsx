@@ -17,10 +17,14 @@
  * If rejected, AC #16 error microcopy renders; no client guard is added here.
  */
 
-import React, { useMemo, useRef, useState } from 'react'
+import type React from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
-import { AuthorByline, ExpandingLineButton, Text, XStack, YStack } from '@my/ui'
-import { ThreePostureDisclosure, hasAcknowledgedBoundaryA } from 'app/features/disclosure/ThreePostureDisclosure'
+import { AuthorByline, ExpandingLineButton, Text, TextArea, XStack, YStack } from '@my/ui'
+import {
+  ThreePostureDisclosure,
+  hasAcknowledgedBoundaryA,
+} from 'app/features/disclosure/ThreePostureDisclosure'
 import { AmbientPrivacyLabel } from 'app/features/disclosure/AmbientPrivacyLabel'
 import { useCreatePost, createPostWithId } from 'app/state/collective/mutations'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
@@ -48,9 +52,18 @@ export default function PostComposer({
 }: PostComposerProps & { __contextProbeRef?: React.MutableRefObject<unknown> }) {
   // Test-only: forward the probe ref to CollectiveLexicalEditor for D14 isolation test.
   // Production callers never set this prop. See CollectiveLexicalEditor for the probe impl.
-  const contextProbeRef = (_rest as any).__contextProbeRef as React.MutableRefObject<unknown> | undefined
+  const contextProbeRef = (_rest as any).__contextProbeRef as
+    | React.MutableRefObject<unknown>
+    | undefined
+
+  // ─── Top-level vs reply ────────────────────────────────────────────────────
+  // Title-led redesign (Story 3-16): top-level letters carry a required title;
+  // replies carry none (the server CHECK collective_posts_title_chk enforces
+  // both — required on top-level, must be NULL on replies — we mirror it here).
+  const isTopLevel = !compact && !replyContext
 
   // ─── Local state ──────────────────────────────────────────────────────────
+  const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [showError, setShowError] = useState(false)
   // Initialize lazily to avoid render-flash of composer body before first ack check.
@@ -85,13 +98,20 @@ export default function PostComposer({
 
   // ─── Derived state ────────────────────────────────────────────────────────
   const trimmedBody = body.trim()
+  const trimmedTitle = title.trim()
   const wordCount = trimmedBody ? trimmedBody.split(/\s+/).length : 0
   const charCount = body.length
+  // Soft 200-char guide (architecture): the server CHECK is the hard backstop;
+  // the composer just nudges. We never block submit on length alone.
+  const TITLE_SOFT_LIMIT = 200
+  const titleOverLimit = isTopLevel && trimmedTitle.length > TITLE_SOFT_LIMIT
 
   // Eligibility gating (auth / suspension / sync / 500-word) is now owned by
   // CollectiveEligibilityGate — when the gate decides we're ineligible the
   // editor never mounts, so we don't repeat those checks in `isSubmitDisabled`.
-  const isSubmitDisabled = trimmedBody.length === 0 || createPost.isPending
+  // Top-level letters additionally require a non-blank title.
+  const isSubmitDisabled =
+    trimmedBody.length === 0 || (isTopLevel && trimmedTitle.length === 0) || createPost.isPending
 
   // ─── Disclosure handlers ───────────────────────────────────────────────────
 
@@ -149,11 +169,14 @@ export default function PostComposer({
     createPost.mutate(
       createPostWithId({
         body,
+        // Top-level letters are title-led; the title is required above.
+        title: trimmedTitle,
         parent_post_id: null,
         user_id: currentUserId!,
       }),
       {
         onSuccess: () => {
+          setTitle('')
           setBody('')
         },
         onError: () => {
@@ -237,22 +260,78 @@ export default function PostComposer({
       {/* Composer body — only visible after first-time acknowledgment (AC #1) */}
       {!showDisclosure && (
         <>
+          {/* Eyebrow — title-led composer header (top-level letters only) */}
+          {isTopLevel ? (
+            <Text
+              fontFamily="$body"
+              fontSize="$1"
+              color="$color9"
+              textTransform="uppercase"
+              letterSpacing={2}
+            >
+              A letter to the room
+            </Text>
+          ) : null}
+
           {/* AmbientPrivacyLabel + "posting as" preview (AC #5, #6) */}
-          <XStack alignItems="center" gap="$2">
+          <XStack
+            alignItems="center"
+            gap="$2"
+          >
             <AmbientPrivacyLabel
               boundary="collective_post_v1"
               onPress={handleLabelPress}
             />
           </XStack>
 
-          <XStack alignItems="center" gap="$2">
-            <Text fontSize="$1" color="$color9" fontFamily="$body">posting as</Text>
+          <XStack
+            alignItems="center"
+            gap="$2"
+          >
+            <Text
+              fontSize="$1"
+              color="$color9"
+              fontFamily="$body"
+            >
+              posting as
+            </Text>
             <AuthorByline
               displayName={previewName}
               postedAt={previewTime}
               tenureTier={previewTenure}
             />
           </XStack>
+
+          {/* Title field — required, title-led. Top-level letters only; replies
+              carry no title (server CHECK forbids it), so the field is hidden in
+              compact/reply mode. */}
+          {isTopLevel ? (
+            <YStack gap="$2">
+              <TextArea
+                aria-label="Letter title"
+                placeholder="A title…"
+                value={title}
+                onChangeText={setTitle}
+                fontFamily="$journal"
+                fontSize="$8"
+                lineHeight="$8"
+                color="$color12"
+                borderWidth={0}
+                backgroundColor="transparent"
+                paddingHorizontal={0}
+                rows={1}
+              />
+              <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(0,0,0,0.10)' }} />
+              {titleOverLimit ? (
+                <Text
+                  fontSize="$1"
+                  color="$color11"
+                >
+                  {trimmedTitle.length}/200 — long titles read best under 200 characters.
+                </Text>
+              ) : null}
+            </YStack>
+          ) : null}
 
           {/* Writing surface — sharp-cornered, Newsreader serif, no chrome (AC #5) */}
           {/*
@@ -271,18 +350,30 @@ export default function PostComposer({
           </View>
 
           {/* Word/character count micro-typography (AC #11) */}
-          <Text fontSize="$1" color="$color9">
+          <Text
+            fontSize="$1"
+            color="$color9"
+          >
             {wordCount} words · {charCount} chars
           </Text>
 
           {/* Submit disabled-state microcopy (AC #13) */}
           {createPost.isPending && (
-            <Text fontSize="$1" color="$color9">Submitting...</Text>
+            <Text
+              fontSize="$1"
+              color="$color9"
+            >
+              Submitting...
+            </Text>
           )}
 
           {/* Error microcopy (AC #16) — generic, no body content logged */}
           {showError && (
-            <Text fontSize="$2" color="$color11" paddingTop="$2">
+            <Text
+              fontSize="$2"
+              color="$color11"
+              paddingTop="$2"
+            >
               Couldn't post. Try again.
             </Text>
           )}
@@ -296,16 +387,14 @@ export default function PostComposer({
               >
                 Submit
               </ExpandingLineButton>
-              <ExpandingLineButton onPress={onCancelled}>
-                Cancel
-              </ExpandingLineButton>
+              <ExpandingLineButton onPress={onCancelled}>Cancel</ExpandingLineButton>
             </XStack>
           ) : (
             <ExpandingLineButton
               onPress={handleSubmitFull}
               disabled={isSubmitDisabled}
             >
-              Submit
+              Leave it for the room
             </ExpandingLineButton>
           )}
         </>
