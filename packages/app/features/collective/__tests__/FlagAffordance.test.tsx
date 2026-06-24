@@ -599,7 +599,7 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
     fireEvent.click(submitBtn)
 
     expect(mutateSpy).toHaveBeenCalledTimes(1)
-    const callArgs = mutateSpy.mock.calls[0][0]
+    const callArgs = mutateSpy.mock.calls[0]![0]
     expect(callArgs.post_id).toBe('p-submit')
     expect(callArgs.reporter_user_id).toBe('u-reporter')
     expect(callArgs.reason_code).toBe('spam')
@@ -638,8 +638,8 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
     fireEvent.click(submitBtn)
 
     // Both called in same tick — mutate called before addLocallyHiddenPost
-    const mutateOrder = mutateSpy.mock.invocationCallOrder[0]
-    const hideOrder = addLocallyHiddenPostSpy.mock.invocationCallOrder[0]
+    const mutateOrder = mutateSpy.mock.invocationCallOrder[0]!
+    const hideOrder = addLocallyHiddenPostSpy.mock.invocationCallOrder[0]!
     expect(mutateOrder).toBeLessThan(hideOrder)
   })
 
@@ -695,7 +695,7 @@ describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
     fireEvent.click(screen.getByTestId('btn-submit'))
 
     expect(mutateSpy).toHaveBeenCalledTimes(1)
-    const callArgs = mutateSpy.mock.calls[0][0]
+    const callArgs = mutateSpy.mock.calls[0]![0]
     expect(callArgs.note).toBeNull()
   })
 
@@ -714,7 +714,7 @@ describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
     fireEvent.click(screen.getByTestId('btn-submit'))
 
     expect(mutateSpy).toHaveBeenCalledTimes(1)
-    const callArgs = mutateSpy.mock.calls[0][0]
+    const callArgs = mutateSpy.mock.calls[0]![0]
     expect(callArgs.note).toBeNull()
   })
 })

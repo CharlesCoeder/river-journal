@@ -98,7 +98,7 @@ describe('Story 3-5 / migration file presence (AC #1)', () => {
       // Caught by the prior assertion; bail to avoid a noisy second failure.
       return
     }
-    const timestamp = match.split('_')[0]
+    const timestamp = match.split('_')[0]!
     expect(timestamp.length).toBe(14)
     expect(Number(timestamp)).toBeGreaterThan(20260506000007)
   })

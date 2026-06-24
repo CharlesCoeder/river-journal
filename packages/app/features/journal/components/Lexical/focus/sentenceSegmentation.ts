@@ -100,7 +100,8 @@ const ABBREVIATIONS = new Set<string>([
 function endsWithAbbreviation(segment: string): boolean {
   const match = /([A-Za-z][A-Za-z.]*)\.\s*$/.exec(segment)
   if (match === null) return false
-  return ABBREVIATIONS.has(match[1].toLowerCase())
+  // Group 1 is mandatory in the pattern, so a successful match always captures it.
+  return ABBREVIATIONS.has(match[1]!.toLowerCase())
 }
 
 // ─── Terminator-split refinement ────────────────────────────────────────────
@@ -154,15 +155,11 @@ export function segmentSentences(text: string): SentenceSpan[] {
   // (fixes ICU OVER-splitting, e.g. "Dr. Smith").
   const merged: SentenceSpan[] = []
   for (let i = 0; i < raw.length; i++) {
-    const span = raw[i]
-    if (
-      merged.length > 0 &&
-      endsWithAbbreviation(
-        text.slice(merged[merged.length - 1].start, merged[merged.length - 1].end)
-      )
-    ) {
+    const span = raw[i]! // i < raw.length ⇒ always present
+    const prev = merged[merged.length - 1] // undefined when merged is empty
+    if (prev && endsWithAbbreviation(text.slice(prev.start, prev.end))) {
       // Previous merged span was an abbreviation tail → absorb the current span.
-      merged[merged.length - 1] = { start: merged[merged.length - 1].start, end: span.end }
+      merged[merged.length - 1] = { start: prev.start, end: span.end }
     } else {
       merged.push({ start: span.start, end: span.end })
     }
@@ -193,7 +190,7 @@ export function activeSentence(text: string, cursor: number): SentenceSpan | nul
   const spans = segmentSentences(text)
 
   for (let i = 0; i < spans.length; i++) {
-    const { start, end } = spans[i]
+    const { start, end } = spans[i]! // i < spans.length ⇒ always present
     const isLastSegment = i === spans.length - 1
 
     if (cursor < start) break // gone past — nothing matches
@@ -244,7 +241,7 @@ export function getBlockOffset(
         // offset, so sum the text size of the first `anchorOffset` children.
         const kids = maybeAnchorEl.getChildren()
         for (let i = 0; i < anchorOffset && i < kids.length; i++) {
-          offset += kids[i].getTextContentSize()
+          offset += kids[i]!.getTextContentSize() // i < kids.length ⇒ present
         }
       } else {
         // Text/leaf anchor: `anchorOffset` is a character offset.

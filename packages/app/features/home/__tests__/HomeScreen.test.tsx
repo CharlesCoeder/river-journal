@@ -630,8 +630,8 @@ describe('Lapsed prompt', () => {
     expect(dismissMock).toHaveBeenCalled()
     expect(pushSpy).toHaveBeenCalledWith('/journal')
     // dismiss must have been called before router.push (invocationCallOrder)
-    const dismissOrder = dismissMock.mock.invocationCallOrder[0]
-    const pushOrder = pushSpy.mock.invocationCallOrder[pushSpy.mock.invocationCallOrder.length - 1]
+    const dismissOrder = dismissMock.mock.invocationCallOrder[0]!
+    const pushOrder = pushSpy.mock.invocationCallOrder[pushSpy.mock.invocationCallOrder.length - 1]!
     expect(dismissOrder).toBeLessThan(pushOrder)
   })
 
@@ -655,8 +655,8 @@ describe('Lapsed prompt', () => {
     expect(dismissMock).toHaveBeenCalled()
     expect(pushSpy).toHaveBeenCalledWith('/collective')
     // dismiss must have been called before router.push
-    const dismissOrder = dismissMock.mock.invocationCallOrder[0]
-    const pushOrder = pushSpy.mock.invocationCallOrder[pushSpy.mock.invocationCallOrder.length - 1]
+    const dismissOrder = dismissMock.mock.invocationCallOrder[0]!
+    const pushOrder = pushSpy.mock.invocationCallOrder[pushSpy.mock.invocationCallOrder.length - 1]!
     expect(dismissOrder).toBeLessThan(pushOrder)
   })
 

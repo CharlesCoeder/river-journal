@@ -132,12 +132,12 @@ describe('computeMonthGrid — builds the 42-cell calendar fill grid', () => {
   it('April 2026 starts on Wednesday — first 3 cells are prior-month spillover (March 29, 30, 31)', () => {
     const grid = computeMonthGrid('2026-04')
     // April 1 2026 is a Wednesday → cells 0,1,2 = Sun, Mon, Tue = March 29, 30, 31
-    expect(grid[0].inMonth).toBe(false)
-    expect(grid[0].date).toBe('2026-03-29')
-    expect(grid[1].inMonth).toBe(false)
-    expect(grid[1].date).toBe('2026-03-30')
-    expect(grid[2].inMonth).toBe(false)
-    expect(grid[2].date).toBe('2026-03-31')
+    expect(grid[0]!.inMonth).toBe(false)
+    expect(grid[0]!.date).toBe('2026-03-29')
+    expect(grid[1]!.inMonth).toBe(false)
+    expect(grid[1]!.date).toBe('2026-03-30')
+    expect(grid[2]!.inMonth).toBe(false)
+    expect(grid[2]!.date).toBe('2026-03-31')
   })
 
   it('April 2026 — cells 3 through 32 are April 1–30 (inMonth: true)', () => {
@@ -147,8 +147,8 @@ describe('computeMonthGrid — builds the 42-cell calendar fill grid', () => {
     aprilCells.forEach((cell) => {
       expect(cell.inMonth).toBe(true)
     })
-    expect(aprilCells[0].date).toBe('2026-04-01')
-    expect(aprilCells[29].date).toBe('2026-04-30')
+    expect(aprilCells[0]!.date).toBe('2026-04-01')
+    expect(aprilCells[29]!.date).toBe('2026-04-30')
   })
 
   it('April 2026 — trailing 9 cells are May 1–9 (inMonth: false)', () => {
@@ -158,8 +158,8 @@ describe('computeMonthGrid — builds the 42-cell calendar fill grid', () => {
     trailingCells.forEach((cell) => {
       expect(cell.inMonth).toBe(false)
     })
-    expect(trailingCells[0].date).toBe('2026-05-01')
-    expect(trailingCells[8].date).toBe('2026-05-09')
+    expect(trailingCells[0]!.date).toBe('2026-05-01')
+    expect(trailingCells[8]!.date).toBe('2026-05-09')
   })
 
   it('each cell has a date string in YYYY-MM-DD format', () => {
@@ -173,8 +173,8 @@ describe('computeMonthGrid — builds the 42-cell calendar fill grid', () => {
   it('cell dates are consecutive with no gaps', () => {
     const grid = computeMonthGrid('2026-04')
     for (let i = 1; i < grid.length; i++) {
-      const prev = new Date(grid[i - 1].date + 'T00:00:00').getTime()
-      const curr = new Date(grid[i].date + 'T00:00:00').getTime()
+      const prev = new Date(grid[i - 1]!.date + 'T00:00:00').getTime()
+      const curr = new Date(grid[i]!.date + 'T00:00:00').getTime()
       expect(curr - prev).toBe(86400000) // exactly one day
     }
   })

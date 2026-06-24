@@ -163,7 +163,7 @@ describe('Story 3-4 / fetchThreadPage full-mode happy paths (AC #3, #4, #12)', (
     const result = await fetchThreadPage('post-A', null)
     expect(result.items).toHaveLength(20)
     expect(result.mode).toBe('full')
-    expect(result.nextCursor).toBe(rows[19].created_at)
+    expect(result.nextCursor).toBe(rows[19]!.created_at)
     // The 21st row must NOT appear in items.
     expect(result.items.find((p) => p.id === 'reply-21')).toBeUndefined()
   })

@@ -84,7 +84,8 @@ export function PreviousAccountBanner() {
     // (current → C) produces a new transition key "prev->C" and re-opens the
     // banner; same-user re-sign-in matches the existing ack and stays hidden.
     const transitionKey = `${banner.previousUserId}->${currentUserId}`
-    deviceState$.acknowledgedAccountTransitions[transitionKey].set(true)
+    // Legend-State proxy index always resolves to a writable child observable.
+    deviceState$.acknowledgedAccountTransitions[transitionKey]!.set(true)
   }, [banner, currentUserId])
 
   if (!banner) return null

@@ -62,8 +62,10 @@ const pad = (n: number) => String(n).padStart(2, '0')
  * (local) would re-introduce DST/timezone bugs we are explicitly avoiding.
  */
 function addDays(yyyymmdd: string, delta: number): string {
+  // Callers only ever pass validated 'YYYY-MM-DD' day-keys, so the split
+  // always yields exactly three numeric parts — the `!`s are always valid.
   const [y, m, d] = yyyymmdd.split('-').map(Number)
-  const ms = Date.UTC(y, m - 1, d) + delta * 86_400_000
+  const ms = Date.UTC(y!, m! - 1, d!) + delta * 86_400_000
   const dt = new Date(ms)
   return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`
 }
@@ -192,12 +194,14 @@ export function computeStreakState(
   } else {
     // Model A passive map: milestone-ascending order, filtered by longestStreak.
     unlockedThemes = MILESTONES.filter((m) => longestStreak >= m).map(
-      (m) => STREAK_THEME_UNLOCKS[m]
+      // MILESTONES is derived from Object.keys(STREAK_THEME_UNLOCKS), so every
+      // milestone is guaranteed a key of the map — the `!` is always valid.
+      (m) => STREAK_THEME_UNLOCKS[m]!
     )
   }
 
   // lastQualifyingDate: most recent covered day in input (includes grace-protected).
-  const lastQualifyingDate = sorted.length > 0 ? sorted[sorted.length - 1] : null
+  const lastQualifyingDate = sorted[sorted.length - 1] ?? null
 
   return {
     currentStreak,
@@ -287,6 +291,7 @@ store$.assign({
       const scopedEntries: Record<string, Entry> = {}
       for (const id in allEntries) {
         const e = allEntries[id]
+        if (!e) continue
         const ownerMatches = currentUserId
           ? e.user_id === currentUserId
           : e.user_id === null || e.user_id === undefined
@@ -296,6 +301,7 @@ store$.assign({
       const scopedFlows: Record<string, Flow> = {}
       for (const id in allFlows) {
         const f = allFlows[id]
+        if (!f) continue
         // Parent-entry membership in the scoped set is the load-bearing
         // predicate; if the parent isn't in scope, neither is the flow.
         if (scopedEntries[f.dailyEntryId]) scopedFlows[id] = f
@@ -304,6 +310,7 @@ store$.assign({
       const scopedGraceDays: Record<string, GraceDay> = {}
       for (const id in allGraceDays) {
         const g = allGraceDays[id]
+        if (!g) continue
         const ownerMatches = currentUserId
           ? g.userId === currentUserId
           : g.userId === null || g.userId === undefined

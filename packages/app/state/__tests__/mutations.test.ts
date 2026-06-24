@@ -454,18 +454,18 @@ describe('Story 3-7 / post mutation — optimistic update (AC #7, #18, #25e)', (
 
     const afterMutate = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
     expect(afterMutate).toBeDefined()
-    expect(afterMutate!.pages[0].items.length).toBe(2)
+    expect(afterMutate!.pages[0]!.items.length).toBe(2)
 
     // New optimistic row must be FIRST. Story 3-15: it carries title/excerpt,
     // NOT body (the feed Post dropped body).
-    const firstItem = afterMutate!.pages[0].items[0] as Post & { __optimistic?: boolean }
+    const firstItem = afterMutate!.pages[0]!.items[0] as Post & { __optimistic?: boolean }
     expect(firstItem.id).toBe('new-post-1')
     expect(firstItem.title).toBe('a new title')
     expect((firstItem as Record<string, unknown>).body).toBeUndefined()
     expect(firstItem.__optimistic).toBe(true)
 
     // Original row still present
-    expect(afterMutate!.pages[0].items[1]?.id).toBe('existing-1')
+    expect(afterMutate!.pages[0]!.items[1]?.id).toBe('existing-1')
 
     // Context must contain snapshot for rollback
     expect((context as { snapshot: unknown }).snapshot).toBeDefined()
@@ -486,15 +486,15 @@ describe('Story 3-7 / post mutation — optimistic update (AC #7, #18, #25e)', (
 
     // Verify optimistic row was inserted
     const afterOptimistic = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
-    expect(afterOptimistic!.pages[0].items.length).toBe(2)
+    expect(afterOptimistic!.pages[0]!.items.length).toBe(2)
 
     // Simulate error + rollback
     await postDefaults!.onError!(new Error('insert failed'), { id: 'new-1', body: 'new', parent_post_id: null, user_id: 'u1' }, context, MUTATION_FN_CONTEXT)
 
     // Cache should be restored to original state
     const afterRollback = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
-    expect(afterRollback!.pages[0].items.length).toBe(1)
-    expect(afterRollback!.pages[0].items[0]?.id).toBe('existing-1')
+    expect(afterRollback!.pages[0]!.items.length).toBe(1)
+    expect(afterRollback!.pages[0]!.items[0]?.id).toBe('existing-1')
   })
 
   it('onSettled calls invalidateQueries with [collective] key (AC #37)', async () => {

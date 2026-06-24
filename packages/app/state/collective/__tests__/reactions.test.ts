@@ -263,7 +263,7 @@ describe('Story 3-11 / usePostReactions hook config (AC #5)', () => {
     const { usePostReactions, collectiveReactionsKey } = await import('../reactions')
     usePostReactions('post-hook-test', 'user-current')
     expect(useQueryMock).toHaveBeenCalledTimes(1)
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(opts.queryKey).toEqual(collectiveReactionsKey('post-hook-test'))
   })
 
@@ -271,7 +271,7 @@ describe('Story 3-11 / usePostReactions hook config (AC #5)', () => {
     const { usePostReactions } = await import('../reactions')
     useQueryMock.mockReset()
     usePostReactions('post-stale', 'user-current')
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(opts.staleTime).toBe(25_000)
   })
 
@@ -284,7 +284,7 @@ describe('Story 3-11 / usePostReactions hook config (AC #5)', () => {
     useQueryMock.mockReset()
     usePostReactions('post-fn', 'user-fn')
 
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(typeof opts.queryFn).toBe('function')
     // Call the queryFn to verify it invokes the supabase chain
     await opts.queryFn()

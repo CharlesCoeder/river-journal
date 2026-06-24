@@ -25,7 +25,7 @@ type NavigationShellProps = {
 export function NavigationShell({ currentRoute, children }: NavigationShellProps) {
   const media = useMedia()
   const showSidebar = media.md // 768px+
-  const showLabels = media.lg // 1024px+
+  const showLabels = media.lg ?? false // 1024px+ (media keys are optional under the index signature)
 
   if (showSidebar) {
     return <SidebarLayout currentRoute={currentRoute} showLabels={showLabels}>{children}</SidebarLayout>

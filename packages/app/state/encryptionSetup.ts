@@ -1061,7 +1061,7 @@ const refetchUndecryptedFlows = async (): Promise<void> => {
 
     try {
       const flow = dbFlowToLocal(row)
-      flows$[flow.id].set(flow)
+      flows$[flow.id]!.set(flow) // Legend-State proxy index always resolves
       recovered++
     } catch {
       // Still can't decrypt — skip silently

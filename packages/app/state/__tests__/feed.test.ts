@@ -225,7 +225,7 @@ describe('Story 3-3 / fetchFeedPage slice + cursor logic (AC #3, #19, #20)', () 
     expect(page.items).toHaveLength(PAGE_SIZE)
     expect(page.items.length).toBe(20)
     // The cursor for the next page is the LAST returned (sliced) row's created_at.
-    expect(page.nextCursor).toBe(String(rows[19].created_at))
+    expect(page.nextCursor).toBe(String(rows[19]!.created_at))
   })
 
   it('AC #20 — nextCursor is typeof "string" (String() coercion)', async () => {

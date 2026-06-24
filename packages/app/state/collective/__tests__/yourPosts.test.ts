@@ -155,9 +155,9 @@ describe('Story 3-5 / fetchYourPostsPage RPC call shape (AC #12)', () => {
     const page = await fetchYourPostsPage(null)
 
     expect(page.items).toHaveLength(PAGE_SIZE)
-    expect(page.items[0].id).toBe('id-0')
-    expect(page.items[PAGE_SIZE - 1].id).toBe(`id-${PAGE_SIZE - 1}`)
-    expect(page.nextCursor).toBe(rows[PAGE_SIZE - 1].created_at)
+    expect(page.items[0]!.id).toBe('id-0')
+    expect(page.items[PAGE_SIZE - 1]!.id).toBe(`id-${PAGE_SIZE - 1}`)
+    expect(page.nextCursor).toBe(rows[PAGE_SIZE - 1]!.created_at)
   })
 
   it('returns { items: rows, nextCursor: null } when RPC returns exactly PAGE_SIZE rows (last page)', async () => {
@@ -229,7 +229,7 @@ describe('Story 3-5 / fetchYourPostsPage RPC call shape (AC #12)', () => {
     const { fetchYourPostsPage } = await import('../yourPosts')
     const page = await fetchYourPostsPage(null)
 
-    expect(page.items[0].mode).toBe('full')
+    expect(page.items[0]!.mode).toBe('full')
   })
 })
 
@@ -238,7 +238,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     const { useYourPosts, yourPostsKey } = await import('../yourPosts')
     useYourPosts()
     expect(useInfiniteQueryMock).toHaveBeenCalledTimes(1)
-    const opts = useInfiniteQueryMock.mock.calls[0][0]
+    const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.queryKey).toEqual(yourPostsKey)
   })
 
@@ -246,7 +246,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
     useYourPosts()
-    const opts = useInfiniteQueryMock.mock.calls[0][0]
+    const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.initialPageParam).toBeNull()
   })
 
@@ -254,7 +254,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
     useYourPosts()
-    const opts = useInfiniteQueryMock.mock.calls[0][0]
+    const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(typeof opts.getNextPageParam).toBe('function')
     expect(opts.getNextPageParam({ items: [], nextCursor: 'abc' })).toBe('abc')
     expect(opts.getNextPageParam({ items: [], nextCursor: null })).toBeNull()
@@ -264,7 +264,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
     useYourPosts()
-    const opts = useInfiniteQueryMock.mock.calls[0][0]
+    const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.maxPages).toBe(5)
   })
 
@@ -272,7 +272,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
     useYourPosts()
-    const opts = useInfiniteQueryMock.mock.calls[0][0]
+    const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.refetchInterval).toBe(30_000)
     expect(opts.staleTime).toBe(25_000)
     // Sanity: the calm-realtime invariant.
@@ -283,7 +283,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
     useYourPosts()
-    const opts = useInfiniteQueryMock.mock.calls[0][0]
+    const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.refetchOnWindowFocus).toBe(true)
   })
 
@@ -296,7 +296,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
     useYourPosts()
-    const opts = useInfiniteQueryMock.mock.calls[0][0]
+    const opts = useInfiniteQueryMock.mock.calls[0]![0]
 
     const cursor = '2026-05-01T12:00:00.000Z'
     await opts.queryFn({ pageParam: cursor })

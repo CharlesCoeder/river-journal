@@ -80,7 +80,7 @@ describe('Story 3-8 / t1 — useIsSuspended calls RPC correctly (AC #16)', () =>
     useIsSuspended('user-abc')
 
     expect(useQueryMock).toHaveBeenCalledTimes(1)
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(typeof opts.queryFn).toBe('function')
 
     // Invoke the queryFn and verify it calls supabase.rpc with correct args
@@ -133,7 +133,7 @@ describe('Story 3-8 / t2 — disabled when userId===null (AC #16)', () => {
     useIsSuspended(null)
 
     expect(useQueryMock).toHaveBeenCalledTimes(1)
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(opts.enabled).toBe(false)
   })
 
@@ -196,7 +196,7 @@ describe('Story 3-8 / t4 — useIsSuspended queryKey shape (AC #16)', () => {
     useQueryMock.mockReset()
     useIsSuspended('user-key-test')
 
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(opts.queryKey).toEqual(['collective', 'suspension', 'user-key-test', 'post_react'])
   })
 
@@ -207,7 +207,7 @@ describe('Story 3-8 / t4 — useIsSuspended queryKey shape (AC #16)', () => {
     useQueryMock.mockReset()
     useIsSuspended(null)
 
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(opts.queryKey).toEqual(['collective', 'suspension', null, 'post_react'])
   })
 })
@@ -225,7 +225,7 @@ describe('Story 3-8 / t5 — useIsSuspended staleTime (AC #16)', () => {
     useQueryMock.mockReset()
     useIsSuspended('user-stale')
 
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     expect(opts.staleTime).toBe(60_000)
   })
 })
@@ -281,7 +281,7 @@ describe('Story 3-8 / useIsSuspended error handling', () => {
     useQueryMock.mockReset()
     useIsSuspended('user-error')
 
-    const opts = useQueryMock.mock.calls[0][0]
+    const opts = useQueryMock.mock.calls[0]![0]
     rpcMock.mockResolvedValueOnce({ data: null, error: pgError })
 
     await expect(opts.queryFn()).rejects.toBeDefined()

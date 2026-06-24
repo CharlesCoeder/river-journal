@@ -57,7 +57,7 @@ function makeQualifyingDay(date: string) {
 
 function addDays(base: string, n: number): string {
   const [y, m, d] = base.split('-').map(Number)
-  const ms = Date.UTC(y, m - 1, d) + n * 86_400_000
+  const ms = Date.UTC(y!, m! - 1, d) + n * 86_400_000
   const dt = new Date(ms)
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`
 }

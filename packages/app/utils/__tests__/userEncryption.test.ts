@@ -44,11 +44,13 @@ const {
     delete: vi.fn(),
     update: vi.fn(),
   }
-  _tbChain.select.mockReturnValue(_tbChain)
-  _tbChain.eq.mockReturnValue(_tbChain)
-  _tbChain.gte.mockReturnValue(_tbChain)
-  _tbChain.delete.mockReturnValue(_tbChain)
-  _tbChain.update.mockReturnValue(_tbChain)
+  // _tbChain is a Record so indexed props read as possibly-undefined; every key
+  // above is defined at construction, so `!` is safe here and below.
+  _tbChain.select!.mockReturnValue(_tbChain)
+  _tbChain.eq!.mockReturnValue(_tbChain)
+  _tbChain.gte!.mockReturnValue(_tbChain)
+  _tbChain.delete!.mockReturnValue(_tbChain)
+  _tbChain.update!.mockReturnValue(_tbChain)
 
   const from = vi.fn((table: string) => {
     if (table === 'users') {
@@ -145,7 +147,7 @@ describe('startE2EEncryptionBootstrap', () => {
     expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
 
     const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
-    const payload = upsertCalls[0][0]
+    const payload = upsertCalls[0]![0]
     expect(payload.id).toBe('user-1')
     expect(payload.encryption_mode).toBe('e2e')
     expect(typeof payload.encryption_salt).toBe('string')
@@ -283,7 +285,7 @@ describe('bootstrapManagedEncryption', () => {
     expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
 
     const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
-    const payload = upsertCalls[0][0]
+    const payload = upsertCalls[0]![0]
     expect(payload.id).toBe('user-1')
     expect(payload.encryption_mode).toBe('managed')
     expect(payload.managed_encryption_key).toMatch(BASE64_PATTERN)
@@ -303,7 +305,7 @@ describe('bootstrapManagedEncryption', () => {
     expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
 
     const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
-    const payload = upsertCalls[0][0]
+    const payload = upsertCalls[0]![0]
     expect(payload.encryption_mode).toBe('managed')
     expect(payload).not.toHaveProperty('managed_encryption_key')
   })
@@ -412,11 +414,11 @@ describe('fetchManagedEncryptionKey', () => {
 describe('verifyTrustedBrowser', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tbChain.select.mockReturnValue(tbChain)
-    tbChain.eq.mockReturnValue(tbChain)
-    tbChain.gte.mockReturnValue(tbChain)
-    tbChain.delete.mockReturnValue(tbChain)
-    tbChain.update.mockReturnValue(tbChain)
+    tbChain.select!.mockReturnValue(tbChain)
+    tbChain.eq!.mockReturnValue(tbChain)
+    tbChain.gte!.mockReturnValue(tbChain)
+    tbChain.delete!.mockReturnValue(tbChain)
+    tbChain.update!.mockReturnValue(tbChain)
   })
 
   it('returns valid with id when row is found', async () => {
@@ -460,11 +462,11 @@ describe('verifyTrustedBrowser', () => {
 describe('registerTrustedBrowser', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tbChain.select.mockReturnValue(tbChain)
-    tbChain.eq.mockReturnValue(tbChain)
-    tbChain.gte.mockReturnValue(tbChain)
-    tbChain.delete.mockReturnValue(tbChain)
-    tbChain.update.mockReturnValue(tbChain)
+    tbChain.select!.mockReturnValue(tbChain)
+    tbChain.eq!.mockReturnValue(tbChain)
+    tbChain.gte!.mockReturnValue(tbChain)
+    tbChain.delete!.mockReturnValue(tbChain)
+    tbChain.update!.mockReturnValue(tbChain)
   })
 
   it('returns { error: null } on success', async () => {
@@ -473,13 +475,13 @@ describe('registerTrustedBrowser', () => {
     //   2nd: .eq('user_id', userId) in total-count chain -> terminal (returns {count, error})
     // gte is called once as terminal in rate-limit chain
     let eqCallCount = 0
-    tbChain.eq.mockImplementation(() => {
+    tbChain.eq!.mockImplementation(() => {
       eqCallCount++
       // 2nd eq call is the terminal one for the total-count query
       if (eqCallCount === 2) return { count: 2, error: null }
       return tbChain
     })
-    tbChain.gte.mockReturnValueOnce({ count: 1, error: null })
+    tbChain.gte!.mockReturnValueOnce({ count: 1, error: null })
     tbInsert.mockResolvedValueOnce({ error: null })
 
     const result = await registerTrustedBrowser('user-1', 'hash-abc', 'Chrome on Mac')
@@ -498,7 +500,7 @@ describe('registerTrustedBrowser', () => {
 
   it('returns rate_limited error when 3+ registrations in past hour', async () => {
     // gte is terminal in rate-limit chain, returns count >= 3
-    tbChain.gte.mockReturnValueOnce({ count: 3, error: null })
+    tbChain.gte!.mockReturnValueOnce({ count: 3, error: null })
 
     const result = await registerTrustedBrowser('user-1', 'hash-abc', 'Chrome on Mac')
 
@@ -513,10 +515,10 @@ describe('registerTrustedBrowser', () => {
 
   it('returns max_trusted_browsers error when 10 browsers exist', async () => {
     // Rate limit check passes (gte terminal)
-    tbChain.gte.mockReturnValueOnce({ count: 0, error: null })
+    tbChain.gte!.mockReturnValueOnce({ count: 0, error: null })
     // Total count check: 1st eq is chaining (rate-limit), 2nd eq is terminal (total-count)
     let eqCallCount = 0
-    tbChain.eq.mockImplementation(() => {
+    tbChain.eq!.mockImplementation(() => {
       eqCallCount++
       if (eqCallCount === 2) return { count: 10, error: null }
       return tbChain
@@ -535,9 +537,9 @@ describe('registerTrustedBrowser', () => {
 
   it('maps Postgres trigger exception to max_trusted_browsers error', async () => {
     // Rate limit and total count checks pass
-    tbChain.gte.mockReturnValueOnce({ count: 0, error: null })
+    tbChain.gte!.mockReturnValueOnce({ count: 0, error: null })
     let eqCallCount = 0
-    tbChain.eq.mockImplementation(() => {
+    tbChain.eq!.mockImplementation(() => {
       eqCallCount++
       if (eqCallCount === 2) return { count: 9, error: null }
       return tbChain
@@ -561,15 +563,15 @@ describe('registerTrustedBrowser', () => {
 describe('revokeTrustedBrowser', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tbChain.select.mockReturnValue(tbChain)
-    tbChain.eq.mockReturnValue(tbChain)
-    tbChain.gte.mockReturnValue(tbChain)
-    tbChain.delete.mockReturnValue(tbChain)
-    tbChain.update.mockReturnValue(tbChain)
+    tbChain.select!.mockReturnValue(tbChain)
+    tbChain.eq!.mockReturnValue(tbChain)
+    tbChain.gte!.mockReturnValue(tbChain)
+    tbChain.delete!.mockReturnValue(tbChain)
+    tbChain.update!.mockReturnValue(tbChain)
   })
 
   it('returns { error: null } on success', async () => {
-    tbChain.eq.mockReturnValueOnce({ error: null })
+    tbChain.eq!.mockReturnValueOnce({ error: null })
 
     const result = await revokeTrustedBrowser('browser-1')
 
@@ -579,7 +581,7 @@ describe('revokeTrustedBrowser', () => {
   })
 
   it('returns structured error on delete failure', async () => {
-    tbChain.eq.mockReturnValueOnce({
+    tbChain.eq!.mockReturnValueOnce({
       error: { message: 'Row not found', code: 'PGRST116' },
     })
 
@@ -597,11 +599,11 @@ describe('revokeTrustedBrowser', () => {
 describe('fetchTrustedBrowsers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tbChain.select.mockReturnValue(tbChain)
-    tbChain.eq.mockReturnValue(tbChain)
-    tbChain.gte.mockReturnValue(tbChain)
-    tbChain.delete.mockReturnValue(tbChain)
-    tbChain.update.mockReturnValue(tbChain)
+    tbChain.select!.mockReturnValue(tbChain)
+    tbChain.eq!.mockReturnValue(tbChain)
+    tbChain.gte!.mockReturnValue(tbChain)
+    tbChain.delete!.mockReturnValue(tbChain)
+    tbChain.update!.mockReturnValue(tbChain)
   })
 
   it('returns mapped browser list on success', async () => {
@@ -666,18 +668,18 @@ describe('fetchTrustedBrowsers', () => {
 describe('deleteTrustedBrowserByHash', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tbChain.select.mockReturnValue(tbChain)
-    tbChain.eq.mockReturnValue(tbChain)
-    tbChain.gte.mockReturnValue(tbChain)
-    tbChain.delete.mockReturnValue(tbChain)
-    tbChain.update.mockReturnValue(tbChain)
+    tbChain.select!.mockReturnValue(tbChain)
+    tbChain.eq!.mockReturnValue(tbChain)
+    tbChain.gte!.mockReturnValue(tbChain)
+    tbChain.delete!.mockReturnValue(tbChain)
+    tbChain.update!.mockReturnValue(tbChain)
   })
 
   it('returns { error: null } on success', async () => {
     // The chain is: delete() -> eq('user_id') -> eq('device_token_hash')
     // delete returns tbChain, first eq returns tbChain, second eq is terminal
-    tbChain.eq.mockReturnValueOnce(tbChain) // first eq
-    tbChain.eq.mockReturnValueOnce({ error: null }) // second eq (terminal)
+    tbChain.eq!.mockReturnValueOnce(tbChain) // first eq
+    tbChain.eq!.mockReturnValueOnce({ error: null }) // second eq (terminal)
 
     const result = await deleteTrustedBrowserByHash('user-1', 'hash-abc')
 
@@ -688,8 +690,8 @@ describe('deleteTrustedBrowserByHash', () => {
   })
 
   it('returns structured error on failure', async () => {
-    tbChain.eq.mockReturnValueOnce(tbChain)
-    tbChain.eq.mockReturnValueOnce({
+    tbChain.eq!.mockReturnValueOnce(tbChain)
+    tbChain.eq!.mockReturnValueOnce({
       error: { message: 'Permission denied', code: 'PGRST403' },
     })
 
