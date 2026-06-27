@@ -29,7 +29,10 @@ import { useFeed } from 'app/state/collective/feed'
 import { useIsSuspended } from 'app/state/collective/suspension'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
-import { CollectivePreview } from 'app/features/collective/CollectivePreview'
+import {
+  CollectiveLockedScreen,
+  glimpseFromPosts,
+} from 'app/features/collective/CollectiveLockedScreen'
 import { FeedPostRow } from 'app/features/collective/FeedPostRow'
 import { useRouter } from 'solito/navigation'
 import { SkeletonRows, formatTimeAgo } from './_shared'
@@ -103,7 +106,11 @@ export default function CollectiveFeedScreen() {
   // Defense-in-depth: trust RPC mode, never local streak state.
   const mode = feed.data?.pages[0]?.mode
 
-  // ─── Preview mode ─────────────────────────────────────────────────────────
+  // ─── Preview mode → the unified locked screen's `words` gate ───────────────
+  // The sub-500 state is server-driven: we only know it once the feed RPC
+  // returns mode:'preview' (auth + sync are already satisfied to get here). Hand
+  // off to the shared CollectiveLockedScreen with the real preview posts for the
+  // glimpse. This is the design's third gate state.
   if (mode === 'preview') {
     const posts = feed.data?.pages[0]?.items ?? []
     return (
@@ -118,9 +125,18 @@ export default function CollectiveFeedScreen() {
               opacity={1}
               y={0}
             >
-              <CollectivePreview
-                posts={posts}
-                currentUserId={currentUserId}
+              <CollectiveLockedScreen
+                gate="words"
+                // TODO: wire the user's real daily word count here once a D7-safe
+                // client source exists. This file must not read Legend-State / the
+                // streak store, so we stub at 0 for now (the progress bar then reads
+                // "0 / 500", and the CTA is "Begin writing").
+                wordsToday={0}
+                glimpse={glimpseFromPosts(posts)}
+                onReturnHome={() => router.push('/')}
+                onSignIn={() => router.push('/auth')}
+                onEnableSync={() => router.push('/settings')}
+                onStartWriting={() => router.push('/')}
               />
             </View>
           )}

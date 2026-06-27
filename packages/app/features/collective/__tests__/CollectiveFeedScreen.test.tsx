@@ -45,7 +45,9 @@ const STATE_DIR = path.resolve(__dirname, '../../../state/collective')
 const UI_DIR = path.resolve(__dirname, '../../../../../packages/ui/src/components')
 
 const FEED_SCREEN_PATH = path.join(FEATURES_DIR, 'CollectiveFeedScreen.tsx')
-const PREVIEW_PATH = path.join(FEATURES_DIR, 'CollectivePreview.tsx')
+// The former CollectivePreview.tsx was folded into the unified locked screen
+// (the design's three-state gate). Preview mode now renders its `words` gate.
+const LOCKED_SCREEN_PATH = path.join(FEATURES_DIR, 'CollectiveLockedScreen.tsx')
 const AUTHOR_BYLINE_PATH = path.join(UI_DIR, 'AuthorByline.tsx')
 const SUSPENSION_PATH = path.join(STATE_DIR, 'suspension.ts')
 const CURRENT_USER_PATH = path.join(STATE_DIR, 'currentUser.ts')
@@ -129,7 +131,11 @@ vi.mock('@tamagui/lucide-icons', () => {
     Leaf: icon('Leaf'),
     Waves: icon('Waves'),
     ArrowRight: icon('ArrowRight'),
+    ArrowLeft: icon('ArrowLeft'),
     Lock: icon('Lock'),
+    Check: icon('Check'),
+    UserCircle: icon('UserCircle'),
+    CloudUpload: icon('CloudUpload'),
     PenLine: icon('PenLine'),
     MoreHorizontal: icon('MoreHorizontal'),
   }
@@ -487,9 +493,10 @@ describe('Story 3-8 / t1 — full mode dispatch (AC #8, #11)', () => {
     expect(strip).toBeNull()
   })
 
-  it('does NOT render CollectivePreview content ("Write 500 today") in full mode', () => {
+  it('does NOT render the words-gate locked content in full mode', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.queryByText(/Write 500 today/i)).toBeNull()
+    expect(screen.queryByText(/A quiet room, just through here\./i)).toBeNull()
+    expect(screen.queryByText(/Write 500 words of your own today/i)).toBeNull()
   })
 
   it('does NOT render "Begin writing" button in full mode', () => {
@@ -531,9 +538,9 @@ describe('Story 3-8 / t2 — preview mode dispatch (AC #9, #10)', () => {
     mockIsLoading = false
   })
 
-  it('renders "Write 500 today to join the conversation." copy', () => {
+  it('renders the words-gate body copy (preview maps to the words gate)', () => {
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText(/Write 500 today to join the conversation/i)).not.toBeNull()
+    expect(screen.getByText(/Write 500 words of your own today/i)).not.toBeNull()
   })
 
   it('renders "Begin writing" button in preview mode', () => {
@@ -590,7 +597,7 @@ describe('Story 3-8 / t3 — server-driven mode defense-in-depth (AC #8)', () =>
     render(React.createElement(CollectiveFeedScreen))
 
     // Despite local streak suggesting user qualifies, preview renders
-    expect(screen.getByText(/Write 500 today to join the conversation/i)).not.toBeNull()
+    expect(screen.getByText(/A quiet room, just through here\./i)).not.toBeNull()
     expect(screen.getByText('Begin writing')).not.toBeNull()
   })
 })
@@ -903,15 +910,16 @@ describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
     expect(src).not.toMatch(/from ['"]app\/state\/store['"]/)
   })
 
-  it('CollectivePreview.tsx exists', () => {
-    expect(existsSync(PREVIEW_PATH), `CollectivePreview.tsx must exist at ${PREVIEW_PATH}`).toBe(
-      true
-    )
+  it('CollectiveLockedScreen.tsx exists (absorbs the former CollectivePreview)', () => {
+    expect(
+      existsSync(LOCKED_SCREEN_PATH),
+      `CollectiveLockedScreen.tsx must exist at ${LOCKED_SCREEN_PATH}`
+    ).toBe(true)
   })
 
-  it('CollectivePreview.tsx does NOT contain @legendapp/state import', () => {
-    expect(existsSync(PREVIEW_PATH)).toBe(true)
-    const src = readFileSync(PREVIEW_PATH, 'utf8')
+  it('CollectiveLockedScreen.tsx does NOT contain @legendapp/state import', () => {
+    expect(existsSync(LOCKED_SCREEN_PATH)).toBe(true)
+    const src = readFileSync(LOCKED_SCREEN_PATH, 'utf8')
     expect(src).not.toMatch(/@legendapp\/state/)
   })
 
@@ -1024,12 +1032,12 @@ describe('Story 3-8 / t14 — empty-preview guard (AC #34)', () => {
     }).not.toThrow()
   })
 
-  it('renders "Write 500 today" and "Begin writing" when preview with empty posts', () => {
+  it('renders the words gate and "Begin writing" when preview with empty posts', () => {
     mockFeedData = makeFeedData([], 'preview')
     mockIsLoading = false
 
     render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText(/Write 500 today to join the conversation/i)).not.toBeNull()
+    expect(screen.getByText(/A quiet room, just through here\./i)).not.toBeNull()
     expect(screen.getByText('Begin writing')).not.toBeNull()
   })
 
@@ -1069,7 +1077,7 @@ describe('Story 3-8 / t15 — mode-flip re-mount (AC #32)', () => {
     mockIsLoading = false
 
     const { rerender } = render(React.createElement(CollectiveFeedScreen))
-    expect(screen.getByText(/Write 500 today to join the conversation/i)).not.toBeNull()
+    expect(screen.getByText(/A quiet room, just through here\./i)).not.toBeNull()
 
     // Re-render with full mode (simulate streak crossing 500)
     mockFeedData = makeFeedData(
@@ -1080,7 +1088,7 @@ describe('Story 3-8 / t15 — mode-flip re-mount (AC #32)', () => {
     rerender(React.createElement(CollectiveFeedScreen))
 
     // Should no longer show preview copy
-    expect(screen.queryByText(/Write 500 today to join the conversation/i)).toBeNull()
+    expect(screen.queryByText(/A quiet room, just through here\./i)).toBeNull()
     // Should show full feed content
     expect(document.querySelectorAll('article').length).toBeGreaterThanOrEqual(1)
   })
