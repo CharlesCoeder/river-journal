@@ -373,6 +373,10 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
+    // The thread eases in via AnimatePresence + enterStyle; in tests we render
+    // children straight through so assertions see the content synchronously.
+    AnimatePresence: ({ children }: any) => children,
+
     // Text supports `tag` (e.g. tag="h1" for the root title) so the title-led
     // root renders a real <h1> in the DOM.
     Text: ({ children, tag, ...props }: any) => {

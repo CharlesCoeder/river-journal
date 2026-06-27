@@ -12,8 +12,9 @@
 // Boundary rule (D7): no Legend-State imports in this file.
 // features/collective/** MUST NOT import Legend-State or app/state/store.
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
+  AnimatePresence,
   YStack,
   View,
   Text,
@@ -53,6 +54,14 @@ export default function CollectiveFeedScreen() {
   const reducedMotion = useReducedMotion()
   const router = useRouter()
   const hiddenIds = useLocallyHiddenPostIds()
+
+  // Ease the room in on mount — mirrors the Settings/Preferences entrance so the
+  // Collective screen fades into view rather than popping in. The `mounted` gate
+  // forces a genuine client-side mount so Tamagui replays `enterStyle` reliably.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Flatten pages, apply defensive is_removed filter, then apply local-hide
   // filter. is_removed runs first (global moderation override); local-hide
@@ -100,10 +109,22 @@ export default function CollectiveFeedScreen() {
     return (
       // key={mode} ensures clean re-mount on mode flip (preview ↔ full)
       <View key={mode}>
-        <CollectivePreview
-          posts={posts}
-          currentUserId={currentUserId}
-        />
+        <AnimatePresence>
+          {mounted && (
+            <View
+              key="collective-preview-body"
+              transition="designEnter"
+              enterStyle={{ opacity: 0, y: 10 }}
+              opacity={1}
+              y={0}
+            >
+              <CollectivePreview
+                posts={posts}
+                currentUserId={currentUserId}
+              />
+            </View>
+          )}
+        </AnimatePresence>
       </View>
     )
   }
@@ -123,7 +144,14 @@ export default function CollectiveFeedScreen() {
   return (
     // key={mode} ensures clean re-mount on mode flip (preview ↔ full)
     <View key={mode}>
+      <AnimatePresence>
+        {mounted && (
       <YStack
+        key="collective-feed-body"
+        transition="designEnter"
+        enterStyle={{ opacity: 0, y: 10 }}
+        opacity={1}
+        y={0}
         width="100%"
         maxWidth={720}
         marginHorizontal="auto"
@@ -329,6 +357,8 @@ export default function CollectiveFeedScreen() {
           </ExpandingLineButton>
         ) : null}
       </YStack>
+        )}
+      </AnimatePresence>
     </View>
   )
 }

@@ -22,8 +22,16 @@
 // removed rows + moderation_actions JOIN (Epic 5 / Story 5.8). Deferred per
 // sprint-epic-3-deferred-decisions.md. (AC #42)
 
-import { useMemo } from 'react'
-import { YStack, View, Text, Separator, ExpandingLineButton, useReducedMotion } from '@my/ui'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  AnimatePresence,
+  YStack,
+  View,
+  Text,
+  Separator,
+  ExpandingLineButton,
+  useReducedMotion,
+} from '@my/ui'
 import { onlineManager } from '@tanstack/react-query'
 import { useYourPosts } from 'app/state/collective/yourPosts'
 import { useFeed } from 'app/state/collective/feed'
@@ -40,6 +48,14 @@ export default function YourPostsScreen() {
   const feed = useFeed()
   const reducedMotion = useReducedMotion()
   const router = useRouter()
+
+  // Ease the list in on mount — mirrors the feed/thread/Settings entrance so the
+  // screen fades into view rather than popping in. The `mounted` gate forces a
+  // genuine client-side mount so Tamagui replays `enterStyle` reliably.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Flatten pages, apply defensive is_removed filter (defense-in-depth; RPC already filters)
   // No local-hide filter — users cannot locally-hide their own posts via FlagAffordance (AC #4)
@@ -91,7 +107,18 @@ export default function YourPostsScreen() {
   const showEmptyState = !showErrorStrip && !showOfflineStrip && isEmptyState
 
   return (
-    <YStack width="100%" maxWidth={720} marginHorizontal="auto">
+    <AnimatePresence>
+      {mounted && (
+    <YStack
+      key="collective-your-posts-body"
+      transition="designEnter"
+      enterStyle={{ opacity: 0, y: 10 }}
+      opacity={1}
+      y={0}
+      width="100%"
+      maxWidth={720}
+      marginHorizontal="auto"
+    >
       {/* Error with cached data — show refresh error strip (highest precedence) */}
       {showErrorStrip ? (
         <Text fontSize="$1" color="$color9" textAlign="center" paddingVertical="$2">
@@ -161,5 +188,7 @@ export default function YourPostsScreen() {
         </ExpandingLineButton>
       ) : null}
     </YStack>
+      )}
+    </AnimatePresence>
   )
 }

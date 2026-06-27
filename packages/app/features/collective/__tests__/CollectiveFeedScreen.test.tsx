@@ -227,6 +227,10 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
+    // The feed eases in via AnimatePresence + enterStyle; in tests we render
+    // children straight through so assertions see the content synchronously.
+    AnimatePresence: ({ children }: any) => children,
+
     Text: ({ children, fontSize, color, textAlign, tag, ...props }: any) => {
       // FeedPostRow renders its title as <Text tag="h2">. Honor `tag` so the
       // title is queryable as an <h2>; otherwise fall back to <span>.

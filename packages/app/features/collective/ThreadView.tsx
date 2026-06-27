@@ -19,7 +19,7 @@
 // Boundary rule (D7): no Legend-State imports in this file.
 // This file does NOT touch PersistentEditor or ephemeral$.persistentEditor.* (D14).
 
-import React, { useState, useCallback, type ReactNode } from 'react'
+import React, { useState, useCallback, useEffect, type ReactNode } from 'react'
 import { Platform } from 'react-native'
 
 // Flush React updates synchronously when available (web/test environments).
@@ -36,7 +36,7 @@ function safeFlushSync(fn: () => void): void {
     fn()
   }
 }
-import { View, XStack, YStack, Text, ExpandingLineButton } from '@my/ui'
+import { AnimatePresence, View, XStack, YStack, Text, ExpandingLineButton } from '@my/ui'
 import { ArrowLeft, CornerUpLeft } from '@tamagui/lucide-icons'
 import { useRouter, useSearchParams } from 'solito/navigation'
 import { useThread, useThreadRoot } from 'app/state/collective/thread'
@@ -196,6 +196,14 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
   // Expanded subtree ids — each triggers a <ThreadExpansion> mount.
   const [expandedSubtreeIds, setExpandedSubtreeIds] = useState<Set<string>>(() => new Set())
+
+  // Ease the thread in on mount — mirrors the feed/Settings entrance so opening a
+  // letter fades into view rather than popping in. The `mounted` gate forces a
+  // genuine client-side mount so Tamagui replays `enterStyle` reliably.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // ─── Platform depth cap ────────────────────────────────────────────────────
   // Platform.OS === 'web' covers both web and Tauri/desktop (both use web renderer).
@@ -692,7 +700,14 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   const rootPost = rootQuery.data
 
   return (
+    <AnimatePresence>
+      {mounted && (
     <YStack
+      key="collective-thread-body"
+      transition="designEnter"
+      enterStyle={{ opacity: 0, y: 10 }}
+      opacity={1}
+      y={0}
       maxWidth={720}
       marginHorizontal="auto"
       width="100%"
@@ -743,5 +758,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         {rootPost ? renderPost(rootPost, 0, true) : null}
       </View>
     </YStack>
+      )}
+    </AnimatePresence>
   )
 }
