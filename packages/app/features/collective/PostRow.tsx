@@ -1,6 +1,6 @@
 // packages/app/features/collective/PostRow.tsx
 //
-// Private helper shared by CollectiveFeedScreen and CollectivePreview.
+// Private helper shared by the Collective feed surfaces.
 // Boundary rule (D7): no Legend-State imports in this file.
 //
 // Renders a single post row with the correct deletion-state branching:

@@ -1,9 +1,11 @@
-// Developer view of the Collective: always renders the real CollectiveFeedScreen,
-// regardless of the placeholder shown on the public `/collective` route. Built into
-// every build so devs can reach the real feed by navigating to `/collective/dev`.
+// Developer view of the Collective: reaches the real feed regardless of the
+// public `/collective` route, built into every build so devs can navigate to
+// `/collective/dev`. Goes through CollectiveAccessGate so logged-out / sync-off
+// devs see the guiding screens instead of a raw RLS feed error; a signed-in +
+// synced dev lands straight on the feed.
 // See packages/app/features/collective/isCollectiveDevEnabled.ts.
-import CollectiveFeedScreen from 'app/features/collective/CollectiveFeedScreen'
+import CollectiveAccessGate from 'app/features/collective/CollectiveAccessGate'
 
 export default function CollectiveDevScreen() {
-  return <CollectiveFeedScreen />
+  return <CollectiveAccessGate />
 }

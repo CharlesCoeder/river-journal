@@ -48,5 +48,10 @@ export function useCurrentUserId(): string | null | undefined {
     }
   }, [queryClient])
 
-  return data ?? undefined
+  // `data` is `undefined` only while the query is loading; once resolved it is
+  // the user id (string) or `null` when there's no session. Do NOT collapse
+  // `null` to `undefined` here — callers distinguish "loading" (undefined) from
+  // "logged out" (null), and conflating them strands gates on their loading
+  // state for signed-out users.
+  return data
 }
