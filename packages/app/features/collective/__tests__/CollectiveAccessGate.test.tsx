@@ -75,6 +75,8 @@ vi.mock('@my/ui', async () => {
       ReactModule.createElement('div', { 'data-stack': 'y', ...passA11y(props) }, children),
     View: ({ children, onPress, ...props }: any) =>
       ReactModule.createElement('div', { onClick: onPress, ...passA11y(props) }, children),
+    ScrollView: ({ children, ...props }: any) =>
+      ReactModule.createElement('div', { 'data-scroll': 'y', ...passA11y(props) }, children),
     ExpandingLineButton: ({ children, onPress, ...props }: any) =>
       ReactModule.createElement('button', { onClick: onPress, ...passA11y(props) }, children),
     useReducedMotion: () => true,

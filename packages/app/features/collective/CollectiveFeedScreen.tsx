@@ -20,6 +20,7 @@ import {
   Text,
   XStack,
   Separator,
+  ScrollView,
   ExpandingLineButton,
   useReducedMotion,
 } from '@my/ui'
@@ -89,12 +90,7 @@ export default function CollectiveFeedScreen() {
   if (feed.isError && feed.data === undefined) {
     return (
       <YStack>
-        <Text
-          fontSize="$2"
-          color="$color9"
-          textAlign="center"
-          paddingVertical="$4"
-        >
+        <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
           Couldn&apos;t load the feed. Pull to retry.
         </Text>
         <ExpandingLineButton onPress={() => feed.refetch()}>Retry</ExpandingLineButton>
@@ -115,11 +111,14 @@ export default function CollectiveFeedScreen() {
     const posts = feed.data?.pages[0]?.items ?? []
     return (
       // key={mode} ensures clean re-mount on mode flip (preview ↔ full)
-      <View key={mode}>
+      // flex={1} threads the screen's height down to the locked screen's own
+      // ScrollView so the preview (words gate) scrolls on native.
+      <View key={mode} flex={1}>
         <AnimatePresence>
           {mounted && (
             <View
               key="collective-preview-body"
+              flex={1}
               transition="designEnter"
               enterStyle={{ opacity: 0, y: 10 }}
               opacity={1}
@@ -159,222 +158,195 @@ export default function CollectiveFeedScreen() {
 
   return (
     // key={mode} ensures clean re-mount on mode flip (preview ↔ full)
-    <View key={mode}>
-      <AnimatePresence>
-        {mounted && (
-      <YStack
-        key="collective-feed-body"
-        transition="designEnter"
-        enterStyle={{ opacity: 0, y: 10 }}
-        opacity={1}
-        y={0}
-        width="100%"
-        maxWidth={720}
-        marginHorizontal="auto"
-        paddingHorizontal="$5"
-        paddingVertical="$8"
-      >
-        {/* ─── Room header ──────────────────────────────────────────────── */}
-        <YStack marginBottom="$9">
-          <Text
-            fontFamily="$body"
-            fontSize="$1"
-            color="$color9"
-            textTransform="uppercase"
-            letterSpacing={2}
-          >
-            The Collective · {todayLong()}
-          </Text>
-          <Text
-            fontFamily="$journalItalic"
-            fontStyle="italic"
-            fontSize="$10"
-            lineHeight="$10"
-            color="$color12"
-            marginTop="$3"
-          >
-            The room is open.
-          </Text>
-          <Text
-            fontFamily="$journal"
-            fontSize="$5"
-            color="$color10"
-            marginTop="$3"
-            maxWidth={460}
-          >
-            You did the work today. So did everyone here. Read slowly; write back when something
-            moves you.
-          </Text>
-        </YStack>
-
-        {/* ─── Compose + filter row ─────────────────────────────────────── */}
-        <XStack
-          justifyContent="space-between"
-          alignItems="center"
-          flexWrap="wrap"
-          gap="$4"
-          paddingBottom="$4"
-          marginBottom="$7"
-          borderBottomWidth={1}
-          borderBottomColor="$color4"
-        >
-          <XStack
-            role="button"
-            aria-label="Write a letter"
-            onPress={() => router.push('/collective/compose')}
-            cursor="pointer"
-            alignItems="center"
-            gap="$3"
-            flexShrink={0}
-          >
-            <PenLine
-              size={20}
-              color="$color12"
-            />
-            <Text
-              fontFamily="$journalItalic"
-              fontStyle="italic"
-              fontSize="$7"
-              color="$color12"
-              numberOfLines={1}
+    // flex={1} + ScrollView: the feed owns its own scroll. On native there is no
+    // ambient scroll around routed screens, so the (potentially long, paginated)
+    // letter list would otherwise overflow the viewport with no way to reach the
+    // footer or "Load more". Mirrors the locked screen's wrapper.
+    <View key={mode} flex={1}>
+      <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }}>
+        <AnimatePresence>
+          {mounted && (
+            <YStack
+              key="collective-feed-body"
+              transition="designEnter"
+              enterStyle={{ opacity: 0, y: 10 }}
+              opacity={1}
+              y={0}
+              width="100%"
+              maxWidth={720}
+              marginHorizontal="auto"
+              paddingHorizontal="$5"
+              paddingVertical="$8"
             >
-              Write a letter
-            </Text>
-          </XStack>
+              {/* ─── Room header ──────────────────────────────────────────────── */}
+              <YStack marginBottom="$9">
+                <Text
+                  fontFamily="$body"
+                  fontSize="$1"
+                  color="$color9"
+                  textTransform="uppercase"
+                  letterSpacing={2}
+                >
+                  The Collective · {todayLong()}
+                </Text>
+                <Text
+                  fontFamily="$journalItalic"
+                  fontStyle="italic"
+                  fontSize="$10"
+                  lineHeight="$10"
+                  color="$color12"
+                  marginTop="$3"
+                >
+                  The room is open.
+                </Text>
+                <Text
+                  fontFamily="$journal"
+                  fontSize="$5"
+                  color="$color10"
+                  marginTop="$3"
+                  maxWidth={460}
+                >
+                  You did the work today. So did everyone here. Read slowly; write back when
+                  something moves you.
+                </Text>
+              </YStack>
 
-          <XStack
-            alignItems="center"
-            gap="$5"
-            flexShrink={0}
-          >
-            <Text
-              fontFamily="$body"
-              fontSize="$1"
-              color="$color12"
-              textTransform="uppercase"
-              letterSpacing={1}
-            >
-              All letters
-            </Text>
-            <View
-              role="button"
-              aria-label="Your letters"
-              onPress={() => router.push('/collective/your-posts')}
-              cursor="pointer"
-            >
-              <Text
-                fontFamily="$body"
-                fontSize="$1"
-                color="$color9"
-                textTransform="uppercase"
-                letterSpacing={1}
-              >
-                Your letters
-              </Text>
-            </View>
-          </XStack>
-        </XStack>
-
-        {/* Error with cached data — show refresh error strip (highest precedence) */}
-        {showErrorStrip ? (
-          <Text
-            fontSize="$1"
-            color="$color9"
-            textAlign="center"
-            paddingVertical="$2"
-          >
-            Couldn&apos;t refresh. Showing cached posts.
-          </Text>
-        ) : null}
-
-        {/* Offline microcopy — only when error strip is not shown and timestamp is valid */}
-        {showOfflineStrip ? (
-          <Text
-            fontSize="$1"
-            color="$color9"
-            paddingVertical="$2"
-            textAlign="center"
-          >
-            Offline · last synced {formatTimeAgo(feed.dataUpdatedAt)}
-          </Text>
-        ) : null}
-
-        {/* Suspended user microcopy */}
-        {isSuspended === true ? (
-          <Text
-            fontSize="$2"
-            color="$color11"
-            textAlign="center"
-            paddingVertical="$3"
-          >
-            Posting and reacting are paused for this account.
-          </Text>
-        ) : null}
-
-        {/* Empty state */}
-        {showEmptyState ? (
-          <YStack
-            paddingVertical="$8"
-            gap="$5"
-          >
-            <Text
-              fontFamily="$journal"
-              fontSize="$7"
-              color="$color10"
-              fontStyle="italic"
-            >
-              Quiet here. Be the first.
-            </Text>
-            <ExpandingLineButton onPress={() => router.push('/collective/compose')}>
-              Compose
-            </ExpandingLineButton>
-          </YStack>
-        ) : null}
-
-        {/* Post list — title-led rows */}
-        {allPosts.map((post, index) => (
-          <View key={post.id}>
-            <FeedPostRow
-              post={post}
-              currentUserId={currentUserId}
-              onOpen={(id) => router.push(`/collective/thread/${id}`)}
-            />
-            {index < allPosts.length - 1 ? (
-              <Separator
-                borderColor="$color3"
+              {/* ─── Compose + filter row ─────────────────────────────────────── */}
+              <XStack
+                justifyContent="space-between"
+                alignItems="center"
+                flexWrap="wrap"
+                gap="$4"
+                paddingBottom="$4"
+                marginBottom="$7"
                 borderBottomWidth={1}
-              />
-            ) : null}
-          </View>
-        ))}
+                borderBottomColor="$color4"
+              >
+                <XStack
+                  role="button"
+                  aria-label="Write a letter"
+                  onPress={() => router.push('/collective/compose')}
+                  cursor="pointer"
+                  alignItems="center"
+                  gap="$3"
+                  flexShrink={0}
+                >
+                  <PenLine size={20} color="$color12" />
+                  <Text
+                    fontFamily="$journalItalic"
+                    fontStyle="italic"
+                    fontSize="$7"
+                    color="$color12"
+                    numberOfLines={1}
+                  >
+                    Write a letter
+                  </Text>
+                </XStack>
 
-        {/* Footer tally */}
-        {!showEmptyState ? (
-          <Text
-            fontFamily="$body"
-            fontSize="$1"
-            color="$color8"
-            textTransform="uppercase"
-            letterSpacing={2}
-            marginTop="$9"
-          >
-            {letterCount} {letterCount === 1 ? 'letter' : 'letters'} in the room · access resets at
-            midnight
-          </Text>
-        ) : null}
+                <XStack alignItems="center" gap="$5" flexShrink={0}>
+                  <Text
+                    fontFamily="$body"
+                    fontSize="$1"
+                    color="$color12"
+                    textTransform="uppercase"
+                    letterSpacing={1}
+                  >
+                    All letters
+                  </Text>
+                  <View
+                    role="button"
+                    aria-label="Your letters"
+                    onPress={() => router.push('/collective/your-posts')}
+                    cursor="pointer"
+                  >
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$1"
+                      color="$color9"
+                      textTransform="uppercase"
+                      letterSpacing={1}
+                    >
+                      Your letters
+                    </Text>
+                  </View>
+                </XStack>
+              </XStack>
 
-        {/* Load more pagination trigger */}
-        {feed.hasNextPage ? (
-          <ExpandingLineButton
-            onPress={() => feed.fetchNextPage()}
-            disabled={feed.isFetchingNextPage}
-          >
-            Load more
-          </ExpandingLineButton>
-        ) : null}
-      </YStack>
-        )}
-      </AnimatePresence>
+              {/* Error with cached data — show refresh error strip (highest precedence) */}
+              {showErrorStrip ? (
+                <Text fontSize="$1" color="$color9" textAlign="center" paddingVertical="$2">
+                  Couldn&apos;t refresh. Showing cached posts.
+                </Text>
+              ) : null}
+
+              {/* Offline microcopy — only when error strip is not shown and timestamp is valid */}
+              {showOfflineStrip ? (
+                <Text fontSize="$1" color="$color9" paddingVertical="$2" textAlign="center">
+                  Offline · last synced {formatTimeAgo(feed.dataUpdatedAt)}
+                </Text>
+              ) : null}
+
+              {/* Suspended user microcopy */}
+              {isSuspended === true ? (
+                <Text fontSize="$2" color="$color11" textAlign="center" paddingVertical="$3">
+                  Posting and reacting are paused for this account.
+                </Text>
+              ) : null}
+
+              {/* Empty state */}
+              {showEmptyState ? (
+                <YStack paddingVertical="$8" gap="$5">
+                  <Text fontFamily="$journal" fontSize="$7" color="$color10" fontStyle="italic">
+                    Quiet here. Be the first.
+                  </Text>
+                  <ExpandingLineButton onPress={() => router.push('/collective/compose')}>
+                    Compose
+                  </ExpandingLineButton>
+                </YStack>
+              ) : null}
+
+              {/* Post list — title-led rows */}
+              {allPosts.map((post, index) => (
+                <View key={post.id}>
+                  <FeedPostRow
+                    post={post}
+                    currentUserId={currentUserId}
+                    onOpen={(id) => router.push(`/collective/thread/${id}`)}
+                  />
+                  {index < allPosts.length - 1 ? (
+                    <Separator borderColor="$color3" borderBottomWidth={1} />
+                  ) : null}
+                </View>
+              ))}
+
+              {/* Footer tally */}
+              {!showEmptyState ? (
+                <Text
+                  fontFamily="$body"
+                  fontSize="$1"
+                  color="$color8"
+                  textTransform="uppercase"
+                  letterSpacing={2}
+                  marginTop="$9"
+                >
+                  {letterCount} {letterCount === 1 ? 'letter' : 'letters'} in the room · access
+                  resets at midnight
+                </Text>
+              ) : null}
+
+              {/* Load more pagination trigger */}
+              {feed.hasNextPage ? (
+                <ExpandingLineButton
+                  onPress={() => feed.fetchNextPage()}
+                  disabled={feed.isFetchingNextPage}
+                >
+                  Load more
+                </ExpandingLineButton>
+              ) : null}
+            </YStack>
+          )}
+        </AnimatePresence>
+      </ScrollView>
     </View>
   )
 }

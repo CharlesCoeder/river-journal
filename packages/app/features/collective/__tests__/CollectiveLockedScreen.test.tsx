@@ -51,6 +51,8 @@ vi.mock('@my/ui', async () => {
       R.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
     View: ({ children, onPress, ...props }: any) =>
       R.createElement('div', { onClick: onPress, ...mapA11y(props) }, children),
+    ScrollView: ({ children, ...props }: any) =>
+      R.createElement('div', { 'data-scroll': 'y', ...mapA11y(props) }, children),
     useReducedMotion: () => true,
   }
 })

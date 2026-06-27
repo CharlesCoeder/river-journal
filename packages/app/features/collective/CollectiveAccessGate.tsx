@@ -52,7 +52,10 @@ import { SkeletonRows } from './_shared'
 // toggles then flip between states locally, mirroring the design's DemoPanel.
 
 function readGateParam(): CollectiveGateKey | null {
-  if (typeof window === 'undefined') return null
+  // `window` exists on React Native (it's the global object) but `window.location`
+  // does not — so guarding only `typeof window` would throw on native. The URL
+  // param override is a web-only affordance; native has no query string to read.
+  if (typeof window === 'undefined' || !window.location) return null
   const v = new URLSearchParams(window.location.search).get('gate')
   return v === 'account' || v === 'sync' || v === 'words' ? v : null
 }
@@ -78,7 +81,7 @@ function DevGateOverride({
   const gate: CollectiveGateKey = !signedIn ? 'account' : !syncEnabled ? 'sync' : 'words'
 
   return (
-    <View data-testid={`collective-access-dev-${gate}`}>
+    <View flex={1} data-testid={`collective-access-dev-${gate}`}>
       <CollectiveLockedScreen
         gate={gate}
         // Illustrative partial progress for the words-state screenshot.
@@ -149,7 +152,7 @@ export function CollectiveAccessGate() {
   // ─── unauthenticated: the account gate ────────────────────────────────────
   if (status === 'unauthenticated') {
     return (
-      <View data-testid="collective-access-unauthenticated">
+      <View flex={1} data-testid="collective-access-unauthenticated">
         <CollectiveLockedScreen
           gate="account"
           glimpse={[...SAMPLE_GLIMPSE]}
@@ -165,7 +168,7 @@ export function CollectiveAccessGate() {
   // ─── sync-disabled: the sync gate ─────────────────────────────────────────
   if (status === 'sync-disabled') {
     return (
-      <View data-testid="collective-access-sync-disabled">
+      <View flex={1} data-testid="collective-access-sync-disabled">
         <CollectiveLockedScreen
           gate="sync"
           glimpse={[...SAMPLE_GLIMPSE]}

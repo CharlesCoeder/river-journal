@@ -276,6 +276,9 @@ vi.mock('@my/ui', async () => {
     YStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
 
+    ScrollView: ({ children, ...props }: any) =>
+      ReactModule.createElement('div', { 'data-scroll': 'y', ...mapA11y(props) }, children),
+
     Separator: (props: any) => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
 
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>

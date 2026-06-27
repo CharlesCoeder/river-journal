@@ -19,7 +19,7 @@
 // This absorbs the former CollectivePreview.tsx.
 
 import { useEffect, useRef, useState } from 'react'
-import { YStack, XStack, View, Text, useReducedMotion } from '@my/ui'
+import { YStack, XStack, View, Text, ScrollView, useReducedMotion } from '@my/ui'
 import {
   Lock,
   ArrowLeft,
@@ -110,14 +110,8 @@ function CollectivePulse({ reducedMotion }: { reducedMotion: boolean }) {
   }, [reducedMotion])
 
   return (
-    <YStack
-      marginTop="$6"
-      width="100%"
-    >
-      <XStack
-        alignItems="center"
-        gap="$2"
-      >
+    <YStack marginTop="$6" width="100%">
+      <XStack alignItems="center" gap="$2">
         <PulseDot reducedMotion={reducedMotion} />
         <Text
           fontFamily="$body"
@@ -130,25 +124,10 @@ function CollectivePulse({ reducedMotion }: { reducedMotion: boolean }) {
         </Text>
       </XStack>
 
-      <XStack
-        marginTop="$4"
-        alignItems="stretch"
-        gap="$8"
-      >
-        <PulseStat
-          value={writers}
-          label="writers today"
-          reducedMotion={reducedMotion}
-        />
-        <View
-          width={1}
-          backgroundColor="$color2"
-        />
-        <PulseStat
-          value={words}
-          label="words today"
-          reducedMotion={reducedMotion}
-        />
+      <XStack marginTop="$4" alignItems="stretch" gap="$8">
+        <PulseStat value={writers} label="writers today" reducedMotion={reducedMotion} />
+        <View width={1} backgroundColor="$color2" />
+        <PulseStat value={words} label="words today" reducedMotion={reducedMotion} />
       </XStack>
     </YStack>
   )
@@ -165,12 +144,7 @@ function PulseDot({ reducedMotion }: { reducedMotion: boolean }) {
   }, [reducedMotion])
 
   return (
-    <View
-      width={6}
-      height={6}
-      alignItems="center"
-      justifyContent="center"
-    >
+    <View width={6} height={6} alignItems="center" justifyContent="center">
       {reducedMotion ? null : (
         <View
           position="absolute"
@@ -183,12 +157,7 @@ function PulseDot({ reducedMotion }: { reducedMotion: boolean }) {
           animation="slow"
         />
       )}
-      <View
-        width={6}
-        height={6}
-        borderRadius={100}
-        backgroundColor="$color12"
-      />
+      <View width={6} height={6} borderRadius={100} backgroundColor="$color12" />
     </View>
   )
 }
@@ -278,24 +247,12 @@ interface StepDef {
 
 function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGateKey }) {
   return (
-    <XStack
-      alignItems="center"
-      gap="$3"
-      marginTop="$6"
-      flexWrap="wrap"
-    >
+    <XStack alignItems="center" gap="$3" marginTop="$6" flexWrap="wrap">
       {steps.map((step, i) => {
         const active = step.key === current
         return (
-          <XStack
-            key={step.key}
-            alignItems="center"
-            gap="$3"
-          >
-            <XStack
-              alignItems="center"
-              gap="$2"
-            >
+          <XStack key={step.key} alignItems="center" gap="$3">
+            <XStack alignItems="center" gap="$2">
               <View
                 width={28}
                 height={28}
@@ -307,15 +264,9 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
                 backgroundColor={step.done ? '$color12' : 'transparent'}
               >
                 {step.done ? (
-                  <Check
-                    size={14}
-                    color="$color1"
-                  />
+                  <Check size={14} color="$color1" />
                 ) : (
-                  <step.Icon
-                    size={15}
-                    color={active ? '$color12' : '$color4'}
-                  />
+                  <step.Icon size={15} color={active ? '$color12' : '$color4'} />
                 )}
               </View>
               <Text
@@ -329,11 +280,7 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
               </Text>
             </XStack>
             {i < steps.length - 1 ? (
-              <View
-                height={1}
-                width={24}
-                backgroundColor={step.done ? '$color6' : '$color3'}
-              />
+              <View height={1} width={24} backgroundColor={step.done ? '$color6' : '$color3'} />
             ) : null}
           </XStack>
         )
@@ -354,10 +301,7 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
       marginTop="$8"
       alignSelf="flex-start"
     >
-      <XStack
-        alignItems="center"
-        gap="$3"
-      >
+      <XStack alignItems="center" gap="$3">
         <Text
           fontFamily="$journalItalic"
           fontStyle="italic"
@@ -367,10 +311,7 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
         >
           {label}
         </Text>
-        <ArrowRight
-          size={22}
-          color="$color12"
-        />
+        <ArrowRight size={22} color="$color12" />
       </XStack>
     </View>
   )
@@ -418,10 +359,7 @@ function AccountGate({ onSignIn }: { onSignIn: () => void }) {
         The Collective is everyone keeping a daily writing practice, gathered in one place. Joining
         begins with an account — your name among them, your words kept yours.
       </GateBody>
-      <PrimaryAction
-        label="Create an account"
-        onPress={onSignIn}
-      />
+      <PrimaryAction label="Create an account" onPress={onSignIn} />
       <View
         role="button"
         aria-label="Already have one? Log in"
@@ -453,17 +391,8 @@ function SyncGate({ onEnableSync }: { onEnableSync: () => void }) {
         a synced journal. Yours lift out of this one browser — backed up, and waiting wherever you
         open next. Turn on sync to take your place in the count.
       </GateBody>
-      <PrimaryAction
-        label="Enable sync"
-        onPress={onEnableSync}
-      />
-      <Text
-        fontFamily="$body"
-        fontSize="$3"
-        color="$color5"
-        marginTop="$4.5"
-        maxWidth={420}
-      >
+      <PrimaryAction label="Enable sync" onPress={onEnableSync} />
+      <Text fontFamily="$body" fontSize="$3" color="$color5" marginTop="$4.5" maxWidth={420}>
         You choose how it's encrypted — including end-to-end, where only you hold the key.
       </Text>
     </>
@@ -492,20 +421,9 @@ function WordsGate({
       </GateBody>
 
       {/* The live per-user count, drifting toward the threshold */}
-      <YStack
-        width="100%"
-        marginTop="$8"
-        gap="$3"
-      >
-        <XStack
-          justifyContent="space-between"
-          alignItems="baseline"
-        >
-          <Text
-            fontFamily="$body"
-            fontSize="$4"
-            color="$color12"
-          >
+      <YStack width="100%" marginTop="$8" gap="$3">
+        <XStack justifyContent="space-between" alignItems="baseline">
+          <Text fontFamily="$body" fontSize="$4" color="$color12">
             {wordsToday}
             <Text color="$color7">{` / ${goal} words today`}</Text>
           </Text>
@@ -551,11 +469,7 @@ function WordsGate({
 function RoomGlimpse({ glimpse }: { glimpse: GlimpseItem[] }) {
   if (glimpse.length === 0) return null
   return (
-    <YStack
-      marginTop="$12"
-      gap="$6"
-      aria-hidden
-    >
+    <YStack marginTop="$12" gap="$6" aria-hidden>
       <Text
         fontFamily="$body"
         // Design: stone/50 — softer than the body's stone, the faintest label
@@ -577,10 +491,7 @@ function RoomGlimpse({ glimpse }: { glimpse: GlimpseItem[] }) {
           style={{ filter: 'blur(1.5px)' }}
         >
           {glimpse.map((item) => (
-            <YStack
-              key={item.id}
-              gap="$2"
-            >
+            <YStack key={item.id} gap="$2">
               <Text
                 fontFamily="$journal"
                 // Design: serif text-2xl / leading-snug (24 / 33).
@@ -640,11 +551,7 @@ function DemoPanel({ demo }: { demo: DemoControls }) {
       >
         Demo · preview states
       </Text>
-      <DemoToggle
-        label="Signed in"
-        checked={demo.signedIn}
-        onChange={demo.onToggleSignedIn}
-      />
+      <DemoToggle label="Signed in" checked={demo.signedIn} onChange={demo.onToggleSignedIn} />
       <DemoToggle
         label="Sync enabled"
         checked={demo.syncEnabled}
@@ -675,16 +582,8 @@ function DemoToggle({
       cursor={disabled ? 'default' : 'pointer'}
       opacity={disabled ? 0.4 : 1}
     >
-      <XStack
-        alignItems="center"
-        justifyContent="space-between"
-        gap="$4"
-      >
-        <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color12"
-        >
+      <XStack alignItems="center" justifyContent="space-between" gap="$4">
+        <Text fontFamily="$body" fontSize="$4" color="$color12">
           {label}
         </Text>
         <View
@@ -766,100 +665,87 @@ export function CollectiveLockedScreen({
   ]
 
   return (
-    // NOTE: no root `enterStyle` entrance fade here. With the motion animation
-    // driver, an `enterStyle` opacity/translate needs an <AnimatePresence>
-    // ancestor to animate out of the enter state; without one the container
-    // stays stuck at opacity 0 (invisible content). The smaller in-place
-    // animations below (the pulse ring, the progress bar, the demo toggle) are
-    // driven by state changes, not enterStyle, so they animate fine.
-    <YStack
-      width="100%"
-      maxWidth={720}
-      marginHorizontal="auto"
-      paddingHorizontal="$5"
-      paddingVertical="$8"
-      paddingBottom="$12"
-    >
-      {/* Back to Home */}
-      <View
-        role="button"
-        aria-label="Back to Home"
-        onPress={onReturnHome}
-        cursor="pointer"
-        alignSelf="flex-start"
-        marginBottom="$10"
-      >
-        <XStack
-          alignItems="center"
-          gap="$2"
+    // The screen owns its own scroll. On native there is no ambient scroll
+    // container around routed screens, so without this the tall locked-screen
+    // content (pulse + stepper + gate copy + glimpse) overflows the viewport
+    // with no way to reach the primary action below the fold. Mirrors the
+    // Settings screen's flex + ScrollView wrapper.
+    <View flex={1} backgroundColor="$background">
+      <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }}>
+        {/* NOTE: no root `enterStyle` entrance fade here. With the motion
+            animation driver, an `enterStyle` opacity/translate needs an
+            <AnimatePresence> ancestor to animate out of the enter state;
+            without one the container stays stuck at opacity 0 (invisible
+            content). The smaller in-place animations below (the pulse ring, the
+            progress bar, the demo toggle) are driven by state changes, not
+            enterStyle, so they animate fine. */}
+        <YStack
+          width="100%"
+          maxWidth={720}
+          marginHorizontal="auto"
+          paddingHorizontal="$5"
+          paddingVertical="$8"
+          paddingBottom="$12"
         >
-          <ArrowLeft
-            size={16}
-            color="$color7"
-          />
-          <Text
-            fontFamily="$body"
-            fontSize="$4"
-            color="$color7"
-            letterSpacing={1}
+          {/* Back to Home */}
+          <View
+            role="button"
+            aria-label="Back to Home"
+            onPress={onReturnHome}
+            cursor="pointer"
+            alignSelf="flex-start"
+            marginBottom="$10"
           >
-            Back to Home
-          </Text>
-        </XStack>
-      </View>
+            <XStack alignItems="center" gap="$2">
+              <ArrowLeft size={16} color="$color7" />
+              <Text fontFamily="$body" fontSize="$4" color="$color7" letterSpacing={1}>
+                Back to Home
+              </Text>
+            </XStack>
+          </View>
 
-      {/* The invitation */}
-      <YStack
-        maxWidth={520}
-        alignItems="flex-start"
-      >
-        {/* Eyebrow */}
-        <XStack
-          alignItems="center"
-          gap="$2"
-        >
-          <Lock
-            size={14}
-            color="$color7"
-          />
-          <Text
-            fontFamily="$body"
-            fontSize="$3"
-            color="$color7"
-            textTransform="uppercase"
-            letterSpacing={1.2}
-          >
-            The Collective
-          </Text>
-        </XStack>
+          {/* The invitation */}
+          <YStack maxWidth={520} alignItems="flex-start">
+            {/* Eyebrow */}
+            <XStack alignItems="center" gap="$2">
+              <Lock size={14} color="$color7" />
+              <Text
+                fontFamily="$body"
+                fontSize="$3"
+                color="$color7"
+                textTransform="uppercase"
+                letterSpacing={1.2}
+              >
+                The Collective
+              </Text>
+            </XStack>
 
-        {/* The living proof — hard-coded, NOT real data (see CollectivePulse). */}
-        <CollectivePulse reducedMotion={reducedMotion} />
+            {/* The living proof — hard-coded, NOT real data (see CollectivePulse). */}
+            <CollectivePulse reducedMotion={reducedMotion} />
 
-        {/* The three keys — only the missing one glows. */}
-        <Stepper
-          steps={steps}
-          current={gate}
-        />
+            {/* The three keys — only the missing one glows. */}
+            <Stepper steps={steps} current={gate} />
 
-        {gate === 'account' ? <AccountGate onSignIn={onSignIn} /> : null}
-        {gate === 'sync' ? <SyncGate onEnableSync={onEnableSync} /> : null}
-        {gate === 'words' ? (
-          <WordsGate
-            wordsToday={wordsToday}
-            goal={goal}
-            onStartWriting={onStartWriting}
-            reducedMotion={reducedMotion}
-          />
-        ) : null}
-      </YStack>
+            {gate === 'account' ? <AccountGate onSignIn={onSignIn} /> : null}
+            {gate === 'sync' ? <SyncGate onEnableSync={onEnableSync} /> : null}
+            {gate === 'words' ? (
+              <WordsGate
+                wordsToday={wordsToday}
+                goal={goal}
+                onStartWriting={onStartWriting}
+                reducedMotion={reducedMotion}
+              />
+            ) : null}
+          </YStack>
 
-      {/* A glimpse of the room, behind the glass */}
-      <RoomGlimpse glimpse={glimpse} />
+          {/* A glimpse of the room, behind the glass */}
+          <RoomGlimpse glimpse={glimpse} />
 
-      {/* Dev/demo only — flip between gate states. */}
-      {demo ? <DemoPanel demo={demo} /> : null}
-    </YStack>
+          {/* Dev/demo only — flip between gate states. */}
+          {demo ? <DemoPanel demo={demo} /> : null}
+        </YStack>
+      </ScrollView>
+    </View>
   )
 }
 
