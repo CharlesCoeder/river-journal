@@ -263,11 +263,12 @@ describe('encryption setup orchestration', () => {
     expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
 
-  it('blocks sync when managed key cannot be fetched', async () => {
+  it('auto-heals a missing managed key by regenerating it and restoring sync', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: { mode: 'managed', salt: null, managedKeyB64: null },
       error: null,
     })
+    // First fetch finds no key on the account.
     mockFetchManagedEncryptionKey.mockResolvedValueOnce({
       data: null,
       error: { message: 'Managed key missing', code: 'managed_key_missing' },
@@ -276,7 +277,78 @@ describe('encryption setup orchestration', () => {
     const mode = await loadCurrentEncryptionMode()
 
     expect(mode).toBe('managed')
+    expect(mockBootstrapManagedEncryption).toHaveBeenCalledWith({ userId: 'user-1' })
+    expect(syncManagedKeyBytes$.get()).toEqual(
+      base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=')
+    )
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    expect(encryptionSetup$.error.get()).toBeNull()
+  })
+
+  it('does NOT auto-heal a corrupt (invalid) managed key — surfaces the error', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: { mode: 'managed', salt: null, managedKeyB64: null },
+      error: null,
+    })
+    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Managed key invalid', code: 'managed_key_invalid' },
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('managed')
+    expect(mockBootstrapManagedEncryption).not.toHaveBeenCalled()
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
+    expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Managed key invalid',
+      code: 'managed_key_invalid',
+    })
+  })
+
+  it('does NOT auto-heal a transient fetch failure — surfaces the error for retry', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: { mode: 'managed', salt: null, managedKeyB64: null },
+      error: null,
+    })
+    mockFetchManagedEncryptionKey.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Network error', code: 'users_read_failed' },
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('managed')
+    expect(mockBootstrapManagedEncryption).not.toHaveBeenCalled()
+    expect(isEncryptionReadyForSync$.get()).toBe(false)
+    expect(store$.session.syncEnabled.get()).toBe(false)
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Network error',
+      code: 'users_read_failed',
+    })
+  })
+
+  it('blocks sync when auto-heal regeneration itself fails', async () => {
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: { mode: 'managed', salt: null, managedKeyB64: null },
+      error: null,
+    })
+    mockFetchManagedEncryptionKey.mockResolvedValue({
+      data: null,
+      error: { message: 'Managed key missing', code: 'managed_key_missing' },
+    })
+    mockBootstrapManagedEncryption.mockResolvedValueOnce({
+      error: { message: 'Could not write key', code: 'users_upsert_failed' },
+      managedKeyB64: null,
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBe('managed')
+    expect(mockBootstrapManagedEncryption).toHaveBeenCalledWith({ userId: 'user-1' })
     expect(isEncryptionReadyForSync$.get()).toBe(false)
     expect(store$.session.syncEnabled.get()).toBe(false)
     expect(encryptionSetup$.error.get()).toEqual({

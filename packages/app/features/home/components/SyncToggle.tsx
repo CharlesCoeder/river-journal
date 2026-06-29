@@ -70,7 +70,10 @@ export function SyncToggle() {
   }, [])
 
   const handleResumeSetup = useCallback(() => {
-    void requestSyncEnable()
+    // E2E setup is incomplete (no salt on the account). Open the password
+    // dialog in fresh-bootstrap mode so the user can generate a new salt —
+    // requestSyncEnable() alone just re-sets the same blocking error.
+    continueLockedE2ESetup()
   }, [])
 
   return (

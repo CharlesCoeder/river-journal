@@ -379,7 +379,32 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
 
       // Managed mode: ensure the managed key is available before sync opens
       if (result.data.mode === 'managed') {
-        const keyResult = await getManagedKeyBytes(userId)
+        let keyResult = await getManagedKeyBytes(userId)
+
+        // Auto-heal: managed mode whose key is genuinely absent (account is in
+        // 'managed' but no key was ever written, or it was wiped). Managed mode's
+        // whole premise is hands-off, so regenerate the key invisibly rather than
+        // dead-ending the user. Scoped strictly to `managed_key_missing` — a
+        // corrupt-but-present key (`managed_key_invalid`) or a network failure
+        // (`users_read_failed`) still surfaces so it can be inspected/retried.
+        if (keyResult.error && keyResult.error.code === 'managed_key_missing') {
+          // eslint-disable-next-line no-console
+          console.warn(
+            '[encryption] managed key missing for user; regenerating a fresh managed key',
+            { userId, code: keyResult.error.code }
+          )
+          const bootstrapResult = await bootstrapManagedEncryption({ userId })
+          if (!bootstrapResult.error) {
+            setManagedKeyBytesFromB64(bootstrapResult.managedKeyB64)
+            keyResult = await getManagedKeyBytes(userId)
+            // Recovery succeeded — managed mode is hands-off, so restore sync to
+            // active rather than leaving the user in a disabled state.
+            if (!keyResult.error) {
+              store$.session.syncEnabled.set(true)
+            }
+          }
+        }
+
         if (keyResult.error) {
           batch(() => {
             encryptionSetup$.error.set(keyResult.error)
