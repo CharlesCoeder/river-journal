@@ -12,6 +12,7 @@ import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 import { lapsed$, recordSessionOpen } from './lapsed'
 import { syncDeviceTimezone } from './timezoneSync'
+import { startTodayTracking } from './today'
 import './streak' // attaches store$.views.streak side-effect
 
 export const appStatus$ = observable({
@@ -148,6 +149,11 @@ export async function initializePersistence() {
     // Initialize auth listener — fires INITIAL_SESSION immediately to hydrate
     // session state, then handles SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.
     initAuthListener()
+
+    // Start the midnight-rollover tick so streak/day surfaces recompute when the
+    // local clock crosses midnight (and on app foreground) rather than freezing
+    // until the next remount. Idempotent; see state/today.ts.
+    startTodayTracking()
 
     // Dev flag: auto-enable sync via env var so developers can test sync
     // without waiting for the UI toggle story. Add to your .env.local:

@@ -16,12 +16,13 @@
  * Red-phase: all tests fail until Story 2.3 implementation lands.
  */
 
-import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { batch } from '@legendapp/state'
 import { store$, entries$, flows$, graceDays$ } from '../store'
 import { THEME_NAMES } from '../types'
 import { getTodayJournalDayString } from '../date-utils'
+import { today$ } from '../today'
 
 // Partial mock: preserve the real use$ (which wraps useSyncExternalStore and
 // supports renderHook + act() subscription cycles in happy-dom) while keeping
@@ -527,6 +528,39 @@ describe('Full reactive pipeline — entries$ → streak$ → useUnlockedThemes 
 
     // After mutation: longestStreak=7 → milestone 7 crossed → ['forest-morning']
     expect(result.current).toEqual(['forest-morning'])
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Midnight rollover — the computed reads the today$ observable (state/today.ts)
+// so streak/day displays recompute across midnight without a remount.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('store$.views.streak — midnight rollover reactivity (today$ tick)', () => {
+  afterEach(() => {
+    // Restore the live day-key so sibling tests (which derive expectations from
+    // getTodayJournalDayString()) stay consistent with the computed's today$ read.
+    today$.set(getTodayJournalDayString())
+  })
+
+  it('recomputes currentStreak when today$ advances across midnight', () => {
+    const day = '2026-03-10'
+    const entryId = 'e-mid'
+    const flowId = 'f-mid'
+
+    // Qualify a single fixed day and point today$ at it → currentStreak 1.
+    today$.set(day)
+    batch(() => {
+      entries$.set({ [entryId]: mkEntry(entryId, day) })
+      flows$.set({ [flowId]: mkFlow(flowId, entryId, 500) })
+    })
+    expect(store$.views?.streak?.get()?.currentStreak).toBe(1)
+
+    // Advance today$ by two days (a fully-elapsed non-qualifying gap at day+1)
+    // → the streak breaks → currentStreak 0. Proves the computed reads today$
+    // reactively, not a frozen inline getTodayJournalDayString().
+    today$.set(shiftDay(day, 2))
+    expect(store$.views?.streak?.get()?.currentStreak).toBe(0)
   })
 })
 

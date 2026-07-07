@@ -16,7 +16,7 @@ import { store$ } from './store'
 import { entries$ } from './entries'
 import { flows$ } from './flows'
 import { graceDays$ } from './grace_days'
-import { getTodayJournalDayString } from './date-utils'
+import { today$ } from './today'
 
 // Milestone numbers — placeholder pending Charlie's lock-in. Single source of truth: change here, test outputs follow.
 export const STREAK_THEME_UNLOCKS: Readonly<Record<number, ThemeName>> = {
@@ -260,13 +260,16 @@ export function useUnlockedThemes(tier: SubscriptionTier): ThemeName[] {
   // becomes redundant — remove it then.
 }
 
-// Midnight-rollover behavior: this computed reads getTodayJournalDayString()
-// inline. It does NOT auto-recompute when the wall clock crosses midnight —
-// it recomputes only when entries$/flows$/graceDays$ change. The next write
-// (or app foreground that triggers a sync read) will pick up the new day.
-// If a future surface needs midnight-precise reactivity (e.g., a clock-driven
-// "your streak is in danger today" surface), inject `today` as an observable
-// and write to it on a daily timer at the app shell level.
+// Midnight-rollover behavior: this computed reads the `today$` observable
+// (state/today.ts) rather than getTodayJournalDayString() inline, so it DOES
+// recompute when the wall clock crosses local midnight — `today$` is advanced
+// by a daily timer (re-armed each midnight) plus an app-foreground re-check.
+// It still also recomputes when entries$/flows$/graceDays$ change. This keeps
+// the streak/day display live at 11:59pm→12:00am without a remount. The tick is
+// deliberately narrow (see state/today.ts): only the day-key is made reactive,
+// not a broad time-handling refactor. `today$` is seeded with
+// getTodayJournalDayString() at module load, so this view is correct even
+// before startTodayTracking() runs (e.g. in unit tests).
 
 // Side-effect: attaches streak$ computed view on module import. Imported transitively via app/state/store re-exports + initializeApp.
 // Type cast: store$.assign takes Partial<AppState>; here we deep-merge only the views.streak key.
@@ -321,7 +324,7 @@ store$.assign({
         scopedEntries,
         scopedFlows,
         scopedGraceDays,
-        getTodayJournalDayString(),
+        today$.get(),
         'free',
         // chosenUnlocks: user-spent token destinations (Model B). When store$.profile is null
         // (cold-start window before rehydration), unlockedThemes.get() returns undefined → ?? undefined

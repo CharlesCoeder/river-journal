@@ -8,7 +8,7 @@ import { EncryptionModeDialog } from 'app/features/home/components/EncryptionMod
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
-import { getTodayJournalDayString } from 'app/state/date-utils'
+import { useToday } from 'app/state/today'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
 import { COLLECTIVE_DEV_ROUTE, isCollectiveDevEnabled } from 'app/features/collective/isCollectiveDevEnabled'
@@ -20,7 +20,10 @@ export function HomeScreen() {
     setMounted(true)
   }, [])
 
-  const todayStats = use$(store$.views.statsByDate(getTodayJournalDayString()))
+  // useToday() re-renders this screen at local midnight so the date hero,
+  // today's stats, and the streak chip roll over without a remount.
+  const todayJournalDay = useToday()
+  const todayStats = use$(store$.views.statsByDate(todayJournalDay))
   const { shouldShow: showLapsed, dismiss: dismissLapsed } = useLapsedPrompt()
 
   const today = new Date().toLocaleDateString('en-US', {
@@ -197,7 +200,7 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
 function HomeStreakChipSlot() {
   const streak = use$(store$.views.streak) as StreakState | undefined
   const currentStreak = streak?.currentStreak ?? 0
-  const today = getTodayJournalDayString()
+  const today = useToday()
   const state = streak?.lastQualifyingDate === today ? 'active' : 'pending'
   return (
     <View

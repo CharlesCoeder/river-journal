@@ -39,6 +39,14 @@ vi.mock('app/state/date-utils', () => ({
   getTodayJournalDayString: () => TODAY,
 }))
 
+// HomeScreen now sources "today" from the midnight-rollover hook (state/today.ts)
+// instead of calling getTodayJournalDayString() directly. Mock it to the same
+// frozen day so the streak chip's active/pending logic is deterministic — and so
+// the real today.ts (which reads the day-key at module load) never loads here.
+vi.mock('app/state/today', () => ({
+  useToday: () => TODAY,
+}))
+
 // ─── Store mock — views.streak exposed as observable-like ────────────────────
 vi.mock('app/state/store', () => ({
   store$: {
