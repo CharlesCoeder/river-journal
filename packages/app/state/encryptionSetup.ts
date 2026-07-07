@@ -354,14 +354,14 @@ export const loadCurrentEncryptionMode = async (): Promise<EncryptionMode | null
       const result = await readUserEncryptionSettings(userId)
 
       if (result.error) {
-        batch(() => {
-          encryptionSetup$.error.set(result.error)
-          encryptionSetup$.hasLoadedMode.set(false)
-          encryptionSetup$.currentMode.set(null)
-          encryptionSetup$.currentModeSalt.set(null)
-          isEncryptionReadyForSync$.set(false)
-          store$.session.syncEnabled.set(false)
-        })
+        // A read error here is a TRANSIENT load failure (network/DB), NOT a
+        // conclusive "no encryption configured" — that verdict arrives as
+        // result.data.mode === null with error === null and flows through the
+        // normal path below. A transient failure (e.g. a blip during a
+        // background token refresh) must therefore NEVER flip Cloud Sync off
+        // or wipe already-loaded mode state. Surface the error for retry, but
+        // preserve syncEnabled / currentMode / hasLoadedMode / readiness as-is.
+        encryptionSetup$.error.set(result.error)
         return null
       }
 

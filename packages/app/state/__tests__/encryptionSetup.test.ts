@@ -331,6 +331,43 @@ describe('encryption setup orchestration', () => {
     })
   })
 
+  it('preserves Cloud Sync (does NOT disable it) when the settings read fails transiently', async () => {
+    // Simulate a user who already has sync ON with E2E mode loaded, then a
+    // background token-refresh triggers a reload whose settings read fails with
+    // a transient network error. A transient read failure is NOT a conclusive
+    // "no encryption configured", so it must never flip syncEnabled off or wipe
+    // the already-loaded mode state — it only surfaces an error for retry.
+    encryptionSetup$.assign({
+      hasLoadedMode: true,
+      currentMode: 'e2e',
+      currentModeSalt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+      hasLocalE2EKey: true,
+      error: null,
+    })
+    isEncryptionReadyForSync$.set(true)
+    store$.session.syncEnabled.set(true)
+
+    mockReadUserEncryptionSettings.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Network error', code: 'users_read_failed' },
+    })
+
+    const mode = await loadCurrentEncryptionMode()
+
+    expect(mode).toBeNull()
+    // Sync stays ON — the transient blip did not disable it.
+    expect(store$.session.syncEnabled.get()).toBe(true)
+    // Previously-loaded mode state is preserved (not wiped).
+    expect(encryptionSetup$.currentMode.get()).toBe('e2e')
+    expect(encryptionSetup$.hasLoadedMode.get()).toBe(true)
+    expect(isEncryptionReadyForSync$.get()).toBe(true)
+    // The error is still surfaced so a retry UI can show it.
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Network error',
+      code: 'users_read_failed',
+    })
+  })
+
   it('blocks sync when auto-heal regeneration itself fails', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
       data: { mode: 'managed', salt: null, managedKeyB64: null },

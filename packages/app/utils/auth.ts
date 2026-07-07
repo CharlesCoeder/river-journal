@@ -9,7 +9,7 @@ import { supabase } from './supabase'
 import { store$ } from '../state/store'
 import { batch } from '@legendapp/state'
 import { deviceState$ } from '../state/syncConfig'
-import { loadCurrentEncryptionMode, resetEncryptionSetupState } from '../state/encryptionSetup'
+import { loadCurrentEncryptionMode, resetEncryptionSetupState, encryptionSetup$ } from '../state/encryptionSetup'
 import { hasWebTrustCapability, getStoredDeviceToken, hashDeviceToken, clearWebTrustData } from './webKeyStore'
 import { deleteTrustedBrowserByHash } from './userEncryption'
 import { clearStoredMasterKey } from './encryptionKeyStore'
@@ -72,7 +72,10 @@ export const getAuthErrorMessage = (error: AuthError): string => {
 /**
  * Updates Legend-State store with auth session data
  */
-const updateSessionState = (session: Session | null) => {
+const updateSessionState = (
+  session: Session | null,
+  options?: { skipEncryptionLoad?: boolean }
+) => {
   // NOTE: auto-wipe on user-change was removed. Wiping is now user-driven via
   // the previous-account banner in Settings. See spec
   // `docs/_bmad-output/implementation-artifacts/spec-fix-cross-user-data-defense.md`.
@@ -112,7 +115,12 @@ const updateSessionState = (session: Session | null) => {
       // "Keep local") are responsible for advancing lastAuthedUserId.
     }
 
-    void loadCurrentEncryptionMode()
+    // Skipped on a background token refresh for the already-loaded same user
+    // (see the TOKEN_REFRESHED handler) so a transient network blip during the
+    // reload can never flip Cloud Sync off.
+    if (!options?.skipEncryptionLoad) {
+      void loadCurrentEncryptionMode()
+    }
   } else {
     // Do NOT clear lastAuthedUserId on SIGNED_OUT — the banner needs it to
     // survive the sign-out/sign-in transition.
@@ -191,8 +199,18 @@ export const initAuthListener = () => {
     }
 
     if (event === 'TOKEN_REFRESHED') {
-      // Token successfully refreshed — update session state with new tokens
-      updateSessionState(session)
+      // Token successfully refreshed — update session state with new tokens.
+      // A background refresh keeps the SAME user signed in, so re-running the
+      // encryption-settings load is redundant when we already have them for
+      // this user — and a transient network blip during that reload used to
+      // permanently disable Cloud Sync. Skip the reload in that case; the load
+      // itself is also hardened to never flip sync off on a transient failure.
+      const refreshedUserId = session?.user?.id ?? null
+      const sameUserAlreadyLoaded =
+        refreshedUserId !== null &&
+        refreshedUserId === store$.session.userId.peek() &&
+        encryptionSetup$.hasLoadedMode.peek()
+      updateSessionState(session, { skipEncryptionLoad: sameUserAlreadyLoaded })
       return
     }
 

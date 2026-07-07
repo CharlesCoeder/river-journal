@@ -65,9 +65,18 @@ vi.mock('../../state/syncConfig', () => ({
 }))
 
 const mockResetEncryptionSetupState = vi.fn()
+const mockLoadCurrentEncryptionMode = vi.fn((..._args: unknown[]) => Promise.resolve(null))
+// Controls encryptionSetup$.hasLoadedMode.peek() for the TOKEN_REFRESHED
+// skip-reload logic (transient-blip defense). Default false = "not yet loaded".
+let mockHasLoadedMode = false
 vi.mock('../../state/encryptionSetup', () => ({
-  loadCurrentEncryptionMode: vi.fn(() => Promise.resolve(null)),
+  loadCurrentEncryptionMode: (...args: unknown[]) => mockLoadCurrentEncryptionMode(...args),
   resetEncryptionSetupState: (...args: unknown[]) => mockResetEncryptionSetupState(...args),
+  encryptionSetup$: {
+    hasLoadedMode: {
+      peek: () => mockHasLoadedMode,
+    },
+  },
 }))
 
 vi.mock('../webKeyStore', () => ({
@@ -121,6 +130,7 @@ const expectFullCleanup = (userId: string) => {
 beforeEach(() => {
   vi.clearAllMocks()
   currentUserId = 'user-1'
+  mockHasLoadedMode = false
   authChangeCallback = null
 })
 
@@ -235,5 +245,45 @@ describe('auth listener — event-driven cleanup', () => {
     expect(mockClearStoredMasterKey).not.toHaveBeenCalled()
     expect(mockQueryClientClear).not.toHaveBeenCalled()
     expect(mockResetSyncCursors).not.toHaveBeenCalled()
+  })
+})
+
+describe('auth listener — TOKEN_REFRESHED encryption-reload skip (transient-blip defense)', () => {
+  it('SKIPS the encryption-settings reload when settings are already loaded for the same user', async () => {
+    // Same user (user-1) as the current session, and settings already loaded.
+    // Re-running the load on every background token refresh is redundant and
+    // risks a transient blip flipping Cloud Sync off, so it must be skipped.
+    currentUserId = 'user-1'
+    mockHasLoadedMode = true
+    initAuthListener()
+
+    authChangeCallback!('TOKEN_REFRESHED', { user: { id: 'user-1', email: 'a@b.c' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mockLoadCurrentEncryptionMode).not.toHaveBeenCalled()
+  })
+
+  it('RUNS the reload on token refresh when settings are not yet loaded', async () => {
+    currentUserId = 'user-1'
+    mockHasLoadedMode = false
+    initAuthListener()
+
+    authChangeCallback!('TOKEN_REFRESHED', { user: { id: 'user-1', email: 'a@b.c' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mockLoadCurrentEncryptionMode).toHaveBeenCalled()
+  })
+
+  it('RUNS the reload on token refresh when the user changed (loaded state belongs to a different user)', async () => {
+    // Session still points at the previous user; the refresh carries a new id.
+    // hasLoadedMode is true but for the OLD user, so we must reload.
+    currentUserId = 'user-1'
+    mockHasLoadedMode = true
+    initAuthListener()
+
+    authChangeCallback!('TOKEN_REFRESHED', { user: { id: 'user-2', email: 'b@c.d' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(mockLoadCurrentEncryptionMode).toHaveBeenCalled()
   })
 })
