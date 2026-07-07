@@ -8,7 +8,9 @@
  *
  * `shouldShow === true` IFF ALL of:
  *   1. `hasOpenedBefore === true` (not a first-time user)
- *   2. `lastSessionAt !== null` AND `(now - lastSessionAt) > LAPSED_THRESHOLD_MS` (strict >)
+ *   2. `previousSessionAt !== null` AND `(now - previousSessionAt) > LAPSED_THRESHOLD_MS` (strict >)
+ *      — the gap is measured against the session BEFORE this boot, because the current
+ *      boot already advanced `lastSessionAt` to ≈now via recordSessionOpen.
  *   3. `dismissedAt === null` OR `dismissedAt < lastSessionAt` (not dismissed in this window)
  *
  * `now` arg is for deterministic testing; defaults to `Date.now()`.
@@ -44,11 +46,16 @@ export function useLapsedPrompt(now?: number): {
   dismiss: () => void
 } {
   const lastSessionAt = use$(lapsed$.lastSessionAt)
+  const previousSessionAt = use$(lapsed$.previousSessionAt)
   const dismissedAt = use$(lapsed$.dismissedAt)
   const hasOpenedBefore = use$(lapsed$.hasOpenedBefore)
 
   const currentNow = now ?? Date.now()
-  const isLapsed = lastSessionAt !== null && currentNow - lastSessionAt > LAPSED_THRESHOLD_MS
+  // Measure the absence gap against the PREVIOUS session, not the current one:
+  // recordSessionOpen already advanced lastSessionAt to ≈now on this boot.
+  const isLapsed =
+    previousSessionAt !== null && currentNow - previousSessionAt > LAPSED_THRESHOLD_MS
+  // Dismissal is "this window" when it happened at/after the current session opened.
   const isDismissedThisWindow =
     dismissedAt !== null && lastSessionAt !== null && dismissedAt >= lastSessionAt
 

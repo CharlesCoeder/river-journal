@@ -17,7 +17,12 @@ const T0 = 1_700_000_000_000 // arbitrary epoch ms
 
 beforeEach(() => {
   // Reset observable to initial shape before every test (no persistence involved)
-  lapsed$.set({ lastSessionAt: null, dismissedAt: null, hasOpenedBefore: false })
+  lapsed$.set({
+    lastSessionAt: null,
+    previousSessionAt: null,
+    dismissedAt: null,
+    hasOpenedBefore: false,
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +59,36 @@ describe('recordSessionOpen — first call on fresh observable (AC1, AC3)', () =
   it('leaves dismissedAt as null (no prior window to reset)', () => {
     recordSessionOpen(T0)
     expect(lapsed$.dismissedAt.get()).toBeNull()
+  })
+
+  it('leaves previousSessionAt null (there was no prior session to snapshot)', () => {
+    recordSessionOpen(T0)
+    expect(lapsed$.previousSessionAt.get()).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2b. recordSessionOpen — previousSessionAt snapshot (lapse-gap preservation)
+// Regression guard: the boot that records the session must preserve the prior
+// timestamp so useLapsedPrompt can still measure the absence gap.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('recordSessionOpen — previousSessionAt snapshot', () => {
+  it('snapshots the prior lastSessionAt into previousSessionAt before overwriting', () => {
+    recordSessionOpen(T0)
+    const t1 = T0 + 8 * DAY_MS
+    recordSessionOpen(t1)
+    // previousSessionAt holds the session BEFORE the current one; lastSessionAt is now.
+    expect(lapsed$.previousSessionAt.get()).toBe(T0)
+    expect(lapsed$.lastSessionAt.get()).toBe(t1)
+  })
+
+  it('same-tick guard leaves previousSessionAt untouched (idempotent re-entry)', () => {
+    recordSessionOpen(T0)
+    const t1 = T0 + 8 * DAY_MS
+    recordSessionOpen(t1) // previousSessionAt = T0
+    recordSessionOpen(t1 + 30_000) // within 60s of t1 → no-op
+    expect(lapsed$.previousSessionAt.get()).toBe(T0)
+    expect(lapsed$.lastSessionAt.get()).toBe(t1)
   })
 })
 
