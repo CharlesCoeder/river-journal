@@ -35,15 +35,53 @@ export const entries$ = observable<Record<string, Entry>>(
       return select.eq('user_id', userId)
     },
 
-    // Use upsert for creates to handle the UNIQUE(user_id, entry_date) constraint.
-    // If two devices create entries for the same date, the second becomes a no-op
-    // instead of throwing a constraint violation the user would see.
-    create: (input: any) =>
-      supabase
+    // Insert-or-IGNORE for creates, to handle the UNIQUE(user_id, entry_date)
+    // constraint when two devices create the same day's entry offline.
+    //
+    // We deliberately do NOT use a merge-upsert here. A merge-upsert
+    // (`ON CONFLICT DO UPDATE SET ...`) rewrites EVERY column in the payload,
+    // including the primary key `id`, to the incoming row's value. Because
+    // `flows.daily_entry_id REFERENCES daily_entries(id)` has no ON UPDATE
+    // CASCADE, rewriting a conflicting row's `id` either (a) raises a
+    // foreign_key_violation when the winning row already has child flows —
+    // spinning the infinite retry below forever — or (b) silently swaps the
+    // canonical id, orphaning the other device's flows that point at it.
+    //
+    // `ignoreDuplicates: true` emits `ON CONFLICT DO NOTHING`, so the existing
+    // row (and its id) is left untouched and remains canonical. On a real
+    // insert, RETURNING yields the new row. On a conflict, RETURNING is empty,
+    // so we read the canonical server row back and hand it to the load
+    // transform, letting the client converge onto the winning id.
+    //
+    // NOTE (multi-device convergence, human decision pending): this stops all
+    // server-side PK corruption, but the *losing* device's local entry stays
+    // keyed by its original client id while its `.id` field converges to the
+    // winner. Legend-State keys records by object key, not by fieldId, so it
+    // will not re-key the entry or re-point that device's local flows
+    // (dailyEntryId still references the losing id). Fully healing the losing
+    // device needs either deterministic entry ids per (user_id, entry_date)
+    // — note generateEntryId(date) already takes the date and currently
+    // ignores it — or an explicit client reconciliation pass. See report.
+    create: async (input: any) => {
+      const inserted = await supabase
         .from('daily_entries')
-        .upsert(input, { onConflict: 'user_id,entry_date' })
+        .upsert(input, { onConflict: 'user_id,entry_date', ignoreDuplicates: true })
         .select()
-        .single(),
+
+      if (inserted.error) return inserted
+      if (inserted.data && inserted.data.length > 0) {
+        return { data: inserted.data[0], error: null }
+      }
+
+      // Conflict: a row for this (user_id, entry_date) already exists. Return
+      // the canonical server row so the client can converge onto its id.
+      return supabase
+        .from('daily_entries')
+        .select()
+        .eq('user_id', input.user_id)
+        .eq('entry_date', input.entry_date)
+        .single()
+    },
 
     transform: {
       load: (value: any) => {
