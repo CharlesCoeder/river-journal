@@ -734,6 +734,39 @@ export const startNewActiveFlow = (): void => {
   })
 }
 
+// -----------------------------------------------------------------
+// Editor content-sync flush registry
+// -----------------------------------------------------------------
+// The editor→store content sync is debounced inside the editor components
+// (PersistentEditor.native on native, LexicalSync on web). During continuous
+// typing the store copy of activeFlow.content lags behind the editor. Any path
+// that reads/saves the store content (Finish Session, hide, exit/navigate) must
+// flush that pending write FIRST, or the last burst of typing is silently lost.
+//
+// The editor registers its debounced `flush()` here; store/screen code calls
+// flushEditorContent() before reading store$.activeFlow.content.
+let editorContentFlush: (() => void) | null = null
+
+/**
+ * Registers the active editor's pending content-sync flush. Returns an
+ * unregister function (safe for useEffect cleanup) that only clears the slot if
+ * this exact flush is still the registered one.
+ */
+export const registerEditorContentFlush = (flush: () => void): (() => void) => {
+  editorContentFlush = flush
+  return () => {
+    if (editorContentFlush === flush) editorContentFlush = null
+  }
+}
+
+/**
+ * Flushes any pending debounced editor→store content write synchronously.
+ * No-op if nothing is registered or nothing is pending.
+ */
+export const flushEditorContent = (): void => {
+  editorContentFlush?.()
+}
+
 /**
  * Updates the content of the active flow session and recalculates word count
  * Auto-initializes active flow on first keystroke if none exists
@@ -772,6 +805,10 @@ export const updateActiveFlowContent = (content: string): void => {
  * Stores the flow data in lastSavedFlow for the celebration screen.
  */
 export const saveActiveFlowSession = (): void => {
+  // Checkpoint any still-debounced editor content before reading the store,
+  // so a fast typist's final burst is saved rather than discarded.
+  flushEditorContent()
+
   const activeFlow = store$.activeFlow.get()
 
   // Don't save if there's no active flow or it's empty
@@ -995,6 +1032,10 @@ export const showPersistentEditor = (
  * string while still visible, before opacity fades out.
  */
 export const hidePersistentEditor = (): void => {
+  // Flush any pending editor content before we clear/hide, so keystrokes made
+  // right before exiting are checkpointed into activeFlow rather than dropped.
+  flushEditorContent()
+
   ephemeral$.persistentEditor.initialContent.set('')
   ephemeral$.persistentEditor.initialContentRevision.set(
     ephemeral$.persistentEditor.initialContentRevision.peek() + 1

@@ -12,7 +12,7 @@ import { ALL_TRANSFORMERS } from './transformers'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 
 // Import Legend State store and actions
-import { store$, ephemeral$, updateActiveFlowContent, setInstantWordCountFromText, calculateWordCount } from '../../../../state/store'
+import { store$, ephemeral$, updateActiveFlowContent, setInstantWordCountFromText, calculateWordCount, registerEditorContentFlush } from '../../../../state/store'
 
 /**
  * A non-rendering component that creates a robust, two-way, debounced
@@ -70,7 +70,13 @@ export function LexicalSync(): React.ReactElement {
     requestAnimationFrame(() => {
       isSyncingFromState.current = false
     })
-  }, 300) // 300ms debounce delay
+  }, 300, { maxWait: 1000 }) // 300ms debounce; maxWait checkpoints continuous typing at least every 1s
+
+  // Expose the pending-write flush to save/hide/exit paths (in the store) so a
+  // fast typist's final burst is checkpointed before the store is read/saved.
+  useEffect(() => {
+    return registerEditorContentFlush(() => debouncedUpdateStore.flush())
+  }, [debouncedUpdateStore])
 
   // ------------------------------------------------------------------
   // Flow 3: Instant word count (no debounce, no markdown conversion)

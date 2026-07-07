@@ -98,7 +98,13 @@ export function CelebrationScreen() {
   // triggers the entrance animation (showCelebration). Do NOT mark in render (infinite loop)
   // or on dismiss (re-prompts on next exit). "Surfaced once shown" is the rule. (AC 6)
   useEffect(() => {
-    clearActiveFlow()
+    // Only wipe the active draft if we actually arrived here from a completed
+    // save (lastSavedFlow present ⟺ saveActiveFlowSession committed the flow).
+    // Guarding this prevents discarding an in-progress, never-saved draft if
+    // this screen is ever reached without a real save (e.g. direct navigation).
+    if (store$.lastSavedFlow.peek()) {
+      clearActiveFlow()
+    }
     setMounted(true)
     const t = setTimeout(() => {
       setShowCelebration(true)

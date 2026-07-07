@@ -3,7 +3,7 @@ import { useTheme } from '@my/ui';
 import { use$ } from '@legendapp/state/react';
 import { useEffect, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ephemeral$, store$, updateActiveFlowContent, recordThresholdCrossingIfNeeded } from 'app/state/store';
+import { ephemeral$, store$, updateActiveFlowContent, recordThresholdCrossingIfNeeded, registerEditorContentFlush } from 'app/state/store';
 import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from 'app/state/types';
 import { useDebouncedCallback } from 'use-debounce';
 import LexicalEditor from './Lexical/LexicalEditor';
@@ -43,14 +43,24 @@ export const PersistentEditor = () => {
     placeholder: families.native
   };
 
-  // Debounced function to update Legend State from editor changes
+  // Debounced function to update Legend State from editor changes.
+  // maxWait guarantees a checkpoint at least once per second of continuous
+  // typing, so the store copy never lags arbitrarily far behind the editor.
   const debouncedUpdateStore = useDebouncedCallback((markdown: string) => {
     if (persistentEditor.readOnly) return;
     updateActiveFlowContent(markdown);
-  }, 300);
+  }, 300, { maxWait: 1000 });
 
-  // Cancel any pending debounced writes when the editor hides,
-  // otherwise a stale keystroke can overwrite the cleared activeFlow.
+  // Expose the pending-write flush to save/hide/exit paths (in the store) so
+  // they can checkpoint the last burst of typing before reading the store.
+  useEffect(() => {
+    return registerEditorContentFlush(() => debouncedUpdateStore.flush());
+  }, [debouncedUpdateStore]);
+
+  // Cancel any pending debounced writes once the editor is hidden. The real
+  // flush happens synchronously in hidePersistentEditor() BEFORE the flow is
+  // cleared; anything still pending here is a post-hide editor event (e.g. the
+  // programmatic '' content clear) that must not overwrite the cleared activeFlow.
   useEffect(() => {
     if (!persistentEditor.isVisible) {
       debouncedUpdateStore.cancel();

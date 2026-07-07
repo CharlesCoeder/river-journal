@@ -173,6 +173,7 @@ vi.mock('app/state/store', () => {
     ephemeral$,
     saveActiveFlowSession: saveActiveFlowSessionSpy,
     getActiveFlowContent: getActiveFlowContentSpy,
+    flushEditorContent: vi.fn(),
     hidePersistentEditor: hidePersistentEditorSpy,
     setFocusMode: setFocusModeSpy,
     updatePersistentEditorHeaderHeight: vi.fn(),

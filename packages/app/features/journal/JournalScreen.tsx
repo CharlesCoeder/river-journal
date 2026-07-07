@@ -22,6 +22,7 @@ import {
   ephemeral$,
   saveActiveFlowSession,
   getActiveFlowContent,
+  flushEditorContent,
   hidePersistentEditor,
   updatePersistentEditorHeaderHeight,
   updatePersistentEditorBottomBarHeight,
@@ -60,6 +61,10 @@ export function JournalScreen() {
   }
 
   const handleExitFlow = () => {
+    // Checkpoint any still-debounced typing before we read content — otherwise
+    // a fast typist's last burst is missing from the store and the empty-content
+    // branch below would discard it straight to home.
+    flushEditorContent()
     const content = getActiveFlowContent()
     const wordCount = ephemeral$.instantWordCount.peek()
     const checkpoint = hasReachedAutosaveCheckpoint()
