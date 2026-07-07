@@ -63,12 +63,12 @@ BEGIN
   v_user_b := test_seed_user_500();
 
   PERFORM test_become(v_user_a);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user_a, 'a-post-1');
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user_a, 'a-post-2');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user_a, 'A post 1', 'a-post-1');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user_a, 'A post 2', 'a-post-2');
 
   PERFORM test_become(v_user_b);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user_b, 'b-post-1');
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user_b, 'b-post-2');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user_b, 'B post 1', 'b-post-1');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user_b, 'B post 2', 'b-post-2');
 
   PERFORM test_become(v_user_a);
   SELECT COUNT(*) INTO v_count_a FROM collective_your_posts_page(NULL, 50);
@@ -89,8 +89,8 @@ DECLARE
 BEGIN
   v_user := test_seed_user_500();
   PERFORM test_become(v_user);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 'visible');
-  INSERT INTO collective_posts (id, user_id, body, is_removed) VALUES (v_removed, v_user, 'removed', TRUE);
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user, 'Visible', 'visible');
+  INSERT INTO collective_posts (id, user_id, title, body, is_removed) VALUES (v_removed, v_user, 'Removed', 'removed', TRUE);
 
   SELECT COUNT(*) INTO v_visible FROM collective_your_posts_page(NULL, 50) WHERE id = v_removed;
   PERFORM tap_ok(v_visible = 0, 'is_removed = TRUE posts are excluded (AC #7)');
@@ -110,8 +110,8 @@ DECLARE
 BEGIN
   v_user := test_seed_user_500();
   PERFORM test_become(v_user);
-  INSERT INTO collective_posts (id, user_id, body, is_user_deleted, user_deleted_at)
-  VALUES (v_id, v_user, 'my-original-body-please-dont-redact', TRUE, NOW());
+  INSERT INTO collective_posts (id, user_id, title, body, is_user_deleted, user_deleted_at)
+  VALUES (v_id, v_user, 'Please dont redact', 'my-original-body-please-dont-redact', TRUE, NOW());
 
   SELECT body, is_user_deleted INTO v_body, v_flag
   FROM collective_your_posts_page(NULL, 50)
@@ -140,7 +140,7 @@ BEGIN
   v_user_b := test_seed_user_500();
 
   PERFORM test_become(v_user_a);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (v_a_post, v_user_a, 'a-top');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (v_a_post, v_user_a, 'A top', 'a-top');
 
   PERFORM test_become(v_user_b);
   INSERT INTO collective_posts (id, user_id, body, parent_post_id)
@@ -172,7 +172,7 @@ BEGIN
   v_reactor3 := test_seed_user_500();
 
   PERFORM test_become(v_user);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (v_post, v_user, 'p');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (v_post, v_user, 'P', 'p');
 
   -- Three distinct reactors. Reaction kind enum value: use whichever is
   -- accepted by the table (the v1 schema permits at least 'resonate').
@@ -207,7 +207,7 @@ DECLARE
 BEGIN
   v_user := test_seed_user_500();
   PERFORM test_become(v_user);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (v_top, v_user, 'top');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (v_top, v_user, 'Top', 'top');
   INSERT INTO collective_posts (id, user_id, body, parent_post_id) VALUES (v_r1, v_user, 'r1', v_top);
   INSERT INTO collective_posts (id, user_id, body, parent_post_id) VALUES (v_r2, v_user, 'r2', v_r1);
 
@@ -228,7 +228,7 @@ DECLARE
 BEGIN
   v_user := test_seed_user_500();
   PERFORM test_become(v_user);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 't');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user, 'T', 't');
 
   SELECT COUNT(*) INTO v_non_null
   FROM collective_your_posts_page(NULL, 50)
@@ -248,8 +248,8 @@ DECLARE
 BEGIN
   v_user := test_seed_user_500();
   PERFORM test_become(v_user);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 'm1');
-  INSERT INTO collective_posts (id, user_id, body) VALUES (gen_random_uuid(), v_user, 'm2');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user, 'M1', 'm1');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (gen_random_uuid(), v_user, 'M2', 'm2');
 
   SELECT COUNT(*) INTO v_total FROM collective_your_posts_page(NULL, 50);
   SELECT COUNT(*) INTO v_full FROM collective_your_posts_page(NULL, 50) WHERE mode = 'full';
@@ -272,8 +272,8 @@ BEGIN
   PERFORM test_become(v_user);
 
   FOR i IN 1..25 LOOP
-    INSERT INTO collective_posts (id, user_id, body, created_at)
-    VALUES (gen_random_uuid(), v_user, 'page-' || i::text, NOW() - (i || ' minutes')::INTERVAL);
+    INSERT INTO collective_posts (id, user_id, title, body, created_at)
+    VALUES (gen_random_uuid(), v_user, 'Page ' || i::text, 'page-' || i::text, NOW() - (i || ' minutes')::INTERVAL);
   END LOOP;
 
   SELECT COUNT(*) INTO v_first FROM collective_your_posts_page(NULL, 20);
@@ -298,8 +298,8 @@ BEGIN
   v_user := test_seed_user_500();
   PERFORM test_become(v_user);
   FOR i IN 1..60 LOOP
-    INSERT INTO collective_posts (id, user_id, body, created_at)
-    VALUES (gen_random_uuid(), v_user, 'clamp-' || i::text, NOW() - (i || ' seconds')::INTERVAL);
+    INSERT INTO collective_posts (id, user_id, title, body, created_at)
+    VALUES (gen_random_uuid(), v_user, 'Clamp ' || i::text, 'clamp-' || i::text, NOW() - (i || ' seconds')::INTERVAL);
   END LOOP;
 
   SELECT COUNT(*) INTO v_floor FROM collective_your_posts_page(NULL, 0);

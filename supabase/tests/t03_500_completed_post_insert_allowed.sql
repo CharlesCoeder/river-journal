@@ -17,8 +17,8 @@ BEGIN
   PERFORM test_seed_500_today(v_uid);
   PERFORM test_become(v_uid);
 
-  INSERT INTO collective_posts (id, user_id, body)
-  VALUES (v_post_id, v_uid, 'happy-path-t03');
+  INSERT INTO collective_posts (id, user_id, title, body)
+  VALUES (v_post_id, v_uid, 'Happy path t03', 'happy-path-t03');
 
   -- Direct SELECT denied; verify via DEFINER-privileged context with SET ROLE postgres.
   RESET ROLE;

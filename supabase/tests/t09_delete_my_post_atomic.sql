@@ -24,7 +24,7 @@ BEGIN
   PERFORM test_seed_500_today(v_reactor);
 
   PERFORM test_become(v_a);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (v_post, v_a, 'atomic-t09');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (v_post, v_a, 'Atomic t09', 'atomic-t09');
 
   PERFORM test_become(v_reactor);
   INSERT INTO collective_reactions (id, post_id, user_id, kind)

@@ -23,7 +23,7 @@ BEGIN
   PERFORM test_seed_500_today(v_b);
 
   PERFORM test_become(v_a);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (v_post, v_a, 'A-owned-t08');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (v_post, v_a, 'A owned t08', 'A-owned-t08');
 
   PERFORM test_become(v_b);
   BEGIN

@@ -23,8 +23,8 @@ BEGIN
   BEGIN
     PERFORM test_seed_500_today(v_poster);
     PERFORM test_become(v_poster);
-    INSERT INTO collective_posts (id, user_id, body)
-    VALUES (gen_random_uuid(), v_poster, 'leak-canary-body-t01');
+    INSERT INTO collective_posts (id, user_id, title, body)
+    VALUES (gen_random_uuid(), v_poster, 'Leak canary t01', 'leak-canary-body-t01');
   END;
 
   PERFORM test_become(v_uid);

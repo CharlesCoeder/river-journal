@@ -17,7 +17,7 @@ BEGIN
   v_a := test_seed_user();
   PERFORM test_seed_500_today(v_a);
   PERFORM test_become(v_a);
-  INSERT INTO collective_posts (id, user_id, body) VALUES (v_post, v_a, 'will-double-delete-t10');
+  INSERT INTO collective_posts (id, user_id, title, body) VALUES (v_post, v_a, 'Double delete t10', 'will-double-delete-t10');
 
   PERFORM delete_my_post(v_post);
 

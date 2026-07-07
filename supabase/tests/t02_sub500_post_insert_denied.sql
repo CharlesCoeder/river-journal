@@ -16,8 +16,11 @@ BEGIN
   PERFORM test_become(v_uid);
 
   BEGIN
-    INSERT INTO collective_posts (id, user_id, body)
-    VALUES (gen_random_uuid(), v_uid, 'should-not-land-t02');
+    -- Supply a valid title so the ONLY reason the INSERT can be denied is the
+    -- sub-500 RLS gate (not the title CHECK). This keeps the RLS regression
+    -- meaningful: if RLS were removed, this row would land and the test fail.
+    INSERT INTO collective_posts (id, user_id, title, body)
+    VALUES (gen_random_uuid(), v_uid, 'Should not land t02', 'should-not-land-t02');
   EXCEPTION
     -- 42501 = insufficient_privilege; Postgres returns this for RLS-denied INSERTs.
     WHEN insufficient_privilege THEN v_blocked := TRUE;

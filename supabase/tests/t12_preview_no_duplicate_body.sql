@@ -1,12 +1,16 @@
--- t12: The preview branch of collective_feed_page MUST NOT include the
--- most-recent post twice (once full, once truncated). Regression for the
--- UNION-overlap full-body leak red-team finding.
+-- t12: The preview branch of collective_feed_page MUST NOT leak a full body.
 --
--- Red phase: FAILS because collective_feed_page does not exist yet.
+-- History: this test originally guarded a UNION-overlap full-body leak in the
+-- pre-3-15 feed preview (1 full row + 3 teasers). Story 3-15 (20260622000000)
+-- rewrote the feed to DROP full `body` and emit only a server-truncated
+-- `excerpt` in both modes, so the UNION and its overlap guard are gone. This
+-- test is retained and repurposed as the feed-level "no full body in preview"
+-- regression: the most-recent post appears exactly once, and its returned
+-- excerpt is truncated (<= 140 chars) and NOT the full body.
 
 BEGIN;
 \i _helpers.psql
-SELECT plan(2);
+SELECT plan(3);
 
 DO $$
 DECLARE
@@ -16,20 +20,25 @@ DECLARE
   v_p2 UUID := gen_random_uuid();
   v_p3 UUID := gen_random_uuid();
   v_p4 UUID := gen_random_uuid();
+  -- Long body, no early sentence-ending punctuation, so the excerpt heuristic
+  -- truncates to the first 140 chars (a genuine truncation to assert against).
+  v_p1_body TEXT := repeat('word ', 60);   -- 300 chars, no '.', '!' or '?'
   v_p1_count INT;
-  v_dup INT;
+  v_p1_excerpt TEXT;
+  v_full_leak INT;
 BEGIN
   v_poster := test_seed_user();
   PERFORM test_seed_500_today(v_poster);
   PERFORM test_become(v_poster);
 
-  -- Insert with controlled timestamps: P1 newest, P4 oldest.
-  INSERT INTO collective_posts (id, user_id, body, created_at)
+  -- Insert with controlled timestamps: P1 newest, P4 oldest. Every top-level
+  -- post needs a non-blank title (collective_posts_title_chk, Story 3-15).
+  INSERT INTO collective_posts (id, user_id, title, body, created_at)
   VALUES
-    (v_p4, v_poster, 'BODY-FOUR-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '4 minutes'),
-    (v_p3, v_poster, 'BODY-THREE-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '3 minutes'),
-    (v_p2, v_poster, 'BODY-TWO-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '2 minutes'),
-    (v_p1, v_poster, 'BODY-ONE-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '1 minute');
+    (v_p4, v_poster, 'Title four', 'BODY-FOUR-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '4 minutes'),
+    (v_p3, v_poster, 'Title three', 'BODY-THREE-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '3 minutes'),
+    (v_p2, v_poster, 'Title two', 'BODY-TWO-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '2 minutes'),
+    (v_p1, v_poster, 'Title one', v_p1_body, NOW() - INTERVAL '1 minute');
 
   v_viewer := test_seed_user();
   PERFORM test_seed_sub500_today(v_viewer);
@@ -40,16 +49,19 @@ BEGIN
   FROM collective_feed_page(NULL, 20)
   WHERE id = v_p1;
 
-  -- No row may simultaneously be P1 AND a truncated body. We approximate the
-  -- "truncated" detection by checking that no row exists with id=P1 and
-  -- a body that does NOT match the full canonical body.
-  SELECT COUNT(*) INTO v_dup
+  -- Capture P1's excerpt as served to the sub-500 viewer.
+  SELECT excerpt INTO v_p1_excerpt
   FROM collective_feed_page(NULL, 20)
-  WHERE id = v_p1
-    AND body <> 'BODY-ONE-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.';
+  WHERE id = v_p1;
 
-  PERFORM tap_ok(v_p1_count = 1, 'most-recent post P1 appears exactly once in preview');
-  PERFORM tap_ok(v_dup = 0,      'no row has id=P1 with a truncated body (UNION non-overlap)');
+  -- No preview row may carry the full untruncated body of P1.
+  SELECT COUNT(*) INTO v_full_leak
+  FROM collective_feed_page(NULL, 20)
+  WHERE id = v_p1 AND excerpt = v_p1_body;
+
+  PERFORM tap_ok(v_p1_count = 1,               'most-recent post P1 appears exactly once in preview');
+  PERFORM tap_ok(length(v_p1_excerpt) <= 140,  'P1 excerpt is truncated to <= 140 chars');
+  PERFORM tap_ok(v_full_leak = 0,              'no preview row carries P1''s full untruncated body');
 END $$;
 
 SELECT * FROM tap_emit();

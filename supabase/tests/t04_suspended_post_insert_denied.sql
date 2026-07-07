@@ -30,8 +30,9 @@ BEGIN
 
   PERFORM test_become(v_uid);
   BEGIN
-    INSERT INTO collective_posts (id, user_id, body)
-    VALUES (gen_random_uuid(), v_uid, 'should-not-land-t04');
+    -- Valid title so the suspension RLS gate is the only possible blocker.
+    INSERT INTO collective_posts (id, user_id, title, body)
+    VALUES (gen_random_uuid(), v_uid, 'Should not land t04', 'should-not-land-t04');
   EXCEPTION
     WHEN insufficient_privilege THEN v_blocked := TRUE;
     WHEN check_violation       THEN v_blocked := TRUE;
