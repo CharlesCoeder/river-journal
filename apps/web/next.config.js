@@ -1,7 +1,20 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
-  typescript: {
-    ignoreBuildErrors: true,
+  // Security headers for every route. CSP is deliberately absent for now —
+  // a workable policy needs an inventory of inline styles/scripts (Tamagui
+  // injects inline styles) and the Supabase origins, so it ships separately.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ]
   },
   transpilePackages: [
     'solito',
