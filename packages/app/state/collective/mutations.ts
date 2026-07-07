@@ -77,7 +77,10 @@ export type DeleteOwnPostVars = { post_id: string }
 export type DeleteOwnContext = {
   feedSnapshot: InfiniteData<FeedPage> | undefined
   threadSnapshot: InfiniteData<ThreadPageResult> | undefined
-  yourPostsSnapshot: InfiniteData<YourPostsPage> | undefined
+  // yourPosts caches are USER-SCOPED keys under the `yourPostsKey` prefix
+  // (see yourPostsKeyForUser), so we snapshot every matching [key, data]
+  // pair via prefix matching rather than a single exact-key read.
+  yourPostsSnapshots: Array<readonly [readonly unknown[], InfiniteData<YourPostsPage> | undefined]>
 }
 
 // DB insert types — typed against generated Database schema, no `any` re-derivation.
@@ -374,7 +377,10 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     const threadSnapshot = queryClient.getQueryData<InfiniteData<ThreadPageResult>>(
       collectiveThreadKey(vars.post_id)
     )
-    const yourPostsSnapshot = queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)
+    // Prefix match: yourPosts keys are user-scoped ([...yourPostsKey, userId]).
+    const yourPostsSnapshots = queryClient.getQueriesData<InfiniteData<YourPostsPage>>({
+      queryKey: yourPostsKey,
+    })
 
     const deletedAt = new Date().toISOString()
 
@@ -417,10 +423,11 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
       )
     }
 
-    if (yourPostsSnapshot) {
-      queryClient.setQueryData<InfiniteData<YourPostsPage>>(yourPostsKey, {
-        ...yourPostsSnapshot,
-        pages: yourPostsSnapshot.pages.map(page => ({
+    for (const [key, snapshot] of yourPostsSnapshots) {
+      if (!snapshot) continue
+      queryClient.setQueryData<InfiniteData<YourPostsPage>>(key, {
+        ...snapshot,
+        pages: snapshot.pages.map(page => ({
           ...page,
           items: page.items.map(item =>
             item.id === vars.post_id
@@ -431,7 +438,7 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
       })
     }
 
-    return { feedSnapshot, threadSnapshot, yourPostsSnapshot }
+    return { feedSnapshot, threadSnapshot, yourPostsSnapshots }
   },
 
   onError: (
@@ -448,8 +455,11 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     if (ctx?.threadSnapshot !== undefined) {
       queryClient.setQueryData(collectiveThreadKey(vars.post_id), ctx.threadSnapshot)
     }
-    if (ctx?.yourPostsSnapshot !== undefined) {
-      queryClient.setQueryData(yourPostsKey, ctx.yourPostsSnapshot)
+    for (const [key, snapshot] of ctx?.yourPostsSnapshots ?? []) {
+      // Same empty-cache safety: only restore snapshots that were non-undefined.
+      if (snapshot !== undefined) {
+        queryClient.setQueryData(key, snapshot)
+      }
     }
   },
 

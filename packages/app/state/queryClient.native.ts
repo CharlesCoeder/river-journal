@@ -12,7 +12,7 @@ import { AppState, type AppStateStatus } from 'react-native'
 import NetInfo from '@react-native-community/netinfo'
 import { focusManager, onlineManager } from '@tanstack/react-query'
 
-export { queryClient, dehydrateOptions } from './queryClient.shared'
+export { queryClient, dehydrateOptions, QUERY_PERSIST_KEY } from './queryClient.shared'
 
 // RN focus tracking — refetch-on-focus needs an explicit AppState bridge
 // because TanStack Query's default focusManager listens to the browser

@@ -103,10 +103,37 @@ class MMKVPersistPlugin {
   }
 }
 
-export const persistPlugin = MMKVPersistPlugin
+// Export a SINGLE shared instance (not the class). Legend-State dedups a
+// plugin to one instance internally anyway, so passing the instance is
+// behaviourally identical — but it also lets the sign-out hygiene path call
+// deleteMetadata() on the EXACT instance Legend-State uses, clearing both its
+// in-memory metadata cache and the MMKV-backed copy.
+export const persistPlugin = new MMKVPersistPlugin()
 
 export const configurePersistence = configureSynced({
   persist: {
     plugin: persistPlugin,
   },
 })
+
+// Legend-State tables that sync to Supabase with `changesSince: 'last-sync'`
+// (see syncConfig.ts). Each keeps a persisted `lastSync` cursor in its persist
+// metadata (`<table>__m` in MMKV). Local-only tables ('app-state' etc.) are
+// excluded — they have no remote cursor.
+export const SYNC_CURSOR_TABLES = ['flows', 'entries', 'grace-days'] as const
+
+/**
+ * Clears ONLY the `changesSince` (lastSync) metadata for the synced tables,
+ * leaving the persisted row data intact, so the NEXT login performs a full
+ * pull. See the web variant (persistConfig.ts) for the full rationale — this
+ * mirrors it for MMKV. Best-effort; never blocks sign-out.
+ */
+export async function resetSyncCursors(): Promise<void> {
+  for (const table of SYNC_CURSOR_TABLES) {
+    try {
+      persistPlugin.deleteMetadata(table, {})
+    } catch {
+      // Best-effort — never block sign-out on cursor cleanup.
+    }
+  }
+}

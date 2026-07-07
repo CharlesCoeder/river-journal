@@ -42,8 +42,10 @@ import { useRouter } from 'solito/navigation'
 
 export default function YourPostsScreen() {
   // All hooks must be called unconditionally before any early returns (Rules of Hooks)
-  const yourPosts = useYourPosts()
   const currentUserId = useCurrentUserId()
+  // User-scoped: keys the own-posts cache under the current user id so a stale
+  // persisted cache can never serve another account's rows (cross-user defense).
+  const yourPosts = useYourPosts(currentUserId)
   // Read ONLY feed.data.pages[0].mode for the empty-state CTA dispatch (AC #17)
   const feed = useFeed()
   const reducedMotion = useReducedMotion()

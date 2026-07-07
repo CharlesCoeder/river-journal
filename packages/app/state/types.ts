@@ -258,11 +258,18 @@ export interface GraceDay {
 
 /**
  * A computed, UI-friendly structure representing a fully populated day's entry.
+ *
+ * Built by spreading the underlying `Entry` (`{ ...entry, flows, totalWords }`
+ * in store views), so ownership metadata is present at runtime. `user_id` is
+ * surfaced in the type because consumers on the cross-user defense path
+ * (export filtering) must distinguish the current account's entries from a
+ * previous account's local data.
  */
 export interface DailyEntryView {
   id: string
   entryDate: string
   lastModified: string
+  user_id?: string | null
   flows: Flow[]
   totalWords: number
 }

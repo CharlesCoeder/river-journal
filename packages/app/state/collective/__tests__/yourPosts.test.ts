@@ -63,6 +63,24 @@ describe('Story 3-5 / yourPostsKey shape (AC #10)', () => {
   })
 })
 
+describe('Cross-user defense / yourPostsKeyForUser (user-scoped key)', () => {
+  it('extends the yourPostsKey prefix with the user id', async () => {
+    const mod = await import('../yourPosts')
+    expect(mod.yourPostsKeyForUser('user-A')).toEqual(['collective', 'yourPosts', 'user-A'])
+  })
+
+  it('stays under the yourPostsKey prefix so ["collective"] invalidations still match', async () => {
+    const mod = await import('../yourPosts')
+    const scoped = mod.yourPostsKeyForUser('user-A')
+    expect(scoped.slice(0, mod.yourPostsKey.length)).toEqual([...mod.yourPostsKey])
+  })
+
+  it('produces distinct keys for distinct users (user A cache can never serve user B)', async () => {
+    const mod = await import('../yourPosts')
+    expect(mod.yourPostsKeyForUser('user-A')).not.toEqual(mod.yourPostsKeyForUser('user-B'))
+  })
+})
+
 describe('Story 3-5 / PAGE_SIZE constant (AC #11)', () => {
   it('exports PAGE_SIZE === 20 (NFR31 100-row budget regression sentinel)', async () => {
     const mod = await import('../yourPosts')
@@ -234,18 +252,34 @@ describe('Story 3-5 / fetchYourPostsPage RPC call shape (AC #12)', () => {
 })
 
 describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
-  it('passes queryKey === yourPostsKey to useInfiniteQuery', async () => {
-    const { useYourPosts, yourPostsKey } = await import('../yourPosts')
-    useYourPosts()
+  it('passes the user-scoped queryKey ([...yourPostsKey, userId]) to useInfiniteQuery', async () => {
+    const { useYourPosts, yourPostsKey, yourPostsKeyForUser } = await import('../yourPosts')
+    useYourPosts('user-A')
     expect(useInfiniteQueryMock).toHaveBeenCalledTimes(1)
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
-    expect(opts.queryKey).toEqual(yourPostsKey)
+    expect(opts.queryKey).toEqual(yourPostsKeyForUser('user-A'))
+    expect(opts.queryKey).toEqual([...yourPostsKey, 'user-A'])
+  })
+
+  it('enables the query only for a resolved string user id', async () => {
+    const { useYourPosts } = await import('../yourPosts')
+    useYourPosts('user-A')
+    expect(useInfiniteQueryMock.mock.calls[0]![0].enabled).toBe(true)
+  })
+
+  it('disables the query while the session is resolving (undefined) and when signed out (null)', async () => {
+    const { useYourPosts } = await import('../yourPosts')
+    useYourPosts(undefined)
+    expect(useInfiniteQueryMock.mock.calls[0]![0].enabled).toBe(false)
+    useInfiniteQueryMock.mockReset()
+    useYourPosts(null)
+    expect(useInfiniteQueryMock.mock.calls[0]![0].enabled).toBe(false)
   })
 
   it('declares initialPageParam === null', async () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
-    useYourPosts()
+    useYourPosts('user-A')
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.initialPageParam).toBeNull()
   })
@@ -253,7 +287,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
   it('getNextPageParam returns lastPage.nextCursor', async () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
-    useYourPosts()
+    useYourPosts('user-A')
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(typeof opts.getNextPageParam).toBe('function')
     expect(opts.getNextPageParam({ items: [], nextCursor: 'abc' })).toBe('abc')
@@ -263,7 +297,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
   it('declares maxPages === 5 (NFR31: 5 * PAGE_SIZE = 100 in-memory cap)', async () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
-    useYourPosts()
+    useYourPosts('user-A')
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.maxPages).toBe(5)
   })
@@ -271,7 +305,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
   it('declares refetchInterval === 30_000 and staleTime === 25_000 (calm-realtime cadence; staleTime < refetchInterval)', async () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
-    useYourPosts()
+    useYourPosts('user-A')
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.refetchInterval).toBe(30_000)
     expect(opts.staleTime).toBe(25_000)
@@ -282,7 +316,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
   it('refetchOnWindowFocus === true', async () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
-    useYourPosts()
+    useYourPosts('user-A')
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(opts.refetchOnWindowFocus).toBe(true)
   })
@@ -295,7 +329,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
 
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
-    useYourPosts()
+    useYourPosts('user-A')
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
 
     const cursor = '2026-05-01T12:00:00.000Z'

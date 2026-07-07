@@ -22,6 +22,12 @@ const defaultOptions: DefaultOptions = {
 
 export const queryClient = new QueryClient({ defaultOptions })
 
+// Storage key for the persisted TanStack Query cache. Single source of truth —
+// referenced by the persister setup (provider/index.tsx) AND the sign-out
+// hygiene path (utils/auth.ts) which removes it so a signed-out user's cached
+// server-visible rows cannot be rehydrated for the next user of the device.
+export const QUERY_PERSIST_KEY = 'rj-tq-cache'
+
 // Mutation keys whose IN-FLIGHT state we persist (TanStack Query Issue #7044
 // workaround) so an app crash mid-submit doesn't drop the user's content.
 // Reactions are intentionally excluded — they're user-recoverable (re-tap).

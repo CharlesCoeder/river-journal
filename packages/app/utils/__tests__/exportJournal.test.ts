@@ -3,6 +3,7 @@ import {
   generateMarkdownForEntry,
   exportJournal,
   exportJournalSingleFile,
+  filterExportableEntries,
   getAvailableMonths,
   sanitizeSeparator,
 } from '../exportJournal'
@@ -357,5 +358,95 @@ describe('getAvailableMonths', () => {
 
   it('returns empty array for no entries', () => {
     expect(getAvailableMonths([])).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// filterExportableEntries — cross-user defense
+// ---------------------------------------------------------------------------
+
+/** makeEntry variant that stamps user_id on the entry and each flow. */
+function makeOwnedEntry(
+  date: string,
+  entryUserId: string | null,
+  flows: { time: string; content: string; words: number; user_id?: string | null }[]
+): DailyEntryView {
+  const base = makeEntry(
+    date,
+    flows.map(({ time, content, words }) => ({ time, content, words }))
+  )
+  return {
+    ...base,
+    user_id: entryUserId,
+    flows: base.flows.map((f, i) => ({ ...f, user_id: flows[i]!.user_id ?? entryUserId })),
+  }
+}
+
+describe('filterExportableEntries (cross-user defense)', () => {
+  it('keeps the current user\'s entries and anonymous local entries', () => {
+    const entries = [
+      makeOwnedEntry('2026-07-01', 'user-B', [{ time: '10:00', content: 'mine', words: 1 }]),
+      makeOwnedEntry('2026-07-02', null, [
+        { time: '10:00', content: 'anonymous', words: 1, user_id: null },
+      ]),
+    ]
+    const result = filterExportableEntries(entries, 'user-B')
+    expect(result).toHaveLength(2)
+  })
+
+  it('excludes entries owned by a different account entirely', () => {
+    const entries = [
+      makeOwnedEntry('2026-07-01', 'user-A', [{ time: '10:00', content: 'previous user', words: 2 }]),
+      makeOwnedEntry('2026-07-02', 'user-B', [{ time: '10:00', content: 'mine', words: 1 }]),
+    ]
+    const result = filterExportableEntries(entries, 'user-B')
+    expect(result).toHaveLength(1)
+    expect(result[0]!.entryDate).toBe('2026-07-02')
+  })
+
+  it('excludes ALL account-owned entries when signed out (currentUserId null)', () => {
+    const entries = [
+      makeOwnedEntry('2026-07-01', 'user-A', [{ time: '10:00', content: 'owned', words: 1 }]),
+      makeOwnedEntry('2026-07-02', null, [
+        { time: '10:00', content: 'anonymous', words: 1, user_id: null },
+      ]),
+    ]
+    const result = filterExportableEntries(entries, null)
+    expect(result).toHaveLength(1)
+    expect(result[0]!.entryDate).toBe('2026-07-02')
+  })
+
+  it('filters foreign flows inside a kept entry and recomputes totalWords', () => {
+    const entries = [
+      makeOwnedEntry('2026-07-01', 'user-B', [
+        { time: '10:00', content: 'mine', words: 3, user_id: 'user-B' },
+        { time: '11:00', content: 'not mine', words: 5, user_id: 'user-A' },
+        { time: '12:00', content: 'anonymous local', words: 7, user_id: null },
+      ]),
+    ]
+    const result = filterExportableEntries(entries, 'user-B')
+    expect(result).toHaveLength(1)
+    expect(result[0]!.flows.map((f) => f.content)).toEqual(['mine', 'anonymous local'])
+    expect(result[0]!.totalWords).toBe(10)
+  })
+
+  it('does not mutate the input entries', () => {
+    const entries = [
+      makeOwnedEntry('2026-07-01', 'user-B', [
+        { time: '10:00', content: 'mine', words: 3, user_id: 'user-B' },
+        { time: '11:00', content: 'not mine', words: 5, user_id: 'user-A' },
+      ]),
+    ]
+    filterExportableEntries(entries, 'user-B')
+    expect(entries[0]!.flows).toHaveLength(2)
+    expect(entries[0]!.totalWords).toBe(8)
+  })
+
+  it('returns entries untouched (same reference) when nothing is foreign', () => {
+    const entry = makeOwnedEntry('2026-07-01', 'user-B', [
+      { time: '10:00', content: 'mine', words: 3 },
+    ])
+    const result = filterExportableEntries([entry], 'user-B')
+    expect(result[0]).toBe(entry)
   })
 })

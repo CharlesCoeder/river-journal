@@ -33,6 +33,52 @@ export function sanitizeSeparator(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Cross-user defense
+// ---------------------------------------------------------------------------
+
+/**
+ * Filters the local entry pool down to what the CURRENT identity may export.
+ *
+ * Local Legend-State data survives sign-out by design (the previous-account
+ * banner in Settings owns the delete/keep decision), so after an account
+ * switch the pool can contain the previous account's plaintext entries.
+ * Export must never dump those — same ownership rule as
+ * `restoreExcludedEntries` in state/store.ts:
+ *
+ *   - An entry owned by a DIFFERENT (non-null) user is excluded entirely.
+ *   - Anonymous local data (user_id null/undefined) is always exportable —
+ *     it was authored on this device outside any account.
+ *   - When signed out (`currentUserId` null), every account-owned entry is
+ *     excluded; only anonymous local data remains exportable.
+ *   - Within a kept entry, flows are filtered by the same rule (defends the
+ *     sign-out-window edge where a foreign flow sits under a kept entry) and
+ *     `totalWords` is recomputed for the kept flows.
+ */
+export function filterExportableEntries(
+  entries: DailyEntryView[],
+  currentUserId: string | null
+): DailyEntryView[] {
+  const ownedByOther = (userId: string | null | undefined): boolean =>
+    !!userId && userId !== currentUserId
+
+  const result: DailyEntryView[] = []
+  for (const entry of entries) {
+    if (ownedByOther(entry.user_id)) continue
+    const flows = entry.flows.filter((f) => !ownedByOther(f.user_id))
+    if (flows.length === entry.flows.length) {
+      result.push(entry)
+    } else {
+      result.push({
+        ...entry,
+        flows,
+        totalWords: flows.reduce((sum, f) => sum + f.wordCount, 0),
+      })
+    }
+  }
+  return result
+}
+
+// ---------------------------------------------------------------------------
 // Core formatting
 // ---------------------------------------------------------------------------
 

@@ -45,3 +45,35 @@ export const configurePersistence = configureSynced({
     plugin: persistPlugin,
   },
 })
+
+// Legend-State tables that sync to Supabase with `changesSince: 'last-sync'`
+// (see syncConfig.ts). Each keeps a persisted `lastSync` cursor in its persist
+// metadata. These are the ONLY observables whose cursor must be reset on
+// sign-out — 'app-state' / 'lapsed-state' / 'device-state' are local-only.
+export const SYNC_CURSOR_TABLES = ['flows', 'entries', 'grace-days'] as const
+
+/**
+ * Clears ONLY the `changesSince` (lastSync) metadata for the synced tables,
+ * leaving the persisted row data intact. Called on sign-out so the NEXT login
+ * performs a full pull instead of an incremental one — otherwise the new user's
+ * older rows (created before the previous user's last sync) are silently never
+ * fetched (missing history / broken streaks).
+ *
+ * We deliberately do NOT use syncState().resetPersistence(): that also deletes
+ * the persisted DATA, which must survive sign-out so the previous-account
+ * banner can still detect and offer to remove the prior user's local rows.
+ *
+ * `persistPlugin` is the SAME instance Legend-State reuses (it dedups a plugin
+ * to a single instance internally), so deleteMetadata() clears both the
+ * in-memory metadata cache and the IndexedDB row. Best-effort: a failure just
+ * means the next login may do an incremental pull instead of a full one.
+ */
+export async function resetSyncCursors(): Promise<void> {
+  for (const table of SYNC_CURSOR_TABLES) {
+    try {
+      await persistPlugin.deleteMetadata(table, {})
+    } catch {
+      // Best-effort — never block sign-out on cursor cleanup.
+    }
+  }
+}

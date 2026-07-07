@@ -38,7 +38,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ToastViewport } from './ToastViewport'
 import { use$ } from '@legendapp/state/react'
 import { store$, isDarkTheme, isDarkColor } from 'app/state/store'
-import { queryClient, dehydrateOptions } from 'app/state/queryClient'
+import { queryClient, dehydrateOptions, QUERY_PERSIST_KEY } from 'app/state/queryClient'
 import { queryStorage } from 'app/state/queryStorage'
 import { DEFAULT_THEME, DEFAULT_FONT_PAIRING } from 'app/state/types'
 import type { FontPairingId } from 'app/state/types'
@@ -92,7 +92,7 @@ let customThemeRegistered = false
 // subsequent persistence writes for the rest of the session.
 const persister = createAsyncStoragePersister({
   storage: queryStorage,
-  key: 'rj-tq-cache',
+  key: QUERY_PERSIST_KEY,
   throttleTime: 1000,
   retry: removeOldestQuery,
 })

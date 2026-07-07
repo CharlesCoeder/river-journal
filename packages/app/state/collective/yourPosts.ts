@@ -18,11 +18,25 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { supabase } from 'app/utils/supabase'
 
 /**
- * Canonical query-key tuple for the user's own posts. `as const` preserves
+ * Canonical query-key PREFIX for the user's own posts. `as const` preserves
  * the literal-tuple type so `queryClient.invalidateQueries({ queryKey:
  * ['collective'] })` from mutations matches by prefix.
+ *
+ * NOTE (cross-user defense): the ACTUAL query key is user-scoped — see
+ * `yourPostsKeyForUser()`. Mutations that walk this cache must use prefix
+ * matching (`queryClient.getQueriesData({ queryKey: yourPostsKey })`), never
+ * exact `getQueryData(yourPostsKey)`.
  */
 export const yourPostsKey = ['collective', 'yourPosts'] as const
+
+/**
+ * User-scoped query key for the calling user's own posts. Own-post rows are
+ * account-specific (full bodies, unlike the feed's excerpts), so the key
+ * embeds the user id — a stale persisted cache hydrated after an account
+ * switch can then never serve user A's rows to user B, even if the sign-out
+ * cache purge was skipped (e.g. crash mid-sign-out).
+ */
+export const yourPostsKeyForUser = (userId: string) => [...yourPostsKey, userId] as const
 
 /**
  * Page size for the user's own posts pagination. The look-ahead idiom
@@ -89,6 +103,13 @@ export async function fetchYourPostsPage(
 /**
  * `useInfiniteQuery` wrapper for the calling user's own posts.
  *
+ * `currentUserId` comes from the caller (`useCurrentUserId()` at the screen
+ * level) so this module stays free of extra hook dependencies. Semantics:
+ *   - `undefined` — session still resolving → query disabled (no fetch under
+ *     a placeholder key, no flash of another user's hydrated cache).
+ *   - `null` — signed out → disabled (the RPC requires auth anyway).
+ *   - string — enabled, keyed under `yourPostsKeyForUser(userId)`.
+ *
  * Config rationale:
  *   - `maxPages: 5` × `PAGE_SIZE: 20` = 100 in-memory cap (NFR31).
  *   - `staleTime: 25_000` < `refetchInterval: 30_000` — calm-realtime
@@ -97,9 +118,9 @@ export async function fetchYourPostsPage(
  *   - No mutationKey here; `useDeleteOwnPost` (Story 3.13) reaches this
  *     hook by invalidating the broader `['collective']` prefix.
  */
-export function useYourPosts() {
+export function useYourPosts(currentUserId: string | null | undefined) {
   return useInfiniteQuery({
-    queryKey: yourPostsKey,
+    queryKey: yourPostsKeyForUser(currentUserId ?? 'signed-out'),
     queryFn: ({ pageParam }) => fetchYourPostsPage(pageParam),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: YourPostsPage) => lastPage.nextCursor,
@@ -107,5 +128,6 @@ export function useYourPosts() {
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
     staleTime: 25_000,
+    enabled: typeof currentUserId === 'string',
   })
 }

@@ -5,6 +5,7 @@ import { store$ } from 'app/state/store'
 import {
   exportJournal,
   exportJournalSingleFile,
+  filterExportableEntries,
   getAvailableMonths,
   DEFAULT_EXPORT_OPTIONS,
 } from 'app/utils/exportJournal'
@@ -102,7 +103,17 @@ function CheckboxRow({
 // ---------------------------------------------------------------------------
 
 export function ExportJournal() {
-  const allEntries = use$(store$.views.allEntriesSorted())
+  const allEntriesUnfiltered = use$(store$.views.allEntriesSorted())
+  const currentUserId = use$(store$.session.userId)
+  // Cross-user defense: local data from a previous account survives sign-out
+  // by design (the PreviousAccountBanner owns the delete/keep decision), so
+  // export is restricted to the current identity's entries + anonymous local
+  // data. Without this, user B could export user A's plaintext journal right
+  // after signing in. See spec-fix-cross-user-data-defense.md.
+  const allEntries = useMemo(
+    () => filterExportableEntries(allEntriesUnfiltered, currentUserId ?? null),
+    [allEntriesUnfiltered, currentUserId]
+  )
   const [mode, setMode] = useState<ExportMode>('idle')
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
   const [exportedCount, setExportedCount] = useState(0)

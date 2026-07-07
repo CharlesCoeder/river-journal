@@ -57,9 +57,15 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
     expect(src).toMatch(/import\s*\{[^}]*queryStorage[^}]*\}\s*from\s*['"]app\/state\/queryStorage['"]/)
   })
 
-  it('configures the persister with key "rj-tq-cache" (AC #7)', () => {
+  it('configures the persister with key QUERY_PERSIST_KEY === "rj-tq-cache" (AC #7)', async () => {
+    // The provider now references the shared QUERY_PERSIST_KEY constant (the
+    // sign-out hygiene path in utils/auth.ts removes the same key, so the two
+    // callsites must never drift). Assert the wiring uses the constant AND
+    // that the constant still equals the canonical 'rj-tq-cache' storage key.
     const src = providerSrc()
-    expect(src).toMatch(/key:\s*['"]rj-tq-cache['"]/)
+    expect(src).toMatch(/key:\s*QUERY_PERSIST_KEY/)
+    const { QUERY_PERSIST_KEY } = await import('../queryClient.shared')
+    expect(QUERY_PERSIST_KEY).toBe('rj-tq-cache')
   })
 
   it('configures the persister with retry: removeOldestQuery (AC #19)', () => {

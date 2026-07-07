@@ -12,6 +12,10 @@ import { deviceState$ } from '../state/syncConfig'
 import { loadCurrentEncryptionMode, resetEncryptionSetupState } from '../state/encryptionSetup'
 import { hasWebTrustCapability, getStoredDeviceToken, hashDeviceToken, clearWebTrustData } from './webKeyStore'
 import { deleteTrustedBrowserByHash } from './userEncryption'
+import { clearStoredMasterKey } from './encryptionKeyStore'
+import { queryClient, QUERY_PERSIST_KEY } from '../state/queryClient'
+import { queryStorage } from '../state/queryStorage'
+import { resetSyncCursors } from '../state/persistConfig'
 
 /**
  * Common Supabase auth error codes mapped to user-friendly messages
@@ -117,6 +121,63 @@ const updateSessionState = (session: Session | null) => {
 }
 
 /**
+ * Device-local privacy cleanup that MUST run on every real sign-out
+ * (user-initiated `signOut()` AND the SIGNED_OUT auth event — never on
+ * TOKEN_REFRESHED). Idempotent, best-effort per step: a failure in one step
+ * never skips the others, and nothing here can block sign-out.
+ *
+ * Clears (device-local only):
+ *  1. The E2E master key — in-memory cache + OS keychain / SecureStore /
+ *     web-trust copy for the signed-out user. Server-side salts, managed
+ *     keys, and key verifiers are NEVER touched (see userEncryption.ts —
+ *     they must survive so the user can unlock again on next sign-in).
+ *  2. The TanStack Query cache — in-memory AND the persisted 'rj-tq-cache'
+ *     copy, so the next user of the device cannot hydrate the previous
+ *     user's collective posts / "your posts" rows.
+ *  3. Legend-State sync cursors ('last-sync' metadata for flows / entries /
+ *     grace-days) so the next login performs a FULL pull. Without this, a
+ *     different account's older rows are silently never fetched (missing
+ *     history, broken streaks). Persisted row DATA is intentionally kept —
+ *     the previous-account banner needs it to offer "Delete from this
+ *     device" / "Keep local".
+ *
+ * Intentionally NOT cleared: Legend-State journal data (flows/entries/
+ * grace-days — consent-gated via the previous-account banner), device-state
+ * (lastAuthedUserId — the banner's trigger), and the Supabase session itself
+ * (owned by supabase.auth.signOut()).
+ */
+export const performSignOutCleanup = async (userId: string | null): Promise<void> => {
+  // 1. E2E master key: memory + platform keychain (+ web trust data on web).
+  if (userId) {
+    try {
+      await clearStoredMasterKey(userId)
+    } catch {
+      // Best-effort — keychain I/O failure must not abort the rest.
+    }
+  }
+
+  // 2. TanStack Query: in-memory cache first (stops components serving stale
+  // rows immediately), then the persisted copy.
+  try {
+    queryClient.clear()
+  } catch {
+    // Best-effort
+  }
+  try {
+    await queryStorage.removeItem(QUERY_PERSIST_KEY)
+  } catch {
+    // Best-effort — queryStorage already swallows internally; belt-and-braces.
+  }
+
+  // 3. Persisted sync cursors (changesSince metadata).
+  try {
+    await resetSyncCursors()
+  } catch {
+    // Best-effort
+  }
+}
+
+/**
  * Initializes auth state listener
  * Call this once on app startup to sync Supabase auth with Legend-State
  */
@@ -136,8 +197,16 @@ export const initAuthListener = () => {
     }
 
     if (event === 'SIGNED_OUT') {
-      // Explicit sign-out or expired/revoked session — clear auth state gracefully
+      // Explicit sign-out or expired/revoked session — clear auth state
+      // gracefully, then run the device-local privacy cleanup. Peek the
+      // userId BEFORE updateSessionState(null) wipes it. This path also
+      // covers sign-outs that never go through our signOut() wrapper
+      // (session expiry, revocation, another tab). Cleanup is idempotent,
+      // so double-running after a user-initiated signOut() is harmless.
+      // TOKEN_REFRESHED is handled above and must NEVER reach this cleanup.
+      const previousUserId = store$.session.userId.peek()
       updateSessionState(null)
+      void performSignOutCleanup(previousUserId)
       return
     }
 
@@ -212,9 +281,14 @@ export const signInWithGoogle = async (): Promise<{ error: string | null }> => {
  * Signs out the current user
  */
 export const signOut = async (): Promise<{ error: string | null }> => {
-  // Revoke web trust data before clearing session (best-effort, don't block sign-out)
+  // Capture the user id up front — supabase.auth.signOut() clears the session
+  // and the SIGNED_OUT handler nulls store$.session.userId.
+  const userId = store$.session.userId.peek()
+
+  // Revoke web trust data before clearing session (best-effort, don't block
+  // sign-out). Server-side revocation needs an authenticated client, so this
+  // must happen BEFORE supabase.auth.signOut().
   if (hasWebTrustCapability()) {
-    const userId = store$.session.userId.peek()
     if (userId) {
       try {
         const localToken = await getStoredDeviceToken(userId).catch(() => null)
@@ -231,13 +305,25 @@ export const signOut = async (): Promise<{ error: string | null }> => {
     }
   }
 
-  const { error } = await supabase.auth.signOut()
-
-  if (error) {
-    return { error: error.message }
+  let errorMessage: string | null = null
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      errorMessage = error.message
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : 'Sign out failed.'
   }
 
-  return { error: null }
+  // Device-local privacy cleanup — MUST run even when the Supabase call
+  // failed or threw. Callers (SettingsScreen / MenuSurface / WordLinkNav /
+  // PreviousAccountBanner) treat sign-out as done and navigate away, so a
+  // skipped cleanup here would leave the previous user's master key, query
+  // cache, and sync cursors behind for the next user of the device. The
+  // SIGNED_OUT auth event runs it again on success — it is idempotent.
+  await performSignOutCleanup(userId)
+
+  return { error: errorMessage }
 }
 
 /**

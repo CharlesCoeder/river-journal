@@ -1225,11 +1225,19 @@ describe('Story 3-13 / collective.delete_own — optimistic update (AC #4, #26c)
     const yourUpdated = queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)
     expect(yourUpdated?.pages[0]?.items[0]?.body).toBe('[deleted]')
 
-    // Context contains all three snapshots
-    const context = ctx as { feedSnapshot?: unknown; threadSnapshot?: unknown; yourPostsSnapshot?: unknown }
+    // Context contains all three snapshots. yourPosts caches are user-scoped
+    // keys under the yourPostsKey prefix (cross-user defense), so the context
+    // carries an ARRAY of [key, snapshot] pairs collected via prefix matching.
+    const context = ctx as {
+      feedSnapshot?: unknown
+      threadSnapshot?: unknown
+      yourPostsSnapshots?: Array<readonly [readonly unknown[], unknown]>
+    }
     expect(context.feedSnapshot).toBeDefined()
     expect(context.threadSnapshot).toBeDefined()
-    expect(context.yourPostsSnapshot).toBeDefined()
+    expect(context.yourPostsSnapshots).toBeDefined()
+    expect(context.yourPostsSnapshots!.length).toBeGreaterThan(0)
+    expect(context.yourPostsSnapshots![0]![1]).toBeDefined()
   })
 
   it('AC #36 — optimistic update uses literal "[deleted]" (exact match)', async () => {
@@ -1412,11 +1420,15 @@ describe('Story 3-13 / collective.delete_own — empty-cache safety (AC #5, #26f
 
     const setQueryDataSpy = vi.spyOn(localQc, 'setQueryData')
 
-    // Context with all undefined snapshots (empty cache)
+    // Context with all undefined snapshots (empty cache). yourPostsSnapshots
+    // is the user-scoped [key, snapshot] pair list — include one pair with an
+    // undefined snapshot to exercise the per-pair guard.
     const emptyContext = {
       feedSnapshot: undefined,
       threadSnapshot: undefined,
-      yourPostsSnapshot: undefined,
+      yourPostsSnapshots: [
+        [['collective', 'yourPosts', 'user-A'], undefined] as const,
+      ],
     }
 
     await deleteDefaults!.onError!(

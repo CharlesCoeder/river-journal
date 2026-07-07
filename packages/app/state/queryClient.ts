@@ -5,4 +5,4 @@
  * native variant can reach it without resolving back to itself).
  */
 
-export { queryClient, dehydrateOptions } from './queryClient.shared'
+export { queryClient, dehydrateOptions, QUERY_PERSIST_KEY } from './queryClient.shared'
