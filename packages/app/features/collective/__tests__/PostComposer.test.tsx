@@ -26,7 +26,7 @@
  *   t13 — Lexical config namespace reuse (AC #10, #13, #26-t13)
  *   t14 — disclosure focus-return on review-mode dismiss, body preserved (AC #4, #26-t14)
  *   t15 — submit calls createPostWithId per-call (UUID distinctness) (AC #12, #26-t15)
- *   t16 — submit closes composer synchronously while offline (AC #14, #26-t16)
+ *   t16 — submit awaits the mutation; composer stays open until it resolves (#26-t16)
  *   t17 — double-tap submit guard (AC #13, #26-t17)
  *   t18 — route files exist (AC #23, #24, #25)
  *   t19 — disclosure gate acknowledgment focus (AC #3)
@@ -69,8 +69,13 @@ let mockIsPending = false
 let mockCreatePostError: Error | null = null
 let mockShowTenureTier = false
 
-// Spy on mutate, router, ephemeral
+// Spy on mutate/mutateAsync, router, ephemeral.
+// The composer submits via mutateAsync (await-based contract: navigate only
+// after the mutation resolves). Default vi.fn() returns undefined, which the
+// composer awaits as an immediate success. mockMutate is kept for any callers
+// still exercising the fire-and-forget path.
 const mockMutate = vi.fn()
+const mockMutateAsync = vi.fn()
 const mockRouterBack = vi.fn()
 const mockRouterPush = vi.fn()
 const mockEphemeralIsVisibleSet = vi.fn()
@@ -151,6 +156,7 @@ vi.mock('app/state/collective/mutations', () => {
   return {
     useCreatePost: () => ({
       mutate: mockMutate,
+      mutateAsync: mockMutateAsync,
       isPending: mockIsPending,
       error: mockCreatePostError,
     }),
@@ -336,6 +342,7 @@ afterEach(() => {
   mockCreatePostError = null
   mockShowTenureTier = false
   mockMutate.mockReset()
+  mockMutateAsync.mockReset()
   mockRouterBack.mockReset()
   mockRouterPush.mockReset()
   mockEphemeralIsVisibleSet.mockReset()
@@ -558,7 +565,7 @@ describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
     mockIsPending = false
   })
 
-  it('tapping submit calls mutate with title, body, parent_post_id: null, and a uuid id', () => {
+  it('tapping submit calls mutateAsync with title, body, parent_post_id: null, and a uuid id', async () => {
     render(React.createElement(PostComposer))
     // Top-level letters are title-led: provide a required title first.
     const titleField = screen.getByLabelText('Letter title')
@@ -569,9 +576,11 @@ describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
     fireEvent.input(editor!, { target: { innerText: 'Hello collective.' } })
     // Tap submit (top-level label is "Leave it for the room")
     const submitBtn = screen.getByText('Leave it for the room')
-    fireEvent.click(submitBtn)
-    expect(mockMutate).toHaveBeenCalledTimes(1)
-    const callArg = mockMutate.mock.calls[0]![0]
+    await act(async () => {
+      fireEvent.click(submitBtn)
+    })
+    expect(mockMutateAsync).toHaveBeenCalledTimes(1)
+    const callArg = mockMutateAsync.mock.calls[0]![0]
     expect(callArg.title).toBe('A morning letter')
     expect(callArg.body).toBe('Hello collective.')
     expect(callArg.parent_post_id).toBeNull()
@@ -580,12 +589,14 @@ describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
     expect(typeof callArg.id).toBe('string')
   })
 
-  it('calls router.push("/collective") synchronously after mutate (never router.back)', () => {
+  it('calls router.push("/collective") after the mutation resolves (never router.back)', async () => {
     render(React.createElement(PostComposer))
     fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'Post body text.' } })
-    fireEvent.click(screen.getByText('Leave it for the room'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
     expect(mockRouterPush).toHaveBeenCalledTimes(1)
     expect(mockRouterPush).toHaveBeenCalledWith('/collective')
     expect(mockRouterBack).not.toHaveBeenCalled()
@@ -678,46 +689,82 @@ describe('Story 3-9 / t10 — error path (AC #16)', () => {
     mockHasAcknowledgedBoundaryA = true
   })
 
-  it('renders error microcopy "Couldn\'t post. Try again." when mutate fires onError', () => {
-    // Mock mutate to call onError callback immediately
-    mockMutate.mockImplementationOnce((_vars: any, opts: any) => {
-      opts?.onError?.(new Error('RLS rejection'), _vars, undefined)
-    })
+  it('renders error microcopy "Couldn\'t post. Try again." when mutateAsync rejects', async () => {
+    mockMutateAsync.mockRejectedValueOnce(new Error('RLS rejection'))
     render(React.createElement(PostComposer))
     fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'test post body' } })
-    fireEvent.click(screen.getByText('Leave it for the room'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
     expect(screen.getByText(/Couldn't post\. Try again\./i)).not.toBeNull()
   })
 
-  it('composer does NOT auto-close on error (body preserved, no navigation)', () => {
-    mockMutate.mockImplementationOnce((_vars: any, opts: any) => {
-      opts?.onError?.(new Error('error'), _vars, undefined)
-    })
+  it('composer does NOT auto-close on error (draft preserved, no navigation)', async () => {
+    mockMutateAsync.mockRejectedValueOnce(new Error('error'))
     render(React.createElement(PostComposer))
     fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'draft text' } })
-    fireEvent.click(screen.getByText('Leave it for the room'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
     // No navigation on error
     expect(mockRouterBack).not.toHaveBeenCalled()
     expect(mockRouterPush).not.toHaveBeenCalled()
     // Editor still in DOM
     expect(document.querySelector('[data-testid="collective-lexical-editor"]')).not.toBeNull()
+    // Draft state is still present: the title field keeps its value, and Submit
+    // stays enabled (title+body state were NOT cleared on the failure path).
+    expect((screen.getByLabelText('Letter title') as HTMLTextAreaElement).value).toBe('A title')
+    expect(screen.getByText('Leave it for the room').closest('button')?.disabled).toBe(false)
   })
 
-  it('does NOT render native alert or toast on error (NO dialog role)', () => {
-    mockMutate.mockImplementationOnce((_vars: any, opts: any) => {
-      opts?.onError?.(new Error('error'), _vars, undefined)
-    })
+  it('does NOT render native alert or toast on error (NO dialog role)', async () => {
+    mockMutateAsync.mockRejectedValueOnce(new Error('error'))
     render(React.createElement(PostComposer))
     fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'x' } })
-    fireEvent.click(screen.getByText('Leave it for the room'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
     // No modal/dialog should appear
     expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+  })
+
+  it('a second submit attempt clears the stale error banner while pending', async () => {
+    // First attempt fails → banner shows.
+    mockMutateAsync.mockRejectedValueOnce(new Error('first failure'))
+    render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
+    const editor = document.querySelector('[data-testid="lexical-content-editable"]')
+    fireEvent.input(editor!, { target: { innerText: 'retry draft' } })
+    const submitBtn = screen.getByText('Leave it for the room')
+    await act(async () => {
+      fireEvent.click(submitBtn)
+    })
+    expect(screen.getByText(/Couldn't post\. Try again\./i)).not.toBeNull()
+
+    // Second attempt: mutation stays in flight → the stale banner is cleared
+    // immediately (setShowError(false) at the top of the handler).
+    let resolveSecond: (() => void) | undefined
+    mockMutateAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSecond = resolve
+        })
+    )
+    await act(async () => {
+      fireEvent.click(submitBtn)
+    })
+    expect(screen.queryByText(/Couldn't post\. Try again\./i)).toBeNull()
+
+    // Let the in-flight attempt finish so no dangling promise leaks across tests.
+    await act(async () => {
+      resolveSecond?.()
+    })
   })
 })
 
@@ -773,7 +820,7 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
     expect(editor?.getAttribute('data-min-height')).toBe('120')
   })
 
-  it('compact Submit calls mutate with parent_post_id from replyContext', () => {
+  it('compact Submit calls mutateAsync with parent_post_id from replyContext', async () => {
     const onSubmitted = vi.fn()
     render(
       React.createElement(PostComposer, {
@@ -784,13 +831,15 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
     )
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'reply body' } })
-    fireEvent.click(screen.getByText('Submit'))
-    expect(mockMutate).toHaveBeenCalledTimes(1)
-    const callArg = mockMutate.mock.calls[0]![0]
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'))
+    })
+    expect(mockMutateAsync).toHaveBeenCalledTimes(1)
+    const callArg = mockMutateAsync.mock.calls[0]![0]
     expect(callArg.parent_post_id).toBe('parent-post-id-1')
   })
 
-  it('compact Submit calls onSubmitted callback (not router.back)', () => {
+  it('compact Submit calls onSubmitted after the mutation resolves (not router.back)', async () => {
     const onSubmitted = vi.fn()
     render(
       React.createElement(PostComposer, {
@@ -801,7 +850,9 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
     )
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'reply body' } })
-    fireEvent.click(screen.getByText('Submit'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'))
+    })
     expect(onSubmitted).toHaveBeenCalledTimes(1)
     expect(mockRouterBack).not.toHaveBeenCalled()
   })
@@ -910,7 +961,7 @@ describe('Story 3-9 / t15 — per-call UUID generation (AC #12)', () => {
     mockHasAcknowledgedBoundaryA = true
   })
 
-  it('two submit calls produce distinct id values (guards useState(crypto.randomUUID()) regression)', () => {
+  it('two submit calls produce distinct id values (guards useState(crypto.randomUUID()) regression)', async () => {
     // Re-render trick: mount, type, submit, then type again and submit
     // In a real implementation, after submit navigates away, a new mount would occur.
     // We simulate two separate mounts:
@@ -920,18 +971,22 @@ describe('Story 3-9 / t15 — per-call UUID generation (AC #12)', () => {
     fireEvent.input(editor1!, { target: { innerText: 'first post' } })
     // Mock router to not crash on back
     mockRouterBack.mockImplementation(() => {})
-    fireEvent.click(screen.getByText('Leave it for the room'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
     unmount()
 
     render(React.createElement(PostComposer))
     fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'Second title' } })
     const editor2 = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor2!, { target: { innerText: 'second post' } })
-    fireEvent.click(screen.getByText('Leave it for the room'))
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
 
-    expect(mockMutate).toHaveBeenCalledTimes(2)
-    const id1 = mockMutate.mock.calls[0]![0].id
-    const id2 = mockMutate.mock.calls[1]![0].id
+    expect(mockMutateAsync).toHaveBeenCalledTimes(2)
+    const id1 = mockMutateAsync.mock.calls[0]![0].id
+    const id2 = mockMutateAsync.mock.calls[1]![0].id
     expect(id1).toBeDefined()
     expect(id2).toBeDefined()
     expect(id1).not.toBe(id2)
@@ -939,38 +994,58 @@ describe('Story 3-9 / t15 — per-call UUID generation (AC #12)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// t16 — submit closes composer synchronously while offline
-// AC #14, #26-t16 (Failure Mode Analysis #2)
+// t16 — submit AWAITS the mutation; composer stays open until it resolves
+// (#26-t16 — silent-data-loss fix 2026-07: the old "close synchronously even
+// offline" contract could discard a rejected letter with no error shown. The
+// accepted tradeoff: while the insert is pending — including offline-paused —
+// the composer stays open with the draft intact; navigation fires only on
+// confirmed success.)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t16 — submit closes synchronously (offline-safe) (AC #14)', () => {
+describe('Story 3-9 / t16 — submit awaits the mutation before closing', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
 
-  it('full-mode: router.push("/collective") fires synchronously after mutate, without waiting for onSuccess', () => {
-    // Simulate offline: mutate calls onMutate (optimistic) but never fires onSuccess
-    mockMutate.mockImplementationOnce((_vars: any, _opts: any) => {
-      // Only onMutate fires (optimistic); onSuccess never fires (offline)
-      _opts?.onMutate?.(_vars)
-      // Intentionally NOT calling onSuccess or onError
-    })
+  it('full-mode: composer stays open (no navigation) while the mutation is pending; router.push fires after it resolves', async () => {
+    let resolveMutation: (() => void) | undefined
+    mockMutateAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveMutation = resolve
+        })
+    )
     render(React.createElement(PostComposer))
-    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'Offline title' } })
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'Pending title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
-    fireEvent.input(editor!, { target: { innerText: 'offline post' } })
-    fireEvent.click(screen.getByText('Leave it for the room'))
+    fireEvent.input(editor!, { target: { innerText: 'pending post' } })
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
+    // In flight: no navigation, editor still mounted, draft intact.
+    expect(mockRouterPush).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-testid="collective-lexical-editor"]')).not.toBeNull()
+    expect((screen.getByLabelText('Letter title') as HTMLTextAreaElement).value).toBe(
+      'Pending title'
+    )
+    // Server confirms → NOW the composer closes.
+    await act(async () => {
+      resolveMutation?.()
+    })
     expect(mockRouterPush).toHaveBeenCalledTimes(1)
     expect(mockRouterPush).toHaveBeenCalledWith('/collective')
     expect(mockRouterBack).not.toHaveBeenCalled()
   })
 
-  it('compact-mode: onSubmitted is called synchronously after mutate', () => {
+  it('compact-mode: onSubmitted fires only after the mutation resolves', async () => {
     const onSubmitted = vi.fn()
-    mockMutate.mockImplementationOnce((_vars: any, _opts: any) => {
-      _opts?.onMutate?.(_vars)
-      // Intentionally NOT calling onSuccess
-    })
+    let resolveMutation: (() => void) | undefined
+    mockMutateAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveMutation = resolve
+        })
+    )
     render(
       React.createElement(PostComposer, {
         compact: true,
@@ -979,8 +1054,14 @@ describe('Story 3-9 / t16 — submit closes synchronously (offline-safe) (AC #14
       })
     )
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
-    fireEvent.input(editor!, { target: { innerText: 'offline reply' } })
-    fireEvent.click(screen.getByText('Submit'))
+    fireEvent.input(editor!, { target: { innerText: 'pending reply' } })
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'))
+    })
+    expect(onSubmitted).not.toHaveBeenCalled()
+    await act(async () => {
+      resolveMutation?.()
+    })
     expect(onSubmitted).toHaveBeenCalledTimes(1)
   })
 })
@@ -995,42 +1076,62 @@ describe('Story 3-9 / t17 — double-tap submit guard (AC #13)', () => {
     mockHasAcknowledgedBoundaryA = true
   })
 
-  it('two synchronous Submit clicks fire mutate exactly once', () => {
-    let capturedOnSettled: (() => void) | undefined
-    mockMutate.mockImplementationOnce((_vars: any, opts: any) => {
-      capturedOnSettled = () => opts?.onSettled?.()
-      // Does NOT call onSettled synchronously (simulating in-flight)
-    })
+  it('two synchronous Submit clicks fire mutateAsync exactly once', async () => {
+    // In-flight simulation: the first mutateAsync never settles inside the act.
+    let resolveMutation: (() => void) | undefined
+    mockMutateAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveMutation = resolve
+        })
+    )
     render(React.createElement(PostComposer))
     fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'rapid post' } })
     const submitBtn = screen.getByText('Leave it for the room')
-    // Two rapid clicks in the same tick
-    fireEvent.click(submitBtn)
-    fireEvent.click(submitBtn)
-    expect(mockMutate).toHaveBeenCalledTimes(1)
+    // Two rapid clicks while the first submit is still in flight
+    await act(async () => {
+      fireEvent.click(submitBtn)
+      fireEvent.click(submitBtn)
+    })
+    expect(mockMutateAsync).toHaveBeenCalledTimes(1)
+    // Settle the in-flight mutation so nothing leaks across tests.
+    await act(async () => {
+      resolveMutation?.()
+    })
   })
 
-  it('after onSettled fires, a third click lands a second mutate call', () => {
-    let capturedOnSettled: (() => void) | undefined
-    mockMutate.mockImplementation((_vars: any, opts: any) => {
-      capturedOnSettled = () => opts?.onSettled?.()
-    })
+  it('after the first mutation settles, a third click lands a second mutateAsync call', async () => {
+    let resolveFirst: (() => void) | undefined
+    mockMutateAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFirst = resolve
+        })
+    )
     render(React.createElement(PostComposer))
     fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
     const editor = document.querySelector('[data-testid="lexical-content-editable"]')
     fireEvent.input(editor!, { target: { innerText: 'rapid post' } })
     const submitBtn = screen.getByText('Leave it for the room')
-    fireEvent.click(submitBtn)
-    fireEvent.click(submitBtn) // second tap, should be blocked
-    expect(mockMutate).toHaveBeenCalledTimes(1)
-    // Now simulate the first call settling
-    act(() => capturedOnSettled?.())
-    // Third click should now succeed
+    await act(async () => {
+      fireEvent.click(submitBtn)
+      fireEvent.click(submitBtn) // second tap, should be blocked
+    })
+    expect(mockMutateAsync).toHaveBeenCalledTimes(1)
+    // Now settle the first call (success path clears the draft + resets the guard).
+    await act(async () => {
+      resolveFirst?.()
+    })
+    // Re-enter a draft (success cleared title/body) and click a third time —
+    // the guard has been released, so a second mutateAsync call lands.
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'Second title' } })
     fireEvent.input(editor!, { target: { innerText: 'second post' } })
-    fireEvent.click(submitBtn)
-    expect(mockMutate).toHaveBeenCalledTimes(2)
+    await act(async () => {
+      fireEvent.click(submitBtn)
+    })
+    expect(mockMutateAsync).toHaveBeenCalledTimes(2)
   })
 })
 

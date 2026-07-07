@@ -132,6 +132,18 @@ queryClient.setMutationDefaults(['collective', 'post'], {
     // stomping our optimistic update.
     await queryClient.cancelQueries({ queryKey: ['collective'] })
 
+    // Replies (parent_post_id set) do NOT belong in the top-level feed cache —
+    // prepending them there produced phantom "Untitled" rows (title null,
+    // excerpt ''). A reply belongs in its parent's thread, whose cache shape
+    // (ThreadPost: `body`, no `excerpt`/`reactions`, plus preview-mode clamping
+    // and pagination ordering) differs from the feed's. Rather than risk an
+    // incorrect optimistic thread insert, we skip the optimistic mutation for
+    // replies and let the onSettled ['collective'] invalidation below refetch
+    // the thread. Only top-level letters get an optimistic feed row.
+    if (vars.parent_post_id != null) {
+      return { snapshot: undefined }
+    }
+
     const snapshot = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
 
     if (snapshot) {

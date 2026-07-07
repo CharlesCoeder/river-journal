@@ -576,6 +576,74 @@ describe('Story 3-15 / optimistic feed row is title-led, no body (AC #27b)', () 
   })
 })
 
+describe('Regression 2026-07 / reply onMutate must NOT touch the top-level feed cache', () => {
+  it('does not prepend a reply (parent_post_id set) to the feed — no phantom "Untitled" rows', async () => {
+    const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
+    expect(postDefaults).toBeDefined()
+
+    // Seed a feed with one existing top-level letter.
+    const existing = makePost({ id: 'existing-letter' })
+    queryClient.setQueryData(collectiveFeedKey, makeInfiniteData([makeFeedPage([existing])]))
+
+    await queryClient.cancelQueries({ queryKey: ['collective'] })
+    await (postDefaults!.onMutate as AnyFn)({
+      id: 'reply-opt-1',
+      body: 'a reply that must not appear in the feed',
+      parent_post_id: 'existing-letter',
+      user_id: 'user-1',
+    })
+
+    // The feed cache is untouched: same single row, no optimistic reply prepended.
+    const feed = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
+    expect(feed!.pages[0]!.items).toHaveLength(1)
+    expect(feed!.pages[0]!.items[0]!.id).toBe('existing-letter')
+  })
+
+  it('returns an undefined snapshot for replies so onError has nothing to (wrongly) restore', async () => {
+    const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
+    expect(postDefaults).toBeDefined()
+
+    queryClient.setQueryData(collectiveFeedKey, makeInfiniteData([makeFeedPage([])]))
+
+    await queryClient.cancelQueries({ queryKey: ['collective'] })
+    const context = await (postDefaults!.onMutate as AnyFn)({
+      id: 'reply-opt-2',
+      body: 'another reply',
+      parent_post_id: 'some-parent',
+      user_id: 'user-1',
+    })
+
+    expect((context as { snapshot?: unknown }).snapshot).toBeUndefined()
+
+    // And onError with that context must not clobber the feed cache.
+    const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
+    await (postDefaults!.onError as AnyFn)(new Error('rejected'), { id: 'reply-opt-2' }, context)
+    const undefinedCalls = setQueryDataSpy.mock.calls.filter((call) => call[1] === undefined)
+    expect(undefinedCalls.length).toBe(0)
+    setQueryDataSpy.mockRestore()
+  })
+
+  it('still prepends an optimistic feed row for top-level letters (parent_post_id null)', async () => {
+    const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
+    expect(postDefaults).toBeDefined()
+
+    queryClient.setQueryData(collectiveFeedKey, makeInfiniteData([makeFeedPage([])]))
+
+    await queryClient.cancelQueries({ queryKey: ['collective'] })
+    await (postDefaults!.onMutate as AnyFn)({
+      id: 'top-level-1',
+      body: 'a letter body',
+      title: 'A letter title',
+      parent_post_id: null,
+      user_id: 'user-1',
+    })
+
+    const feed = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
+    expect(feed!.pages[0]!.items).toHaveLength(1)
+    expect(feed!.pages[0]!.items[0]!.id).toBe('top-level-1')
+  })
+})
+
 describe('Story 3-15 / delete_own feed-cache update omits body (AC #27c)', () => {
   const POST_ID = 'del-1'
 

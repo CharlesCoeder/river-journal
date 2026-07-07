@@ -155,79 +155,62 @@ export default function PostComposer({
 
   // ─── Submit handlers ───────────────────────────────────────────────────────
 
-  const handleSubmitFull = () => {
+  const handleSubmitFull = async () => {
     if (submittingRef.current) return
     if (isSubmitDisabled) return
     submittingRef.current = true
+    // Clear any stale error banner before re-attempting.
+    setShowError(false)
 
-    // Track whether a synchronous error occurred in the mutate callback.
-    // If onError fires synchronously (e.g. RLS rejection in tests), we do NOT
-    // navigate — the composer must stay open to show the error microcopy (AC #16).
-    // If no synchronous error, navigate immediately (AC #14: composer closes even offline).
-    let syncError = false
-
-    createPost.mutate(
-      createPostWithId({
-        body,
-        // Top-level letters are title-led; the title is required above.
-        title: trimmedTitle,
-        parent_post_id: null,
-        user_id: currentUserId!,
-      }),
-      {
-        onSuccess: () => {
-          setTitle('')
-          setBody('')
-        },
-        onError: () => {
-          syncError = true
-          setShowError(true)
-        },
-        onSettled: () => {
-          submittingRef.current = false
-        },
-      }
-    )
-
-    // Navigate synchronously after mutate() — NOT inside onSuccess.
-    // onSuccess fires only after server confirmation (or reconnect+replay when offline).
-    // Navigating here ensures the composer closes immediately on submit, even offline.
-    // Skip navigation if a synchronous error occurred (AC #16: keep composer open on error).
-    if (!syncError) {
+    try {
+      // Await the result so we only navigate on confirmed success. `mutate()`'s
+      // onError fires asynchronously, so a synchronous post-mutate() navigation
+      // could never see a rejection — it would close the composer and discard a
+      // 500+ word letter when the server rejects the insert (lapsed streak,
+      // suspension, network failure) and the optimistic row rolls back.
+      await createPost.mutateAsync(
+        createPostWithId({
+          body,
+          // Top-level letters are title-led; the title is required above.
+          title: trimmedTitle,
+          parent_post_id: null,
+          user_id: currentUserId!,
+        })
+      )
+      // Success: drop the draft and close the composer.
+      setTitle('')
+      setBody('')
       router.push('/collective')
+    } catch {
+      // Failure: STAY on the composer with the draft intact and surface the
+      // error microcopy (AC #16). Never discard the letter on a rejected insert.
+      setShowError(true)
+    } finally {
+      submittingRef.current = false
     }
   }
 
-  const handleSubmitCompact = () => {
+  const handleSubmitCompact = async () => {
     if (submittingRef.current) return
     if (isSubmitDisabled) return
     submittingRef.current = true
+    setShowError(false)
 
-    let syncError = false
-
-    createPost.mutate(
-      createPostWithId({
-        body,
-        parent_post_id: replyContext!.parentPostId,
-        user_id: currentUserId!,
-      }),
-      {
-        onSuccess: () => {
-          setBody('')
-        },
-        onError: () => {
-          syncError = true
-          setShowError(true)
-        },
-        onSettled: () => {
-          submittingRef.current = false
-        },
-      }
-    )
-
-    // Same offline-close reasoning as full mode: call synchronously after mutate().
-    if (!syncError) {
+    try {
+      // Same rationale as full mode: await so a rejected reply keeps its text.
+      await createPost.mutateAsync(
+        createPostWithId({
+          body,
+          parent_post_id: replyContext!.parentPostId,
+          user_id: currentUserId!,
+        })
+      )
+      setBody('')
       onSubmitted?.()
+    } catch {
+      setShowError(true)
+    } finally {
+      submittingRef.current = false
     }
   }
 
