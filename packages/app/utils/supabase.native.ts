@@ -1,27 +1,14 @@
 /**
  * Supabase client for React Native (mobile)
- * Uses MMKV for session persistence instead of AsyncStorage
+ * Uses an AES-256 encrypted MMKV instance for session persistence instead of
+ * AsyncStorage. The refresh token in the session is sensitive, so the MMKV
+ * encryption key is stored in the platform keychain (Expo SecureStore).
+ * See utils/secureMmkv.native.ts for the storage adapter, migration and fallback.
  */
 
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
-import { createMMKV } from 'react-native-mmkv'
-
-// Create a dedicated MMKV instance for Supabase auth storage
-const authStorage = createMMKV({ id: 'supabase-auth' })
-
-// Supabase-compatible storage adapter for MMKV
-const mmkvStorageAdapter = {
-  getItem: (key: string): string | null => {
-    return authStorage.getString(key) ?? null
-  },
-  setItem: (key: string, value: string): void => {
-    authStorage.set(key, value)
-  },
-  removeItem: (key: string): void => {
-    authStorage.remove(key)
-  },
-}
+import { secureMmkvStorageAdapter } from './secureMmkv.native'
 
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 
@@ -54,7 +41,7 @@ if (!supabaseUrl) {
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: mmkvStorageAdapter,
+    storage: secureMmkvStorageAdapter,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
