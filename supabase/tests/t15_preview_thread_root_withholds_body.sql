@@ -47,7 +47,7 @@ BEGIN
   INSERT INTO collective_posts (id, user_id, parent_post_id, body)
   VALUES (v_reply, v_poster, v_root, 'a reply body');
   INSERT INTO collective_reactions (id, post_id, user_id, kind)
-  VALUES (gen_random_uuid(), v_root, v_poster, 'resonate');
+  VALUES (gen_random_uuid(), v_root, v_poster, 'heart');
 
   -- ── FULL mode: the 500-completed poster reads their own thread root. ──
   SELECT body, mode INTO v_full_body, v_full_mode
@@ -71,7 +71,7 @@ BEGIN
   PERFORM tap_ok(v_pv_body = v_expected_excerpt,    'thread_root: preview body equals the server excerpt (first 140 chars)');
   PERFORM tap_ok(v_pv_title = 'Root title',         'thread_root: title is still exposed in preview');
   PERFORM tap_ok(v_pv_desc = 1,                     'thread_root: descendant_count still returned in preview');
-  PERFORM tap_ok(v_pv_react ? 'resonate',           'thread_root: reactions tally still returned in preview');
+  PERFORM tap_ok(v_pv_react ? 'heart',              'thread_root: reactions tally still returned in preview');
 END $$;
 
 SELECT * FROM tap_emit();

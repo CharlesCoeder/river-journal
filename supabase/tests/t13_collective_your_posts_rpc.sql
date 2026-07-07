@@ -174,17 +174,17 @@ BEGIN
   PERFORM test_become(v_user);
   INSERT INTO collective_posts (id, user_id, title, body) VALUES (v_post, v_user, 'P', 'p');
 
-  -- Three distinct reactors. Reaction kind enum value: use whichever is
-  -- accepted by the table (the v1 schema permits at least 'resonate').
+  -- Three distinct reactors. Reaction kind must be in the constrained set
+  -- (collective_reactions_kind_chk, 20260707000000) — use 'heart'.
   PERFORM test_become(v_reactor1);
   INSERT INTO collective_reactions (id, post_id, user_id, kind)
-  VALUES (gen_random_uuid(), v_post, v_reactor1, 'resonate');
+  VALUES (gen_random_uuid(), v_post, v_reactor1, 'heart');
   PERFORM test_become(v_reactor2);
   INSERT INTO collective_reactions (id, post_id, user_id, kind)
-  VALUES (gen_random_uuid(), v_post, v_reactor2, 'resonate');
+  VALUES (gen_random_uuid(), v_post, v_reactor2, 'heart');
   PERFORM test_become(v_reactor3);
   INSERT INTO collective_reactions (id, post_id, user_id, kind)
-  VALUES (gen_random_uuid(), v_post, v_reactor3, 'resonate');
+  VALUES (gen_random_uuid(), v_post, v_reactor3, 'heart');
 
   PERFORM test_become(v_user);
   SELECT reaction_count INTO v_rcount
