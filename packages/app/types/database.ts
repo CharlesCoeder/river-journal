@@ -343,6 +343,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string
+          encryption_key_verifier: string | null
           encryption_mode: Database['public']['Enums']['encryption_mode'] | null
           encryption_salt: string | null
           id: string
@@ -353,6 +354,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          encryption_key_verifier?: string | null
           encryption_mode?: Database['public']['Enums']['encryption_mode'] | null
           encryption_salt?: string | null
           id: string
@@ -363,6 +365,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          encryption_key_verifier?: string | null
           encryption_mode?: Database['public']['Enums']['encryption_mode'] | null
           encryption_salt?: string | null
           id?: string
@@ -378,6 +381,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bootstrap_e2e_encryption: {
+        Args: { p_salt: string; p_verifier: string }
+        Returns: {
+          out_salt: string | null
+          out_verifier: string | null
+          out_mode: Database['public']['Enums']['encryption_mode'] | null
+        }[]
+      }
+      bootstrap_managed_encryption: {
+        Args: { p_key: string }
+        Returns: {
+          out_key: string | null
+          out_mode: Database['public']['Enums']['encryption_mode'] | null
+        }[]
+      }
       cleanup_stale_trusted_browsers: { Args: Record<string, never>; Returns: number }
       collective_feed_page: {
         Args: { cursor: string | null; page_size: number }

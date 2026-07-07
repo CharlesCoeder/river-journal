@@ -10,6 +10,9 @@ const {
   mockUsersMaybeSingle,
   mockUsersEq,
   mockUsersSelectRead,
+  mockUsersUpdateIs,
+  mockUsersUpdate,
+  mockRpc,
   mockFlowsLimit,
   mockFlowsSelect,
   mockFrom,
@@ -27,6 +30,10 @@ const {
   const usersMaybeSingle = vi.fn()
   const usersEq = vi.fn(() => ({ maybeSingle: usersMaybeSingle }))
   const usersSelectRead = vi.fn(() => ({ eq: usersEq }))
+  // writeVerifierIfAbsent: update(...).eq(...).is(...) → awaitable
+  const usersUpdateIs = vi.fn().mockResolvedValue({ data: null, error: null })
+  const usersUpdate = vi.fn(() => ({ eq: () => ({ is: usersUpdateIs }) }))
+  const rpc = vi.fn()
   const flowsLimit = vi.fn()
   const flowsSelect = vi.fn(() => ({ limit: flowsLimit }))
 
@@ -54,7 +61,7 @@ const {
 
   const from = vi.fn((table: string) => {
     if (table === 'users') {
-      return { upsert: usersUpsert, select: usersSelectRead }
+      return { upsert: usersUpsert, select: usersSelectRead, update: usersUpdate }
     }
 
     if (table === 'flows') {
@@ -78,6 +85,9 @@ const {
     mockUsersMaybeSingle: usersMaybeSingle,
     mockUsersEq: usersEq,
     mockUsersSelectRead: usersSelectRead,
+    mockUsersUpdateIs: usersUpdateIs,
+    mockUsersUpdate: usersUpdate,
+    mockRpc: rpc,
     mockFlowsLimit: flowsLimit,
     mockFlowsSelect: flowsSelect,
     mockFrom: from,
@@ -94,6 +104,7 @@ const {
 vi.mock('../supabase', () => ({
   supabase: {
     from: mockFrom,
+    rpc: mockRpc,
   },
 }))
 
@@ -120,22 +131,32 @@ import {
   deleteTrustedBrowserByHash,
 } from '../userEncryption'
 
+// Must match E2E_KEY_VERIFIER_PLAINTEXT in userEncryption.ts.
+const KEY_VERIFIER_PLAINTEXT = 'river-key-check-v1'
+
 describe('startE2EEncryptionBootstrap', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUsersSingle.mockResolvedValue({
-      data: { encryption_mode: 'e2e', encryption_salt: 'abc123' },
-      error: null,
-    })
     mockFlowsLimit.mockResolvedValue({
       data: [],
       error: null,
+    })
+    // Default: fresh bootstrap wins — the RPC echoes back the salt/verifier we
+    // proposed, signalling the account had none before.
+    mockRpc.mockImplementation((fnName: string, params: Record<string, string>) => {
+      if (fnName === 'bootstrap_e2e_encryption') {
+        return Promise.resolve({
+          data: [{ out_salt: params.p_salt, out_verifier: params.p_verifier, out_mode: 'e2e' }],
+          error: null,
+        })
+      }
+      return Promise.resolve({ data: null, error: null })
     })
     mockStoreMasterKey.mockResolvedValue(undefined)
     mockClearStoredMasterKey.mockResolvedValue(undefined)
   })
 
-  it('persists mode+salt, caches the key in memory, and returns the master key', async () => {
+  it('persists mode+salt via the guarded RPC, caches the key, and returns the master key', async () => {
     const result = await startE2EEncryptionBootstrap({
       userId: 'user-1',
       password: 'correct horse battery staple',
@@ -143,16 +164,15 @@ describe('startE2EEncryptionBootstrap', () => {
 
     expect(result.error).toBeNull()
     expect(result.masterKey).toBeInstanceOf(Uint8Array)
-    expect(mockFrom).toHaveBeenCalledWith('users')
-    expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
+    expect(mockRpc).toHaveBeenCalledTimes(1)
 
-    const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
-    const payload = upsertCalls[0]![0]
-    expect(payload.id).toBe('user-1')
-    expect(payload.encryption_mode).toBe('e2e')
-    expect(typeof payload.encryption_salt).toBe('string')
-    expect(payload.encryption_salt).toMatch(BASE64_PATTERN)
-    expect(payload).not.toHaveProperty('password')
+    const rpcCalls = mockRpc.mock.calls as unknown as Array<[string, Record<string, unknown>]>
+    const [fnName, params] = rpcCalls[0]!
+    expect(fnName).toBe('bootstrap_e2e_encryption')
+    expect(typeof params.p_salt).toBe('string')
+    expect(params.p_salt).toMatch(BASE64_PATTERN)
+    expect(typeof params.p_verifier).toBe('string')
+    expect(params).not.toHaveProperty('password')
 
     // Key is cached in memory only — not written to keyring
     expect(mockCacheOnlyMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
@@ -160,7 +180,7 @@ describe('startE2EEncryptionBootstrap', () => {
   })
 
   it('returns a structured error when salt persistence fails', async () => {
-    mockUsersSingle.mockResolvedValueOnce({
+    mockRpc.mockResolvedValueOnce({
       data: null,
       error: { message: 'DB failed', code: 'db_failed' },
     })
@@ -178,38 +198,142 @@ describe('startE2EEncryptionBootstrap', () => {
     expect(mockCacheOnlyMasterKey).not.toHaveBeenCalled()
     expect(mockStoreMasterKey).not.toHaveBeenCalled()
   })
+
+  it('never overwrites an existing salt — treats a spurious re-bootstrap as UNLOCK', async () => {
+    // Server already has a salt+verifier (e.g. the settings load blipped and the
+    // dialog reopened). The RPC returns the EXISTING salt, not ours.
+    const existingSalt = 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
+    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', existingSalt)
+    const existingVerifier = encryptFlowContent(KEY_VERIFIER_PLAINTEXT, correctKey)
+
+    mockRpc.mockResolvedValueOnce({
+      data: [{ out_salt: existingSalt, out_verifier: existingVerifier, out_mode: 'e2e' }],
+      error: null,
+    })
+
+    const result = await startE2EEncryptionBootstrap({
+      userId: 'user-1',
+      password: 'correct horse battery staple',
+    })
+
+    // Unlocks against the server salt rather than forking onto a new key.
+    expect(result.error).toBeNull()
+    expect(result.masterKey).toEqual(correctKey)
+    expect(mockCacheOnlyMasterKey).toHaveBeenCalledWith('user-1', correctKey)
+  })
+
+  it('rejects a spurious re-bootstrap when the password is wrong', async () => {
+    const existingSalt = 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
+    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', existingSalt)
+    const existingVerifier = encryptFlowContent(KEY_VERIFIER_PLAINTEXT, correctKey)
+
+    mockRpc.mockResolvedValueOnce({
+      data: [{ out_salt: existingSalt, out_verifier: existingVerifier, out_mode: 'e2e' }],
+      error: null,
+    })
+
+    const result = await startE2EEncryptionBootstrap({
+      userId: 'user-1',
+      password: 'wrong password',
+    })
+
+    expect(result.error).toEqual({
+      message: 'Encryption password is incorrect for this account.',
+      code: 'invalid_encryption_password',
+    })
+    expect(result.masterKey).toBeNull()
+    expect(mockCacheOnlyMasterKey).not.toHaveBeenCalled()
+  })
 })
 
 describe('unlockE2EEncryptionOnDevice', () => {
+  const SALT = 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockFlowsLimit.mockResolvedValue({
       data: [],
       error: null,
     })
+    // Default: legacy account with no stored verifier → flow sampling.
+    mockUsersMaybeSingle.mockResolvedValue({
+      data: { encryption_key_verifier: null },
+      error: null,
+    })
+    mockUsersUpdateIs.mockResolvedValue({ data: null, error: null })
     mockStoreMasterKey.mockResolvedValue(undefined)
     mockClearStoredMasterKey.mockResolvedValue(undefined)
   })
 
-  it('derives and caches the local key in memory without writing to keyring', async () => {
+  it('unlocks against the stored verifier when the password is correct', async () => {
+    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', SALT)
+    const verifier = encryptFlowContent(KEY_VERIFIER_PLAINTEXT, correctKey)
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: { encryption_key_verifier: verifier },
+      error: null,
+    })
+
     const result = await unlockE2EEncryptionOnDevice({
       userId: 'user-1',
       password: 'correct horse battery staple',
-      salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+      salt: SALT,
     })
 
     expect(result.error).toBeNull()
-    expect(result.masterKey).toBeInstanceOf(Uint8Array)
-    expect(mockFrom).toHaveBeenCalledWith('flows')
-    expect(mockCacheOnlyMasterKey).toHaveBeenCalledWith('user-1', expect.any(Uint8Array))
+    expect(result.masterKey).toEqual(correctKey)
+    // Verifier proves the key without needing to sample flows.
+    expect(mockFlowsSelect).not.toHaveBeenCalled()
+    expect(mockCacheOnlyMasterKey).toHaveBeenCalledWith('user-1', correctKey)
     expect(mockStoreMasterKey).not.toHaveBeenCalled()
   })
 
-  it('rejects the wrong encryption password when existing encrypted flows cannot be decrypted', async () => {
-    const correctKey = await deriveMasterKeyFromPassword(
-      'correct horse battery staple',
-      'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
-    )
+  it('rejects a wrong password against the stored verifier even with no flows to sample', async () => {
+    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', SALT)
+    const verifier = encryptFlowContent(KEY_VERIFIER_PLAINTEXT, correctKey)
+    mockUsersMaybeSingle.mockResolvedValueOnce({
+      data: { encryption_key_verifier: verifier },
+      error: null,
+    })
+
+    const result = await unlockE2EEncryptionOnDevice({
+      userId: 'user-1',
+      password: 'wrong password',
+      salt: SALT,
+    })
+
+    expect(result.error).toEqual({
+      message: 'Encryption password is incorrect for this account.',
+      code: 'invalid_encryption_password',
+    })
+    expect(result.masterKey).toBeNull()
+    expect(mockCacheOnlyMasterKey).not.toHaveBeenCalled()
+  })
+
+  it('falls back to flow sampling for a legacy account and self-heals a verifier', async () => {
+    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', SALT)
+    const encryptedPayload = encryptFlowContent('secret text', correctKey)
+    mockFlowsLimit.mockResolvedValueOnce({
+      data: [{ id: 'flow-1', content: encryptedPayload }],
+      error: null,
+    })
+
+    const result = await unlockE2EEncryptionOnDevice({
+      userId: 'user-1',
+      password: 'correct horse battery staple',
+      salt: SALT,
+    })
+
+    expect(result.error).toBeNull()
+    expect(result.masterKey).toEqual(correctKey)
+    expect(mockFrom).toHaveBeenCalledWith('flows')
+    // Conclusive sampling → verifier is written back (guarded on NULL).
+    expect(mockUsersUpdate).toHaveBeenCalledTimes(1)
+    expect(mockUsersUpdateIs).toHaveBeenCalledTimes(1)
+    expect(mockCacheOnlyMasterKey).toHaveBeenCalledWith('user-1', correctKey)
+  })
+
+  it('rejects the wrong password when a legacy encrypted flow cannot be decrypted', async () => {
+    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', SALT)
     const encryptedPayload = encryptFlowContent('secret text', correctKey)
 
     mockFlowsLimit.mockResolvedValueOnce({
@@ -220,7 +344,7 @@ describe('unlockE2EEncryptionOnDevice', () => {
     const result = await unlockE2EEncryptionOnDevice({
       userId: 'user-1',
       password: 'wrong password',
-      salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+      salt: SALT,
     })
 
     expect(result.error).toEqual({
@@ -228,6 +352,8 @@ describe('unlockE2EEncryptionOnDevice', () => {
       code: 'invalid_encryption_password',
     })
     expect(result.masterKey).toBeNull()
+    // No verifier written for an unverified (wrong) key.
+    expect(mockUsersUpdate).not.toHaveBeenCalled()
     expect(mockCacheOnlyMasterKey).not.toHaveBeenCalled()
     expect(mockStoreMasterKey).not.toHaveBeenCalled()
   })
@@ -263,17 +389,19 @@ describe('persistMasterKeyToKeyring', () => {
 describe('bootstrapManagedEncryption', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUsersMaybeSingle.mockResolvedValue({
-      data: { managed_encryption_key: null },
-      error: null,
-    })
-    mockUsersSingle.mockResolvedValue({
-      data: { encryption_mode: 'managed', managed_encryption_key: 'abc123' },
-      error: null,
+    // Default: fresh bootstrap wins — the RPC echoes back the key we proposed.
+    mockRpc.mockImplementation((fnName: string, params: Record<string, string>) => {
+      if (fnName === 'bootstrap_managed_encryption') {
+        return Promise.resolve({
+          data: [{ out_key: params.p_key, out_mode: 'managed' }],
+          error: null,
+        })
+      }
+      return Promise.resolve({ data: null, error: null })
     })
   })
 
-  it('generates a managed key, upserts to Supabase, and returns the base64 key', async () => {
+  it('generates a managed key via the race-safe RPC and returns the base64 key', async () => {
     const result = await bootstrapManagedEncryption({ userId: 'user-1' })
 
     expect(result.error).toBeNull()
@@ -281,20 +409,20 @@ describe('bootstrapManagedEncryption', () => {
     expect(typeof result.managedKeyB64).toBe('string')
     expect(result.managedKeyB64).toMatch(BASE64_PATTERN)
     expect(result.managedKeyB64).toHaveLength(44)
-    expect(mockFrom).toHaveBeenCalledWith('users')
-    expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
+    expect(mockRpc).toHaveBeenCalledTimes(1)
 
-    const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
-    const payload = upsertCalls[0]![0]
-    expect(payload.id).toBe('user-1')
-    expect(payload.encryption_mode).toBe('managed')
-    expect(payload.managed_encryption_key).toMatch(BASE64_PATTERN)
+    const rpcCalls = mockRpc.mock.calls as unknown as Array<[string, Record<string, unknown>]>
+    const [fnName, params] = rpcCalls[0]!
+    expect(fnName).toBe('bootstrap_managed_encryption')
+    expect(params.p_key).toMatch(BASE64_PATTERN)
   })
 
-  it('reuses existing managed key instead of generating a new one', async () => {
+  it('converges on the winning key when another device already wrote one', async () => {
+    // Simulates the race: the RPC keeps the pre-existing key (COALESCE) and
+    // returns it, so this caller discards its own candidate.
     const existingKey = 'q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s='
-    mockUsersMaybeSingle.mockResolvedValueOnce({
-      data: { managed_encryption_key: existingKey },
+    mockRpc.mockResolvedValueOnce({
+      data: [{ out_key: existingKey, out_mode: 'managed' }],
       error: null,
     })
 
@@ -302,32 +430,11 @@ describe('bootstrapManagedEncryption', () => {
 
     expect(result.error).toBeNull()
     expect(result.managedKeyB64).toBe(existingKey)
-    expect(mockUsersUpsert).toHaveBeenCalledTimes(1)
-
-    const upsertCalls = mockUsersUpsert.mock.calls as unknown as Array<[Record<string, unknown>]>
-    const payload = upsertCalls[0]![0]
-    expect(payload.encryption_mode).toBe('managed')
-    expect(payload).not.toHaveProperty('managed_encryption_key')
+    expect(mockRpc).toHaveBeenCalledTimes(1)
   })
 
-  it('propagates fetch errors instead of blindly generating a new key', async () => {
-    mockUsersMaybeSingle.mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Connection lost', code: 'network_error' },
-    })
-
-    const result = await bootstrapManagedEncryption({ userId: 'user-1' })
-
-    expect(result.error).toEqual({
-      message: 'Connection lost',
-      code: 'network_error',
-    })
-    expect(result.managedKeyB64).toBeNull()
-    expect(mockUsersUpsert).not.toHaveBeenCalled()
-  })
-
-  it('returns a structured error when upsert fails', async () => {
-    mockUsersSingle.mockResolvedValueOnce({
+  it('returns a structured error when the RPC fails', async () => {
+    mockRpc.mockResolvedValueOnce({
       data: null,
       error: { message: 'DB failed', code: 'db_failed' },
     })

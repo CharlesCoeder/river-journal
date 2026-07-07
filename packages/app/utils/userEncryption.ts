@@ -5,6 +5,7 @@ import {
   EncryptionError,
   decryptFlowContent,
   deriveMasterKeyFromPassword,
+  encryptFlowContent,
   generateEncryptionSalt,
   generateManagedEncryptionKey,
   isBase64String,
@@ -39,7 +40,109 @@ const INVALID_ENCRYPTION_PASSWORD_ERROR = {
   code: 'invalid_encryption_password',
 } satisfies EncryptionSettingsError['error']
 
+/**
+ * Known constant encrypted with the master key and stored server-side as
+ * `users.encryption_key_verifier`. On unlock we decrypt the stored ciphertext
+ * and check it equals this string — a positive proof the re-entered password
+ * derived the right key, independent of whether any flows exist to sample.
+ * Versioned so the format can evolve without ambiguity.
+ */
+const E2E_KEY_VERIFIER_PLAINTEXT = 'river-key-check-v1'
+
 type FlowVerificationRow = Pick<Tables<'flows'>, 'id' | 'content'>
+
+/**
+ * Encrypts the well-known verifier constant with the given master key.
+ * The result is stored in `users.encryption_key_verifier`.
+ */
+function buildKeyVerifier(masterKey: Uint8Array): string {
+  return encryptFlowContent(E2E_KEY_VERIFIER_PLAINTEXT, masterKey)
+}
+
+/**
+ * Returns true iff `masterKey` decrypts `verifier` back to the known constant.
+ * A wrong key throws (auth tag mismatch) or yields different plaintext → false.
+ */
+function verifyMasterKeyAgainstVerifier(masterKey: Uint8Array, verifier: string): boolean {
+  try {
+    return decryptFlowContent(verifier, masterKey) === E2E_KEY_VERIFIER_PLAINTEXT
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Fetches the stored key verifier for the account. `verifier: null` means a
+ * legacy account that predates the verifier (fall back to flow sampling).
+ */
+async function fetchEncryptionVerifier(
+  userId: string
+): Promise<{ verifier: string | null; error: null } | { verifier: null; error: EncryptionSettingsError['error'] }> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('encryption_key_verifier')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    return {
+      verifier: null,
+      error: toEncryptionError(error.message, error.code ?? 'users_read_failed').error,
+    }
+  }
+
+  return { verifier: data?.encryption_key_verifier ?? null, error: null }
+}
+
+/**
+ * Self-heal: writes the key verifier for a legacy account, but only if the
+ * column is still NULL (guarded so we never clobber an existing verifier).
+ * Fire-and-forget — failure just means the account heals on a later unlock.
+ */
+async function writeVerifierIfAbsent(userId: string, masterKey: Uint8Array): Promise<void> {
+  try {
+    await supabase
+      .from('users')
+      .update({ encryption_key_verifier: buildKeyVerifier(masterKey) })
+      .eq('id', userId)
+      .is('encryption_key_verifier', null)
+  } catch {
+    // Non-fatal: the account remains on legacy flow-sampling verification.
+  }
+}
+
+/**
+ * Verifies a derived master key for an existing account: prefer the stored
+ * verifier; fall back to flow sampling for legacy accounts (and heal them by
+ * writing a verifier after a conclusive sampling match).
+ */
+async function verifyExistingE2EMasterKey(input: {
+  userId: string
+  masterKey: Uint8Array
+  verifier: string | null
+}): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
+  if (input.verifier) {
+    if (verifyMasterKeyAgainstVerifier(input.masterKey, input.verifier)) {
+      return { error: null }
+    }
+    return { error: INVALID_ENCRYPTION_PASSWORD_ERROR }
+  }
+
+  // Legacy account with no verifier: fall back to sampling existing flows.
+  const validation = await validateE2EMasterKeyForUser({ masterKey: input.masterKey })
+  if (validation.error) {
+    return { error: validation.error }
+  }
+
+  // Only heal when sampling conclusively proved the key (an encrypted flow
+  // decrypted). If nothing decisive was sampled we cannot confirm the password,
+  // so we must not canonicalize a possibly-wrong key by writing a verifier.
+  if (validation.didVerify) {
+    void writeVerifierIfAbsent(input.userId, input.masterKey)
+  }
+
+  return { error: null }
+}
 
 export async function readUserEncryptionSettings(
   userId: string
@@ -121,17 +224,17 @@ export async function startE2EEncryptionBootstrap(_input: {
   try {
     const salt = generateEncryptionSalt()
     const masterKey = await deriveMasterKeyFromPassword(input.password, salt)
-    const payload: TablesInsert<'users'> = {
-      id: input.userId,
-      encryption_mode: 'e2e',
-      encryption_salt: salt,
-    }
+    const verifier = buildKeyVerifier(masterKey)
 
-    const { error } = await supabase
-      .from('users')
-      .upsert(payload, { onConflict: 'id' })
-      .select('encryption_mode, encryption_salt')
-      .single()
+    // Guarded insert-if-absent: the RPC writes our salt/verifier ONLY when the
+    // account has none yet, then returns the authoritative row. This makes a
+    // spurious bootstrap (e.g. after a transient settings-load failure) safe —
+    // an existing salt is never overwritten, so previously-encrypted data stays
+    // decryptable.
+    const { data, error } = await supabase.rpc('bootstrap_e2e_encryption', {
+      p_salt: salt,
+      p_verifier: verifier,
+    })
 
     if (error) {
       return {
@@ -140,10 +243,43 @@ export async function startE2EEncryptionBootstrap(_input: {
       }
     }
 
-    // Phase 1: cache in memory only — keyring persistence is deferred
-    cacheOnlyMasterKey(input.userId, masterKey)
+    const row = Array.isArray(data) ? data[0] : null
+    const serverSalt = row?.out_salt ?? null
 
-    return { error: null, masterKey }
+    if (!serverSalt) {
+      return {
+        error: toEncryptionError(
+          'Encryption setup did not persist a salt for this account.',
+          'e2e_salt_missing'
+        ).error,
+        masterKey: null,
+      }
+    }
+
+    if (serverSalt === salt) {
+      // Fresh bootstrap won the race: our salt/verifier were written.
+      // Phase 1: cache in memory only — keyring persistence is deferred.
+      cacheOnlyMasterKey(input.userId, masterKey)
+      return { error: null, masterKey }
+    }
+
+    // A salt already existed server-side (concurrent bootstrap, or this was a
+    // spurious re-bootstrap). Treat as an UNLOCK against the existing salt so we
+    // never fork the account onto a second key. Re-derive with the real salt and
+    // verify the password before accepting it.
+    const existingMasterKey = await deriveMasterKeyFromPassword(input.password, serverSalt)
+    const verification = await verifyExistingE2EMasterKey({
+      userId: input.userId,
+      masterKey: existingMasterKey,
+      verifier: row?.out_verifier ?? null,
+    })
+
+    if (verification.error) {
+      return { error: verification.error, masterKey: null }
+    }
+
+    cacheOnlyMasterKey(input.userId, existingMasterKey)
+    return { error: null, masterKey: existingMasterKey }
   } catch (error) {
     if (error instanceof EncryptionError) {
       return {
@@ -229,10 +365,26 @@ export async function unlockE2EEncryptionOnDevice(input: {
 
   try {
     const masterKey = await deriveMasterKeyFromPassword(input.password, input.salt)
-    const validation = await validateE2EMasterKeyForUser({ masterKey })
 
-    if (validation.error) {
-      return { error: validation.error, masterKey: null }
+    // Prefer the stored key verifier — a positive proof the password is correct
+    // even when the account has no encrypted flows to sample. Legacy accounts
+    // (verifier: null) fall back to flow sampling and self-heal a verifier.
+    // A FAILED fetch must fail the unlock (not downgrade to sampling): the
+    // sampling fallback can inconclusively accept a wrong password, which is
+    // exactly the account-forking bug the verifier exists to prevent.
+    const verifierResult = await fetchEncryptionVerifier(input.userId)
+    if (verifierResult.error) {
+      return { error: verifierResult.error, masterKey: null }
+    }
+
+    const verification = await verifyExistingE2EMasterKey({
+      userId: input.userId,
+      masterKey,
+      verifier: verifierResult.verifier,
+    })
+
+    if (verification.error) {
+      return { error: verification.error, masterKey: null }
     }
 
     // Phase 1: cache in memory only — keyring persistence is deferred
@@ -285,46 +437,15 @@ export async function bootstrapManagedEncryption(input: {
   | { error: EncryptionSettingsError['error']; managedKeyB64: null }
 > {
   try {
-    const existing = await fetchManagedEncryptionKey(input.userId)
-    if (existing.data) {
-      const payload: TablesInsert<'users'> = {
-        id: input.userId,
-        encryption_mode: 'managed',
-      }
-
-      const { error } = await supabase
-        .from('users')
-        .upsert(payload, { onConflict: 'id' })
-        .select('encryption_mode')
-        .single()
-
-      if (error) {
-        return {
-          error: toEncryptionError(error.message, error.code ?? 'users_upsert_failed').error,
-          managedKeyB64: null,
-        }
-      }
-
-      return { error: null, managedKeyB64: existing.data }
-    }
-
-    if (existing.error && existing.error.code !== 'managed_key_missing') {
-      return { error: existing.error, managedKeyB64: null }
-    }
-
     const managedKeyB64 = generateManagedEncryptionKey()
 
-    const payload: TablesInsert<'users'> = {
-      id: input.userId,
-      encryption_mode: 'managed',
-      managed_encryption_key: managedKeyB64,
-    }
-
-    const { error } = await supabase
-      .from('users')
-      .upsert(payload, { onConflict: 'id' })
-      .select('encryption_mode, managed_encryption_key')
-      .single()
+    // Race-safe insert-if-absent: the RPC keeps any key already on the account
+    // (COALESCE) and returns the authoritative key. Two devices bootstrapping
+    // concurrently therefore converge on a single key — the loser's candidate is
+    // discarded rather than overwriting the winner and stranding its writes.
+    const { data, error } = await supabase.rpc('bootstrap_managed_encryption', {
+      p_key: managedKeyB64,
+    })
 
     if (error) {
       return {
@@ -333,7 +454,19 @@ export async function bootstrapManagedEncryption(input: {
       }
     }
 
-    return { error: null, managedKeyB64 }
+    const winningKey = Array.isArray(data) ? data[0]?.out_key ?? null : null
+
+    if (!winningKey) {
+      return {
+        error: toEncryptionError(
+          'Managed encryption setup did not persist a key for this account.',
+          'managed_key_missing'
+        ).error,
+        managedKeyB64: null,
+      }
+    }
+
+    return { error: null, managedKeyB64: winningKey }
   } catch (error) {
     if (error instanceof EncryptionError) {
       return {
