@@ -30,6 +30,7 @@ import { useFeed } from 'app/state/collective/feed'
 import { useIsSuspended } from 'app/state/collective/suspension'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
+import { useTodayWordCount } from 'app/state/collective/todayWordCount'
 import {
   CollectiveLockedScreen,
   glimpseFromPosts,
@@ -58,6 +59,9 @@ export default function CollectiveFeedScreen() {
   const reducedMotion = useReducedMotion()
   const router = useRouter()
   const hiddenIds = useLocallyHiddenPostIds()
+  // Today's real word count for the preview/`words` gate. D7-safe: sourced via a
+  // state/collective hook, so this file imports no Legend-State / store directly.
+  const wordsToday = useTodayWordCount()
 
   // Ease the room in on mount — mirrors the Settings/Preferences entrance so the
   // Collective screen fades into view rather than popping in. The `mounted` gate
@@ -126,11 +130,11 @@ export default function CollectiveFeedScreen() {
             >
               <CollectiveLockedScreen
                 gate="words"
-                // TODO: wire the user's real daily word count here once a D7-safe
-                // client source exists. This file must not read Legend-State / the
-                // streak store, so we stub at 0 for now (the progress bar then reads
-                // "0 / 500", and the CTA is "Begin writing").
-                wordsToday={0}
+                // Real daily word count via the D7-safe useTodayWordCount() hook
+                // (state/collective), so the progress bar shows true progress
+                // (e.g. "480 / 500") and the CTA reads "Keep writing" once the
+                // user has started, instead of a hard-coded "0 / 500".
+                wordsToday={wordsToday}
                 glimpse={glimpseFromPosts(posts)}
                 onReturnHome={() => router.push('/')}
                 onSignIn={() => router.push('/auth')}
