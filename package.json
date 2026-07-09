@@ -33,7 +33,8 @@
     "parity:design": "cd docs/collective-design-reference && node_modules/.bin/vite preview --port 4174 --strictPort",
     "parity:web": "yarn workspace web-app dev",
     "parity:session": "node docs/collective-parity/seed-session.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "vercel": "vercel"
   },
   "resolutions": {
     "react": "19.1.0",
@@ -78,6 +79,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.6.1",
-    "supabase": "^2.76.13"
+    "supabase": "^2.76.13",
+    "vercel": "^54.21.1"
   }
 }

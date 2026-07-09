@@ -20,8 +20,7 @@
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-web": "0.21.2",
-    "tamagui": "2.0.0-rc.16",
-    "vercel": "latest"
+    "tamagui": "2.0.0-rc.16"
   },
   "devDependencies": {
     "@tamagui/next-plugin": "2.0.0-rc.16",
