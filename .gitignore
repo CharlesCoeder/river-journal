@@ -58,3 +58,6 @@ _bmad
 
 # tauri build
 apps/web/out
+
+# local tooling
+.mcp.json
