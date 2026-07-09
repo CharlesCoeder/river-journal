@@ -1,0 +1,107 @@
+diff --git a/dist/extractor/createExtractor.cjs b/dist/extractor/createExtractor.cjs
+index fbab360f1991858bb01f18e57f2f4611d0c78af0..615695662e62028858e2e3c9d7b7fe150d1c0672 100644
+--- a/dist/extractor/createExtractor.cjs
++++ b/dist/extractor/createExtractor.cjs
+@@ -428,6 +428,8 @@ function createExtractor({
+               if (name === "style") return shouldDeopt = !0, null;
+               if (excludeProps?.has(name)) return shouldPrintDebug && logger.info(["  excluding prop", name].join(" ")), null;
+               if (inlineProps.has(name)) return inlined.set(name, name), shouldPrintDebug && logger.info(["  ! inlining, inline prop", name].join(" ")), attr;
++              // PATCH: onLayout has no DOM equivalent (the runtime component implements it via ResizeObserver), so flattening to a plain div/span silently drops the callback; inline it to prevent flattening, same as a configured inlineProp.
++              if (name === "onLayout") return inlined.set(name, name), attr;
+               if (UNTOUCHED_PROPS[name]) return attr;
+               if (INLINE_EXTRACTABLE[name]) return inlined.set(name, INLINE_EXTRACTABLE[name]), attr;
+               if (name.startsWith("data-") || name.startsWith("aria-") || import_validHTMLAttributes.validHTMLAttributes[name]) return attr;
+diff --git a/dist/extractor/createExtractor.js b/dist/extractor/createExtractor.js
+index 74f15ed271de88463c8336da572cad7318cd8f24..386cf6ba6cbe0a8b09351dcff9c2e12e594b7034 100644
+--- a/dist/extractor/createExtractor.js
++++ b/dist/extractor/createExtractor.js
+@@ -483,6 +483,9 @@ function createExtractor({ logger = console, platform = "web" } = { logger: cons
+               return shouldPrintDebug && logger.info(["  excluding prop", name].join(" ")), null;
+             if (inlineProps.has(name))
+               return inlined.set(name, name), shouldPrintDebug && logger.info(["  ! inlining, inline prop", name].join(" ")), attr;
++            // PATCH: onLayout has no DOM equivalent (the runtime component implements it via ResizeObserver), so flattening to a plain div/span silently drops the callback; inline it to prevent flattening, same as a configured inlineProp.
++            if (name === "onLayout")
++              return inlined.set(name, name), attr;
+             if (UNTOUCHED_PROPS[name])
+               return attr;
+             if (INLINE_EXTRACTABLE[name])
+diff --git a/dist/extractor/extractToClassNames.cjs b/dist/extractor/extractToClassNames.cjs
+index 95be8779e6fd3b4d2db14149c0c59b59074f7843..f78ef30d940894ac7502e59b994530f3d42011de 100644
+--- a/dist/extractor/extractToClassNames.cjs
++++ b/dist/extractor/extractToClassNames.cjs
+@@ -258,6 +258,35 @@ async function extractToClassNames({
+           const classNameProp = t.jsxAttribute(t.jsxIdentifier("className"), t.jsxExpressionContainer(finalExpression));
+           finalAttrs.unshift(classNameProp);
+         }
++        // PATCH: rename any leftover RN `testID` to `data-testid`. The static-value
++        // path is renamed at build-time via getSplitStyles, but dynamic
++        // (non-evaluable) values fail attemptEvalSafe and pass through with the
++        // React Native prop name, which is invalid on a flattened DOM element.
++        for (const _a of finalAttrs) {
++          if (t.isJSXAttribute(_a) && t.isJSXIdentifier(_a.name) && _a.name.name === "testID") {
++            _a.name.name = "data-testid";
++          }
++        }
++        // PATCH: drop duplicate-named attributes before writing them back. When the
++        // optimizing compiler flattens an element that has a testID (or other RN
++        // prop mapped to a DOM attr), it can emit the same attribute twice
++        // (e.g. `data-testid="x" data-testid="x"`), which is invalid JSX and fails
++        // strict type-checking. Duplicate attribute names are never valid, so
++        // de-duplicating here (keeping the first occurrence) is always safe.
++        {
++          const _seenAttrNames = new Set();
++          for (let _i = 0; _i < finalAttrs.length; _i++) {
++            const _a = finalAttrs[_i];
++            if (t.isJSXAttribute(_a) && t.isJSXIdentifier(_a.name)) {
++              if (_seenAttrNames.has(_a.name.name)) {
++                finalAttrs.splice(_i, 1);
++                _i--;
++              } else {
++                _seenAttrNames.add(_a.name.name);
++              }
++            }
++          }
++        }
+         node.attributes = finalAttrs;
+       }
+     });
+diff --git a/dist/extractor/extractToClassNames.js b/dist/extractor/extractToClassNames.js
+index 9a2844593f800556f436f1b7c623fb71d8d00e23..dba7c430bd758c397200ccb4a24ab66604baea79 100644
+--- a/dist/extractor/extractToClassNames.js
++++ b/dist/extractor/extractToClassNames.js
+@@ -281,6 +281,35 @@ async function extractToClassNames({
+         );
+         finalAttrs.unshift(classNameProp);
+       }
++      // PATCH: rename any leftover RN `testID` to `data-testid`. The static-value
++      // path is renamed at build-time via getSplitStyles, but dynamic
++      // (non-evaluable) values fail attemptEvalSafe and pass through with the
++      // React Native prop name, which is invalid on a flattened DOM element.
++      for (const _a of finalAttrs) {
++        if (t.isJSXAttribute(_a) && t.isJSXIdentifier(_a.name) && _a.name.name === "testID") {
++          _a.name.name = "data-testid";
++        }
++      }
++      // PATCH: drop duplicate-named attributes before writing them back. When the
++      // optimizing compiler flattens an element that has a testID (or other RN
++      // prop mapped to a DOM attr), it can emit the same attribute twice
++      // (e.g. `data-testid="x" data-testid="x"`), which is invalid JSX and fails
++      // strict type-checking. Duplicate attribute names are never valid, so
++      // de-duplicating here (keeping the first occurrence) is always safe.
++      {
++        const _seenAttrNames = new Set();
++        for (let _i = 0; _i < finalAttrs.length; _i++) {
++          const _a = finalAttrs[_i];
++          if (t.isJSXAttribute(_a) && t.isJSXIdentifier(_a.name)) {
++            if (_seenAttrNames.has(_a.name.name)) {
++              finalAttrs.splice(_i, 1);
++              _i--;
++            } else {
++              _seenAttrNames.add(_a.name.name);
++            }
++          }
++        }
++      }
+       node.attributes = finalAttrs;
+     }
+   });

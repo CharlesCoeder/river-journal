@@ -7959,6 +7959,52 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tamagui/static@patch:@tamagui/static@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-static-npm-2.0.0-rc.16-d1b3e50d71.patch":
+  version: 2.0.0-rc.16
+  resolution: "@tamagui/static@patch:@tamagui/static@npm%3A2.0.0-rc.16#~/.yarn/patches/@tamagui-static-npm-2.0.0-rc.16-d1b3e50d71.patch::version=2.0.0-rc.16&hash=488b59"
+  dependencies:
+    "@babel/core": "npm:^7.25.2"
+    "@babel/generator": "npm:^7.25.5"
+    "@babel/helper-plugin-utils": "npm:^7.24.8"
+    "@babel/parser": "npm:^7.25.4"
+    "@babel/plugin-transform-react-jsx": "npm:^7.25.2"
+    "@babel/runtime": "npm:^7.25.4"
+    "@babel/template": "npm:^7.25.0"
+    "@babel/traverse": "npm:^7.25.4"
+    "@babel/types": "npm:^7.25.4"
+    "@tamagui/cli-color": "npm:2.0.0-rc.16"
+    "@tamagui/config-default": "npm:2.0.0-rc.16"
+    "@tamagui/core": "npm:2.0.0-rc.16"
+    "@tamagui/fake-react-native": "npm:2.0.0-rc.16"
+    "@tamagui/generate-themes": "npm:2.0.0-rc.16"
+    "@tamagui/helpers": "npm:2.0.0-rc.16"
+    "@tamagui/helpers-node": "npm:2.0.0-rc.16"
+    "@tamagui/proxy-worm": "npm:2.0.0-rc.16"
+    "@tamagui/react-native-web-internals": "npm:2.0.0-rc.16"
+    "@tamagui/react-native-web-lite": "npm:2.0.0-rc.16"
+    "@tamagui/shorthands": "npm:2.0.0-rc.16"
+    "@tamagui/types": "npm:2.0.0-rc.16"
+    "@tamagui/web": "npm:2.0.0-rc.16"
+    babel-literal-to-ast: "npm:^2.1.0"
+    browserslist: "npm:^4.28.1"
+    check-dependency-version-consistency: "npm:^4.1.0"
+    esbuild: "npm:^0.27.2"
+    esbuild-register: "npm:^3.6.0"
+    esbuild-wasm: "npm:^0.27.2"
+    fast-glob: "npm:^3.2.11"
+    find-cache-dir: "npm:^3.3.2"
+    find-root: "npm:^1.1.0"
+    fs-extra: "npm:^11.2.0"
+    invariant: "npm:^2.2.4"
+    js-yaml: "npm:^4.1.0"
+    react-native-web: "npm:^0.21.0"
+  peerDependencies:
+    react: ">=19"
+    react-native: "*"
+  checksum: 10/1ed7f041ced0c641e8fe17e5c6ee71bff2d0f816ee93a60d53163ffda738cb54f3908c1fef14908113f87e89b95c8b9fb09bbfff870559b7949c1af7761439f2
+  languageName: node
+  linkType: hard
+
 "@tamagui/switch-headless@npm:2.0.0-rc.16":
   version: 2.0.0-rc.16
   resolution: "@tamagui/switch-headless@npm:2.0.0-rc.16"
