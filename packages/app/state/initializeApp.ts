@@ -11,6 +11,7 @@ import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$, deviceSta
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 import { lapsed$, recordSessionOpen } from './lapsed'
+import { onboarding$ } from './onboarding'
 import { syncDeviceTimezone } from './timezoneSync'
 import { startTodayTracking } from './today'
 import './streak' // attaches store$.views.streak side-effect
@@ -39,6 +40,10 @@ function setupPersistence() {
   // Persist device-state (lastAuthedUserId + acknowledgedAccountTransitions).
   // Local-only — drives previous-account banner across sign-out boundaries.
   syncObservable(deviceState$, configurePersistence({ persist: { name: 'device-state' } }))
+
+  // Persist onboarding-state (completion flag + resume screen).
+  // Local-only, never synced — first-launch gate reads this before children render.
+  syncObservable(onboarding$, configurePersistence({ persist: { name: 'onboarding-state' } }))
 
   // Activate the synced observables so their persistence loads.
   // syncedSupabase uses lazy activation — calling .get() triggers persistence
@@ -140,6 +145,7 @@ export async function initializePersistence() {
       when(syncState(lapsed$).isPersistLoaded),
       when(syncState(graceDays$).isPersistLoaded),
       when(syncState(deviceState$).isPersistLoaded),
+      when(syncState(onboarding$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)

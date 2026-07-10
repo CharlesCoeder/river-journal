@@ -1,34 +1,24 @@
 // @vitest-environment happy-dom
 /**
- * Story 4-1 — `OnboardingSequence` (3 screens: practice / community / progression)
+ * `OnboardingSequence` (3 screens: practice / community / progression)
  *
- * RED-PHASE TDD E2E test. Story 4-1 is greenfield: none of
- *   - packages/app/features/onboarding/OnboardingSequence.tsx
- *   - packages/app/features/onboarding/components/PracticeScreen.tsx
- *   - packages/app/features/onboarding/components/CommunityScreen.tsx
- *   - packages/app/features/onboarding/components/ProgressionScreen.tsx
- * exist yet. Importing `OnboardingSequence` below MUST fail until Story 4-1's
- * Tasks 1-6 are implemented — every test in this file is expected to fail
- * (module-resolution error) in the red phase, and to pass once the component
- * tree is built per the story's acceptance criteria.
- *
- * AC coverage:
- *   AC1 — component structure exists; 3 sequential full-screen views with the
- *         specified copy, Continue/Get started/Skip affordances
- *   AC2 — Continue transitions the next screen in via the designEnterSlow spring
- *   AC3 — Skip exits from anywhere, routing directly to home
- *   AC4 — typography-only layout (no imagery / icons anywhere)
- *   AC5 — screen-reader semantics (`section` + `h1`) and focus management
- *   AC6 — reduced-motion degrades the spring to the `100ms` fallback token
- *   AC7 — transitions are re-entrancy-safe (idempotent double-tap guards)
- *   AC8 — forward-only navigation, single primary CTA per screen, distinct
- *         onDone reasons ('completed' vs 'skipped') on Screen 3
+ * E2E test covering:
+ *   - component structure: 3 sequential full-screen views with the specified
+ *     copy, Continue/Get started/Skip affordances
+ *   - Continue transitions the next screen in via the designEnterSlow spring
+ *   - Skip exits from anywhere, routing directly to home
+ *   - typography-only layout (no imagery / icons anywhere)
+ *   - screen-reader semantics (`section` + `h1`) and focus management
+ *   - reduced-motion degrades the spring to the `100ms` fallback token
+ *   - transitions are re-entrancy-safe (idempotent double-tap guards)
+ *   - forward-only navigation, single primary CTA per screen, distinct
+ *     onDone reasons ('completed' vs 'skipped') on Screen 3
  *
  * Mock strategy: @my/ui mocked to map Tamagui primitives to testable HTML
  * elements (honoring `tag`, forwarding `transition` as `data-transition` so
- * AC2/AC6 can assert on it), `solito/navigation` useRouter mocked with a spy.
- * Mirrors ThreePostureDisclosure.wrapper.test.tsx / CollectiveFeedScreen.test.tsx
- * conventions used in prior epics.
+ * transition-token assertions can read it), `solito/navigation` useRouter
+ * mocked with a spy. Mirrors ThreePostureDisclosure.wrapper.test.tsx /
+ * CollectiveFeedScreen.test.tsx conventions used elsewhere in this codebase.
  */
 
 import React from 'react'
@@ -66,9 +56,9 @@ vi.mock('@my/ui', async () => {
     if (props.tabIndex !== undefined) out.tabIndex = props.tabIndex
     if (props.testID !== undefined) out['data-testid'] = props.testID
     if (props['data-testid'] !== undefined) out['data-testid'] = props['data-testid']
-    // Surface the `transition` prop as a DOM attribute so AC2/AC6 tests can
-    // assert on the exact token ('designEnterSlow' vs '100ms') without needing
-    // to inspect Tamagui internals.
+    // Surface the `transition` prop as a DOM attribute so transition-token
+    // tests can assert on the exact token ('designEnterSlow' vs '100ms')
+    // without needing to inspect Tamagui internals.
     if (props.transition !== undefined) out['data-transition'] = String(props.transition)
     if (props.onPress) out.onClick = props.onPress
     return out
@@ -98,10 +88,10 @@ vi.mock('@my/ui', async () => {
   // HomeScreen.tsx / JournalScreen.tsx tests).
   const AnimatePresence = ({ children }: any) => children
 
-  // Skip is explicitly NOT an ExpandingLineButton (UX spec Secondary treatment
-  // — see story Dev Notes "Resolved spec conflict"), so it is expected to be
-  // built from Text/View with role="button". ExpandingLineButton itself is
-  // only used for Continue / Get started.
+  // Skip is a Secondary text affordance per the design system's button
+  // hierarchy, not an ExpandingLineButton, so it is expected to be built
+  // from Text/View with role="button". ExpandingLineButton itself is only
+  // used for Continue / Get started.
   const ExpandingLineButton = ({ children, onPress, disabled, accessibilityLabel, id }: any) =>
     ReactModule.createElement(
       'button',
@@ -127,8 +117,6 @@ vi.mock('@my/ui', async () => {
 })
 
 // ─── Import under test ────────────────────────────────────────────────────────
-// WILL FAIL until packages/app/features/onboarding/OnboardingSequence.tsx (and
-// its three sub-screen components) exist — this is the expected red-phase state.
 // eslint-disable-next-line import/first
 import { OnboardingSequence } from '../OnboardingSequence'
 
@@ -158,10 +146,10 @@ afterEach(() => {
 })
 
 // =============================================================================
-// AC1 — component structure exists; 3 sequential screens with the exact copy
+// Component structure: 3 sequential screens with the exact copy
 // =============================================================================
 
-describe('AC1 — Screen 1 (Practice) renders first', () => {
+describe('Screen 1 (Practice) renders first', () => {
   it('renders the Practice headline copy', () => {
     render(React.createElement(OnboardingSequence))
     expect(screen.getByText(/Write 500 words a day/i)).not.toBeNull()
@@ -180,7 +168,7 @@ describe('AC1 — Screen 1 (Practice) renders first', () => {
   })
 })
 
-describe('AC1 — Continue advances Screen 1 → Screen 2 (Community)', () => {
+describe('Continue advances Screen 1 → Screen 2 (Community)', () => {
   it('renders the Community headline copy after Continue', () => {
     render(React.createElement(OnboardingSequence))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
@@ -201,7 +189,7 @@ describe('AC1 — Continue advances Screen 1 → Screen 2 (Community)', () => {
   })
 })
 
-describe('AC1 — Continue advances Screen 2 → Screen 3 (Progression)', () => {
+describe('Continue advances Screen 2 → Screen 3 (Progression)', () => {
   it('renders the Progression headline copy and "Get started" (Continue gone)', () => {
     render(React.createElement(OnboardingSequence))
     fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 2
@@ -220,10 +208,10 @@ describe('AC1 — Continue advances Screen 2 → Screen 3 (Progression)', () => 
 })
 
 // =============================================================================
-// AC2 — Continue transitions via the designEnterSlow named spring
+// Continue transitions via the designEnterSlow named spring
 // =============================================================================
 
-describe('AC2 — designEnterSlow spring transition', () => {
+describe('designEnterSlow spring transition', () => {
   it('the mounted Screen 1 wrapper carries the designEnterSlow transition token', () => {
     render(React.createElement(OnboardingSequence))
     const el = document.querySelector('[data-transition]')
@@ -241,10 +229,10 @@ describe('AC2 — designEnterSlow spring transition', () => {
 })
 
 // =============================================================================
-// AC3 — Skip exits from anywhere, routing directly to home
+// Skip exits from anywhere, routing directly to home
 // =============================================================================
 
-describe('AC3 — Skip routes to home from any screen', () => {
+describe('Skip routes to home from any screen', () => {
   it('Skip on Screen 1 calls router.push("/") exactly once', () => {
     render(React.createElement(OnboardingSequence))
     fireEvent.click(screen.getByRole('button', { name: /skip/i }))
@@ -276,10 +264,10 @@ describe('AC3 — Skip routes to home from any screen', () => {
 })
 
 // =============================================================================
-// AC4 — Typography-only layout (no imagery / icons at MVP)
+// Typography-only layout (no imagery / icons at MVP)
 // =============================================================================
 
-describe('AC4 — no imagery, zero illustrations', () => {
+describe('no imagery, zero illustrations', () => {
   it('renders no <img> elements on Screen 1', () => {
     render(React.createElement(OnboardingSequence))
     expect(document.querySelectorAll('img').length).toBe(0)
@@ -300,10 +288,10 @@ describe('AC4 — no imagery, zero illustrations', () => {
 })
 
 // =============================================================================
-// AC5 — Screen-reader semantics + focus management
+// Screen-reader semantics + focus management
 // =============================================================================
 
-describe('AC5 — section/h1 semantics and focus management', () => {
+describe('section/h1 semantics and focus management', () => {
   it('Screen 1 wrapper renders as a <section>', () => {
     render(React.createElement(OnboardingSequence))
     expect(document.querySelector('section')).not.toBeNull()
@@ -341,10 +329,10 @@ describe('AC5 — section/h1 semantics and focus management', () => {
 })
 
 // =============================================================================
-// AC6 — Reduced motion degrades the spring to the 100ms fallback
+// Reduced motion degrades the spring to the 100ms fallback
 // =============================================================================
 
-describe('AC6 — reduced-motion degradation', () => {
+describe('reduced-motion degradation', () => {
   it('mounts with the 100ms transition (not designEnterSlow) when reduced motion is enabled', () => {
     mockReducedMotion.current = true
     render(React.createElement(OnboardingSequence))
@@ -370,10 +358,10 @@ describe('AC6 — reduced-motion degradation', () => {
 })
 
 // =============================================================================
-// AC7 — Transitions are re-entrancy-safe (idempotent double-tap guards)
+// Transitions are re-entrancy-safe (idempotent double-tap guards)
 // =============================================================================
 
-describe('AC7 — re-entrancy guard on Continue', () => {
+describe('re-entrancy guard on Continue', () => {
   it('two synchronous Continue taps advance exactly ONE screen (not two)', () => {
     render(React.createElement(OnboardingSequence))
     const continueBtn = screen.getByRole('button', { name: /continue/i })
@@ -390,7 +378,7 @@ describe('AC7 — re-entrancy guard on Continue', () => {
   })
 })
 
-describe('AC7 — re-entrancy guard on exit navigation (Get started / Skip)', () => {
+describe('re-entrancy guard on exit navigation (Get started / Skip)', () => {
   it('two synchronous Get started taps call router.push and onDone("completed") exactly once each', () => {
     const onDone = vi.fn()
     render(React.createElement(OnboardingSequence, { onDone }))
@@ -425,10 +413,10 @@ describe('AC7 — re-entrancy guard on exit navigation (Get started / Skip)', ()
 })
 
 // =============================================================================
-// AC8 — Forward-only navigation, single primary CTA, distinct onDone reasons
+// Forward-only navigation, single primary CTA, distinct onDone reasons
 // =============================================================================
 
-describe('AC8 — no Back affordance anywhere in the sequence', () => {
+describe('no Back affordance anywhere in the sequence', () => {
   it('renders no Back/← labeled element on Screen 1, 2, or 3', () => {
     render(React.createElement(OnboardingSequence))
     expect(screen.queryByRole('button', { name: /back/i })).toBeNull()
@@ -450,7 +438,7 @@ describe('AC8 — no Back affordance anywhere in the sequence', () => {
   })
 })
 
-describe('AC8 — exactly one primary CTA per screen', () => {
+describe('exactly one primary CTA per screen', () => {
   it('Screen 1 exposes exactly one Continue button and no Get started', () => {
     render(React.createElement(OnboardingSequence))
     expect(screen.getAllByRole('button', { name: /^continue$/i }).length).toBe(1)
@@ -466,7 +454,7 @@ describe('AC8 — exactly one primary CTA per screen', () => {
   })
 })
 
-describe('AC8 — Screen 3 Skip vs Get started report distinct onDone reasons', () => {
+describe('Screen 3 Skip vs Get started report distinct onDone reasons', () => {
   it('Get started reports onDone("completed") while routing home', () => {
     const onDone = vi.fn()
     render(React.createElement(OnboardingSequence, { onDone, initialScreen: 2 }))
@@ -485,7 +473,7 @@ describe('AC8 — Screen 3 Skip vs Get started report distinct onDone reasons', 
   })
 })
 
-describe('AC8 — onDone is optional; navigation still happens without throwing', () => {
+describe('onDone is optional; navigation still happens without throwing', () => {
   it('Get started with no onDone prop navigates without throwing', () => {
     render(React.createElement(OnboardingSequence, { initialScreen: 2 }))
     expect(() => {
