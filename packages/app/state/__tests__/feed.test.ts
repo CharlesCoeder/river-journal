@@ -1,47 +1,42 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-3 — TDD red-phase E2E (integration) tests for `state/collective/feed.ts`.
+ * Integration tests for `state/collective/feed.ts`.
  *
- * "E2E / integration" for this story means: full pipeline from RPC mock →
- * fetchFeedPage shaping → useFeed() useInfiniteQuery wiring → module-load
- * observe() reactive cycle that invalidates the ['collective'] query key
- * when store$.views.streak.lastQualifyingDate transitions.
+ * "Integration" here means: full pipeline from RPC mock → fetchFeedPage
+ * shaping → useFeed() useInfiniteQuery wiring → module-load observe()
+ * reactive cycle that invalidates the ['collective'] query key when
+ * store$.views.streak.lastQualifyingDate transitions.
  *
- * Red-phase: every test in this file MUST fail until Story 3-3 implementation
- * lands `packages/app/state/collective/feed.ts`. The file does not yet exist
- * (verified: `test -f packages/app/state/collective/feed.ts` → MISSING), so
- * all dynamic imports of `../collective/feed` reject at module-resolution
- * time, and the boundary-rule existsSync precondition (AC #22) fails.
- *
- * AC coverage:
- *   - AC #1, #2  — module structure & exports (PAGE_SIZE, collectiveFeedKey, types, fns)
- *   - AC #3, #4  — fetchFeedPage RPC call shape, slice/cursor logic, mode passthrough,
- *                  defensive mode default, error throw, empty handling
- *   - AC #5      — useFeed() useInfiniteQuery config (queryKey, maxPages: 5,
- *                  refetchInterval: 30_000, staleTime: 25_000, refetchOnWindowFocus,
- *                  initialPageParam, getNextPageParam shape)
- *   - AC #6      — useFeed() takes no arguments
- *   - AC #7, #8  — module-load observe() invalidates ['collective'] on
- *                  store$.views.streak.lastQualifyingDate transitions; initial
- *                  fire is suppressed; second transition fires again
- *   - AC #9      — package.json sideEffects entry for ./state/collective/feed.ts
- *   - AC #10     — boundary-rule narrow exception (single observe import)
- *   - AC #17     — observe() try/catch wrap (does not tear down on throw)
- *   - AC #18     — module-scope sentinel persists across observe re-runs
- *   - AC #19     — guard against empty items at slice point
- *   - AC #20     — String() coercion on nextCursor
- *   - AC #21     — queueMicrotask deferred invalidate
- *   - AC #22     — boundary-rule existsSync precondition (vacuous-pass guard)
- *   - AC #23     — refetchIntervalInBackground default (off)
+ * Coverage:
+ *   - module structure & exports (PAGE_SIZE, collectiveFeedKey, types, fns)
+ *   - fetchFeedPage RPC call shape, slice/cursor logic, mode passthrough,
+ *     defensive mode default, error throw, empty handling
+ *   - useFeed() useInfiniteQuery config (queryKey, maxPages: 5,
+ *     refetchInterval: 30_000, staleTime: 25_000, refetchOnWindowFocus,
+ *     initialPageParam, getNextPageParam shape)
+ *   - useFeed() takes no arguments
+ *   - module-load observe() invalidates ['collective'] on
+ *     store$.views.streak.lastQualifyingDate transitions; initial fire is
+ *     suppressed; second transition fires again
+ *   - package.json sideEffects entry for ./state/collective/feed.ts
+ *   - boundary-rule narrow exception (single observe import)
+ *   - observe() try/catch wrap (does not tear down on throw)
+ *   - module-scope sentinel persists across observe re-runs
+ *   - guard against empty items at slice point
+ *   - String() coercion on nextCursor
+ *   - queueMicrotask deferred invalidate
+ *   - boundary-rule existsSync precondition (vacuous-pass guard)
+ *   - refetchIntervalInBackground default (off)
+ *   - title-led feed row shape: title/excerpt/descendant_count/reactions, no body
  *
  * Hardening notes:
  *   - The mock for `app/utils/supabase` is hoisted via `vi.mock` so it runs
  *     BEFORE the dynamic import of `../collective/feed` in any test.
  *   - We spy on `queryClient.invalidateQueries` BEFORE importing the module,
  *     so the spy captures the very first observe() callback (which must NOT
- *     invalidate per the initial-fire-suppression contract, AC #7/#18).
+ *     invalidate per the initial-fire-suppression contract).
  *   - `await Promise.resolve()` drains the microtask queue between a
- *     transition write and the spy assertion (AC #21 queueMicrotask defer).
+ *     transition write and the spy assertion (queueMicrotask defer).
  */
 
 import { describe, it, expect, beforeEach, vi, afterAll } from 'vitest'
@@ -51,7 +46,7 @@ import { renderHook } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 // Type-only import (erased at runtime — does NOT execute feed.ts side-effects):
-// used for the Story 3-15 RPC-shape (type-level) assertions (AC #29).
+// used for the RPC-shape (type-level) assertions.
 import type { Post } from 'app/state/collective/feed'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,9 +70,9 @@ const PKG_JSON_PATH = path.resolve(STATE_DIR, '../package.json')
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Indirect dynamic-import helper — defeats Vite's static `import()` resolver
-// so a missing red-phase target file produces per-test failures rather than a
+// so a missing target file produces per-test failures rather than a
 // suite-collection-time crash. The string is built at runtime; Vite cannot
-// statically analyze it. Once Story 3-3 lands feed.ts, all imports resolve.
+// statically analyze it.
 // ─────────────────────────────────────────────────────────────────────────────
 interface FeedModule {
   PAGE_SIZE: number
@@ -100,7 +95,7 @@ async function importFeed(): Promise<FeedModule> {
 /**
  * Build N synthetic RPC rows with deterministic timestamps, all tagged `mode`.
  *
- * Story 3-15: the feed RPC return is now title-led — rows carry `title`,
+ * The feed RPC return is title-led — rows carry `title`,
  * server-truncated `excerpt`, `descendant_count`, and a per-kind `reactions`
  * tally, and NO full `body`. Row 0 exercises the zero-reactions `{}` case.
  */
@@ -143,24 +138,23 @@ afterAll(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #22 — Boundary-rule existsSync precondition (vacuous-pass guard).
+// Boundary-rule existsSync precondition (vacuous-pass guard).
 // Must run FIRST so a missing file fails loudly rather than silently passing
 // the "0 forbidden imports" greps below.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / boundary-rule existsSync precondition (AC #22)', () => {
+describe('boundary-rule existsSync precondition', () => {
   it('packages/app/state/collective/feed.ts exists on disk', () => {
-    // Red-phase: this test fails until Story 3-3 lands the file. Once green,
-    // it durably guards against a refactor silently deleting the file.
+    // Durably guards against a refactor silently deleting the file.
     expect(existsSync(FEED_PATH)).toBe(true)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #1, #2 — module structure & exports
+// Module structure & exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / module exports (AC #1, #2)', () => {
+describe('module exports', () => {
   it('exports PAGE_SIZE === 20', async () => {
     const mod = await importFeed()
     expect(mod.PAGE_SIZE).toBe(20)
@@ -181,19 +175,19 @@ describe('Story 3-3 / module exports (AC #1, #2)', () => {
     await result
   })
 
-  it('exports useFeed as a function (zero-arg hook, AC #6)', async () => {
+  it('exports useFeed as a function (zero-arg hook)', async () => {
     const mod = await importFeed()
     expect(typeof mod.useFeed).toBe('function')
-    // Arity check: AC #6 — useFeed takes no arguments.
+    // Arity check: useFeed takes no arguments.
     expect(mod.useFeed.length).toBe(0)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #3, #4 — fetchFeedPage RPC call shape + slice/cursor logic
+// fetchFeedPage RPC call shape + slice/cursor logic
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / fetchFeedPage RPC call shape (AC #3)', () => {
+describe('fetchFeedPage RPC call shape', () => {
   it('calls supabase.rpc with ("collective_feed_page", { cursor, page_size: PAGE_SIZE + 1 })', async () => {
     const { fetchFeedPage } = await importFeed()
     rpcMock.mockResolvedValueOnce({ data: makeRows(3, 'full'), error: null })
@@ -216,7 +210,7 @@ describe('Story 3-3 / fetchFeedPage RPC call shape (AC #3)', () => {
   })
 })
 
-describe('Story 3-3 / fetchFeedPage slice + cursor logic (AC #3, #19, #20)', () => {
+describe('fetchFeedPage slice + cursor logic', () => {
   it('PAGE_SIZE+1 (21) rows → slices to 20, sets nextCursor to last item created_at', async () => {
     const { fetchFeedPage, PAGE_SIZE } = await importFeed()
     const rows = makeRows(21, 'full')
@@ -228,7 +222,7 @@ describe('Story 3-3 / fetchFeedPage slice + cursor logic (AC #3, #19, #20)', () 
     expect(page.nextCursor).toBe(String(rows[19]!.created_at))
   })
 
-  it('AC #20 — nextCursor is typeof "string" (String() coercion)', async () => {
+  it('nextCursor is typeof "string" (String() coercion)', async () => {
     const { fetchFeedPage } = await importFeed()
     rpcMock.mockResolvedValueOnce({ data: makeRows(21, 'full'), error: null })
     const page = await fetchFeedPage(null)
@@ -275,7 +269,7 @@ describe('Story 3-3 / fetchFeedPage slice + cursor logic (AC #3, #19, #20)', () 
     await expect(fetchFeedPage(null)).rejects.toThrow()
   })
 
-  it('AC #19 — defensive guard: nextCursor is null when sliced items would be empty', async () => {
+  it('defensive guard: nextCursor is null when sliced items would be empty', async () => {
     // Defense-in-depth: even if a future code path produces an empty slice
     // with data.length === PAGE_SIZE + 1 (logically impossible today), the
     // guard prevents an `items[-1].created_at` crash.
@@ -288,7 +282,7 @@ describe('Story 3-3 / fetchFeedPage slice + cursor logic (AC #3, #19, #20)', () 
   })
 })
 
-describe('Story 3-3 / fetchFeedPage mode dispatch (AC #3)', () => {
+describe('fetchFeedPage mode dispatch', () => {
   it('extracts mode === "preview" when rows are tagged preview', async () => {
     const { fetchFeedPage } = await importFeed()
     rpcMock.mockResolvedValueOnce({ data: makeRows(3, 'preview'), error: null })
@@ -317,10 +311,10 @@ describe('Story 3-3 / fetchFeedPage mode dispatch (AC #3)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #5, #6, #23 — useFeed() useInfiniteQuery config smoke
+// useFeed() useInfiniteQuery config smoke
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / useFeed() useInfiniteQuery config (AC #5, #23)', () => {
+describe('useFeed() useInfiniteQuery config', () => {
   it('renders without error and registers a query under collectiveFeedKey', async () => {
     rpcMock.mockResolvedValue({ data: [], error: null })
     const { useFeed, collectiveFeedKey } = await importFeed()
@@ -339,36 +333,36 @@ describe('Story 3-3 / useFeed() useInfiniteQuery config (AC #5, #23)', () => {
     expect(found, 'useFeed must register under collectiveFeedKey').toBeDefined()
   })
 
-  it('AC #5 / #23 — useFeed source enforces canonical config values', async () => {
+  it('useFeed source enforces canonical config values', async () => {
     // Pure source-text grep — proves the config literal in feed.ts contains
-    // the AC-mandated values. Cheap, hermetic, and impossible to mis-mock
+    // the mandated values. Cheap, hermetic, and impossible to mis-mock
     // under React Query internals. Each match is durable against drift.
     if (!existsSync(FEED_PATH)) {
-      // Guarded by AC #22 above; this branch only fires red-phase pre-impl.
-      throw new Error('feed.ts missing — AC #22 precondition will already have failed')
+      // Guarded by the existsSync precondition above; this branch only fires pre-impl.
+      throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
-    expect(src, 'maxPages: 5 (AC #5, NFR31 100-post bound)').toMatch(/maxPages\s*:\s*5\b/)
-    expect(src, 'refetchInterval: 30_000 (AC #5)').toMatch(/refetchInterval\s*:\s*30[_]?000\b/)
-    expect(src, 'staleTime: 25_000 (AC #5)').toMatch(/staleTime\s*:\s*25[_]?000\b/)
-    expect(src, 'refetchOnWindowFocus: true (AC #5)').toMatch(
+    expect(src, 'maxPages: 5 (NFR31 100-post bound)').toMatch(/maxPages\s*:\s*5\b/)
+    expect(src, 'refetchInterval: 30_000').toMatch(/refetchInterval\s*:\s*30[_]?000\b/)
+    expect(src, 'staleTime: 25_000').toMatch(/staleTime\s*:\s*25[_]?000\b/)
+    expect(src, 'refetchOnWindowFocus: true').toMatch(
       /refetchOnWindowFocus\s*:\s*true\b/
     )
-    expect(src, 'queryKey: collectiveFeedKey (AC #5)').toMatch(
+    expect(src, 'queryKey: collectiveFeedKey').toMatch(
       /queryKey\s*:\s*collectiveFeedKey\b/
     )
-    expect(src, 'initialPageParam: null (AC #5)').toMatch(/initialPageParam\s*:\s*null\b/)
-    expect(src, 'getNextPageParam present (AC #5)').toMatch(/getNextPageParam\s*:/)
-    // AC #23 — refetchIntervalInBackground must NOT be set to true.
+    expect(src, 'initialPageParam: null').toMatch(/initialPageParam\s*:\s*null\b/)
+    expect(src, 'getNextPageParam present').toMatch(/getNextPageParam\s*:/)
+    // refetchIntervalInBackground must NOT be set to true.
     // If the property is mentioned at all, it must be `false` or `undefined`.
-    expect(src, 'refetchIntervalInBackground must NOT be true (AC #23)').not.toMatch(
+    expect(src, 'refetchIntervalInBackground must NOT be true').not.toMatch(
       /refetchIntervalInBackground\s*:\s*true\b/
     )
   })
 
-  it('AC #5 — getNextPageParam returns lastPage.nextCursor ?? undefined', async () => {
+  it('getNextPageParam returns lastPage.nextCursor ?? undefined', async () => {
     if (!existsSync(FEED_PATH)) {
-      throw new Error('feed.ts missing — AC #22 precondition will already have failed')
+      throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
     // Tolerant of formatting: look for the `nextCursor ?? undefined` shape.
@@ -377,10 +371,10 @@ describe('Story 3-3 / useFeed() useInfiniteQuery config (AC #5, #23)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #5 (memory bound) — maxPages × PAGE_SIZE = 100 (NFR31)
+// Memory bound — maxPages × PAGE_SIZE = 100 (NFR31)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / memory bound NFR31 (AC #5)', () => {
+describe('memory bound NFR31', () => {
   it('PAGE_SIZE * 5 === 100 (the documented memory ceiling)', async () => {
     const { PAGE_SIZE } = await importFeed()
     expect(PAGE_SIZE * 5).toBe(100)
@@ -388,10 +382,10 @@ describe('Story 3-3 / memory bound NFR31 (AC #5)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #7, #8, #17, #18, #21 — module-load observe() reactive cycle
+// Module-load observe() reactive cycle
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / observe() invalidation on streak transitions (AC #7, #8, #18, #21)', () => {
+describe('observe() invalidation on streak transitions', () => {
   it('initial fire is suppressed — invalidateQueries NOT called on import', async () => {
     // Spy BEFORE importing feed.ts so the very first observe callback is captured.
     const { queryClient } = await import('../queryClient')
@@ -405,7 +399,7 @@ describe('Story 3-3 / observe() invalidation on streak transitions (AC #7, #8, #
     spy.mockRestore()
   })
 
-  it('AC #7 / #21 — transition on store$.views.streak.lastQualifyingDate invalidates ["collective"] (after microtask drain)', async () => {
+  it('transition on store$.views.streak.lastQualifyingDate invalidates ["collective"] (after microtask drain)', async () => {
     const { queryClient } = await import('../queryClient')
     const spy = vi.spyOn(queryClient, 'invalidateQueries').mockReturnValue(Promise.resolve())
     spy.mockClear()
@@ -446,7 +440,7 @@ describe('Story 3-3 / observe() invalidation on streak transitions (AC #7, #8, #
       })
     })
 
-    // AC #21: invalidate is deferred via queueMicrotask — drain.
+    // Invalidate is deferred via queueMicrotask — drain.
     await drainMicrotasks()
 
     expect(spy).toHaveBeenCalledTimes(1)
@@ -454,7 +448,7 @@ describe('Story 3-3 / observe() invalidation on streak transitions (AC #7, #8, #
     spy.mockRestore()
   })
 
-  it('AC #18 — module-scope sentinel persists; second transition invalidates again', async () => {
+  it('module-scope sentinel persists; second transition invalidates again', async () => {
     const { queryClient } = await import('../queryClient')
     const spy = vi.spyOn(queryClient, 'invalidateQueries').mockReturnValue(Promise.resolve())
     spy.mockClear()
@@ -502,17 +496,17 @@ describe('Story 3-3 / observe() invalidation on streak transitions (AC #7, #8, #
     spy.mockRestore()
   })
 
-  it('AC #8 — uses store$.views.streak.lastQualifyingDate path (NOT a hypothetical streak$ export)', () => {
+  it('uses store$.views.streak.lastQualifyingDate path (NOT a hypothetical streak$ export)', () => {
     if (!existsSync(FEED_PATH)) {
-      throw new Error('feed.ts missing — AC #22 precondition will already have failed')
+      throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
     expect(src).toMatch(/store\$\.views\.streak\.lastQualifyingDate/)
   })
 
-  it('AC #17 — observe callback body is wrapped in try/catch', () => {
+  it('observe callback body is wrapped in try/catch', () => {
     if (!existsSync(FEED_PATH)) {
-      throw new Error('feed.ts missing — AC #22 precondition will already have failed')
+      throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
     // The callback body MUST contain a try/catch block. We grep for both
@@ -525,21 +519,99 @@ describe('Story 3-3 / observe() invalidation on streak transitions (AC #7, #8, #
     expect(block).toMatch(/\bcatch\s*\(/)
   })
 
-  it('AC #21 — invalidateQueries is called via queueMicrotask defer', () => {
+  it('invalidateQueries is called via queueMicrotask defer', () => {
     if (!existsSync(FEED_PATH)) {
-      throw new Error('feed.ts missing — AC #22 precondition will already have failed')
+      throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
     // Expect a queueMicrotask wrapper around the invalidate call.
     expect(src).toMatch(/queueMicrotask\s*\(/)
   })
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Day-boundary contract: advancing the current-day observable ALONE — with no
+  // change to the underlying journal data — must NOT invalidate the feed cache.
+  //
+  // The last-qualifying-date value the observe() watches is a pure function of
+  // entries/flows/grace-days; the current-day key only feeds the streak-cursor
+  // walk, never the last-qualifying-date. So a midnight rollover for a user who
+  // wrote nothing new cannot fire this invalidation — the day-boundary re-lock
+  // for that user is carried instead by the RPC's live gate + the feed's 30s
+  // poll (refetchInterval 30_000 / staleTime 25_000). This test locks in that
+  // negative so a future change accidentally wiring the day key into the
+  // last-qualifying-date (which WOULD fire a spurious invalidation on every
+  // midnight) is caught as a regression.
+  // ───────────────────────────────────────────────────────────────────────────
+  it('advancing the current-day key alone (unchanged journal data) does NOT invalidate the feed cache', async () => {
+    const { queryClient } = await import('../queryClient')
+    const spy = vi.spyOn(queryClient, 'invalidateQueries').mockReturnValue(Promise.resolve())
+    spy.mockClear()
+
+    // Attach the observe (fires once on subscribe — suppressed by the sentinel).
+    await importFeed()
+    await drainMicrotasks()
+    expect(spy).not.toHaveBeenCalled()
+
+    const { batch } = await import('@legendapp/state')
+    const { entries$, flows$, graceDays$ } = await import('../store')
+    const { today$ } = await import('../today')
+    const { getTodayJournalDayString } = await import('../date-utils')
+
+    // Establish a REAL last-qualifying-date by writing a 500-word flow for today.
+    // This is the one legitimate transition (null → today), so it fires once.
+    const today = getTodayJournalDayString()
+    batch(() => {
+      entries$.set({
+        'e-day-1': {
+          id: 'e-day-1',
+          entryDate: today,
+          lastModified: '2026-01-01T00:00:00Z',
+          local_session_id: 'test-day',
+        } as never,
+      })
+      flows$.set({
+        'f-day-1': {
+          id: 'f-day-1',
+          dailyEntryId: 'e-day-1',
+          wordCount: 500,
+          content: '...',
+          timestamp: '2026-01-01T00:00:00Z',
+          local_session_id: 'test-day',
+        } as never,
+      })
+    })
+    await drainMicrotasks()
+    const callsAfterRealTransition = spy.mock.calls.length
+    expect(callsAfterRealTransition).toBeGreaterThanOrEqual(1)
+
+    // Now advance the current-day key ALONE — entries/flows/grace-days untouched.
+    // A far-future date guarantees an actual change to today$ regardless of the
+    // machine clock, and it differs from the entry's date so the qualifying day
+    // (and thus last-qualifying-date) is unaffected.
+    today$.set('2099-01-01')
+    await drainMicrotasks()
+
+    // No NEW invalidation: the day advance did not transition last-qualifying-date.
+    expect(spy.mock.calls.length).toBe(callsAfterRealTransition)
+
+    // Reset touched observables so the shared single-threaded Legend-State
+    // global does not leak into sibling tests.
+    batch(() => {
+      entries$.set({})
+      flows$.set({})
+      graceDays$.set({})
+    })
+    today$.set(getTodayJournalDayString())
+    await drainMicrotasks()
+    spy.mockRestore()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #9 — package.json sideEffects entry
+// package.json sideEffects entry
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / packages/app/package.json sideEffects (AC #9)', () => {
+describe('packages/app/package.json sideEffects', () => {
   it('declares ./state/collective/feed.ts as a side-effect (tree-shake protection)', () => {
     const pkg = JSON.parse(readFileSync(PKG_JSON_PATH, 'utf8')) as {
       sideEffects?: string[]
@@ -558,12 +630,12 @@ describe('Story 3-3 / packages/app/package.json sideEffects (AC #9)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #10 — boundary-rule narrow exception (single observe import only)
+// boundary-rule narrow exception (single observe import only)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / boundary-rule narrow exception (AC #10)', () => {
+describe('boundary-rule narrow exception', () => {
   it('feed.ts imports ONLY `observe` from `@legendapp/state` (no subpaths, no other symbols)', () => {
-    // AC #22 precondition.
+    // existsSync precondition.
     expect(existsSync(FEED_PATH)).toBe(true)
 
     const src = readFileSync(FEED_PATH, 'utf8')
@@ -586,7 +658,7 @@ describe('Story 3-3 / boundary-rule narrow exception (AC #10)', () => {
     expect(src).not.toMatch(/use\$\s*\(/)
   })
 
-  it('AC #11 — mutations.ts continues to have ZERO @legendapp/state imports (regression guard)', () => {
+  it('mutations.ts continues to have ZERO @legendapp/state imports (regression guard)', () => {
     const mutPath = path.join(STATE_DIR, 'collective/mutations.ts')
     expect(existsSync(mutPath)).toBe(true)
     const src = readFileSync(mutPath, 'utf8')
@@ -597,11 +669,11 @@ describe('Story 3-3 / boundary-rule narrow exception (AC #10)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // "Offline cached pages render" — smoke contract that maxPages: 5 +
 // stable queryKey allows persisted infiniteData to rehydrate.
-// We assert the source-level contract; full persistence rehydration is a
-// Story 3-2-shaped integration concern already covered by queryClient tests.
+// We assert the source-level contract; full persistence rehydration is an
+// integration concern already covered by the queryClient tests.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / offline cached pages render contract', () => {
+describe('offline cached pages render contract', () => {
   it('useFeed registers under a STABLE queryKey tuple (cacheable across cold starts)', async () => {
     const { collectiveFeedKey } = await importFeed()
     // The tuple must be exactly ['collective', 'feed'] — any drift breaks
@@ -613,7 +685,7 @@ describe('Story 3-3 / offline cached pages render contract', () => {
 
   it('the source declares maxPages: 5 so persisted infiniteData round-trips ≤ 100 posts', () => {
     if (!existsSync(FEED_PATH)) {
-      throw new Error('feed.ts missing — AC #22 precondition will already have failed')
+      throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
     expect(src).toMatch(/maxPages\s*:\s*5\b/)
@@ -625,23 +697,23 @@ describe('Story 3-3 / offline cached pages render contract', () => {
 // AC adds eager-import assertions; harmless to keep here.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-3 / repo root resolution sanity', () => {
+describe('repo root resolution sanity', () => {
   it('REPO_ROOT contains a packages directory', () => {
     expect(existsSync(path.join(REPO_ROOT, 'packages'))).toBe(true)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Story 3-15 — title-led feed row shape (AC #25, #29)
+// Title-led feed row shape
 //
-// The feed RPC now returns title + excerpt + descendant_count + a per-kind
+// The feed RPC returns title + excerpt + descendant_count + a per-kind
 // reactions tally, and NO full body. fetchFeedPage passes rows through
 // unchanged, so these fields must surface on returned items and `body` must be
-// absent. The CHECK-constraint ACs (AC 3) are encoded as the migration's
+// absent. The CHECK-constraint contract is encoded as the migration's
 // `DO $$` self-test (no pgTAP harness in this repo), NOT as a vitest test.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-15 / fetchFeedPage surfaces title-led row shape (AC #25)', () => {
+describe('fetchFeedPage surfaces title-led row shape', () => {
   it('surfaces title/excerpt/descendant_count/reactions and NO body', async () => {
     const { fetchFeedPage } = await importFeed()
     rpcMock.mockResolvedValueOnce({ data: makeRows(3, 'full'), error: null })
@@ -666,7 +738,7 @@ describe('Story 3-15 / fetchFeedPage surfaces title-led row shape (AC #25)', () 
   })
 })
 
-describe('Story 3-15 / feed Post type shape (AC #29)', () => {
+describe('feed Post type shape', () => {
   it('Post carries title/excerpt/descendant_count/reactions; body is not assignable', () => {
     // Compile-time contract encoded at runtime via a fully-typed literal: if a
     // future database.ts regen drifts from the RPC, this stops compiling.
@@ -686,7 +758,7 @@ describe('Story 3-15 / feed Post type shape (AC #29)', () => {
     }
     expect(post.title).toBe('A title')
     expect(post.reactions.heart).toBe(1)
-    // @ts-expect-error — `body` was dropped from the feed Post (Story 3-15 D5)
+    // @ts-expect-error — `body` was dropped from the feed Post in the title-led redesign
     const hasBody = post.body
     expect(hasBody).toBeUndefined()
   })

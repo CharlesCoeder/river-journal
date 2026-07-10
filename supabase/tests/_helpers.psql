@@ -113,6 +113,48 @@ BEGIN
 END;
 $$;
 
+-- Seed a daily_entry + a single flow for an ARBITRARY writing day and word
+-- count, returning the flow id (so a caller can later soft-delete that exact
+-- flow). Mirrors the SECURITY DEFINER + pinned search_path + ON CONFLICT shape
+-- of test_seed_500_today, but parameterises entry_date and word_count instead
+-- of hardcoding today's UTC date and 500 words. This is what lets a test place
+-- a qualifying flow on YESTERDAY (or any date) to exercise the day-boundary
+-- reset that every other helper — pinned to today — cannot reach.
+--
+-- Note: multiple flows can share one daily_entry (the day-sum is what the gate
+-- reads), so this always INSERTs a fresh flow row even when the daily_entry for
+-- (user, date) already exists. is_deleted starts FALSE.
+CREATE OR REPLACE FUNCTION test_seed_words_on_date(
+  p_user       UUID,
+  p_entry_date DATE,
+  p_word_count INT
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_entry_id UUID := gen_random_uuid();
+  v_flow_id  UUID := gen_random_uuid();
+BEGIN
+  INSERT INTO daily_entries (id, user_id, entry_date)
+  VALUES (v_entry_id, p_user, p_entry_date)
+  ON CONFLICT (user_id, entry_date) DO UPDATE SET updated_at = NOW()
+  RETURNING id INTO v_entry_id;
+
+  -- Re-fetch because ON CONFLICT may have returned an existing entry id.
+  SELECT id INTO v_entry_id
+  FROM daily_entries
+  WHERE user_id = p_user AND entry_date = p_entry_date;
+
+  INSERT INTO flows (id, daily_entry_id, content, word_count, is_deleted)
+  VALUES (v_flow_id, v_entry_id, 'seeded-content', p_word_count, FALSE);
+
+  RETURN v_flow_id;
+END;
+$$;
+
 -- Switch to the authenticated role with a JWT-claim sub set to the given uid.
 -- Combines `SET LOCAL role` + `request.jwt.claim.sub` so that auth.uid()
 -- returns the seeded user inside SECURITY DEFINER calls.
