@@ -45,17 +45,31 @@ function GoogleLogo({
 }
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;
+  // Disables the control (e.g. until the 13+ attestation box is checked). While
+  // disabled the press handler is a no-op, so NO OAuth call fires.
+  disabled?: boolean;
+  // Fires synchronously right before the OAuth flow is initiated (never while
+  // disabled). Mirrors the web prop so shared callers can record pre-auth
+  // intent uniformly.
+  onAuthStart?: () => void;
 }
 export function GoogleSignInButton({
-  onSuccess
+  onSuccess,
+  disabled = false,
+  onAuthStart
 }: GoogleSignInButtonProps) {
   const {
     promptAsync,
     isLoading,
     error
   } = useGoogleAuth(onSuccess);
+  const handlePress = () => {
+    if (disabled) return;
+    onAuthStart?.();
+    promptAsync();
+  };
   return <>
-      <Button onPress={promptAsync} disabled={isLoading} backgroundColor="#FFFFFF" borderColor="#747775" borderWidth={1} pressStyle={{
+      <Button onPress={handlePress} disabled={isLoading || disabled} backgroundColor="#FFFFFF" borderColor="#747775" borderWidth={1} opacity={disabled ? 0.5 : 1} pressStyle={disabled ? {} : {
       backgroundColor: '#E8E8E8',
       opacity: 0.9
     }} height="$5" borderRadius="$4">

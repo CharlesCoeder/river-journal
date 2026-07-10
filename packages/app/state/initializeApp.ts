@@ -12,6 +12,7 @@ import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 import { lapsed$, recordSessionOpen } from './lapsed'
 import { onboarding$ } from './onboarding'
+import { authReturn$, flushPendingAgeAttestation } from './authReturn'
 import { syncDeviceTimezone } from './timezoneSync'
 import { startTodayTracking } from './today'
 import './streak' // attaches store$.views.streak side-effect
@@ -44,6 +45,12 @@ function setupPersistence() {
   // Persist onboarding-state (completion flag + resume screen).
   // Local-only, never synced — first-launch gate reads this before children render.
   syncObservable(onboarding$, configurePersistence({ persist: { name: 'onboarding-state' } }))
+
+  // Persist auth-return markers (pending Collective return + deferred Google-web
+  // attestation). Local-only, never synced — must survive the web full-page
+  // Google OAuth redirect and be rehydrated before HomeScreen mounts (see the
+  // isPersistLoaded gate below and state/authReturn.ts).
+  syncObservable(authReturn$, configurePersistence({ persist: { name: 'auth-return' } }))
 
   // Activate the synced observables so their persistence loads.
   // syncedSupabase uses lazy activation — calling .get() triggers persistence
@@ -111,6 +118,21 @@ function setupSyncReadinessGate() {
   })
 }
 
+function setupAttestationFlush() {
+  // Google web/desktop OAuth is a full-page redirect, so the 13+ attestation
+  // can't be recorded inline. The gate sets a persisted `pendingAgeAttestation`
+  // marker before initiating OAuth; here we flush it once a session exists
+  // (userId transitions to non-null). Best-effort + idempotent-if-null: an
+  // abandoned OAuth attempt never fires this (no userId), and a redundant flush
+  // on a returning user is a no-op.
+  observe(() => {
+    const userId = store$.session.userId.get()
+    if (userId) {
+      void flushPendingAgeAttestation(userId)
+    }
+  })
+}
+
 function setupTimezoneSync() {
   // Independent of the journal sync gate (which requires syncEnabled +
   // encryption ready). The server-side daily-500 RLS predicate reads
@@ -136,6 +158,7 @@ export async function initializePersistence() {
   try {
     setupPersistence()
     setupSyncReadinessGate()
+    setupAttestationFlush()
     setupTimezoneSync()
 
     const persistencePromises = [
@@ -146,6 +169,7 @@ export async function initializePersistence() {
       when(syncState(graceDays$).isPersistLoaded),
       when(syncState(deviceState$).isPersistLoaded),
       when(syncState(onboarding$).isPersistLoaded),
+      when(syncState(authReturn$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)

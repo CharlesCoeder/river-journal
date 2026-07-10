@@ -2,6 +2,8 @@ import { AnimatePresence, YStack, Text, XStack, ScrollView, View, useReducedMoti
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
+import { isSyncReady$ } from 'app/state/syncConfig'
+import { pendingCollectiveReturn$ } from 'app/state/authReturn'
 import type { StreakState } from 'app/state/streak'
 import { useEffect, useState } from 'react'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
@@ -25,6 +27,23 @@ export function HomeScreen() {
   const todayJournalDay = useToday()
   const todayStats = use$(store$.views.statsByDate(todayJournalDay))
   const { shouldShow: showLapsed, dismiss: dismissLapsed } = useLapsedPrompt()
+  const isAuthenticated = use$(store$.session.isAuthenticated)
+  const isSyncReady = use$(isSyncReady$)
+
+  // Post-auth return-to-Collective forwarding. The account gate records a
+  // persisted pending marker, then auth lands back on home (as always) so the
+  // device-setup dialogs mounted on this screen (orphan adoption, encryption
+  // setup) can run. Once sync readiness opens, forward to the Collective —
+  // consuming the marker exactly once: it is cleared BEFORE navigating so a
+  // later readiness recompute (or re-render) can never re-fire the navigation.
+  // If readiness never opens (setup abandoned), the user simply stays on home;
+  // a manual authenticated Collective tap below remains the escape hatch.
+  useEffect(() => {
+    if (!isSyncReady) return
+    if (!pendingCollectiveReturn$.peek()) return
+    pendingCollectiveReturn$.set(false)
+    router.replace('/collective')
+  }, [isSyncReady, router])
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -39,6 +58,16 @@ export function HomeScreen() {
 
   const handleCollectivePress = () => {
     if (showLapsed) dismissLapsed()
+    if (!isAuthenticated) {
+      // Account gate: joining the Collective requires an account. The gate
+      // carries the origin + return target so the auth surface can show
+      // Collective-context copy and route back here-then-forward after auth.
+      router.push('/auth?from=collective&returnTo=%2Fcollective')
+      return
+    }
+    // Direct authenticated entry — clear any stale pending return marker so a
+    // later sync-readiness change can never trigger a surprise auto-navigation.
+    pendingCollectiveReturn$.set(false)
     router.push('/collective')
   }
 

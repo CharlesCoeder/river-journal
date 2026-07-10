@@ -14,4 +14,5 @@ export {
   checkHasPassword,
   getUserProviders,
   updatePassword,
+  recordAgeAttestation,
 } from './auth'

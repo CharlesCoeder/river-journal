@@ -130,6 +130,12 @@ vi.mock('@legendapp/state/react', () => ({
   }),
 }))
 
+// Authenticated by default: this layout suite exercises the carryover home
+// surface (date hero, CTA, slots), where the Collective press routes straight
+// to /collective. The unauthenticated account-gate branch has its own focused
+// suite in HomeScreen.collective-gate.test.tsx.
+let sessionAuthMockValue = true
+
 vi.mock('app/state/store', () => ({
   store$: {
     views: {
@@ -143,7 +149,8 @@ vi.mock('app/state/store', () => ({
       },
     },
     session: {
-      get: vi.fn(() => ({ isAuthenticated: false })),
+      isAuthenticated: { get: () => sessionAuthMockValue },
+      get: vi.fn(() => ({ isAuthenticated: sessionAuthMockValue })),
     },
   },
 }))
@@ -231,7 +238,7 @@ describe('HomeScreen renders hero content', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. "Begin writing" CTA — accessibility (AC 7)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Begin writing CTA — accessibility (AC7)', () => {
+describe('Begin writing CTA — accessibility', () => {
   it('renders "Begin writing" text', () => {
     render(React.createElement(HomeScreen))
     expect(screen.getByText('Begin writing')).toBeTruthy()
@@ -254,7 +261,7 @@ describe('Begin writing CTA — accessibility (AC7)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. CTA press navigates to /journal (AC 2)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Begin writing CTA — navigation (AC2)', () => {
+describe('Begin writing CTA — navigation', () => {
   beforeEach(() => {
     pushSpy.mockClear()
   })
@@ -277,7 +284,7 @@ describe('Begin writing CTA — navigation (AC2)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. CTA spring transition (AC 2)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Begin writing CTA — ctaSpring transition (AC2)', () => {
+describe('Begin writing CTA — ctaSpring transition', () => {
   it('renders with transition="ctaSpring" when useReducedMotion returns false', () => {
     reduceMotionValue = false
     render(React.createElement(HomeScreen))
@@ -297,7 +304,7 @@ describe('Begin writing CTA — ctaSpring transition (AC2)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. CTA translation x (AC 2)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Begin writing CTA — x translation on hover/press (AC2)', () => {
+describe('Begin writing CTA — x translation on hover/press', () => {
   it('x is 0 when not hovered / not pressed under normal motion', () => {
     reduceMotionValue = false
     render(React.createElement(HomeScreen))
@@ -423,7 +430,7 @@ describe('CollectiveEntry slot wrapper (1-7: now contains CollectiveEntry compon
 // assertion is a structural smoke: confirm the content container node renders
 // (it wraps everything inside AnimatePresence / mounted gate).
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Reading-width container (AC5)', () => {
+describe('Reading-width container', () => {
   it('home content container is mounted and wraps hero', () => {
     render(React.createElement(HomeScreen))
     // The TODAY label lives inside the maxWidth container; if it renders,
@@ -435,7 +442,7 @@ describe('Reading-width container (AC5)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 8. Dialog preservation (AC 6)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Dialog components preserved (AC6)', () => {
+describe('Dialog components preserved', () => {
   it('mounts KeyringPrompt', () => {
     render(React.createElement(HomeScreen))
     expect(screen.getByTestId('keyring-prompt')).toBeTruthy()
@@ -565,7 +572,7 @@ describe('CollectiveEntry mounts in HomeScreen', () => {
     expect(screen.getByTestId('home-collective-entry-slot')).toBeTruthy()
   })
 
-  it('pressing CollectiveEntry calls router.push("/collective") (AC7)', () => {
+  it('pressing CollectiveEntry while authenticated calls router.push("/collective")', () => {
     pushSpy.mockClear()
     render(React.createElement(HomeScreen))
     const entry = screen.getByTestId('collective-entry')
@@ -592,19 +599,19 @@ describe('Lapsed prompt', () => {
     lapsedMock.shouldShow = false
   })
 
-  it('prompt is NOT in the DOM when shouldShow is false (AC4)', () => {
+  it('prompt is NOT in the DOM when shouldShow is false', () => {
     lapsedMock.shouldShow = false
     render(React.createElement(HomeScreen))
     expect(screen.queryByTestId('lapsed-prompt')).toBeNull()
   })
 
-  it('prompt renders with copy "Want to start again?" when shouldShow is true (AC4)', () => {
+  it('prompt renders with copy "Want to start again?" when shouldShow is true', () => {
     lapsedMock.shouldShow = true
     render(React.createElement(HomeScreen))
     expect(screen.getByText('Want to start again?')).toBeTruthy()
   })
 
-  it('prompt is positioned in the DOM between date block and CTA when shouldShow is true (AC4)', () => {
+  it('prompt is positioned in the DOM between date block and CTA when shouldShow is true', () => {
     lapsedMock.shouldShow = true
     render(React.createElement(HomeScreen))
     const prompt = screen.getByTestId('lapsed-prompt')
@@ -619,7 +626,7 @@ describe('Lapsed prompt', () => {
     expect(promptIdx).toBeLessThan(ctaIdx)
   })
 
-  it('tapping Begin writing while shouldShow is true calls dismiss BEFORE router.push (AC5)', () => {
+  it('tapping Begin writing while shouldShow is true calls dismiss BEFORE router.push', () => {
     lapsedMock.shouldShow = true
     const dismissMock = vi.fn()
     lapsedMock.dismiss = dismissMock
@@ -635,7 +642,7 @@ describe('Lapsed prompt', () => {
     expect(dismissOrder).toBeLessThan(pushOrder)
   })
 
-  it('tapping Begin writing when shouldShow is false does NOT call dismiss (AC5)', () => {
+  it('tapping Begin writing when shouldShow is false does NOT call dismiss', () => {
     lapsedMock.shouldShow = false
     const dismissMock = vi.fn()
     lapsedMock.dismiss = dismissMock
@@ -645,7 +652,7 @@ describe('Lapsed prompt', () => {
     expect(dismissMock).not.toHaveBeenCalled()
   })
 
-  it('tapping COLLECTIVE while shouldShow is true calls dismiss BEFORE router.push (AC5)', () => {
+  it('tapping COLLECTIVE while shouldShow is true calls dismiss BEFORE router.push', () => {
     lapsedMock.shouldShow = true
     const dismissMock = vi.fn()
     lapsedMock.dismiss = dismissMock
@@ -660,7 +667,7 @@ describe('Lapsed prompt', () => {
     expect(dismissOrder).toBeLessThan(pushOrder)
   })
 
-  it('scrolling the ScrollView while shouldShow is true calls dismiss (AC5)', () => {
+  it('scrolling the ScrollView while shouldShow is true calls dismiss', () => {
     lapsedMock.shouldShow = true
     const dismissMock = vi.fn()
     lapsedMock.dismiss = dismissMock
@@ -671,7 +678,7 @@ describe('Lapsed prompt', () => {
     expect(dismissMock).toHaveBeenCalled()
   })
 
-  it('scrolling when shouldShow is false does NOT call dismiss (AC5)', () => {
+  it('scrolling when shouldShow is false does NOT call dismiss', () => {
     lapsedMock.shouldShow = false
     const dismissMock = vi.fn()
     lapsedMock.dismiss = dismissMock

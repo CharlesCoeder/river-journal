@@ -342,6 +342,7 @@ export type Database = {
        */
       users: {
         Row: {
+          age_attested_at: string | null
           created_at: string
           encryption_key_verifier: string | null
           encryption_mode: Database['public']['Enums']['encryption_mode'] | null
@@ -353,6 +354,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          age_attested_at?: string | null
           created_at?: string
           encryption_key_verifier?: string | null
           encryption_mode?: Database['public']['Enums']['encryption_mode'] | null
@@ -364,6 +366,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          age_attested_at?: string | null
           created_at?: string
           encryption_key_verifier?: string | null
           encryption_mode?: Database['public']['Enums']['encryption_mode'] | null

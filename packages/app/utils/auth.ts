@@ -77,8 +77,8 @@ const updateSessionState = (
   options?: { skipEncryptionLoad?: boolean }
 ) => {
   // NOTE: auto-wipe on user-change was removed. Wiping is now user-driven via
-  // the previous-account banner in Settings. See spec
-  // `docs/_bmad-output/implementation-artifacts/spec-fix-cross-user-data-defense.md`.
+  // the previous-account banner in Settings, so a signed-out device retains the
+  // prior account's local data until the user explicitly clears it.
 
   batch(() => {
     if (session?.user) {
@@ -293,6 +293,43 @@ export const signInWithGoogle = async (): Promise<{ error: string | null }> => {
   }
 
   return { error: null }
+}
+
+/**
+ * Records the one-time 13+ age attestation on the user's profile row.
+ *
+ * Idempotent, best-effort, direct Supabase table write (NOT Legend-State —
+ * the users profile is not part of the encrypted-journal synced domain, so
+ * snake_case `age_attested_at` is correct at this raw-write boundary). Mirrors
+ * the pattern in `state/timezoneSync.ts`.
+ *
+ * The `.is('age_attested_at', null)` guard makes it write-once: a returning
+ * user who re-checks the box on login is a no-op because the column is already
+ * set. Errors are swallowed (dev-only warn) — attestation is write-only
+ * record-keeping that NEVER blocks auth, routing, or posting; a failed write
+ * simply retries on the next attested session.
+ */
+export const recordAgeAttestation = async (userId?: string): Promise<void> => {
+  const resolvedUserId = userId || store$.session.userId.peek()
+  if (!resolvedUserId) return
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ age_attested_at: new Date().toISOString() })
+      .eq('id', resolvedUserId)
+      .is('age_attested_at', null)
+
+    if (error && process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.warn('🔞 [recordAgeAttestation] write failed; will retry next session', error.message)
+    }
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.warn('🔞 [recordAgeAttestation] threw; will retry next session', e)
+    }
+  }
 }
 
 /**

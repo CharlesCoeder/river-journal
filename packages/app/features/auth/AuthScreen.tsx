@@ -8,14 +8,15 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AnimatePresence, YStack, XStack, Text, ScrollView, View, Spinner } from '@my/ui'
+import { AnimatePresence, YStack, XStack, Text, ScrollView, View, Spinner, Checkbox } from '@my/ui'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useRouter } from 'solito/navigation'
 import type { Observable } from '@legendapp/state'
 import { useObservable, use$ } from '@legendapp/state/react'
 import { DesignInput } from './components/DesignInput'
 import { GoogleSignInButton } from './components/GoogleSignInButton'
-import { signInWithEmail, signUpWithEmail } from 'app/utils'
+import { signInWithEmail, signUpWithEmail, recordAgeAttestation } from 'app/utils'
+import { pendingCollectiveReturn$, pendingAgeAttestation$ } from 'app/state/authReturn'
 
 type AuthTab = 'login' | 'signup'
 
@@ -32,9 +33,18 @@ const MIN_PASSWORD_LENGTH = 8
 
 interface AuthScreenProps {
   initialTab?: AuthTab
+  /**
+   * Where this auth surface was reached from. When 'collective', the subtitle
+   * swaps to Collective-context copy and a successful auth records a pending
+   * return-to-Collective marker (consumed by the home-forward effect once
+   * sync readiness opens).
+   */
+  gateContext?: 'collective'
+  /** Post-auth destination requested by the referring surface (e.g. '/collective'). */
+  returnTo?: string
 }
 
-export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
+export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: AuthScreenProps) {
   const authForm$ = useObservable<AuthFormState>({
     activeTab: initialTab,
     email: '',
@@ -50,6 +60,9 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
   const [mounted, setMounted] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  // Required 13+ attestation — both submit controls stay disabled until checked.
+  const [ageAttested, setAgeAttested] = useState(false)
+  const [attestError, setAttestError] = useState(false)
   const [errors, setErrors] = useState<{
     email?: string
     password?: string
@@ -124,7 +137,41 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
     [authForm$, errors.confirmPassword]
   )
 
+  const wantsCollectiveReturn = gateContext === 'collective' || returnTo === '/collective'
+
+  const handleAgeAttestedChange = useCallback((checked: boolean | 'indeterminate') => {
+    const next = checked === true
+    setAgeAttested(next)
+    if (next) setAttestError(false)
+  }, [])
+
+  // Runs after a session is established (user present, no error) on either
+  // email path. Attestation is best-effort record-keeping — recordAgeAttestation
+  // swallows its own failures and never blocks the navigation that follows.
+  // Post-auth returns home first (as before) so the device-setup dialogs on the
+  // home surface can run; when the user came from the Collective gate, a
+  // persisted marker lets home forward them to the Collective once sync
+  // readiness opens.
+  const completeEmailAuth = useCallback(
+    async (userId: string) => {
+      await recordAgeAttestation(userId)
+      // Always overwrite (never only set-true): a stale marker left by an
+      // earlier abandoned auth attempt must self-heal to false when THIS
+      // attempt has no collective-return intent, so it can't surprise-forward
+      // an unrelated sign-in to /collective.
+      pendingCollectiveReturn$.set(wantsCollectiveReturn)
+      authForm$.assign({ email: '', password: '', confirmPassword: '' })
+      router.push('/')
+    },
+    [wantsCollectiveReturn, authForm$, router]
+  )
+
   const handleSubmit = useCallback(async () => {
+    if (!ageAttested) {
+      // Blocked client-side: NO auth call fires until the 13+ box is checked.
+      setAttestError(true)
+      return
+    }
     setErrors({})
     const emailError = validateEmail(email)
     const passwordError = validatePassword(password)
@@ -140,7 +187,7 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
         const { user, error } = await signUpWithEmail(email, password)
         if (error) { setErrors({ general: error }); return }
         if (!user) { setErrors({ general: 'Something went wrong. Please try again.' }); return }
-        authForm$.assign({ email: '', password: '', confirmPassword: '' }); router.push('/')
+        await completeEmailAuth(user.id)
       } finally {
         setIsLoading(false)
       }
@@ -152,16 +199,45 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
         const { user, error } = await signInWithEmail(email, password)
         if (error) { setErrors({ general: error }); return }
         if (!user) { setErrors({ general: 'Something went wrong. Please try again.' }); return }
-        authForm$.assign({ email: '', password: '', confirmPassword: '' }); router.push('/')
+        await completeEmailAuth(user.id)
       } finally {
         setIsLoading(false)
       }
     }
-  }, [email, password, confirmPassword, isSignup, validateEmail, validatePassword, validateConfirmPassword, authForm$, router])
+  }, [ageAttested, email, password, confirmPassword, isSignup, validateEmail, validatePassword, validateConfirmPassword, completeEmailAuth])
 
   const canSubmit = isSignup
-    ? !!email && !!password && !!confirmPassword && !isLoading
-    : !!email && !!password && !isLoading
+    ? !!email && !!password && !!confirmPassword && ageAttested && !isLoading
+    : !!email && !!password && ageAttested && !isLoading
+
+  // Always attached to the submit control so a press while the 13+ box is
+  // unchecked can surface the inline requirement microcopy (still no auth call).
+  const handleSubmitPress = useCallback(() => {
+    if (!ageAttested) {
+      setAttestError(true)
+      return
+    }
+    if (!canSubmit) return
+    void handleSubmit()
+  }, [ageAttested, canSubmit, handleSubmit])
+
+  // Set BEFORE Google OAuth is initiated (the button is only enabled once the
+  // 13+ box is checked). On web/desktop the OAuth redirect unloads the page, so
+  // no inline post-auth code can run — the persisted markers carry the intent
+  // across the redirect and are flushed once a session exists.
+  const handleGoogleAuthStart = useCallback(() => {
+    pendingAgeAttestation$.set(true)
+    // Always overwrite so an abandoned prior OAuth attempt's stale marker
+    // can't leak into this attempt (see completeEmailAuth for the same fix).
+    pendingCollectiveReturn$.set(wantsCollectiveReturn)
+  }, [wantsCollectiveReturn])
+
+  // Native-only inline path: useGoogleAuth fires onSuccess after the session is
+  // established, so the store userId is available. Web never calls this (the
+  // redirect flow reloads the page); the persisted marker covers it there.
+  const handleGoogleSuccess = useCallback(() => {
+    void recordAgeAttestation()
+  }, [])
 
   const handleBack = () => { router.push('/') }
 
@@ -221,7 +297,9 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
             color="$color6"
             textAlign="center"
           >
-            Accounts are optional. Your journal works perfectly without one.
+            {gateContext === 'collective'
+              ? "To join the Collective, you'll need an account."
+              : 'Accounts are optional. Your journal works perfectly without one.'}
           </Text>
         </YStack>
 
@@ -247,6 +325,38 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
 
           {/* Form fields */}
           <YStack width="100%">
+            {/* 13+ attestation — required before any account submission */}
+            <YStack marginBottom="$5" gap="$2">
+              <XStack alignItems="center" gap="$3">
+                <Checkbox
+                  checked={ageAttested}
+                  onCheckedChange={handleAgeAttestedChange}
+                  accessibilityLabel="I confirm I am 13 or older."
+                  testID="age-attestation-checkbox"
+                  size="$4"
+                  borderRadius={0}
+                  borderWidth={1}
+                  borderColor={attestError ? '$color' : '$color6'}
+                  backgroundColor={ageAttested ? '$color' : 'transparent'}
+                  disabled={isLoading}
+                />
+                <Text
+                  fontFamily="$body"
+                  fontSize={13}
+                  color="$color6"
+                  cursor="pointer"
+                  onPress={() => handleAgeAttestedChange(!ageAttested)}
+                >
+                  I confirm I am 13 or older.
+                </Text>
+              </XStack>
+              {attestError && (
+                <Text fontSize={12} color="$color" fontFamily="$body">
+                  Please confirm you're 13 or older to continue.
+                </Text>
+              )}
+            </YStack>
+
             {/* Email */}
             <YStack>
               <DesignInput
@@ -321,7 +431,7 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
 
             {/* Submit Button */}
             <XStack
-              onPress={canSubmit ? handleSubmit : undefined}
+              onPress={handleSubmitPress}
               borderWidth={1}
               borderColor={canSubmit ? '$color' : '$color3'}
               paddingVertical="$3"
@@ -358,7 +468,11 @@ export function AuthScreen({ initialTab = 'login' }: AuthScreenProps) {
 
             {/* Google OAuth */}
             <YStack marginTop="$5" width="100%">
-              <GoogleSignInButton />
+              <GoogleSignInButton
+                disabled={!ageAttested}
+                onAuthStart={handleGoogleAuthStart}
+                onSuccess={handleGoogleSuccess}
+              />
             </YStack>
           </YStack>
         </YStack>
