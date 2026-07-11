@@ -4,6 +4,9 @@
 // state/collective/mutations.ts header comment. Any reorder is a regression.
 // ====================================
 import 'app/state/collective/mutations'
+// Same order-critical rationale: register the moderation mutation defaults at
+// module load, before <PersistQueryClientProvider> mounts.
+import 'app/state/collective/moderationMutations'
 import { __collectiveMutationsLoadedAt } from 'app/state/collective/mutations'
 
 import { useLayoutEffect, useState, type FC, type ReactNode } from 'react'
@@ -29,10 +32,7 @@ const FontLanguage = FontLanguageBase as unknown as FC<{
   children?: ReactNode
 }>
 import { addTheme, updateTheme } from '@tamagui/theme'
-import {
-  PersistQueryClientProvider,
-  removeOldestQuery,
-} from '@tanstack/react-query-persist-client'
+import { PersistQueryClientProvider, removeOldestQuery } from '@tanstack/react-query-persist-client'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ToastViewport } from './ToastViewport'
@@ -106,10 +106,7 @@ export function Provider({
   // would still be undefined. This is the cheapest runtime guard against a
   // future refactor (or auto-formatter) accidentally moving the eager import
   // below the provider import. Production builds DCE this branch.
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    typeof __collectiveMutationsLoadedAt !== 'number'
-  ) {
+  if (process.env.NODE_ENV !== 'production' && typeof __collectiveMutationsLoadedAt !== 'number') {
     // eslint-disable-next-line no-console
     console.warn(
       '[rj-tq] mutations.ts side-effects did not run before Provider mounted — eager-import ordering is broken. See state/collective/mutations.ts header.'
@@ -153,7 +150,12 @@ export function Provider({
       {...rest}
     >
       <Theme name={resolvedThemeName}>
-        <FontLanguage body={fontVariant} heading={fontVariant} journal={fontVariant} journalItalic={fontVariant}>
+        <FontLanguage
+          body={fontVariant}
+          heading={fontVariant}
+          journal={fontVariant}
+          journalItalic={fontVariant}
+        >
           <PersistQueryClientProvider
             client={queryClient}
             persistOptions={{

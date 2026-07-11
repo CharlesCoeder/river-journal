@@ -480,6 +480,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_moderation_note: {
+        Args: { note: string; target_post_id?: string | null; target_user_id?: string | null }
+        Returns: undefined
+      }
       bootstrap_e2e_encryption: {
         Args: { p_salt: string; p_verifier: string }
         Returns: {
@@ -596,6 +600,23 @@ export type Database = {
       delete_my_post: { Args: { post_id: string }; Returns: undefined }
       is_active_suspension: { Args: { uid: string; kind_param: string }; Returns: boolean }
       is_eligible_to_post: { Args: Record<string, never>; Returns: boolean }
+      reinstate_post: {
+        Args: { target_post_id: string; reason?: string | null }
+        Returns: undefined
+      }
+      remove_post: {
+        Args: { target_post_id: string; reason_code: string; custom_note?: string | null }
+        Returns: undefined
+      }
+      suspend_user: {
+        Args: {
+          target_user_id: string
+          kind: string
+          duration_days: number
+          reason?: string | null
+        }
+        Returns: undefined
+      }
       user_has_password: { Args: never; Returns: boolean }
     }
     Enums: {

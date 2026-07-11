@@ -59,6 +59,14 @@ vi.mock('app/state/collective/moderation', () => ({
   }),
 }))
 
+// The rows now host the moderation mutation hooks — mock them so the screen
+// renders without a QueryClientProvider (mirrors FlagAffordance.test.tsx).
+vi.mock('app/state/collective/moderationMutations', () => ({
+  useRemovePost: () => ({ mutate: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+  useSuspendUser: () => ({ mutate: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+  useAddModerationNote: () => ({ mutate: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+}))
+
 // ─── @my/ui mock — map Tamagui primitives to testable HTML elements ──────────
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
@@ -71,8 +79,56 @@ vi.mock('@my/ui', async () => {
     if (props['data-testid']) out['data-testid'] = props['data-testid']
     if (props.role) out['role'] = props.role
     if (props.accessibilityRole) out['role'] = props.accessibilityRole
+    if (props['aria-expanded'] !== undefined) out['aria-expanded'] = String(props['aria-expanded'])
     return out
   }
+
+  const DialogPortal = ({ children }: any) =>
+    ReactModule.createElement('div', { 'data-dialog-portal': 'true' }, children)
+  const DialogOverlay = () => ReactModule.createElement('div', { 'data-dialog-overlay': 'true' })
+  const DialogContent = ({ children }: any) =>
+    ReactModule.createElement('div', { 'data-dialog-content': 'true' }, children)
+  const DialogTitle = ({ children }: any) => ReactModule.createElement('h2', {}, children)
+  const DialogDescription = ({ children }: any) => ReactModule.createElement('p', {}, children)
+  const DialogTrigger = ({ children }: any) => children
+  const DialogComponent = ({ children, open, onOpenChange }: any) =>
+    ReactModule.createElement(
+      'div',
+      {
+        'data-dialog': 'true',
+        'data-open': String(open),
+        role: open ? 'dialog' : undefined,
+        onKeyDown: (e: any) => {
+          if (e.key === 'Escape') onOpenChange?.(false)
+        },
+      },
+      open ? children : null
+    )
+  Object.assign(DialogComponent, {
+    Portal: DialogPortal,
+    Overlay: DialogOverlay,
+    Content: DialogContent,
+    Title: DialogTitle,
+    Description: DialogDescription,
+    Trigger: DialogTrigger,
+  })
+
+  const RadioGroupItem = ({ value, id }: any) =>
+    ReactModule.createElement('input', { type: 'radio', id, value, 'data-radio-item': 'true' })
+  const RadioGroupComponent = ({ children, value, onValueChange }: any) =>
+    ReactModule.createElement(
+      'div',
+      {
+        role: 'radiogroup',
+        'data-rg-value': value ?? '',
+        onClick: (e: any) => {
+          const target = e.target as HTMLInputElement
+          if (target.type === 'radio') onValueChange?.(target.value)
+        },
+      },
+      children
+    )
+  Object.assign(RadioGroupComponent, { Item: RadioGroupItem })
 
   return {
     AnimatePresence: ({ children }: any) => children,
@@ -91,6 +147,7 @@ vi.mock('@my/ui', async () => {
       accessibilityLabel,
       role,
       'aria-label': ariaLabel,
+      'aria-expanded': ariaExpanded,
       'data-testid': dataTestId,
       ...props
     }: any) => {
@@ -101,6 +158,7 @@ vi.mock('@my/ui', async () => {
       if (role) a11y['role'] = role
       if (accessibilityLabel) a11y['aria-label'] = accessibilityLabel
       if (ariaLabel) a11y['aria-label'] = ariaLabel
+      if (ariaExpanded !== undefined) a11y['aria-expanded'] = String(ariaExpanded)
       if (dataTestId) a11y['data-testid'] = dataTestId
       if (onPress) a11y['onClick'] = onPress
       return ReactModule.createElement(htmlTag, a11y, children)
@@ -114,7 +172,32 @@ vi.mock('@my/ui', async () => {
 
     Separator: (_props: any) => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
 
+    Dialog: DialogComponent,
+    RadioGroup: RadioGroupComponent,
+    Label: ({ children, htmlFor }: any) =>
+      ReactModule.createElement('label', { htmlFor }, children),
+    TextArea: ({ value, onChangeText, maxLength }: any) =>
+      ReactModule.createElement('textarea', {
+        value: value ?? '',
+        onChange: (e: any) => onChangeText?.(e.target.value),
+        maxLength,
+        'data-testid': 'textarea',
+      }),
+    Input: ({ value, onChangeText }: any) =>
+      ReactModule.createElement('input', {
+        value: value ?? '',
+        onChange: (e: any) => onChangeText?.(e.target.value),
+        'data-testid': 'suspend-custom-days-input',
+      }),
+    ExpandingLineButton: ({ children, onPress, disabled }: any) =>
+      ReactModule.createElement(
+        'button',
+        { onClick: onPress, disabled: !!disabled, 'aria-disabled': disabled ? 'true' : 'false' },
+        children
+      ),
+
     useReducedMotion: () => false,
+    useToastController: () => ({ show: vi.fn() }),
   }
 })
 
@@ -289,10 +372,7 @@ describe('populated list', () => {
   })
 
   it('separates rows with a 1px divider (Separator)', () => {
-    mockQueueData = [
-      makeQueueItem({ post_id: 'post-1' }),
-      makeQueueItem({ post_id: 'post-2' }),
-    ]
+    mockQueueData = [makeQueueItem({ post_id: 'post-1' }), makeQueueItem({ post_id: 'post-2' })]
     render(<ModerationQueueScreen />)
     expect(document.querySelectorAll('[data-testid="separator"]').length).toBeGreaterThanOrEqual(1)
   })
@@ -314,7 +394,9 @@ describe('populated list', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('boundary rule D7 source-grep', () => {
   it('ModerationQueueScreen.tsx exists', () => {
-    expect(existsSync(SCREEN_PATH), `ModerationQueueScreen.tsx must exist at ${SCREEN_PATH}`).toBe(true)
+    expect(existsSync(SCREEN_PATH), `ModerationQueueScreen.tsx must exist at ${SCREEN_PATH}`).toBe(
+      true
+    )
   })
 
   it('ModerationQueueScreen.tsx does NOT contain @legendapp/state import', () => {

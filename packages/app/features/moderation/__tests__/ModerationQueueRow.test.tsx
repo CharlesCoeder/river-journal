@@ -39,7 +39,16 @@ import path from 'node:path'
 const FEATURES_DIR = path.resolve(__dirname, '..')
 const ROW_PATH = path.join(FEATURES_DIR, 'ModerationQueueRow.tsx')
 
-// ─── @my/ui mock — map Tamagui primitives to testable HTML elements ──────────
+// ─── Mock the row-hosted mutation hooks (mirrors how FlagAffordance.test.tsx
+// mocks app/state/collective/mutations) — no QueryClientProvider needed. ─────
+vi.mock('app/state/collective/moderationMutations', () => ({
+  useRemovePost: () => ({ mutate: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+  useSuspendUser: () => ({ mutate: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+  useAddModerationNote: () => ({ mutate: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
+}))
+
+// ─── @my/ui mock — map Tamagui primitives to testable HTML elements, plus the
+// dialog primitives the row's co-located dialog components need. ─────────────
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
@@ -51,8 +60,57 @@ vi.mock('@my/ui', async () => {
     if (props['data-testid']) out['data-testid'] = props['data-testid']
     if (props.role) out['role'] = props.role
     if (props.accessibilityRole) out['role'] = props.accessibilityRole
+    if (props['aria-expanded'] !== undefined) out['aria-expanded'] = String(props['aria-expanded'])
     return out
   }
+
+  const DialogPortal = ({ children }: any) =>
+    ReactModule.createElement('div', { 'data-dialog-portal': 'true' }, children)
+  const DialogOverlay = () => ReactModule.createElement('div', { 'data-dialog-overlay': 'true' })
+  const DialogContent = ({ children }: any) =>
+    ReactModule.createElement('div', { 'data-dialog-content': 'true' }, children)
+  const DialogTitle = ({ children }: any) => ReactModule.createElement('h2', {}, children)
+  const DialogDescription = ({ children }: any) => ReactModule.createElement('p', {}, children)
+  const DialogTrigger = ({ children }: any) => children
+
+  const DialogComponent = ({ children, open, onOpenChange }: any) =>
+    ReactModule.createElement(
+      'div',
+      {
+        'data-dialog': 'true',
+        'data-open': String(open),
+        role: open ? 'dialog' : undefined,
+        onKeyDown: (e: any) => {
+          if (e.key === 'Escape') onOpenChange?.(false)
+        },
+      },
+      open ? children : null
+    )
+  Object.assign(DialogComponent, {
+    Portal: DialogPortal,
+    Overlay: DialogOverlay,
+    Content: DialogContent,
+    Title: DialogTitle,
+    Description: DialogDescription,
+    Trigger: DialogTrigger,
+  })
+
+  const RadioGroupItem = ({ value, id }: any) =>
+    ReactModule.createElement('input', { type: 'radio', id, value, 'data-radio-item': 'true' })
+  const RadioGroupComponent = ({ children, value, onValueChange }: any) =>
+    ReactModule.createElement(
+      'div',
+      {
+        role: 'radiogroup',
+        'data-rg-value': value ?? '',
+        onClick: (e: any) => {
+          const target = e.target as HTMLInputElement
+          if (target.type === 'radio') onValueChange?.(target.value)
+        },
+      },
+      children
+    )
+  Object.assign(RadioGroupComponent, { Item: RadioGroupItem })
 
   return {
     Text: ({ children, tag, ...props }: any) => {
@@ -69,6 +127,7 @@ vi.mock('@my/ui', async () => {
       accessibilityLabel,
       role,
       'aria-label': ariaLabel,
+      'aria-expanded': ariaExpanded,
       'data-testid': dataTestId,
       ...props
     }: any) => {
@@ -79,6 +138,7 @@ vi.mock('@my/ui', async () => {
       if (role) a11y['role'] = role
       if (accessibilityLabel) a11y['aria-label'] = accessibilityLabel
       if (ariaLabel) a11y['aria-label'] = ariaLabel
+      if (ariaExpanded !== undefined) a11y['aria-expanded'] = String(ariaExpanded)
       if (dataTestId) a11y['data-testid'] = dataTestId
       if (onPress) a11y['onClick'] = onPress
       return ReactModule.createElement(htmlTag, a11y, children)
@@ -91,6 +151,37 @@ vi.mock('@my/ui', async () => {
       ReactModule.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
 
     Separator: (_props: any) => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
+
+    Dialog: DialogComponent,
+    RadioGroup: RadioGroupComponent,
+    Label: ({ children, htmlFor }: any) =>
+      ReactModule.createElement('label', { htmlFor }, children),
+    TextArea: ({ value, onChangeText, maxLength }: any) =>
+      ReactModule.createElement('textarea', {
+        value: value ?? '',
+        onChange: (e: any) => onChangeText?.(e.target.value),
+        maxLength,
+        'data-testid': 'textarea',
+      }),
+    Input: ({ value, onChangeText }: any) =>
+      ReactModule.createElement('input', {
+        value: value ?? '',
+        onChange: (e: any) => onChangeText?.(e.target.value),
+        'data-testid': 'suspend-custom-days-input',
+      }),
+    ExpandingLineButton: ({ children, onPress, disabled }: any) =>
+      ReactModule.createElement(
+        'button',
+        {
+          onClick: onPress,
+          disabled: !!disabled,
+          'aria-disabled': disabled ? 'true' : 'false',
+          'data-testid': `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
+        },
+        children
+      ),
+    useReducedMotion: () => false,
+    useToastController: () => ({ show: vi.fn() }),
   }
 })
 
@@ -145,11 +236,7 @@ describe('author display', () => {
   })
 
   it('renders "[deleted]" when author_user_id is null and content is not self-deleted', () => {
-    render(
-      <ModerationQueueRow
-        item={makeItem({ author_user_id: null, is_user_deleted: false })}
-      />
-    )
+    render(<ModerationQueueRow item={makeItem({ author_user_id: null, is_user_deleted: false })} />)
     expect(screen.getAllByText('[deleted]').length).toBeGreaterThanOrEqual(1)
   })
 })
@@ -159,7 +246,11 @@ describe('deletion-state precedence (is_user_deleted wins over null author)', ()
   it('self-deleted content: renders [deleted] body + "Author self-deleted", author present', () => {
     render(
       <ModerationQueueRow
-        item={makeItem({ is_user_deleted: true, author_user_id: 'author-abc12345', body: 'original body' })}
+        item={makeItem({
+          is_user_deleted: true,
+          author_user_id: 'author-abc12345',
+          body: 'original body',
+        })}
       />
     )
     expect(screen.getByText('Author self-deleted')).not.toBeNull()
@@ -205,11 +296,7 @@ describe('deletion-state precedence (is_user_deleted wins over null author)', ()
 // ─────────────────────────────────────────────────────────────────────────────
 describe('flag-count label pluralization', () => {
   it('renders "1 report" (singular) when flag_count === 1', () => {
-    render(
-      <ModerationQueueRow
-        item={makeItem({ flag_count: 1, reports: [makeReport()] })}
-      />
-    )
+    render(<ModerationQueueRow item={makeItem({ flag_count: 1, reports: [makeReport()] })} />)
     expect(screen.getByText('1 report')).not.toBeNull()
     expect(screen.queryByText('1 reports')).toBeNull()
   })
@@ -259,8 +346,7 @@ describe('null/empty field guards', () => {
   it('a report with null note in the expanded list: no note line rendered for it', () => {
     const reports = [makeReport({ id: 'no-note-report', reason_code: 'spam', note: null })]
     render(<ModerationQueueRow item={makeItem({ reports })} />)
-    const article = document.querySelector('article') ?? document.body
-    fireEvent.click(article)
+    fireEvent.click(screen.getByTestId('moderation-row-expand-toggle'))
     // No stray "note:" affordance text should render for a null note.
     expect(screen.queryByText(/note:/i)).toBeNull()
   })
@@ -289,9 +375,7 @@ describe('expand-to-show-reports toggle', () => {
     ]
     render(<ModerationQueueRow item={makeItem({ reports, flag_count: 2 })} />)
 
-    const article = document.querySelector('article')
-    expect(article).not.toBeNull()
-    fireEvent.click(article as Element)
+    fireEvent.click(screen.getByTestId('moderation-row-expand-toggle'))
 
     const list = document.querySelector('[data-testid="moderation-row-reports"]')
     expect(list).not.toBeNull()
@@ -303,11 +387,11 @@ describe('expand-to-show-reports toggle', () => {
     const reports = [makeReport({ id: 'r1', reason_code: 'spam', note: 'toggle note' })]
     render(<ModerationQueueRow item={makeItem({ reports, flag_count: 1 })} />)
 
-    const article = document.querySelector('article') as Element
-    fireEvent.click(article)
+    const toggle = screen.getByTestId('moderation-row-expand-toggle')
+    fireEvent.click(toggle)
     expect(document.querySelector('[data-testid="moderation-row-reports"]')).not.toBeNull()
 
-    fireEvent.click(article)
+    fireEvent.click(toggle)
     expect(document.querySelector('[data-testid="moderation-row-reports"]')).toBeNull()
   })
 })
@@ -329,12 +413,11 @@ describe('stubbed action affordances', () => {
     expect(() => fireEvent.click(remove)).not.toThrow()
   })
 
-  it('when handlers ARE supplied, clicking an affordance calls its handler with the post id', () => {
-    const onRemove = vi.fn()
-    render(<ModerationQueueRow item={makeItem({ post_id: 'post-xyz' })} onRemove={onRemove} />)
+  it('clicking Remove opens the removal dialog (row owns the dialog now)', () => {
+    render(<ModerationQueueRow item={makeItem({ post_id: 'post-xyz' })} />)
     const remove = document.querySelector('[data-testid="moderation-action-remove"]') as Element
     fireEvent.click(remove)
-    expect(onRemove).toHaveBeenCalledWith('post-xyz')
+    expect(document.querySelector('[data-dialog="true"][data-open="true"]')).not.toBeNull()
   })
 })
 
