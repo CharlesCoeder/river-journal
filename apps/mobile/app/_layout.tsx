@@ -73,6 +73,13 @@ function RootLayoutNav() {
             <TamaguifiedReactNavigationThemeProvider>
               <TamaguifiedSafeAreaView>
                 <SliderHub>
+                  {/*
+                    The moderation admin surface (features/moderation/**) is
+                    intentionally web + desktop only. Mobile must never contain an
+                    admin/ route subtree or import from features/moderation/** —
+                    it must not ship in publicly-distributed mobile binaries.
+                    Enforced by PR review until the CI grep lands.
+                  */}
                   <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="journal" options={{ animation: 'none' }} />
                     <Stack.Screen name="auth" />
