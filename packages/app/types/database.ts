@@ -545,6 +545,21 @@ export type Database = {
           reports: { id: string; reason_code: string; note: string | null; created_at: string }[]
         }[]
       }
+      collective_post_admin_detail: {
+        Args: { target_post_id: string }
+        Returns: {
+          post_id: string
+          author_user_id: string | null
+          title: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          removed_at: string | null
+          removed_reason: string | null
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+        }[]
+      }
       collective_thread_page: {
         Args: { post_id: string; cursor: string | null; page_size: number }
         Returns: {

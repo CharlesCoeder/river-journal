@@ -1,12 +1,12 @@
 'use client'
 
 import { AdminRouteGate } from 'app/features/moderation/AdminRouteGate'
-import { AdminAuditLogScreen } from 'app/features/moderation/AdminAuditLogScreen'
+import AuditLogScreen from 'app/features/moderation/AuditLogScreen'
 
 export default function AdminAuditLogPage() {
   return (
     <AdminRouteGate>
-      <AdminAuditLogScreen />
+      <AuditLogScreen />
     </AdminRouteGate>
   )
 }
