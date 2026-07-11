@@ -545,6 +545,16 @@ export type Database = {
           reports: { id: string; reason_code: string; note: string | null; created_at: string }[]
         }[]
       }
+      collective_my_removed_posts: {
+        Args: { max_rows?: number }
+        Returns: {
+          id: string
+          parent_post_id: string | null
+          created_at: string
+          removed_reason: string | null
+          removed_at: string
+        }[]
+      }
       collective_post_admin_detail: {
         Args: { target_post_id: string }
         Returns: {

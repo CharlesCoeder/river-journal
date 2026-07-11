@@ -144,6 +144,18 @@ export interface UserProfile {
      * Optional at the type level for backward compat with persisted profiles created before this field was added.
      */
     locallyHiddenPosts?: string[]
+
+    /**
+     * Per-receipt acknowledgment timestamps for the in-app moderation receipt UX.
+     * Keyed by a stable composite receiptId — `removed_post:<postId>:<removed_at>`
+     * (the RAW removed_at from the RPC, so a re-removal after reinstatement yields
+     * a fresh key) and `suspension:<suspensionId>`. Server-synced via
+     * users.preferences, mirroring the disclosures precedent, so a receipt
+     * acknowledged on one device never re-surfaces on another. Optional for
+     * back-compat with profiles created before this field existed; consumers
+     * read null-safe.
+     */
+    moderationReceipts?: Record<string, { acknowledged_at: string }>
   }
 
   sync: {

@@ -10,6 +10,7 @@ import { EncryptionModeDialog } from 'app/features/home/components/EncryptionMod
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
+import { ModerationReceiptGate } from 'app/features/moderation-receipts/ModerationReceiptGate'
 import { useToday } from 'app/state/today'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
@@ -186,6 +187,10 @@ export function HomeScreen() {
         <OrphanFlowsDialog />
       </ScrollView>
       <EncryptionModeDialog />
+      {/* Post-auth moderation receipts — self-gates on auth/queue, renders null
+          when there's nothing to show. Mounted here (the guaranteed post-auth
+          landing surface), not in the provider tree, so it never renders pre-auth. */}
+      <ModerationReceiptGate />
     </YStack>
   )
 }

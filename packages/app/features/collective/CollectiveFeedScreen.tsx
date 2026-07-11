@@ -290,11 +290,26 @@ export default function CollectiveFeedScreen() {
                 </Text>
               ) : null}
 
-              {/* Suspended user microcopy */}
+              {/* Suspended user microcopy + advisory link to the suspension
+                  detail (expiry + reason) in Settings. RLS stays authoritative. */}
               {isSuspended === true ? (
-                <Text fontSize="$2" color="$color11" textAlign="center" paddingVertical="$3">
-                  Posting and reacting are paused for this account.
-                </Text>
+                <YStack alignItems="center" paddingVertical="$3" gap="$1">
+                  <Text fontSize="$2" color="$color11" textAlign="center">
+                    Posting and reacting are paused for this account.
+                  </Text>
+                  <Text
+                    testID="feed-suspended-details-link"
+                    role="link"
+                    cursor="pointer"
+                    fontSize="$2"
+                    color="$color11"
+                    textAlign="center"
+                    hoverStyle={{ color: '$color12' }}
+                    onPress={() => router.push('/settings')}
+                  >
+                    View details in Settings
+                  </Text>
+                </YStack>
               ) : null}
 
               {/* Empty state */}

@@ -95,6 +95,19 @@ export function CollectiveEligibilityGate({
         data-testid="eligibility-gate-suspended"
       >
         <Text>Posting and reacting are paused for this account.</Text>
+        {/* Advisory link to the suspension detail (expiry + reason) in Settings.
+            Does not change gating — RLS remains authoritative. */}
+        <Text
+          testID="eligibility-gate-suspended-details-link"
+          role="link"
+          cursor="pointer"
+          color="$color11"
+          fontSize="$2"
+          hoverStyle={{ color: '$color' }}
+          onPress={() => router.push('/settings')}
+        >
+          View details in Settings
+        </Text>
         {cancelButton}
       </YStack>
     )

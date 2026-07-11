@@ -16,6 +16,7 @@ import { FontPicker } from './components/FontPicker'
 import { ExportJournal } from './components/ExportJournal'
 import { KeyboardShortcutsSection } from './components/KeyboardShortcutsSection'
 import { PreviousAccountBanner } from './PreviousAccountBanner'
+import { SuspensionStatusSection } from './SuspensionStatusSection'
 
 // ---------------------------------------------------------------------------
 // Privacy Tier — stacked vertical list matching design
@@ -180,6 +181,10 @@ export function SettingsScreen() {
         {/* Previous-account banner — non-staggered, sits above all sections.
             Self-renders null when no transition is pending. */}
         <PreviousAccountBanner />
+
+        {/* Active-suspension status — non-staggered, self-renders null when the
+            user is not suspended. Advisory only; RLS remains authoritative. */}
+        <SuspensionStatusSection userId={typeof userId === 'string' ? userId : null} />
 
         {/* Sections container — staggered reveals */}
         <YStack gap={80}>
