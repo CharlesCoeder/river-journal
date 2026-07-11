@@ -1,5 +1,6 @@
--- t11: EVERY SECURITY DEFINER function in the public schema declares a pinned
--- `search_path` via a SET clause (proconfig). Verified by querying pg_proc.
+-- t11: EVERY SECURITY DEFINER function in the public and private schemas
+-- declares a pinned `search_path` via a SET clause (proconfig). Verified by
+-- querying pg_proc.
 --
 -- Strengthened after the 2026-07 audit: the previous version allowlisted only
 -- the five Collective-story functions, so two SECURITY DEFINER functions that
@@ -7,6 +8,11 @@
 -- — shipped WITHOUT a pinned search_path and went unnoticed. This version
 -- asserts over ALL SECURITY DEFINER functions in `public` (one dynamic
 -- assertion), so any future unpinned definer function fails the suite.
+--
+-- The namespace filter also covers the non-API `private` schema (where the
+-- server-only block helpers live), resolved existence-safely via pg_namespace
+-- rather than a direct 'private'::regnamespace cast — that cast would raise
+-- "schema does not exist" in any branch where private was never created.
 --
 -- The transaction-local test-harness helpers (test_* / tap_*) from
 -- _helpers.psql are excluded: they are scaffolding created only inside the test
@@ -25,7 +31,9 @@ BEGIN
   SELECT COALESCE(array_agg(p.proname ORDER BY p.proname), ARRAY[]::TEXT[])
   INTO v_unpinned
   FROM pg_proc p
-  WHERE p.pronamespace = 'public'::regnamespace
+  WHERE p.pronamespace IN (
+      SELECT oid FROM pg_namespace WHERE nspname IN ('public', 'private')
+    )
     AND p.prosecdef                                   -- SECURITY DEFINER only
     AND p.proname NOT LIKE 'test\_%'                  -- exclude test scaffolding
     AND p.proname NOT LIKE 'tap\_%'
@@ -40,7 +48,7 @@ BEGIN
   PERFORM tap_ok(
     cardinality(v_unpinned) = 0,
     format(
-      'all SECURITY DEFINER functions in public pin search_path (unpinned: %s)',
+      'all SECURITY DEFINER functions in public/private pin search_path (unpinned: %s)',
       COALESCE(array_to_string(v_unpinned, ', '), '')
     )
   );

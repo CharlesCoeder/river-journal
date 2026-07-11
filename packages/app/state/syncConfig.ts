@@ -35,6 +35,9 @@
  *   - collective_reports        (INSERT direct; SELECT admin-only)
  *   - moderation_actions        (forward-reference; arrives later)
  *   - user_suspensions          (forward-reference; arrives later)
+ *   - user_blocks               (SELECT/INSERT/DELETE own-only via one-sided
+ *                                RLS; read via TanStack Query in the
+ *                                block-list milestone)
  *
  * The boundary rule (D7) is binding: this file MUST NOT import the
  * TanStack Query package (or any of its subpaths). The collective tables
