@@ -516,6 +516,31 @@ export type Database = {
           mode: 'full' | 'preview'
         }[]
       }
+      collective_moderation_queue: {
+        Args: { page_size: number }
+        Returns: {
+          post_id: string
+          author_user_id: string | null
+          title: string | null
+          body: string
+          post_created_at: string
+          is_removed: boolean
+          removed_at: string | null
+          removed_reason: string | null
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          flag_count: number
+          // A queue row always has >= 1 pending report, so in practice these
+          // reflect the newest pending report and are non-null; typed nullable
+          // to stay total for the degenerate empty-reports shape.
+          latest_report_reason: string | null
+          latest_report_note: string | null
+          latest_report_at: string | null
+          // Pending reports for the post, newest first. Privacy: NEVER carries
+          // reporter_user_id (re-identification side-channel).
+          reports: { id: string; reason_code: string; note: string | null; created_at: string }[]
+        }[]
+      }
       collective_thread_page: {
         Args: { post_id: string; cursor: string | null; page_size: number }
         Returns: {

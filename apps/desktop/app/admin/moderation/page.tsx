@@ -1,12 +1,12 @@
 'use client'
 
 import { AdminRouteGate } from 'app/features/moderation/AdminRouteGate'
-import { AdminModerationScreen } from 'app/features/moderation/AdminModerationScreen'
+import ModerationQueueScreen from 'app/features/moderation/ModerationQueueScreen'
 
 export default function AdminModerationPage() {
   return (
     <AdminRouteGate>
-      <AdminModerationScreen />
+      <ModerationQueueScreen />
     </AdminRouteGate>
   )
 }
