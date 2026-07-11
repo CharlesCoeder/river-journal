@@ -245,6 +245,64 @@ export type Database = {
           },
         ]
       }
+      moderation_actions: {
+        Row: {
+          action_type: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          note: string | null
+          reason: string | null
+          target_post_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          note?: string | null
+          reason?: string | null
+          target_post_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          note?: string | null
+          reason?: string | null
+          target_post_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'moderation_actions_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'moderation_actions_target_post_id_fkey'
+            columns: ['target_post_id']
+            isOneToOne: false
+            referencedRelation: 'collective_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'moderation_actions_target_user_id_fkey'
+            columns: ['target_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       trusted_browsers: {
         Row: {
           created_at: string
@@ -314,6 +372,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'user_grace_days_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      user_suspensions: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          kind: string
+          reason: string | null
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          kind: string
+          reason?: string | null
+          starts_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          kind?: string
+          reason?: string | null
+          starts_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_suspensions_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
