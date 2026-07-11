@@ -89,7 +89,7 @@ function SectionHeader({ children }: { children: string }) {
 // ---------------------------------------------------------------------------
 
 const STAGGER_MS = 100
-const SECTION_COUNT = 8
+const SECTION_COUNT = 9
 
 export function SettingsScreen() {
   const router = useRouter()
@@ -110,7 +110,7 @@ export function SettingsScreen() {
   const [visibleCount, setVisibleCount] = useState(0)
   useEffect(() => {
     const timers = Array.from({ length: SECTION_COUNT }, (_, i) =>
-      setTimeout(() => setVisibleCount(i + 1), i * STAGGER_MS)
+      setTimeout(() => setVisibleCount(i + 1), (i + 1) * STAGGER_MS)
     )
     return () => timers.forEach(clearTimeout)
   }, [])
@@ -386,10 +386,32 @@ export function SettingsScreen() {
               </YStack>
             )}
 
-            {/* Section 8: Footer */}
+            {/* Section 8: Collective */}
             {visibleCount >= 8 && (
+              <YStack key="section-8" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <SectionHeader>Collective</SectionHeader>
+                <XStack
+                  justifyContent="space-between"
+                  alignItems="center"
+                  testID="settings-blocked-users-row"
+                >
+                  <Text fontFamily="$body" fontSize="$4" color="$color">
+                    Blocked users
+                  </Text>
+                  <ExpandingLineButton
+                    size="default"
+                    onPress={() => router.push('/collective/blocked-users')}
+                  >
+                    Manage
+                  </ExpandingLineButton>
+                </XStack>
+              </YStack>
+            )}
+
+            {/* Section 9: Footer */}
+            {visibleCount >= 9 && (
               <XStack
-                key="section-8"
+                key="section-9"
                 transition="designEnter"
                 enterStyle={{ opacity: 0, y: 10 }}
                 opacity={1}

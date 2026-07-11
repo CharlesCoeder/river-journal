@@ -30,6 +30,7 @@ import { useReportPost, useDeleteOwnPost } from 'app/state/collective/mutations'
 import type { ReportPostVars } from 'app/state/collective/mutations'
 import { addLocallyHiddenPost } from 'app/state/store'
 import { generateUUID } from 'app/utils/uuid'
+import { BlockUserConfirmDialog } from './BlockUserConfirmDialog'
 
 // ─── Reason definitions ───────────────────────────────────────────────────────
 
@@ -69,14 +70,26 @@ export interface FlagAffordanceProps {
    * Only invoked when canFocus === true.
    */
   onFocus?: () => void
+  /**
+   * When true, a "Block this user" menu item is rendered — a SEPARATE sibling
+   * of "Report" (orthogonal; a distinct action, not nested under it). Computed by the mount
+   * site: post.user_id !== currentUserId && !is_user_deleted && post.user_id !== null.
+   */
+  canBlock?: boolean
+  /**
+   * The post author's user_id — the party to be blocked. Passed to
+   * BlockUserConfirmDialog as blockedUserId. Distinct from postId.
+   */
+  blockAuthorUserId?: string | null
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelete, canFocus = false, onFocus }: FlagAffordanceProps) {
+export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelete, canFocus = false, onFocus, canBlock = false, blockAuthorUserId }: FlagAffordanceProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false)
   const [selectedReason, setSelectedReason] = useState<ReasonCode | undefined>(undefined)
   const [note, setNote] = useState('')
   const mutation = useReportPost()
@@ -88,17 +101,23 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
 
   // Early returns — hooks have all been called above (Rules of Hooks)
   if (reporterUserId === null) return null
-  // Nothing to show: no report, no delete, no focus affordance.
-  if (!canReport && !canSelfDelete && !canFocus) return null
+  // Nothing to show: no report, no delete, no focus, no block affordance.
+  if (!canReport && !canSelfDelete && !canFocus && !canBlock) return null
 
   const animationToken = reducedMotion ? undefined : 'quick'
 
-  // Context-aware a11y label for the trigger button.
-  const triggerAriaLabel = canReport && canSelfDelete
+  // Context-aware a11y label for the trigger button. When more than one primary
+  // action is available the label is the generic "Post actions"; single-action
+  // cases get a specific label. (canFocus is a thread-navigation affordance, not
+  // a primary action, so it does not by itself flip the label to "Post actions".)
+  const primaryActionCount = Number(canReport) + Number(canSelfDelete) + Number(canBlock)
+  const triggerAriaLabel = primaryActionCount > 1
     ? 'Post actions'
     : canSelfDelete
       ? 'Delete your post'
-      : 'Report this post'
+      : canBlock
+        ? 'Block this user'
+        : 'Report this post'
 
   function handleFocus() {
     setMenuOpen(false)
@@ -113,6 +132,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
   function openDeleteDialog() {
     setMenuOpen(false)
     setDeleteDialogOpen(true)
+  }
+
+  function openBlockDialog() {
+    setMenuOpen(false)
+    setBlockDialogOpen(true)
   }
 
   function handleCancel() {
@@ -208,6 +232,17 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
                 paddingVertical="$2"
               >
                 <Text>Report</Text>
+              </View>
+            ) : null}
+            {canBlock ? (
+              <View
+                tag="button"
+                role="menuitem"
+                onPress={openBlockDialog}
+                paddingHorizontal="$3"
+                paddingVertical="$2"
+              >
+                <Text>Block this user</Text>
               </View>
             ) : null}
             {canSelfDelete ? (
@@ -338,6 +373,14 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog>
+      {canBlock ? (
+        <BlockUserConfirmDialog
+          open={blockDialogOpen}
+          onOpenChange={setBlockDialogOpen}
+          blockerUserId={reporterUserId}
+          blockedUserId={blockAuthorUserId}
+        />
+      ) : null}
     </>
   )
 }

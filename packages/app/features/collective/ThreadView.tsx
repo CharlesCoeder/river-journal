@@ -277,7 +277,12 @@ export default function ThreadView({ postId }: ThreadViewProps) {
 
       // allLoaded: the entire subtree is present in the flat list — render inline.
       // hasUnloaded: there are more descendants to load via ThreadExpansion.
-      const allLoaded = hasDescendants && loadedDescCount >= (post.descendant_count ?? 0)
+      // When direct children are actually present in the flat list we render them
+      // even if `descendant_count` is a stale/inconsistent 0 — the loaded rows are
+      // the authoritative signal that replies exist.
+      const allLoaded =
+        (hasDescendants || loadedChildren.length > 0) &&
+        loadedDescCount >= (post.descendant_count ?? 0)
       const hasUnloaded = hasDescendants && !allLoaded
 
       // aria-expanded: omit when there is no content to expand/collapse (AC #6).
@@ -376,6 +381,10 @@ export default function ThreadView({ postId }: ThreadViewProps) {
                 canReport={
                   post.user_id !== currentUserId && !post.is_user_deleted && post.user_id !== null
                 }
+                canBlock={
+                  post.user_id !== currentUserId && !post.is_user_deleted && post.user_id !== null
+                }
+                blockAuthorUserId={post.user_id}
                 canSelfDelete={post.user_id === currentUserId && !post.is_user_deleted}
                 canFocus={!isRoot}
                 onFocus={

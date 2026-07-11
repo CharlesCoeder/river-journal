@@ -322,6 +322,23 @@ vi.mock('@tamagui/lucide-icons', () => ({
     React.createElement('span', { 'data-icon': 'MoreHorizontal', 'data-size': size, ...props }),
 }))
 
+// ─── BlockUserConfirmDialog mock — captures the props it was mounted with ─────
+// FlagAffordance renders this as a sibling controlled dialog (mirroring the
+// report/delete dialogs). The mock never renders real dialog markup; tests
+// assert on the captured props + open/close calls instead.
+const blockDialogPropsCalls: any[] = []
+vi.mock('../BlockUserConfirmDialog', () => ({
+  BlockUserConfirmDialog: (props: any) => {
+    blockDialogPropsCalls.push(props)
+    return React.createElement('div', {
+      'data-testid': 'block-user-confirm-dialog',
+      'data-open': String(props.open),
+      'data-blocker': props.blockerUserId ?? '',
+      'data-blocked': props.blockedUserId ?? '',
+    })
+  },
+}))
+
 // ─── Import under test — will fail until FlagAffordance.tsx exists ────────────
 import { FlagAffordance } from '../FlagAffordance'
 
@@ -335,6 +352,7 @@ afterEach(() => {
   addLocallyHiddenPostSpy.mockReset()
   reduceMotionValue = false
   mockIsPending = false
+  blockDialogPropsCalls.length = 0
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -975,5 +993,218 @@ describe('t12 — Focus menu item renders and fires onFocus', () => {
 
     // No button should render (early return: nothing to show)
     expect(container.querySelector('button')).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t13 — "Block this user" menu item: visibility, sibling-of-Report placement,
+//        opens BlockUserConfirmDialog with the right author id
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('t13 — "Block this user" menu item renders only when canBlock', () => {
+  it('renders the "Block this user" menuitem when canBlock=true', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-1',
+      reporterUserId: 'user-abc',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-1',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(screen.getByRole('menuitem', { name: /block this user/i })).toBeTruthy()
+  })
+
+  it('does NOT render "Block this user" when canBlock=false (default)', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-1',
+      reporterUserId: 'user-abc',
+      canReport: true,
+      canSelfDelete: false,
+    }))
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
+
+    expect(screen.queryByText('Block this user')).toBeNull()
+  })
+
+  it('never renders "Block this user" for the viewer\'s own post — canBlock is computed false by the mount site, so the trigger itself must not even render when it is the only flag', () => {
+    // Mount sites compute canBlock false for own posts; verify FlagAffordance
+    // renders nothing when that is the ONLY flag supplied (own-post case, all
+    // other flags also false because the viewer can't report/delete via this path either).
+    const { container } = render(React.createElement(FlagAffordance, {
+      postId: 'post-own',
+      reporterUserId: 'user-abc',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: false,
+    }))
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('renders the trigger (not null) when canBlock=true is the ONLY true flag', () => {
+    const { container } = render(React.createElement(FlagAffordance, {
+      postId: 'post-only-block',
+      reporterUserId: 'user-abc',
+      canReport: false,
+      canSelfDelete: false,
+      canFocus: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-2',
+    }))
+    expect(container.firstChild).not.toBeNull()
+    expect(container.querySelector('button')).not.toBeNull()
+  })
+})
+
+describe('t13 — "Block this user" is a sibling of "Report", not nested under it', () => {
+  it('both "Report" and "Block this user" render simultaneously when canReport AND canBlock are true', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-both',
+      reporterUserId: 'user-abc',
+      canReport: true,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-3',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(screen.getByRole('menuitem', { name: /^report$/i })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: /block this user/i })).toBeTruthy()
+  })
+
+  it('"Block this user" has role="menuitem" (same affordance level as Report/Delete, not a submenu)', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-role',
+      reporterUserId: 'user-abc',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-4',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+
+    const item = screen.getByText('Block this user')
+    expect(item.closest('[role="menuitem"]')).toBeTruthy()
+  })
+})
+
+describe('t13 — tapping "Block this user" closes the menu and opens BlockUserConfirmDialog with the right author id', () => {
+  it('opens the block dialog (data-open="true") after tapping the menu item', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-open',
+      reporterUserId: 'user-current',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-open',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-open')).toBe('true')
+  })
+
+  it('closes the popover menu when the block dialog opens', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-close-menu',
+      reporterUserId: 'user-current',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-close',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const popover = document.querySelector('[data-popover="true"]')
+    expect(popover?.getAttribute('data-open')).toBe('false')
+  })
+
+  it('passes blockerUserId === reporterUserId (the current user) to the dialog', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-blocker-id',
+      reporterUserId: 'user-current-viewer',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-target',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-blocker')).toBe('user-current-viewer')
+  })
+
+  it('passes blockedUserId === blockAuthorUserId (the post author, NOT the postId) to the dialog', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-not-the-author-id',
+      reporterUserId: 'user-current-viewer',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-target-id',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-blocked')).toBe('author-target-id')
+    expect(dialog.getAttribute('data-blocked')).not.toBe('post-not-the-author-id')
+  })
+
+  it('the dialog is mounted (present in the tree) even before it is opened — controlled sibling, not a lazy trigger', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-mounted',
+      reporterUserId: 'user-current',
+      canReport: false,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-mounted',
+    }))
+    // Before any interaction, the dialog component is already in the tree with open=false.
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-open')).toBe('false')
+  })
+})
+
+describe('t13 — existing Report/Delete flows are unbroken by the Block addition', () => {
+  it('Report still opens its own dialog independent of the block dialog', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-report-still-works',
+      reporterUserId: 'user-current',
+      canReport: true,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-x',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /^report$/i }))
+
+    const reportDialogs = document.querySelectorAll('[data-dialog="true"][data-open="true"]')
+    expect(reportDialogs.length).toBe(1)
+    // The block dialog (mocked) must remain closed.
+    expect(screen.getByTestId('block-user-confirm-dialog').getAttribute('data-open')).toBe('false')
+  })
+
+  it('Submit still fires useReportPost.mutate with correct vars when canBlock is also true', () => {
+    render(React.createElement(FlagAffordance, {
+      postId: 'post-report-mutate',
+      reporterUserId: 'user-reporter',
+      canReport: true,
+      canSelfDelete: false,
+      canBlock: true,
+      blockAuthorUserId: 'author-y',
+    }))
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /^report$/i }))
+    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    fireEvent.click(spamRadio)
+    fireEvent.click(screen.getByTestId('btn-submit'))
+
+    expect(mutateSpy).toHaveBeenCalledTimes(1)
+    expect(mutateSpy.mock.calls[0]![0].post_id).toBe('post-report-mutate')
   })
 })

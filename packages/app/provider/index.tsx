@@ -7,6 +7,9 @@ import 'app/state/collective/mutations'
 // Same order-critical rationale: register the moderation mutation defaults at
 // module load, before <PersistQueryClientProvider> mounts.
 import 'app/state/collective/moderationMutations'
+// Same order-critical rationale: register the block/unblock mutation defaults at
+// module load, before <PersistQueryClientProvider> mounts.
+import 'app/state/collective/blocks'
 import { __collectiveMutationsLoadedAt } from 'app/state/collective/mutations'
 
 import { useLayoutEffect, useState, type FC, type ReactNode } from 'react'

@@ -67,6 +67,12 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
             post.is_user_deleted === false &&
             post.user_id !== null
           }
+          canBlock={
+            post.user_id !== currentUserId &&
+            post.is_user_deleted === false &&
+            post.user_id !== null
+          }
+          blockAuthorUserId={post.user_id}
         />
       </XStack>
       {/* For self-deleted posts, body is the literal '[deleted]' — AuthorByline already

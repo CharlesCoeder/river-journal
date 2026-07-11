@@ -24,8 +24,10 @@ vi.mock('app/features/collective/ReactionStrip', () => ({
   },
 }))
 
+const capturedFlagAffordanceProps: any[] = []
 vi.mock('app/features/collective/FlagAffordance', () => ({
-  FlagAffordance: () => {
+  FlagAffordance: (props: any) => {
+    capturedFlagAffordanceProps.push(props)
     const React = require('react')
     return React.createElement('button', { 'data-testid': 'flag-affordance' })
   },
@@ -80,7 +82,10 @@ function buildPost(overrides: Partial<any> = {}) {
 
 const SECRET = 'Secret confession'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  capturedFlagAffordanceProps.length = 0
+})
 
 describe('PostRow a11y label', () => {
   it('includes the excerpt for a normal post', () => {
@@ -115,5 +120,57 @@ describe('PostRow a11y label', () => {
     const label = article?.getAttribute('aria-label') ?? ''
     expect(label).not.toContain(SECRET)
     expect(label).toBe('[deleted]')
+  })
+})
+
+describe('PostRow canBlock computation (passed through to FlagAffordance)', () => {
+  it('is false for the viewer\'s own post', () => {
+    render(
+      React.createElement(PostRow, {
+        post: buildPost({ user_id: 'user-abcdef12' }),
+        currentUserId: 'user-abcdef12',
+      })
+    )
+    expect(capturedFlagAffordanceProps[0]?.canBlock).toBe(false)
+  })
+
+  it('is false when the post author is anonymized (user_id === null)', () => {
+    render(
+      React.createElement(PostRow, {
+        post: buildPost({ user_id: null }),
+        currentUserId: 'user-abcdef12',
+      })
+    )
+    expect(capturedFlagAffordanceProps[0]?.canBlock).toBe(false)
+  })
+
+  it('is false when the post is self-deleted, even for another author', () => {
+    render(
+      React.createElement(PostRow, {
+        post: buildPost({ user_id: 'user-other00', is_user_deleted: true }),
+        currentUserId: 'user-abcdef12',
+      })
+    )
+    expect(capturedFlagAffordanceProps[0]?.canBlock).toBe(false)
+  })
+
+  it('is true for a normal post by another, non-deleted, non-anonymized author', () => {
+    render(
+      React.createElement(PostRow, {
+        post: buildPost({ user_id: 'user-other00' }),
+        currentUserId: 'user-abcdef12',
+      })
+    )
+    expect(capturedFlagAffordanceProps[0]?.canBlock).toBe(true)
+  })
+
+  it('passes blockAuthorUserId === post.user_id', () => {
+    render(
+      React.createElement(PostRow, {
+        post: buildPost({ user_id: 'user-other00' }),
+        currentUserId: 'user-abcdef12',
+      })
+    )
+    expect(capturedFlagAffordanceProps[0]?.blockAuthorUserId).toBe('user-other00')
   })
 })

@@ -1397,3 +1397,130 @@ describe('t26 — error state renders microcopy and retry', () => {
     expect(mockThreadRefetch).not.toHaveBeenCalled()
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t27 — blocking the thread-root author: the root disappears from the
+//        refetched query (collective_thread_root returns zero rows), and
+//        ThreadView must render its EXISTING not-found/removed state in
+//        place — no bespoke "you blocked this author" screen, and critically
+//        NO auto-navigation away from the thread route.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('t27 — blocking the thread-root author renders the existing not-found state, no auto-navigation', () => {
+  it('renders the existing "This thread was removed." state when useThreadRoot resolves to null (post-block refetch)', () => {
+    // Simulates the cascade: block confirmed -> ['collective'] invalidated ->
+    // collective_thread_root refetch returns zero rows -> data becomes null.
+    mockRootData = null
+    mockRootLoading = false
+    mockRootError = null
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(screen.getByText(/This thread was removed\./i)).toBeTruthy()
+  })
+
+  it('does NOT fire any router navigation when the root disappears due to a block', () => {
+    mockRootData = null
+    mockRootLoading = false
+    mockRootError = null
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(mockRouterPush).not.toHaveBeenCalled()
+  })
+
+  it('renders no distinct "you blocked this author" copy — the not-found state is generic and identical to a moderator-removed root', () => {
+    mockRootData = null
+    mockRootLoading = false
+    mockRootError = null
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(screen.queryByText(/you blocked/i)).toBeNull()
+    expect(screen.queryByText(/blocked this (user|author)/i)).toBeNull()
+  })
+
+  it('does not render the "Back to the room" / thread body chrome once the root is gone (matches the existing not-found branch, not the normal tree)', () => {
+    mockRootData = null
+    mockRootLoading = false
+    mockRootError = null
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(screen.queryByRole('button', { name: /back to the room/i })).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t28 — canBlock computation passed to FlagAffordance at both root + replies
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('t28 — canBlock computation (own post -> false, anonymized -> false, other author -> true)', () => {
+  it('root: canBlock is false when the root author is the current user', () => {
+    const root = buildRoot({ id: 'root', user_id: 'user-abc' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
+    mockCurrentUserId = 'user-abc'
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(capturedFlagAffordanceProps.get('root')?.canBlock).toBe(false)
+  })
+
+  it('root: canBlock is false when the root author is anonymized (user_id === null)', () => {
+    const root = buildRoot({ id: 'root', user_id: null })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
+    mockCurrentUserId = 'user-abc'
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(capturedFlagAffordanceProps.get('root')?.canBlock).toBe(false)
+  })
+
+  it('root: canBlock is true for a normal, non-deleted, other-author root', () => {
+    const root = buildRoot({ id: 'root', user_id: 'user-other' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
+    mockCurrentUserId = 'user-abc'
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(capturedFlagAffordanceProps.get('root')?.canBlock).toBe(true)
+  })
+
+  it('reply: canBlock is false for the viewer\'s own reply', () => {
+    const root = buildRoot({ id: 'root', user_id: 'user-other' })
+    const ownReply = buildPost({ id: 'reply-own', parent_post_id: 'root', user_id: 'user-abc' })
+    mockRootData = root
+    mockThreadData = makeThreadData([ownReply])
+    mockCurrentUserId = 'user-abc'
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(capturedFlagAffordanceProps.get('reply-own')?.canBlock).toBe(false)
+  })
+
+  it('reply: canBlock is true for another author\'s reply', () => {
+    const root = buildRoot({ id: 'root', user_id: 'user-other' })
+    const otherReply = buildPost({ id: 'reply-other', parent_post_id: 'root', user_id: 'user-someone-else' })
+    mockRootData = root
+    mockThreadData = makeThreadData([otherReply])
+    mockCurrentUserId = 'user-abc'
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(capturedFlagAffordanceProps.get('reply-other')?.canBlock).toBe(true)
+  })
+
+  it('root: blockAuthorUserId passed to FlagAffordance equals the root post\'s user_id', () => {
+    const root = buildRoot({ id: 'root', user_id: 'user-other' })
+    mockRootData = root
+    mockThreadData = makeThreadData([])
+    mockCurrentUserId = 'user-abc'
+
+    render(React.createElement(ThreadView, { postId: 'root' }))
+
+    expect(capturedFlagAffordanceProps.get('root')?.blockAuthorUserId).toBe('user-other')
+  })
+})
