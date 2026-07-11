@@ -375,6 +375,14 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Trigger-invoked internal function: the Postgres pg_net trigger calls it with a
+# service-role bearer, and the function does its own requireServiceRole() check.
+# verify_jwt = false so it is reachable at its public URL for that bearer check
+# to be the gate (it is NOT a user-facing, JWT-authenticated function). See
+# docs/edge-functions-setup.md for the per-environment secret setup.
+[functions.notify_moderation_action]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

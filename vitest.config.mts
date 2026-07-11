@@ -73,6 +73,11 @@ export default defineConfig({
       '**/dist/**',
       '**/.{idea,git,cache,output,temp}/**',
       '**/.claude/worktrees/**',
+      // supabase/functions/** is Deno 2 code (URL / npm: / jsr: imports,
+      // Deno.* globals) colocated with *.test.ts files. Vitest's default
+      // whole-repo glob (this config has no `include`) would otherwise collect
+      // and crash on them. deno test owns those files.
+      '**/supabase/functions/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
       // Build-smoke tests shell out to `tamagui build … next build`, which runs
       // 180s and rewrites tracked packages/app/**/*.tsx in place via static
