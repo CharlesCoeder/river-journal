@@ -101,7 +101,7 @@ export function SettingsScreen() {
   // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
   // Focus granularity — read with ?? 'paragraph' (UI-only preference; paragraph
-  // is the correct default under all load conditions, per Story 2.11 Dev Notes)
+  // is the correct default under all load conditions)
   const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph'
   // Subscribe to flows$/entries$ so the row count re-derives when restores happen.
   use$(flows$)

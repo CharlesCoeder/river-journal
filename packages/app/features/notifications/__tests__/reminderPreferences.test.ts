@@ -542,7 +542,7 @@ describe('refreshReminderOffsetOnAppOpen — idempotent app-open offset sync', (
 
 /**
  * Red-phase unit tests for `enableStreakRemindersDefault()` — the reconciliation
- * helper that closes the 6.2 opt-in gap (Enable registered a token but never set
+ * helper that closes the opt-in gap (Enable registered a token but never set
  * `streak.enabled = true`, so the primary opt-in path would otherwise produce no
  * reminders).
  *
@@ -553,7 +553,7 @@ describe('refreshReminderOffsetOnAppOpen — idempotent app-open offset sync', (
  *   enableStreakRemindersDefault(): void
  *     — sets `streak.enabled = true` unconditionally (every call);
  *     — sets `streak.local_time = '20:00'` ONLY when unset — an existing
- *       local_time (e.g. from the 6.3 time picker) is never clobbered;
+ *       local_time (e.g. from the time picker) is never clobbered;
  *     — sets `streak.last_local_offset_minutes = computeLocalOffsetMinutes()`
  *       on every call (a fresh offset, not write-once — mirrors
  *       `setStreakReminderTime`'s "recompute every time" semantics, since the
@@ -567,7 +567,7 @@ describe('refreshReminderOffsetOnAppOpen — idempotent app-open offset sync', (
  * throughout this file.
  */
 
-describe('enableStreakRemindersDefault — reconciliation helper for the 6.2 opt-in gap', () => {
+describe('enableStreakRemindersDefault — reconciliation helper for the opt-in gap', () => {
   let store$: typeof import('app/state/store').store$
 
   beforeEach(async () => {
@@ -604,7 +604,7 @@ describe('enableStreakRemindersDefault — reconciliation helper for the 6.2 opt
     expect(localTime).toBe('20:00')
   })
 
-  it('does NOT clobber an existing local_time already set (e.g. via the 6.3 time picker)', async () => {
+  it('does NOT clobber an existing local_time already set (e.g. via the time picker)', async () => {
     store$.profile.set({
       ...BASE_PROFILE,
       preferences: { reminders: { streak: { enabled: false, local_time: '07:30' } } },

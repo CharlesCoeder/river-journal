@@ -249,7 +249,7 @@ BEGIN
   END;
   PERFORM tap_ok(v_anon_denied, 'anon has no SELECT grant on user_push_tokens');
 
-  -- (18) the owner can DELETE their own row (hard-delete path per AC 5).
+  -- (18) the owner can DELETE their own row (hard-delete path).
   PERFORM test_become(v_alice);
   DELETE FROM user_push_tokens WHERE id = v_token_id;
   SELECT COUNT(*) INTO v_after_delete FROM user_push_tokens WHERE id = v_token_id;
