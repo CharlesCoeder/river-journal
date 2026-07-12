@@ -107,9 +107,10 @@ export interface UserProfile {
   editor?: {
     focusMode: boolean
     /**
-     * Focus-mode granularity (Story 2.11). Optional for back-compat with
-     * profiles persisted before this field existed; consumers read with
-     * `?? 'paragraph'`. `paragraph` (default) is byte-for-byte Story 2.6 behavior.
+     * Focus-mode granularity. Optional for back-compat with profiles
+     * persisted before this field existed; consumers read with
+     * `?? 'paragraph'`. `paragraph` (default) preserves the original
+     * byte-for-byte focus-mode behavior.
      */
     focusGranularity?: 'paragraph' | 'sentence'
   }
@@ -182,6 +183,15 @@ export interface UserProfile {
       moderation?: { enabled?: boolean } // reserved for the moderation-notification category
       repliesLastSeenAt?: string // ISO; the "since" bound the in-app reminder card advances once per open
     }
+
+    /**
+     * UI-surface feature flags. Server-seeded (default false) and read only by
+     * the purchase/cancel surfaces; the server gates all paid features via
+     * subscription_tier, never via this flag. Optional for back-compat with
+     * profiles created before this field existed — consumers must treat an
+     * absent flag as false (defensive default).
+     */
+    feature_flags?: { external_billing_link_enabled?: boolean }
   }
 
   sync: {

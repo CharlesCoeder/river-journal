@@ -303,6 +303,53 @@ export type Database = {
           },
         ]
       }
+      subscription_receipts: {
+        Row: {
+          created_at: string
+          current_period_end: string
+          id: string
+          last_validated_at: string
+          provider: string
+          provider_subscription_id: string
+          raw_receipt: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end: string
+          id?: string
+          last_validated_at?: string
+          provider: string
+          provider_subscription_id: string
+          raw_receipt?: Json | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string
+          id?: string
+          last_validated_at?: string
+          provider?: string
+          provider_subscription_id?: string
+          raw_receipt?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'subscription_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       trusted_browsers: {
         Row: {
           created_at: string
@@ -519,6 +566,7 @@ export type Database = {
        *       replies?: { enabled?: boolean }        // reserved (reply notifications)
        *       moderation?: { enabled?: boolean }     // reserved (moderation notifications)
        *     }
+       *     feature_flags?: { external_billing_link_enabled?: boolean }   // UI-surface control only; server gates paid features via subscription_tier
        *     // ...other client-extensible keys (e.g. focusMode is local-only on UserProfile, NOT server-persisted today)
        *   }
        *
@@ -538,6 +586,7 @@ export type Database = {
           id: string
           managed_encryption_key: string | null
           preferences: Json
+          subscription_tier: Database['public']['Enums']['subscription_tier']
           timezone: string
           updated_at: string
         }
@@ -550,6 +599,7 @@ export type Database = {
           id: string
           managed_encryption_key?: string | null
           preferences?: Json
+          subscription_tier?: Database['public']['Enums']['subscription_tier']
           timezone?: string
           updated_at?: string
         }
@@ -562,6 +612,7 @@ export type Database = {
           id?: string
           managed_encryption_key?: string | null
           preferences?: Json
+          subscription_tier?: Database['public']['Enums']['subscription_tier']
           timezone?: string
           updated_at?: string
         }
@@ -739,6 +790,7 @@ export type Database = {
     }
     Enums: {
       encryption_mode: 'e2e' | 'managed'
+      subscription_tier: 'free' | 'paid_monthly' | 'paid_yearly'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -868,6 +920,7 @@ export const Constants = {
   public: {
     Enums: {
       encryption_mode: ['e2e', 'managed'],
+      subscription_tier: ['free', 'paid_monthly', 'paid_yearly'],
     },
   },
 } as const
