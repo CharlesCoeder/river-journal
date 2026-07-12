@@ -85,13 +85,19 @@ vi.mock('app/state/push_tokens', () => ({
 }))
 
 // ─── ../reminderPreferences mock — read + write helpers as spies ───────────
+// NOTE: enableStreakRemindersDefault MUST be added to this fixed-object mock
+// factory in the SAME edit that makes the component call it — every existing
+// test in this file throws "not a function" otherwise (the component's
+// `handleEnable` / silent-register branch call it unconditionally once wired).
 const hasSeenStreakPromptMock = vi.fn()
 const markStreakPromptSeenMock = vi.fn()
 const setPushPermissionDeniedMock = vi.fn()
+const enableStreakRemindersDefaultMock = vi.fn()
 vi.mock('../reminderPreferences', () => ({
   hasSeenStreakPrompt: () => hasSeenStreakPromptMock(),
   markStreakPromptSeen: (now?: string) => markStreakPromptSeenMock(now),
   setPushPermissionDenied: (now?: string) => setPushPermissionDeniedMock(now),
+  enableStreakRemindersDefault: () => enableStreakRemindersDefaultMock(),
 }))
 
 // ─── app/utils/pushTokens mock — the platform-agnostic boundary import ─────
@@ -161,6 +167,7 @@ beforeEach(() => {
   hasSeenStreakPromptMock.mockReset().mockReturnValue(false)
   markStreakPromptSeenMock.mockReset()
   setPushPermissionDeniedMock.mockReset()
+  enableStreakRemindersDefaultMock.mockReset()
   requestAndRegisterPushTokenMock.mockReset().mockResolvedValue({ outcome: 'granted' })
   hasLivePushTokenMock.mockReset().mockReturnValue(false)
   getPushPermissionStatusMock.mockReset().mockResolvedValue('undetermined')
@@ -259,6 +266,13 @@ describe('Silent-register edge (OS already granted, no live token)', () => {
     expect(setPushPermissionDeniedMock).not.toHaveBeenCalled()
   })
 
+  it('calls enableStreakRemindersDefault() on the silent-register path (closes the 6.2 opt-in gap)', async () => {
+    getPushPermissionStatusMock.mockResolvedValue('granted')
+    render(<StreakReminderPermissionGate />)
+    await waitFor(() => expect(markStreakPromptSeenMock).toHaveBeenCalledTimes(1))
+    expect(enableStreakRemindersDefaultMock).toHaveBeenCalledTimes(1)
+  })
+
   it('does not silently register when a live token already exists (falls through to null, no redundant call)', async () => {
     getPushPermissionStatusMock.mockResolvedValue('granted')
     mockPushTokenRows = { 'tok-1': { userId: 'user-1' } }
@@ -287,6 +301,15 @@ describe('Enable interaction', () => {
     expect(setPushPermissionDeniedMock).not.toHaveBeenCalled()
   })
 
+  it('outcome "granted" calls enableStreakRemindersDefault() (the primary opt-in path now actually enables reminders)', async () => {
+    requestAndRegisterPushTokenMock.mockResolvedValue({ outcome: 'granted' })
+    render(<StreakReminderPermissionGate />)
+    await waitFor(() => expect(screen.getByTestId('btn-enable')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('btn-enable'))
+
+    await waitFor(() => expect(enableStreakRemindersDefaultMock).toHaveBeenCalledTimes(1))
+  })
+
   it('outcome "granted-no-token" marks the prompt seen and does NOT set the deny cooldown', async () => {
     requestAndRegisterPushTokenMock.mockResolvedValue({ outcome: 'granted-no-token' })
     render(<StreakReminderPermissionGate />)
@@ -297,6 +320,15 @@ describe('Enable interaction', () => {
     expect(setPushPermissionDeniedMock).not.toHaveBeenCalled()
   })
 
+  it('outcome "granted-no-token" also calls enableStreakRemindersDefault() (a grant whose token issuance failed still reflects intent)', async () => {
+    requestAndRegisterPushTokenMock.mockResolvedValue({ outcome: 'granted-no-token' })
+    render(<StreakReminderPermissionGate />)
+    await waitFor(() => expect(screen.getByTestId('btn-enable')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('btn-enable'))
+
+    await waitFor(() => expect(enableStreakRemindersDefaultMock).toHaveBeenCalledTimes(1))
+  })
+
   it('outcome "denied" marks the prompt seen AND sets the deny cooldown', async () => {
     requestAndRegisterPushTokenMock.mockResolvedValue({ outcome: 'denied' })
     render(<StreakReminderPermissionGate />)
@@ -305,6 +337,16 @@ describe('Enable interaction', () => {
 
     await waitFor(() => expect(markStreakPromptSeenMock).toHaveBeenCalledTimes(1))
     expect(setPushPermissionDeniedMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('outcome "denied" does NOT call enableStreakRemindersDefault() (respect the deny)', async () => {
+    requestAndRegisterPushTokenMock.mockResolvedValue({ outcome: 'denied' })
+    render(<StreakReminderPermissionGate />)
+    await waitFor(() => expect(screen.getByTestId('btn-enable')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('btn-enable'))
+
+    await waitFor(() => expect(markStreakPromptSeenMock).toHaveBeenCalledTimes(1))
+    expect(enableStreakRemindersDefaultMock).not.toHaveBeenCalled()
   })
 
   it('a fast double-tap on Enable only fires ONE requestAndRegisterPushToken() call (re-entrancy guard)', async () => {
@@ -339,5 +381,14 @@ describe('Not now interaction', () => {
     await waitFor(() => expect(markStreakPromptSeenMock).toHaveBeenCalledTimes(1))
     expect(requestAndRegisterPushTokenMock).not.toHaveBeenCalled()
     expect(setPushPermissionDeniedMock).not.toHaveBeenCalled()
+  })
+
+  it('tapping Not now does NOT call enableStreakRemindersDefault()', async () => {
+    render(<StreakReminderPermissionGate />)
+    await waitFor(() => expect(screen.getByTestId('btn-not-now')).toBeTruthy())
+    fireEvent.click(screen.getByTestId('btn-not-now'))
+
+    await waitFor(() => expect(markStreakPromptSeenMock).toHaveBeenCalledTimes(1))
+    expect(enableStreakRemindersDefaultMock).not.toHaveBeenCalled()
   })
 })

@@ -30,6 +30,7 @@ import type { StreakState } from 'app/state/streak'
 import { getPushPermissionStatus, requestAndRegisterPushToken } from 'app/utils/pushTokens'
 import { shouldShowStreakReminderPrompt } from './streakReminderPrompt'
 import {
+  enableStreakRemindersDefault,
   hasSeenStreakPrompt,
   markStreakPromptSeen,
   setPushPermissionDenied,
@@ -81,6 +82,9 @@ export function StreakReminderPermissionGate() {
         await requestAndRegisterPushToken()
         if (cancelled) return
         markStreakPromptSeen()
+        // OS already granted — reflect the user's intent so the cron's strict
+        // `enabled` gate actually selects them.
+        enableStreakRemindersDefault()
         return
       }
 
@@ -111,6 +115,12 @@ export function StreakReminderPermissionGate() {
       markStreakPromptSeen()
       if (result.outcome === 'denied') {
         setPushPermissionDenied()
+      } else if (result.outcome !== 'unsupported') {
+        // A non-denied, non-unsupported grant (granted / granted-no-token)
+        // reflects the user's intent — turn streak reminders on so the primary
+        // opt-in path actually produces reminders. Respect a deny; no-op the
+        // web/desktop unsupported case (the gate is native-only anyway).
+        enableStreakRemindersDefault()
       }
     } finally {
       submittingRef.current = false

@@ -151,6 +151,34 @@ export function setStreakReminderTime(localTime: string): void {
 }
 
 /**
+ * Turns streak reminders ON as part of the first-streak permission grant,
+ * closing the opt-in gap where a granted permission registered a token but
+ * never set `streak.enabled = true` — so the cron's strict `enabled` gate would
+ * otherwise never select the user. Via the whole-object read-merge-write
+ * (`mergeStreak`):
+ *   - `streak.enabled = true` (every call);
+ *   - `streak.local_time = '20:00'` ONLY when unset — an existing time (e.g.
+ *     from the settings time picker) is never clobbered;
+ *   - `streak.last_local_offset_minutes = computeLocalOffsetMinutes()` (a fresh
+ *     offset on every call) so the candidate RPC's offset-primary path has a
+ *     current value immediately, not only the timezone fallback.
+ * Preserves sibling `replies` / `moderation` categories and the existing
+ * permission timestamps. Null-safe (no throw on a null profile). Idempotent in
+ * the sense that repeated calls converge on the same enabled state.
+ */
+export function enableStreakRemindersDefault(): void {
+  const currentLocalTime = readReminders()?.streak?.local_time
+  const patch: Partial<StreakReminderPref> = {
+    enabled: true,
+    last_local_offset_minutes: computeLocalOffsetMinutes(),
+  }
+  if (!currentLocalTime) {
+    patch.local_time = '20:00'
+  }
+  mergeStreak(patch)
+}
+
+/**
  * Keeps `streak.last_local_offset_minutes` current on app open. Writes a fresh
  * offset ONLY when streak reminders are enabled AND the freshly-computed offset
  * differs from the stored one — otherwise a no-op, so an unchanged zone causes

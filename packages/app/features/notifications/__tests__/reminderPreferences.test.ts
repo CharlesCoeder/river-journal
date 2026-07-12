@@ -539,3 +539,147 @@ describe('refreshReminderOffsetOnAppOpen — idempotent app-open offset sync', (
     expect(reminders?.moderation).toEqual({ enabled: false })
   })
 })
+
+/**
+ * Red-phase unit tests for `enableStreakRemindersDefault()` — the reconciliation
+ * helper that closes the 6.2 opt-in gap (Enable registered a token but never set
+ * `streak.enabled = true`, so the primary opt-in path would otherwise produce no
+ * reminders).
+ *
+ * Contract locked in for the implementation, via the same whole-object
+ * read-merge-write (`mergeStreak`) pattern as `markStreakPromptSeen` /
+ * `setPushPermissionDenied` above:
+ *
+ *   enableStreakRemindersDefault(): void
+ *     — sets `streak.enabled = true` unconditionally (every call);
+ *     — sets `streak.local_time = '20:00'` ONLY when unset — an existing
+ *       local_time (e.g. from the 6.3 time picker) is never clobbered;
+ *     — sets `streak.last_local_offset_minutes = computeLocalOffsetMinutes()`
+ *       on every call (a fresh offset, not write-once — mirrors
+ *       `setStreakReminderTime`'s "recompute every time" semantics, since the
+ *       whole point is giving the candidate RPC's offset-primary path a
+ *       current value immediately);
+ *     — preserves sibling `replies` / `moderation` categories and the existing
+ *       `permissionPromptSeenAt` / `permissionLastDeniedAt` timestamps;
+ *     — is null-safe (no throw when `store$.profile` is null).
+ *
+ * Mirrors the real-`store$` (not mocked), reset-per-test convention used
+ * throughout this file.
+ */
+
+describe('enableStreakRemindersDefault — reconciliation helper for the 6.2 opt-in gap', () => {
+  let store$: typeof import('app/state/store').store$
+
+  beforeEach(async () => {
+    const storeModule = await import('app/state/store')
+    store$ = storeModule.store$
+    store$.profile.set(null)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('does not throw when store$.profile is null', async () => {
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    expect(() => enableStreakRemindersDefault()).not.toThrow()
+  })
+
+  it('sets streak.enabled = true on an empty profile with no prior reminders shape', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    enableStreakRemindersDefault()
+    const enabled = (store$.profile as any).preferences?.reminders?.streak?.enabled?.get?.()
+    expect(enabled).toBe(true)
+  })
+
+  it('defaults local_time to 20:00 when unset', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    enableStreakRemindersDefault()
+    const localTime = (store$.profile as any).preferences?.reminders?.streak?.local_time?.get?.()
+    expect(localTime).toBe('20:00')
+  })
+
+  it('does NOT clobber an existing local_time already set (e.g. via the 6.3 time picker)', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: { reminders: { streak: { enabled: false, local_time: '07:30' } } },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    enableStreakRemindersDefault()
+    const localTime = (store$.profile as any).preferences?.reminders?.streak?.local_time?.get?.()
+    expect(localTime).toBe('07:30')
+  })
+
+  it('writes last_local_offset_minutes using the east-of-UTC convention', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(300) // UTC-5
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    enableStreakRemindersDefault()
+    const offset = (
+      store$.profile as any
+    ).preferences?.reminders?.streak?.last_local_offset_minutes?.get?.()
+    expect(offset).toBe(-300)
+  })
+
+  it('a second call refreshes the offset to a newly computed value while still not clobbering local_time', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60) // UTC+1
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    enableStreakRemindersDefault()
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(300) // traveled to UTC-5
+    enableStreakRemindersDefault()
+
+    const streak = (store$.profile as any).preferences?.reminders?.streak?.get?.()
+    expect(streak?.local_time).toBe('20:00') // unchanged from the first call's default
+    expect(streak?.last_local_offset_minutes).toBe(-300) // refreshed
+  })
+
+  it('preserves sibling reminders.replies / reminders.moderation across the write', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          replies: { enabled: true },
+          moderation: { enabled: false },
+        },
+      },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    enableStreakRemindersDefault()
+
+    const reminders = (store$.profile as any).preferences?.reminders?.get?.()
+    expect(reminders?.replies).toEqual({ enabled: true })
+    expect(reminders?.moderation).toEqual({ enabled: false })
+    expect(reminders?.streak?.enabled).toBe(true)
+  })
+
+  it('preserves existing permissionPromptSeenAt / permissionLastDeniedAt timestamps', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: {
+            enabled: false,
+            permissionPromptSeenAt: '2026-07-01T00:00:00.000Z',
+            permissionLastDeniedAt: '2026-07-02T00:00:00.000Z',
+          },
+        },
+      },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { enableStreakRemindersDefault } = await import('../reminderPreferences')
+    enableStreakRemindersDefault()
+
+    const streak = (store$.profile as any).preferences?.reminders?.streak?.get?.()
+    expect(streak?.enabled).toBe(true)
+    expect(streak?.permissionPromptSeenAt).toBe('2026-07-01T00:00:00.000Z')
+    expect(streak?.permissionLastDeniedAt).toBe('2026-07-02T00:00:00.000Z')
+  })
+})
