@@ -12,6 +12,7 @@ import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialo
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
 import { ModerationReceiptGate } from 'app/features/moderation-receipts/ModerationReceiptGate'
 import { StreakReminderPermissionGate } from 'app/features/notifications/StreakReminderPermissionGate'
+import { refreshReminderOffsetOnAppOpen } from 'app/features/notifications/reminderPreferences'
 import { useToday } from 'app/state/today'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
@@ -31,6 +32,19 @@ export function HomeScreen() {
   const { shouldShow: showLapsed, dismiss: dismissLapsed } = useLapsedPrompt()
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const isSyncReady = use$(isSyncReady$)
+
+  // Keep the stored local UTC offset current once per app open, so a user who
+  // travelled or crossed a DST boundary between sessions still fires their
+  // streak reminder in their real local window. Guarded on an authenticated
+  // user; the helper is itself a null-safe no-op when reminders are disabled or
+  // the offset is unchanged. Home is the guaranteed post-auth landing surface on
+  // every platform, so it is the natural once-per-open mount point.
+  // Mount-once (empty dep list is deliberate): this is an app-open refresh, not
+  // a reaction to auth-state changes within a session.
+  useEffect(() => {
+    if (!isAuthenticated) return
+    refreshReminderOffsetOnAppOpen()
+  }, [])
 
   // Post-auth return-to-Collective forwarding. The account gate records a
   // persisted pending marker, then auth lands back on home (as always) so the

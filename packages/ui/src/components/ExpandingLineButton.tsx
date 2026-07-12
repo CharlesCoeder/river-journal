@@ -13,6 +13,18 @@ export interface ExpandingLineButtonProps {
   size?: 'default' | 'cta'
   disabled?: boolean
   accessibilityLabel?: string
+  /**
+   * Overrides the default `role="button"` on the root element — pass `"switch"`
+   * to present the control as a toggle. Falls back to `"button"` when omitted,
+   * so existing call sites are unaffected.
+   */
+  accessibilityRole?: string
+  /**
+   * When present, exposes the toggle's on/off state as `aria-checked`, so a
+   * screen reader announces the current state alongside the label. Only
+   * meaningful together with `accessibilityRole="switch"`.
+   */
+  accessibilityState?: { checked?: boolean }
   /** DOM id forwarded to the root button element — used for focus management. */
   id?: string
 }
@@ -23,6 +35,8 @@ export function ExpandingLineButton({
   size = 'default',
   disabled = false,
   accessibilityLabel,
+  accessibilityRole,
+  accessibilityState,
   id,
 }: ExpandingLineButtonProps) {
   const [isHovered, setIsHovered] = useState(false)
@@ -45,11 +59,10 @@ export function ExpandingLineButton({
   return (
     <View
       tag="button"
-      role="button"
+      role={(accessibilityRole ?? 'button') as 'button'}
       id={id}
-      aria-label={
-        accessibilityLabel ?? (typeof children === 'string' ? children : undefined)
-      }
+      aria-label={accessibilityLabel ?? (typeof children === 'string' ? children : undefined)}
+      aria-checked={accessibilityState?.checked}
       aria-disabled={disabled || undefined}
       cursor={disabled ? 'not-allowed' : 'pointer'}
       alignItems="center"

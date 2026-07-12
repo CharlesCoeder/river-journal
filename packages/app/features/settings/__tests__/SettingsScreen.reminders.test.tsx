@@ -1,38 +1,42 @@
 // @vitest-environment happy-dom
 /**
- * TDD red-phase unit tests for the Settings → Collective → Blocked users entry.
+ * TDD red-phase unit tests for a new, auth-gated "Notifications" section in
+ * SettingsScreen mounting the reminder-settings preferences surface.
  *
  * Red-phase contract: every test in this file MUST fail until SettingsScreen.tsx
- * gains a new staggered "Collective" section (bumping the section-reveal count by
- * one) with a "Blocked users" navigation row.
+ * gains a new staggered "Notifications" section (bumping the section-reveal
+ * count by one) rendering a `<ReminderSettings />` child, auth-gated the same
+ * way as the existing Linked Accounts section (visible only when the user is
+ * authenticated).
  *
- * This is a sibling test file (not an edit to the pre-existing, wholesale-skipped
- * `SettingsScreen.encryption.test.tsx`, whose entire describe block is
- * `describe.skip` and therefore cannot participate in red/green verification).
- * It exercises SettingsScreen with its own lightweight mocks, following the
- * `use$`-sentinel-string mocking convention used by
- * `SuspensionStatusSection.test.tsx` / `PrivacyCenterScreen.test.tsx`.
+ * Sibling file to `SettingsScreen.collective.test.tsx` (same `use$`-sentinel-
+ * string mocking convention, same "own lightweight mocks" approach) rather
+ * than an edit to it — this keeps each new section's red-phase coverage
+ * independently attributable and avoids perturbing an already-green suite.
+ * `ReminderSettings` itself is mocked to a stub here (its own behavior is
+ * covered by `ReminderSettings.test.tsx`) — this file asserts MOUNTING,
+ * auth-gating, and stagger-count correctness only.
  *
  * Coverage:
- *   t1 — a new "Collective" section renders with a "Blocked users" row
- *   t2 — tapping the row's control navigates to /collective/blocked-users
+ *   t1 — a new "Notifications" section renders a `<ReminderSettings />` stub
+ *        once fully revealed, for an authenticated user
+ *   t2 — the section is auth-gated: it does NOT render for an unauthenticated
+ *        user, even once fully revealed
  *   t3 — the staggered reveal count grew by exactly one: at the OLD
- *        section-count threshold the footer must NOT yet be visible (it
- *        moved one slot later), and the Collective section must already be
- *        visible — this is the off-by-one/duplicate-key regression the
- *        renumber is prone to
- *   t4 — after the full reveal, every pre-existing section AND the new
- *        Collective section AND the footer are all present (nothing dropped)
+ *        section-count threshold, the footer must NOT yet be visible
+ *   t4 — after full reveal, every pre-existing section AND the new
+ *        Notifications section AND the footer are all present (nothing
+ *        dropped by the renumber)
  *   t5 — the footer remains the LAST section to reveal
  */
 
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 
 // ─── Controlled mock state ─────────────────────────────────────────────────────
 let mockIsAuthenticated = true
-let mockUserId: string | null = 'user-collective-1'
+let mockUserId: string | null = 'user-reminders-1'
 
 const mockPush = vi.fn()
 
@@ -132,18 +136,20 @@ vi.mock('../SuspensionStatusSection', () => ({
   SuspensionStatusSection: () => null,
 }))
 
-// The reminder-settings child is stubbed here — its own behavior is covered by
-// its dedicated suite; this file only asserts the existing section mounting +
-// stagger correctness after the new section was added.
+// ─── The surface under test's child — mocked to a stub; its own behavior is
+// covered by ReminderSettings.test.tsx. This file asserts mounting +
+// auth-gating + stagger correctness only. ───────────────────────────────────
 vi.mock('app/features/notifications/ReminderSettings', () => ({
-  ReminderSettings: () => null,
+  ReminderSettings: () =>
+    React.createElement('div', { 'data-testid': 'reminder-settings-stub' }, 'ReminderSettingsStub'),
 }))
 
 // ─── @my/ui mock — minimal passthrough, preserving onPress/testID ────────────
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
-  const passthrough = (tag: string) =>
+  const passthrough =
+    (tag: string) =>
     ({ children, onPress, testID, ...props }: any) => {
       const domProps: Record<string, unknown> = {}
       if (testID) domProps['data-testid'] = testID
@@ -152,7 +158,8 @@ vi.mock('@my/ui', async () => {
     }
 
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     ScrollView: passthrough('div'),
     View: passthrough('div'),
     XStack: passthrough('div'),
@@ -174,10 +181,13 @@ vi.mock('@my/ui', async () => {
 import { SettingsScreen } from '../SettingsScreen'
 
 const STAGGER_MS = 100
-// The OLD (pre-story) section count. If the implementation forgets to bump
-// SECTION_COUNT, the footer will already be visible by this point — that is
-// exactly the regression this file guards against.
+// The OLD (pre-change) section count, matching the current SettingsScreen's
+// SECTION_COUNT (Privacy Tier through the Collective section, plus the
+// footer). If the Notifications section addition forgets to bump
+// SECTION_COUNT, the footer will already be visible by this point — the
+// regression this file guards against.
 const OLD_SECTION_COUNT = 9
+const NEW_SECTION_COUNT = OLD_SECTION_COUNT + 1
 
 function flushStagger(steps: number) {
   act(() => {
@@ -193,48 +203,46 @@ afterEach(() => {
   cleanup()
   vi.useRealTimers()
   mockIsAuthenticated = true
-  mockUserId = 'user-collective-1'
+  mockUserId = 'user-reminders-1'
   mockPush.mockReset()
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// t1 — Collective section renders with a Blocked users row
+// t1 — Notifications section renders a ReminderSettings stub (authenticated)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('t1 — new "Collective" section with a "Blocked users" row', () => {
-  it('renders a "Collective" section header once fully revealed', () => {
+describe('t1 — new "Notifications" section mounts <ReminderSettings /> (authenticated)', () => {
+  it('renders a "Notifications" section header once fully revealed', () => {
     render(React.createElement(SettingsScreen))
-    flushStagger(9)
-    expect(screen.getByText('Collective')).toBeTruthy()
+    flushStagger(NEW_SECTION_COUNT)
+    expect(screen.getByText('Notifications')).toBeTruthy()
   })
 
-  it('renders "Blocked users" label text', () => {
+  it('renders the <ReminderSettings /> stub inside the section', () => {
     render(React.createElement(SettingsScreen))
-    flushStagger(9)
-    expect(screen.getByText('Blocked users')).toBeTruthy()
+    flushStagger(NEW_SECTION_COUNT)
+    expect(screen.getByTestId('reminder-settings-stub')).toBeTruthy()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// t2 — navigation
+// t2 — auth gate
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('t2 — tapping the Blocked users control navigates', () => {
-  it('calls router.push("/collective/blocked-users")', () => {
+describe('t2 — the Notifications section is auth-gated (mirrors Linked Accounts, section 6)', () => {
+  it('does NOT render for an unauthenticated user, even once fully revealed', () => {
+    mockIsAuthenticated = false
     render(React.createElement(SettingsScreen))
-    flushStagger(9)
+    flushStagger(NEW_SECTION_COUNT)
+    expect(screen.queryByText('Notifications')).toBeNull()
+    expect(screen.queryByTestId('reminder-settings-stub')).toBeNull()
+  })
 
-    // The row mirrors the "Local-only entries" nav-row shape: a Text label and
-    // an ExpandingLineButton as siblings inside one XStack. Locate the button
-    // within that same row container rather than assuming its label text.
-    const label = screen.getByText('Blocked users')
-    const row = label.closest('div')
-    const button = row?.querySelector('button')
-    expect(button).toBeTruthy()
-
-    fireEvent.click(button!)
-
-    expect(mockPush).toHaveBeenCalledWith('/collective/blocked-users')
+  it('DOES render for an authenticated user', () => {
+    mockIsAuthenticated = true
+    render(React.createElement(SettingsScreen))
+    flushStagger(NEW_SECTION_COUNT)
+    expect(screen.getByText('Notifications')).toBeTruthy()
   })
 })
 
@@ -243,18 +251,15 @@ describe('t2 — tapping the Blocked users control navigates', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t3 — SECTION_COUNT grew by exactly one (renumber correctness)', () => {
-  it('at the OLD section-count stagger point, "Collective" is visible but the footer is NOT yet', () => {
+  it('at the OLD section-count stagger point, the footer is NOT yet visible', () => {
     render(React.createElement(SettingsScreen))
     flushStagger(OLD_SECTION_COUNT)
-
-    expect(screen.getByText('Collective')).toBeTruthy()
-    expect(screen.queryByText('River Journal')).toBeNull()
+    expect(screen.queryByText('River Journal', { exact: false })).toBeNull()
   })
 
   it('after one more stagger step, the footer appears', () => {
     render(React.createElement(SettingsScreen))
-    flushStagger(OLD_SECTION_COUNT + 1)
-
+    flushStagger(NEW_SECTION_COUNT)
     expect(screen.getByText('River Journal', { exact: false })).toBeTruthy()
   })
 })
@@ -264,9 +269,9 @@ describe('t3 — SECTION_COUNT grew by exactly one (renumber correctness)', () =
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t4 — all pre-existing sections still render after the renumber', () => {
-  it('renders every pre-existing section marker plus Collective plus the footer', () => {
+  it('renders every pre-existing section marker plus Notifications plus the footer', () => {
     render(React.createElement(SettingsScreen))
-    flushStagger(10)
+    flushStagger(NEW_SECTION_COUNT)
 
     // Section 1 (authenticated) — Privacy Tier
     expect(screen.getByText('Privacy Tier')).toBeTruthy()
@@ -281,9 +286,12 @@ describe('t4 — all pre-existing sections still render after the renumber', () 
     expect(screen.getByText(/Log Out/)).toBeTruthy()
     // Section 7 — Editor
     expect(screen.getByText('Focus mode')).toBeTruthy()
-    // New Collective section
+    // Section 8 — Collective
     expect(screen.getByText('Collective')).toBeTruthy()
     expect(screen.getByText('Blocked users')).toBeTruthy()
+    // New Notifications section
+    expect(screen.getByText('Notifications')).toBeTruthy()
+    expect(screen.getByTestId('reminder-settings-stub')).toBeTruthy()
     // Footer
     expect(screen.getByText('River Journal', { exact: false })).toBeTruthy()
     expect(screen.getByText('Privacy Center')).toBeTruthy()
@@ -295,9 +303,9 @@ describe('t4 — all pre-existing sections still render after the renumber', () 
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t5 — footer remains the last section to reveal', () => {
-  it('the footer is not visible until every other section (including Collective) is visible', () => {
+  it('the footer is not visible until every other section (including Notifications) is visible', () => {
     render(React.createElement(SettingsScreen))
-    flushStagger(9)
+    flushStagger(NEW_SECTION_COUNT - 1)
     expect(screen.queryByText('River Journal', { exact: false })).toBeNull()
 
     flushStagger(1)

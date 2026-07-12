@@ -27,7 +27,7 @@
  * write and is only meaningfully testable against the real object.
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const BASE_PROFILE = {
   word_goal: 500,
@@ -201,5 +201,341 @@ describe('reminderPreferences — markStreakPromptSeen / setPushPermissionDenied
     expect(reminders?.replies).toEqual({ enabled: true })
     expect(reminders?.moderation).toEqual({ enabled: false })
     expect(typeof reminders?.streak?.permissionPromptSeenAt).toBe('string')
+  })
+})
+
+/**
+ * Red-phase unit tests for the reminder-settings preferences surface's write
+ * helpers, added alongside `markStreakPromptSeen` / `setPushPermissionDenied`
+ * in this same module: `computeLocalOffsetMinutes`, `setReminderCategoryEnabled`,
+ * `setStreakReminderTime`, and `refreshReminderOffsetOnAppOpen`.
+ *
+ * Contract locked in for the implementation:
+ *
+ *   computeLocalOffsetMinutes(date = new Date()): number
+ *     — pure, no store reads. Returns minutes EAST of UTC:
+ *       -date.getTimezoneOffset(). A UTC-5 zone (getTimezoneOffset() === 300)
+ *       yields -300; a UTC+1 zone (getTimezoneOffset() === -60) yields +60.
+ *
+ *   setReminderCategoryEnabled(category: 'streak'|'replies'|'moderation', enabled: boolean): void
+ *     — whole-object read-merge-write; patches only the named category's
+ *     `enabled` flag, preserving sibling categories and (for 'streak') the
+ *     existing permission timestamps. Null-safe. Not write-once — every call
+ *     applies the given value.
+ *
+ *   setStreakReminderTime(localTime: string): void
+ *     — merges `streak.local_time = localTime` AND
+ *     `streak.last_local_offset_minutes = computeLocalOffsetMinutes()` in the
+ *     SAME write. Preserves sibling categories and `streak.enabled`. Null-safe.
+ *     Not write-once.
+ *
+ *   refreshReminderOffsetOnAppOpen(): void
+ *     — null-safe. Writes a fresh `last_local_offset_minutes` only when
+ *     `streak.enabled === true` AND the freshly-computed offset differs from
+ *     the stored one; otherwise a no-op (idempotent — no write when
+ *     unchanged). Preserves sibling categories and `streak.local_time`.
+ *
+ * Mirrors the real-`store$` (not mocked), reset-per-test convention used by
+ * the block above.
+ */
+
+describe('computeLocalOffsetMinutes — minutes east of UTC (pure, no store reads)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns +60 for a UTC+1 zone (getTimezoneOffset() === -60)', async () => {
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { computeLocalOffsetMinutes } = await import('../reminderPreferences')
+    expect(computeLocalOffsetMinutes(new Date())).toBe(60)
+  })
+
+  it('returns -300 for a UTC-5 zone (getTimezoneOffset() === 300)', async () => {
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(300)
+    const { computeLocalOffsetMinutes } = await import('../reminderPreferences')
+    expect(computeLocalOffsetMinutes(new Date())).toBe(-300)
+  })
+
+  it('returns 0 for UTC itself (getTimezoneOffset() === 0)', async () => {
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(0)
+    const { computeLocalOffsetMinutes } = await import('../reminderPreferences')
+    expect(computeLocalOffsetMinutes(new Date())).toBe(0)
+  })
+
+  it('defaults to `new Date()` when called with no argument', async () => {
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-330) // UTC+5:30
+    const { computeLocalOffsetMinutes } = await import('../reminderPreferences')
+    expect(computeLocalOffsetMinutes()).toBe(330)
+  })
+
+  it('never touches store$ — does not throw with store$.profile null', async () => {
+    const storeModule = await import('app/state/store')
+    storeModule.store$.profile.set(null)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { computeLocalOffsetMinutes } = await import('../reminderPreferences')
+    expect(() => computeLocalOffsetMinutes()).not.toThrow()
+  })
+})
+
+describe('setReminderCategoryEnabled — category enable/disable writer', () => {
+  let store$: typeof import('app/state/store').store$
+
+  beforeEach(async () => {
+    const storeModule = await import('app/state/store')
+    store$ = storeModule.store$
+    store$.profile.set(null)
+  })
+
+  it('does not throw when store$.profile is null', async () => {
+    const { setReminderCategoryEnabled } = await import('../reminderPreferences')
+    expect(() => setReminderCategoryEnabled('streak', true)).not.toThrow()
+  })
+
+  it('writes reminders.streak.enabled = true on an empty profile', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    const { setReminderCategoryEnabled } = await import('../reminderPreferences')
+    setReminderCategoryEnabled('streak', true)
+    const enabled = (store$.profile as any).preferences?.reminders?.streak?.enabled?.get?.()
+    expect(enabled).toBe(true)
+  })
+
+  it('writes reminders.replies.enabled without touching sibling streak / moderation categories', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: { streak: { enabled: true }, moderation: { enabled: false } },
+      },
+    } as any)
+    const { setReminderCategoryEnabled } = await import('../reminderPreferences')
+    setReminderCategoryEnabled('replies', true)
+
+    const reminders = (store$.profile as any).preferences?.reminders?.get?.()
+    expect(reminders?.replies).toEqual({ enabled: true })
+    expect(reminders?.streak).toEqual({ enabled: true })
+    expect(reminders?.moderation).toEqual({ enabled: false })
+  })
+
+  it('toggling moderation off preserves an unrelated streak permission timestamp', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: { enabled: true, permissionPromptSeenAt: '2026-07-01T00:00:00.000Z' },
+          moderation: { enabled: true },
+        },
+      },
+    } as any)
+    const { setReminderCategoryEnabled } = await import('../reminderPreferences')
+    setReminderCategoryEnabled('moderation', false)
+
+    const reminders = (store$.profile as any).preferences?.reminders?.get?.()
+    expect(reminders?.moderation).toEqual({ enabled: false })
+    expect(reminders?.streak?.permissionPromptSeenAt).toBe('2026-07-01T00:00:00.000Z')
+    expect(reminders?.streak?.enabled).toBe(true)
+  })
+
+  it('toggling streak.enabled preserves existing permissionPromptSeenAt / permissionLastDeniedAt timestamps', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: {
+            enabled: false,
+            permissionPromptSeenAt: '2026-07-01T00:00:00.000Z',
+            permissionLastDeniedAt: '2026-07-02T00:00:00.000Z',
+          },
+        },
+      },
+    } as any)
+    const { setReminderCategoryEnabled } = await import('../reminderPreferences')
+    setReminderCategoryEnabled('streak', true)
+
+    const streak = (store$.profile as any).preferences?.reminders?.streak?.get?.()
+    expect(streak?.enabled).toBe(true)
+    expect(streak?.permissionPromptSeenAt).toBe('2026-07-01T00:00:00.000Z')
+    expect(streak?.permissionLastDeniedAt).toBe('2026-07-02T00:00:00.000Z')
+  })
+
+  it('a second call with the opposite value flips the flag (not write-once like markStreakPromptSeen)', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    const { setReminderCategoryEnabled } = await import('../reminderPreferences')
+    setReminderCategoryEnabled('streak', true)
+    setReminderCategoryEnabled('streak', false)
+    const enabled = (store$.profile as any).preferences?.reminders?.streak?.enabled?.get?.()
+    expect(enabled).toBe(false)
+  })
+})
+
+describe('setStreakReminderTime — writes local_time + recomputed last_local_offset_minutes together', () => {
+  let store$: typeof import('app/state/store').store$
+
+  beforeEach(async () => {
+    const storeModule = await import('app/state/store')
+    store$ = storeModule.store$
+    store$.profile.set(null)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('does not throw when store$.profile is null', async () => {
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { setStreakReminderTime } = await import('../reminderPreferences')
+    expect(() => setStreakReminderTime('20:00')).not.toThrow()
+  })
+
+  it('writes streak.local_time to the given HH:mm string', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { setStreakReminderTime } = await import('../reminderPreferences')
+    setStreakReminderTime('07:30')
+    const localTime = (store$.profile as any).preferences?.reminders?.streak?.local_time?.get?.()
+    expect(localTime).toBe('07:30')
+  })
+
+  it('writes last_local_offset_minutes using the east-of-UTC convention in the SAME call', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(300) // UTC-5
+    const { setStreakReminderTime } = await import('../reminderPreferences')
+    setStreakReminderTime('20:00')
+    const offset = (
+      store$.profile as any
+    ).preferences?.reminders?.streak?.last_local_offset_minutes?.get?.()
+    expect(offset).toBe(-300)
+  })
+
+  it('preserves streak.enabled and sibling reminders.replies / reminders.moderation across the write', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: { enabled: true },
+          replies: { enabled: true },
+          moderation: { enabled: false },
+        },
+      },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { setStreakReminderTime } = await import('../reminderPreferences')
+    setStreakReminderTime('18:45')
+
+    const reminders = (store$.profile as any).preferences?.reminders?.get?.()
+    expect(reminders?.streak?.enabled).toBe(true)
+    expect(reminders?.streak?.local_time).toBe('18:45')
+    expect(reminders?.replies).toEqual({ enabled: true })
+    expect(reminders?.moderation).toEqual({ enabled: false })
+  })
+
+  it('a later call overwrites both fields (not write-once)', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { setStreakReminderTime } = await import('../reminderPreferences')
+    setStreakReminderTime('08:00')
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(300)
+    setStreakReminderTime('21:15')
+
+    const streak = (store$.profile as any).preferences?.reminders?.streak?.get?.()
+    expect(streak?.local_time).toBe('21:15')
+    expect(streak?.last_local_offset_minutes).toBe(-300)
+  })
+})
+
+describe('refreshReminderOffsetOnAppOpen — idempotent app-open offset sync', () => {
+  let store$: typeof import('app/state/store').store$
+
+  beforeEach(async () => {
+    const storeModule = await import('app/state/store')
+    store$ = storeModule.store$
+    store$.profile.set(null)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('does not throw when store$.profile is null', async () => {
+    const { refreshReminderOffsetOnAppOpen } = await import('../reminderPreferences')
+    expect(() => refreshReminderOffsetOnAppOpen()).not.toThrow()
+  })
+
+  it('does nothing when reminders.streak is entirely absent', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    const { refreshReminderOffsetOnAppOpen } = await import('../reminderPreferences')
+    expect(() => refreshReminderOffsetOnAppOpen()).not.toThrow()
+    const reminders = (store$.profile as any).preferences?.reminders?.get?.()
+    expect(reminders?.streak).toBeUndefined()
+  })
+
+  it('does not write an offset when streak.enabled is false, even if the stored offset is stale', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: { reminders: { streak: { enabled: false, last_local_offset_minutes: 0 } } },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-300)
+    const { refreshReminderOffsetOnAppOpen } = await import('../reminderPreferences')
+    refreshReminderOffsetOnAppOpen()
+    const offset = (
+      store$.profile as any
+    ).preferences?.reminders?.streak?.last_local_offset_minutes?.get?.()
+    expect(offset).toBe(0)
+  })
+
+  it('updates last_local_offset_minutes when streak.enabled is true and the fresh offset differs from the stored one', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: { enabled: true, local_time: '20:00', last_local_offset_minutes: -300 },
+        },
+      },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60) // now UTC+1 (traveled)
+    const { refreshReminderOffsetOnAppOpen } = await import('../reminderPreferences')
+    refreshReminderOffsetOnAppOpen()
+    const offset = (
+      store$.profile as any
+    ).preferences?.reminders?.streak?.last_local_offset_minutes?.get?.()
+    expect(offset).toBe(60)
+  })
+
+  it('is a no-op (value unchanged) when streak.enabled is true and the fresh offset already matches the stored one', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: { enabled: true, local_time: '20:00', last_local_offset_minutes: 60 },
+        },
+      },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { refreshReminderOffsetOnAppOpen } = await import('../reminderPreferences')
+    refreshReminderOffsetOnAppOpen()
+    const offset = (
+      store$.profile as any
+    ).preferences?.reminders?.streak?.last_local_offset_minutes?.get?.()
+    expect(offset).toBe(60)
+  })
+
+  it('preserves streak.local_time and sibling reminders.replies / reminders.moderation across a refresh write', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: { enabled: true, local_time: '20:00', last_local_offset_minutes: -300 },
+          replies: { enabled: true },
+          moderation: { enabled: false },
+        },
+      },
+    } as any)
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+    const { refreshReminderOffsetOnAppOpen } = await import('../reminderPreferences')
+    refreshReminderOffsetOnAppOpen()
+
+    const reminders = (store$.profile as any).preferences?.reminders?.get?.()
+    expect(reminders?.streak?.local_time).toBe('20:00')
+    expect(reminders?.streak?.last_local_offset_minutes).toBe(60)
+    expect(reminders?.replies).toEqual({ enabled: true })
+    expect(reminders?.moderation).toEqual({ enabled: false })
   })
 })

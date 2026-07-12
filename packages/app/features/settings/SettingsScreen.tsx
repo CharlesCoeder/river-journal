@@ -17,6 +17,7 @@ import { ExportJournal } from './components/ExportJournal'
 import { KeyboardShortcutsSection } from './components/KeyboardShortcutsSection'
 import { PreviousAccountBanner } from './PreviousAccountBanner'
 import { SuspensionStatusSection } from './SuspensionStatusSection'
+import { ReminderSettings } from 'app/features/notifications/ReminderSettings'
 
 // ---------------------------------------------------------------------------
 // Privacy Tier — stacked vertical list matching design
@@ -89,7 +90,7 @@ function SectionHeader({ children }: { children: string }) {
 // ---------------------------------------------------------------------------
 
 const STAGGER_MS = 100
-const SECTION_COUNT = 9
+const SECTION_COUNT = 10
 
 export function SettingsScreen() {
   const router = useRouter()
@@ -408,10 +409,20 @@ export function SettingsScreen() {
               </YStack>
             )}
 
-            {/* Section 9: Footer */}
-            {visibleCount >= 9 && (
+            {/* Section 9: Notifications (authenticated — reminder preferences
+                persist on the server-synced profile, so an unauthenticated /
+                local-only user has no profile to write to). */}
+            {visibleCount >= 9 && isAuthenticated && (
+              <YStack key="section-9" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <SectionHeader>Notifications</SectionHeader>
+                <ReminderSettings />
+              </YStack>
+            )}
+
+            {/* Section 10: Footer */}
+            {visibleCount >= 10 && (
               <XStack
-                key="section-9"
+                key="section-10"
                 transition="designEnter"
                 enterStyle={{ opacity: 0, y: 10 }}
                 opacity={1}

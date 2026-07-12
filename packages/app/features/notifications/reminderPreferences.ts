@@ -85,3 +85,89 @@ export function setPushPermissionDenied(now: string = new Date().toISOString()):
   if (readReminders()?.streak?.permissionLastDeniedAt) return
   mergeStreak({ permissionLastDeniedAt: now })
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Reminder-settings preferences surface — category / time / offset writers.
+// ───────────────────────────────────────────────────────────────────────────
+
+type ReminderCategory = 'streak' | 'replies' | 'moderation'
+
+/**
+ * Pure, store-free helper: the current local UTC offset in **minutes east of
+ * UTC**. `Date#getTimezoneOffset()` reports minutes WEST of UTC (UTC−5 → 300),
+ * so we negate it (UTC−5 → −300, UTC+1 → +60). No observable reads — safe to
+ * call anywhere, including with a null profile.
+ */
+export function computeLocalOffsetMinutes(date: Date = new Date()): number {
+  // `0 - x` (not `-x`) so a zero offset returns +0, never -0.
+  return 0 - date.getTimezoneOffset()
+}
+
+/**
+ * Sets the `enabled` flag for one reminder category (streak / replies /
+ * moderation) via a whole-object read-merge-write. Patches only the named
+ * sub-object's `enabled`, preserving sibling categories and — for `streak` —
+ * the existing permission timestamps / time / offset. Null-safe (no throw on a
+ * null profile). Not write-once: every call applies the given value.
+ */
+export function setReminderCategoryEnabled(category: ReminderCategory, enabled: boolean): void {
+  try {
+    const current = readReminders() ?? {}
+    store$.profile.preferences.reminders.set({
+      ...current,
+      [category]: { ...current[category], enabled },
+    } as RemindersPref)
+  } catch {
+    // Profile is null / observable path unavailable — nothing to persist.
+  }
+}
+
+/**
+ * Writes the streak reminder send-time and refreshes the stored local offset in
+ * a SINGLE merge: `streak.local_time = localTime` (a timezone-agnostic 24-hour
+ * `'HH:mm'` string) plus `streak.last_local_offset_minutes` recomputed for the
+ * current zone. Preserves sibling categories and other streak fields. Null-safe.
+ *
+ * Offset consumption contract for the streak cron: to convert the stored local
+ * send-time to a UTC minute-of-day it computes
+ *   (localMinutes - last_local_offset_minutes) mod 1440
+ * where `localMinutes = HH * 60 + mm`. Keeping the offset current here (and on
+ * app open) keeps that conversion correct across travel / DST changes.
+ */
+export function setStreakReminderTime(localTime: string): void {
+  try {
+    const current = readReminders() ?? {}
+    store$.profile.preferences.reminders.set({
+      ...current,
+      streak: {
+        ...current.streak,
+        local_time: localTime,
+        last_local_offset_minutes: computeLocalOffsetMinutes(),
+      },
+    })
+  } catch {
+    // Profile is null / observable path unavailable — nothing to persist.
+  }
+}
+
+/**
+ * Keeps `streak.last_local_offset_minutes` current on app open. Writes a fresh
+ * offset ONLY when streak reminders are enabled AND the freshly-computed offset
+ * differs from the stored one — otherwise a no-op, so an unchanged zone causes
+ * no sync churn. Preserves `streak.local_time` and sibling categories. Null-safe.
+ */
+export function refreshReminderOffsetOnAppOpen(): void {
+  try {
+    const current = readReminders()
+    const streak = current?.streak
+    if (!streak || streak.enabled !== true) return
+    const fresh = computeLocalOffsetMinutes()
+    if (streak.last_local_offset_minutes === fresh) return
+    store$.profile.preferences.reminders.set({
+      ...current,
+      streak: { ...streak, last_local_offset_minutes: fresh },
+    })
+  } catch {
+    // Profile is null / observable path unavailable — nothing to persist.
+  }
+}
