@@ -269,6 +269,24 @@ export interface GraceDay {
 }
 
 /**
+ * A registered device push token, used to fan out notifications to a user's
+ * mobile devices.
+ *
+ * camelCase per the v1 convention. `userId` is camelCase (not snake_case
+ * like Flow.user_id) because push tokens have NO anonymous-then-adopted
+ * lifecycle — rows are only ever created by an authenticated user (mirrors
+ * GraceDay). If a later story needs orphan adoption, switch to snake_case then.
+ */
+export interface PushToken {
+  id: string
+  userId: string
+  expoPushToken: string
+  platform: 'ios' | 'android'
+  deviceLabel: string | null
+  lastUsedAt: string
+}
+
+/**
  * A computed, UI-friendly structure representing a fully populated day's entry.
  *
  * Built by spreading the underlying `Entry` (`{ ...entry, flows, totalWords }`

@@ -14,6 +14,8 @@ import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/ind
 // version sees no upgrade event and silently misses its store. Keep this list
 // the only place store names are declared.
 //
+// 10: added 'push-tokens' table for user_push_tokens synced observable
+//     (device push tokens for notification fan-out; see state/push_tokens.ts).
 // 9: added 'auth-return' table for local-only post-auth intent markers
 //    (pending Collective return + deferred Google-web attestation; see
 //    state/authReturn.ts). Never synced.
@@ -26,7 +28,7 @@ import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/ind
 // query cache (separate domain from Legend-State; see queryStorage.ts).
 // 5: added 'grace-days' table (was 4: added 'lapsed-state').
 export const DB_NAME = 'RiverJournal'
-export const DB_VERSION = 9
+export const DB_VERSION = 10
 export const TABLE_NAMES = [
   'app-state',
   'flows',
@@ -37,6 +39,7 @@ export const TABLE_NAMES = [
   'device-state',
   'onboarding-state',
   'auth-return',
+  'push-tokens',
 ] as const
 
 export const persistPlugin = observablePersistIndexedDB({
@@ -57,7 +60,7 @@ export const configurePersistence = configureSynced({
 // (see syncConfig.ts). Each keeps a persisted `lastSync` cursor in its persist
 // metadata. These are the ONLY observables whose cursor must be reset on
 // sign-out — 'app-state' / 'lapsed-state' / 'device-state' are local-only.
-export const SYNC_CURSOR_TABLES = ['flows', 'entries', 'grace-days'] as const
+export const SYNC_CURSOR_TABLES = ['flows', 'entries', 'grace-days', 'push-tokens'] as const
 
 /**
  * Clears ONLY the `changesSince` (lastSync) metadata for the synced tables,

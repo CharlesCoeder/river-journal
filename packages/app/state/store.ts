@@ -23,6 +23,7 @@ import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES, FONT_PAIRING_IDS, DEFAULT_FONT
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
+import { pushTokens$ } from './push_tokens'
 
 import { getTodayJournalDayString } from './date-utils'
 import {
@@ -71,7 +72,7 @@ export const store$ = observable<AppState>({
 })
 
 // Re-export granular observables for convenience
-export { flows$, entries$, graceDays$ }
+export { flows$, entries$, graceDays$, pushTokens$ }
 
 // =================================================================
 // 1b. EPHEMERAL STATE (NOT PERSISTED)
@@ -209,6 +210,7 @@ export const clearUserData = () => {
   const allFlows = flows$.get() ?? {}
   const allEntries = entries$.get() ?? {}
   const allGraceDays = graceDays$.get() ?? {}
+  const allPushTokens = pushTokens$.get() ?? {}
   const currentUserId = store$.session.userId.get()
 
   // Phase 1: strip user_id from items we're about to remove.
@@ -232,6 +234,12 @@ export const clearUserData = () => {
     for (const [id, gd] of Object.entries(allGraceDays)) {
       if (gd.userId === currentUserId) {
         graceDays$[id]!.userId.set(null as unknown as string)
+      }
+    }
+    // Push tokens have no sync_excluded — nullify userId so save transform skips them
+    for (const [id, pt] of Object.entries(allPushTokens)) {
+      if (pt.userId === currentUserId) {
+        pushTokens$[id]!.userId.set(null as unknown as string)
       }
     }
   })
@@ -261,6 +269,9 @@ export const clearUserData = () => {
 
     // Grace days have no sync_excluded carve-out — no anonymous origin
     graceDays$.set({})
+
+    // Push tokens have no sync_excluded carve-out — no anonymous origin
+    pushTokens$.set({})
 
     store$.lastUpdated.set(new Date().toISOString())
   })
@@ -613,6 +624,7 @@ export const deletePreviousUserData = (userId: string): void => {
   const allFlows = flows$.peek() ?? {}
   const allEntries = entries$.peek() ?? {}
   const allGraceDays = graceDays$.peek() ?? {}
+  const allPushTokens = pushTokens$.peek() ?? {}
 
   // Snapshot target ids BEFORE phase 1 nullifies user_id (otherwise the
   // proxy-backed `allFlows[id].user_id` we'd filter on later reads as null).
@@ -628,6 +640,10 @@ export const deletePreviousUserData = (userId: string): void => {
   for (const id in allGraceDays) {
     if (allGraceDays[id]?.userId === userId) targetGraceIds.add(id)
   }
+  const targetPushTokenIds = new Set<string>()
+  for (const id in allPushTokens) {
+    if (allPushTokens[id]?.userId === userId) targetPushTokenIds.add(id)
+  }
 
   // Phase 1: nullify user_id on items we're about to remove so transform.save
   // returns undefined and Legend-State will not queue Supabase delete ops.
@@ -641,6 +657,9 @@ export const deletePreviousUserData = (userId: string): void => {
     }
     for (const id of targetGraceIds) {
       graceDays$[id]!.userId.set(null as unknown as string)
+    }
+    for (const id of targetPushTokenIds) {
+      pushTokens$[id]!.userId.set(null as unknown as string)
     }
   })
 
@@ -658,11 +677,17 @@ export const deletePreviousUserData = (userId: string): void => {
     }
     entries$.set(finalEntries)
 
-    const finalGrace: Record<string, typeof allGraceDays[string]> = {}
+    const finalGrace: Record<string, (typeof allGraceDays)[string]> = {}
     for (const [id, gd] of Object.entries(graceDays$.peek() ?? {})) {
       if (!targetGraceIds.has(id)) finalGrace[id] = gd
     }
     graceDays$.set(finalGrace)
+
+    const finalPushTokens: Record<string, (typeof allPushTokens)[string]> = {}
+    for (const [id, pt] of Object.entries(pushTokens$.peek() ?? {})) {
+      if (!targetPushTokenIds.has(id)) finalPushTokens[id] = pt
+    }
+    pushTokens$.set(finalPushTokens)
 
     store$.lastUpdated.set(new Date().toISOString())
   })

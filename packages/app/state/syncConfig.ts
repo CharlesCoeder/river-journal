@@ -19,7 +19,7 @@
  * PLAINTEXT, sync-via-syncedSupabase, NO encryption transforms:
  *   - daily_entries
  *   - user_grace_days
- *   - (future v2 plaintext-synced tables: user_push_tokens, etc.)
+ *   - user_push_tokens
  *
  * Plaintext tables use syncedSupabase() purely for the convenience of
  * Legend-State observable + offline replay + RLS scoping. Their
@@ -49,7 +49,7 @@ import { observable } from '@legendapp/state'
 import { configureSyncedSupabase } from '@legendapp/state/sync-plugins/supabase'
 import { supabase } from '../utils/supabase'
 import { persistPlugin } from './persistConfig'
-import type { Flow, Entry, GraceDay } from './types'
+import type { Flow, Entry, GraceDay, PushToken } from './types'
 import type { EncryptionMode } from '../types/index'
 import { generateUUID as sharedGenerateUUID } from '../utils/uuid'
 import {
@@ -458,5 +458,50 @@ export function localGraceDayToDb(value: Partial<GraceDay> & { id?: string }): R
   // is_deleted is owned by the global fieldDeleted: 'is_deleted' config in
   // configureSyncedSupabase(); Legend-State sets it on the DB write when
   // .delete() is called. Writing it here would create a duplicate-write hazard.
+  return result
+}
+
+// =================================================================
+// TRANSFORM HELPERS: user_push_tokens (PLAINTEXT — no encryption)
+// =================================================================
+
+interface DbPushTokenRow {
+  id: string
+  user_id: string
+  expo_push_token: string
+  platform: 'ios' | 'android'
+  device_label: string | null
+  last_used_at: string
+  created_at: string
+  updated_at: string
+  // Optional: the load transform tolerates rows where the column was projected
+  // away by the query (e.g., select without is_deleted). This is the only
+  // intentional asymmetry vs the SQL CREATE TABLE and database.ts Row shapes.
+  is_deleted?: boolean
+}
+
+export function dbPushTokenToLocal(row: DbPushTokenRow): PushToken {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    expoPushToken: row.expo_push_token,
+    platform: row.platform,
+    deviceLabel: row.device_label,
+    lastUsedAt: row.last_used_at,
+  }
+}
+
+export function localPushTokenToDb(
+  value: Partial<PushToken> & { id?: string }
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  if (value.id !== undefined) result.id = value.id
+  if (value.userId !== undefined) result.user_id = value.userId
+  if (value.expoPushToken !== undefined) result.expo_push_token = value.expoPushToken
+  if (value.platform !== undefined) result.platform = value.platform
+  if (value.deviceLabel !== undefined) result.device_label = value.deviceLabel
+  if (value.lastUsedAt !== undefined) result.last_used_at = value.lastUsedAt
+  // updated_at handled by DB trigger — do NOT include it here.
+  // is_deleted is owned by the global fieldDeleted: 'is_deleted' config — do NOT include it.
   return result
 }

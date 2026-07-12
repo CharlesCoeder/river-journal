@@ -7,6 +7,7 @@ import { store$, countUndecidedOrphans } from './store'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
+import { pushTokens$ } from './push_tokens'
 import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$, deviceState$ } from './syncConfig'
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
@@ -59,6 +60,8 @@ function setupPersistence() {
   entries$.get()
   // graceDays follows the same lazy-activation + persist pattern as flows$/entries$
   graceDays$.get()
+  // pushTokens follows the same lazy-activation + persist pattern as graceDays$
+  pushTokens$.get()
 }
 
 function setupSyncReadinessGate() {
@@ -167,6 +170,7 @@ export async function initializePersistence() {
       when(syncState(entries$).isPersistLoaded),
       when(syncState(lapsed$).isPersistLoaded),
       when(syncState(graceDays$).isPersistLoaded),
+      when(syncState(pushTokens$).isPersistLoaded),
       when(syncState(deviceState$).isPersistLoaded),
       when(syncState(onboarding$).isPersistLoaded),
       when(syncState(authReturn$).isPersistLoaded),
