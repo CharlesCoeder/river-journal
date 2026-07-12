@@ -19,7 +19,7 @@
 
 BEGIN;
 \i _helpers.psql
-SELECT plan(20);
+SELECT plan(22);
 
 DO $$
 DECLARE
@@ -198,6 +198,11 @@ BEGIN
   EXCEPTION
     WHEN OTHERS THEN NULL;
   END;
+  -- Verify the row was unchanged as the owner (alice); bob cannot SELECT it
+  -- under own-scoped RLS (test 11), so the survival check must run as alice or
+  -- it would read 0 (device_label = 'hijacked') regardless of whether the
+  -- UPDATE had any effect (the assertion would pass vacuously otherwise).
+  PERFORM test_become(v_alice);
   SELECT COUNT(*) INTO v_other_visible
   FROM user_push_tokens WHERE id = v_token_id AND device_label = 'hijacked';
   v_other_update_denied := (v_other_visible = 0);
@@ -283,6 +288,60 @@ BEGIN
   EXCEPTION
     WHEN OTHERS THEN
       PERFORM tap_ok(FALSE, 'platform = ''android'' is accepted by the CHECK constraint');
+  END;
+
+  -- (21/22) Soft-deleted-row reclaim round trip. The UNIQUE (user_id,
+  -- expo_push_token) constraint is NON-PARTIAL, so a soft-deleted row still
+  -- occupies the unique slot: a fresh-uuid() INSERT for the same
+  -- (user_id, expo_push_token) raises 23505 (21). The correct re-registration
+  -- path is therefore a server-authoritative UPDATE that flips is_deleted back
+  -- to FALSE on the existing row (22) — not a new insert. This is the DB-level
+  -- guarantee behind the client's two-tier reclaim; a mocked unit test cannot
+  -- prove the constraint's non-partial shape against real data.
+  DECLARE
+    v_reclaim_id        UUID := gen_random_uuid();
+    v_softdel_collision BOOLEAN := FALSE;
+    v_reclaim_live      INT;
+  BEGIN
+    PERFORM test_become(v_alice);
+    -- Seed a row, then soft-delete it (the client's Legend-State delete maps to
+    -- is_deleted = TRUE via the global fieldDeleted: 'is_deleted' config).
+    INSERT INTO user_push_tokens (id, user_id, expo_push_token, platform)
+    VALUES (v_reclaim_id, v_alice, 'ExponentPushToken[reclaim]', 'ios');
+    UPDATE user_push_tokens SET is_deleted = TRUE WHERE id = v_reclaim_id;
+
+    -- (21) a fresh-uuid() INSERT for the same (user_id, expo_push_token)
+    -- collides with the surviving soft-deleted row (constraint is non-partial).
+    BEGIN
+      INSERT INTO user_push_tokens (id, user_id, expo_push_token, platform)
+      VALUES (gen_random_uuid(), v_alice, 'ExponentPushToken[reclaim]', 'ios');
+    EXCEPTION
+      WHEN unique_violation THEN v_softdel_collision := TRUE;
+    END;
+    PERFORM tap_ok(
+      v_softdel_collision,
+      'a fresh INSERT collides (23505) with a soft-deleted row — UNIQUE (user_id, expo_push_token) is non-partial'
+    );
+
+    -- (22) Tier 2 reclaim: UPDATE the existing soft-deleted row back to live on
+    -- its own id restores exactly one live row for the device (no duplicate).
+    UPDATE user_push_tokens
+      SET is_deleted = FALSE,
+          last_used_at = NOW(),
+          platform = 'android',
+          device_label = 'Alice iPhone'
+      WHERE id = v_reclaim_id;
+    SELECT COUNT(*) INTO v_reclaim_live
+    FROM user_push_tokens
+    WHERE user_id = v_alice
+      AND expo_push_token = 'ExponentPushToken[reclaim]'
+      AND is_deleted = FALSE;
+    PERFORM tap_ok(
+      v_reclaim_live = 1,
+      'Tier 2 reclaim (UPDATE is_deleted=FALSE on the soft-deleted row) restores exactly one live row — no duplicate'
+    );
+
+    DELETE FROM user_push_tokens WHERE id = v_reclaim_id;
   END;
 END $$;
 

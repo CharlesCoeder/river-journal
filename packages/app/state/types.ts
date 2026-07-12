@@ -156,6 +156,31 @@ export interface UserProfile {
      * read null-safe.
      */
     moderationReceipts?: Record<string, { acknowledged_at: string }>
+
+    /**
+     * Notification-reminder preferences. All fields optional for back-compat
+     * with pre-existing profiles — consumers read null-safe, exactly like
+     * `moderationReceipts` / `disclosures`.
+     *
+     * The push-permission-prompt path only WRITES `streak.permissionPromptSeenAt`
+     * (the one-time in-app ask answered) and `streak.permissionLastDeniedAt` (the
+     * OS-deny cooldown). The rest of the shape is declared now so the
+     * reminder-settings surface has a stable contract; `streak.enabled` /
+     * `streak.local_time` / `streak.last_local_offset_minutes` are written by the
+     * reminder-settings surface, and `replies` / `moderation` are reserved for the
+     * reply- and moderation-notification categories.
+     */
+    reminders?: {
+      streak?: {
+        enabled?: boolean
+        local_time?: string // 'HH:mm' local; default handled by the reminder-settings surface
+        last_local_offset_minutes?: number // written by the reminder-settings surface; used by the streak cron
+        permissionLastDeniedAt?: string // ISO; OS-deny cooldown
+        permissionPromptSeenAt?: string // ISO; one-time in-app ask answered
+      }
+      replies?: { enabled?: boolean } // reserved for the reply-notification category
+      moderation?: { enabled?: boolean } // reserved for the moderation-notification category
+    }
   }
 
   sync: {

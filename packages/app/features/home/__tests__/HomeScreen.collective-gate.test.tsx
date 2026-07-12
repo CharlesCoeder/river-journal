@@ -137,6 +137,10 @@ vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
 vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
   ModerationReceiptGate: () => React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
 }))
+vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
+  StreakReminderPermissionGate: () =>
+    React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
+}))
 
 vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
   EncryptionModeDialog: () => React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),

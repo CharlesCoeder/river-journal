@@ -507,6 +507,18 @@ export type Database = {
        *     }
        *     collective_show_tenure_tier?: boolean   // Default false; when true, AuthorByline displays tenure tier in feed/preview
        *     locallyHiddenPosts?: string[]   // post ids the local user has hidden via report
+       *     moderationReceipts?: { [receiptId: string]: { acknowledged_at: string } }   // in-app moderation receipt acks
+       *     reminders?: {                   // notification-reminder prefs (all fields optional)
+       *       streak?: {
+       *         enabled?: boolean
+       *         local_time?: string                 // 'HH:mm' local; default handled by the reminder-settings surface
+       *         last_local_offset_minutes?: number   // written by the reminder-settings surface; used by the streak cron
+       *         permissionLastDeniedAt?: string      // ISO; OS-deny cooldown
+       *         permissionPromptSeenAt?: string      // ISO; one-time in-app ask answered
+       *       }
+       *       replies?: { enabled?: boolean }        // reserved (reply notifications)
+       *       moderation?: { enabled?: boolean }     // reserved (moderation notifications)
+       *     }
        *     // ...other client-extensible keys (e.g. focusMode is local-only on UserProfile, NOT server-persisted today)
        *   }
        *

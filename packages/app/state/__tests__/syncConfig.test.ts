@@ -736,4 +736,19 @@ describe('PushToken transforms', () => {
     vi.restoreAllMocks()
     spies.forEach((s) => s.mockRestore())
   })
+
+  // ── Soft-delete whitelist boundary ──
+  // When a token row is soft-deleted (Legend-State `.delete()` → the global
+  // `fieldDeleted: 'is_deleted'` config), the save transform must not leak
+  // `is_deleted` into the DB whitelist and must not drop the id. Extends —
+  // does not rewrite — the PushToken transforms coverage above.
+  it('does not leak is_deleted into the DB payload even when the local value carries it (soft-delete boundary)', () => {
+    const db = localPushTokenToDb({ id: 'pt-1', is_deleted: true } as any)
+    expect(db).not.toHaveProperty('is_deleted')
+  })
+
+  it('a delete-shaped partial ({ id }) round-trips through localPushTokenToDb to exactly { id }', () => {
+    const db = localPushTokenToDb({ id: 'pt-1' })
+    expect(db).toEqual({ id: 'pt-1' })
+  })
 })

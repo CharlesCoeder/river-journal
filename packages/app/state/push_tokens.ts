@@ -10,8 +10,8 @@
  * observable + offline replay + RLS scoping. Transforms only convert
  * camelCase ↔ snake_case (architecture D2 / D7).
  *
- * This module is platform-agnostic and imports NO native APIs: the
- * expo-notifications SDK is isolated to utils/pushTokens.{ts,native.ts}.
+ * This module is platform-agnostic and imports NO native APIs: the native
+ * notifications SDK is isolated to utils/pushTokens.{ts,native.ts}.
  */
 
 import { observable } from '@legendapp/state'

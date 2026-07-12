@@ -11,6 +11,7 @@ import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
 import { ModerationReceiptGate } from 'app/features/moderation-receipts/ModerationReceiptGate'
+import { StreakReminderPermissionGate } from 'app/features/notifications/StreakReminderPermissionGate'
 import { useToday } from 'app/state/today'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
@@ -191,6 +192,12 @@ export function HomeScreen() {
           when there's nothing to show. Mounted here (the guaranteed post-auth
           landing surface), not in the provider tree, so it never renders pre-auth. */}
       <ModerationReceiptGate />
+      {/* First-streak-day push permission prompt — mobile only, once-ever.
+          Self-gates on platform/streak/seen/token/permission; renders null on
+          web/desktop and whenever the trigger condition is not met. Mounted
+          here (the post-CelebrationScreen-handoff landing surface) so it
+          re-evaluates on every home visit. */}
+      <StreakReminderPermissionGate />
     </YStack>
   )
 }
