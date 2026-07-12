@@ -403,6 +403,18 @@ verify_jwt = false
 [functions.notify_reply]
 verify_jwt = false
 
+# User-facing function: invoked by an AUTHENTICATED USER's client POSTing a
+# purchase receipt (NOT a trigger/cron). verify_jwt = true — a deliberate
+# departure from every function above (all verify_jwt = false service-role /
+# trigger context) — so the Supabase gateway rejects a missing/invalid JWT at the
+# edge before the body runs. The function resolves the caller from that JWT
+# (getAuthenticatedUser) for identity and uses a service-role client only for the
+# entitlement writes (subscription_receipts has no client write policy and
+# users.subscription_tier client writes are REVOKED). See
+# docs/edge-functions-setup.md for the per-environment provider secrets.
+[functions.subscription_validate_receipt]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

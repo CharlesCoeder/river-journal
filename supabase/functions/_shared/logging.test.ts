@@ -8,15 +8,23 @@
 //     (additional envelope keys such as a level/timestamp are fine; this
 //     suite only asserts the `event` and `fields` keys).
 //   - Every KNOWN_CONTENT_KEYS entry (body, content, flowContent, postBody,
-//     note, reason) is stripped from `fields` before it is serialized --
-//     INCLUDING when the key appears nested inside another object (e.g.
-//     `fields.metadata.note`), not only at the top level. A top-level-only
-//     strip would leak nested free text and must fail this suite.
+//     note, reason, raw_receipt, receipt) is stripped from `fields` before it
+//     is serialized -- INCLUDING when the key appears nested inside another
+//     object (e.g. `fields.metadata.note`), not only at the top level. A
+//     top-level-only strip would leak nested free text and must fail this
+//     suite.
 //   - Fields outside the denylist (action_type, user_id, target_post_id,
-//     kind, duration_days, ...) pass through unchanged, at any depth.
+//     kind, duration_days, provider, ...) pass through unchanged, at any
+//     depth.
 //
-// Red phase: `./logging.ts` does not exist yet, so every test in this file
-// fails at import resolution before a single assertion runs.
+// Red phase (pre-existing suite): `./logging.ts` does not exist yet, so
+// every test in this file fails at import resolution before a single
+// assertion runs.
+// Red phase (raw_receipt/receipt additions below): logging.ts DOES exist by
+// the time these run in an already-implemented repo, but KNOWN_CONTENT_KEYS
+// does not yet include 'raw_receipt'/'receipt' -- so these two new cases
+// fail on a genuine assertion (the leaked marker survives redaction), not on
+// import resolution, until the denylist is extended.
 
 import { assertEquals } from 'jsr:@std/assert@1'
 import { logError, logInfo, redact } from './logging.ts'
@@ -107,6 +115,31 @@ Deno.test('logError applies the same redaction as logInfo', () => {
   assertEquals(parsed.fields.note, undefined)
   assertEquals(parsed.fields.reason, undefined)
   assertEquals(parsed.fields.action_type, 'remove_post')
+})
+
+Deno.test('logInfo redacts a raw_receipt field at the top level (billing receipt content must never reach a log line)', () => {
+  const line = captureConsole('log', () =>
+    logInfo('subscription.receipt.validate', {
+      provider: 'stripe',
+      raw_receipt: 'leaked receipt payload',
+    }))
+
+  assertEquals(line.includes('leaked receipt payload'), false)
+  const parsed = JSON.parse(line)
+  assertEquals(parsed.fields.raw_receipt, undefined)
+  assertEquals(parsed.fields.provider, 'stripe')
+})
+
+Deno.test('logInfo redacts a receipt field nested inside another object', () => {
+  const line = captureConsole('log', () =>
+    logInfo('subscription.receipt.validate', {
+      provider: 'apple_iap',
+      details: { receipt: 'leaked nested receipt token' },
+    }))
+
+  assertEquals(line.includes('leaked nested receipt token'), false)
+  const parsed = JSON.parse(line)
+  assertEquals(JSON.stringify(parsed.fields).includes('"receipt"'), false)
 })
 
 Deno.test('logInfo redacts a free-text reason renamed to reason_code, closing the key-rename escape from the denylist', () => {

@@ -24,6 +24,8 @@ export const KNOWN_CONTENT_KEYS = [
   'reason',
   'reason_code',
   'title',
+  'raw_receipt',
+  'receipt',
 ] as const
 
 const DENYLIST = new Set<string>(KNOWN_CONTENT_KEYS)
