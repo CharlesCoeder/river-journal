@@ -50,7 +50,8 @@
 // at import resolution before a single assertion runs.
 
 import { assertEquals } from 'jsr:@std/assert@1'
-import { chunkExpoMessages, composeStreakCopy, handler, parseExpoTickets } from './index.ts'
+import { composeStreakCopy, handler } from './index.ts'
+import { chunkExpoMessages, parseExpoTickets } from '../_shared/expoPush.ts'
 
 const SERVICE_ROLE_KEY = 'streak-cron-test-service-role-key-0123456789abcdef'
 

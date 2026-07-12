@@ -23,26 +23,23 @@
 import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
+import {
+  chunkExpoMessages,
+  EXPO_PUSH_ENDPOINT,
+  type ExpoMessage,
+  parseExpoTickets,
+} from '../_shared/expoPush.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
-
-// Expo's hosted push endpoint. Expo owns APNs/FCM delivery — this codebase
-// never talks to Apple/Google directly. No access token is required at this
-// tier for the hosted endpoint; do not add one.
-const EXPO_PUSH_ENDPOINT = 'https://exp.host/--/api/v2/push/send'
-
-// Expo accepts at most 100 messages per POST.
-const EXPO_CHUNK_SIZE = 100
 
 // The window the candidate RPC matches against, pinned explicitly (a cheap
 // validation optimization — the RPC's own default is also 15).
 const WINDOW_MINUTES = 15
 
-export interface ExpoMessage {
-  to: string
-  title: string
-  body: string
-  data: { type: 'streak_reminder' }
-}
+// The reminder's deep-link payload. The chunking, response-shape guard, and
+// DeviceNotRegistered soft-delete now live in the shared _shared/expoPush.ts
+// module (EXPO_PUSH_ENDPOINT + chunkExpoMessages + parseExpoTickets), so they
+// are defined in one tested place rather than duplicated here.
+type StreakMessage = ExpoMessage<{ type: 'streak_reminder' }>
 
 interface CandidateRow {
   user_id: string
@@ -65,49 +62,6 @@ export function composeStreakCopy(streakLen: number): { title: string; body: str
     return { title: 'River', body: 'A few quiet minutes keeps your streak going.' }
   }
   return { title: 'River', body: 'Want to write today?' }
-}
-
-// Split an array into chunks of at most `size`, preserving order.
-export function chunkExpoMessages<T>(messages: T[], size = EXPO_CHUNK_SIZE): T[][] {
-  const chunks: T[][] = []
-  for (let i = 0; i < messages.length; i += size) {
-    chunks.push(messages.slice(i, i + size))
-  }
-  return chunks
-}
-
-// Map an Expo ticket response back to the tokens Expo reports as
-// DeviceNotRegistered, for soft-deletion. Positional mapping is performed ONLY
-// when `response` is an object whose `data` is an array of EXACTLY
-// orderedTokens.length — Expo returns a request-level `{ errors: [...] }` shape
-// (no `data`) on a rejected batch, and a short/shifted array mapped by position
-// would soft-delete healthy, still-valid tokens. Any shape mismatch prunes
-// NOTHING. A non-DeviceNotRegistered error ticket is never flagged.
-export function parseExpoTickets(response: unknown, orderedTokens: string[]): string[] {
-  if (response === null || typeof response !== 'object') {
-    return []
-  }
-  const data = (response as { data?: unknown }).data
-  if (!Array.isArray(data) || data.length !== orderedTokens.length) {
-    return []
-  }
-  const flagged: string[] = []
-  for (let i = 0; i < data.length; i++) {
-    const ticket = data[i]
-    const token = orderedTokens[i]
-    if (token === undefined) {
-      continue
-    }
-    if (
-      ticket !== null &&
-      typeof ticket === 'object' &&
-      (ticket as { status?: unknown }).status === 'error' &&
-      ((ticket as { details?: { error?: unknown } }).details?.error) === 'DeviceNotRegistered'
-    ) {
-      flagged.push(token)
-    }
-  }
-  return flagged
 }
 
 // `clientOverride` exists so tests can inject a mocked Supabase client without a
@@ -185,7 +139,7 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
 
   // Claim-before-send: build the send buffer only from users whose ledger claim
   // inserted a row this local day.
-  const messages: ExpoMessage[] = []
+  const messages: StreakMessage[] = []
   let claimedCount = 0
   for (const candidate of candidates) {
     const userTokens = tokensByUser.get(candidate.user_id)

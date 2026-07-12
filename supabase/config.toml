@@ -393,6 +393,16 @@ verify_jwt = false
 [functions.streak_reminder_cron]
 verify_jwt = false
 
+# Trigger-invoked internal function: an AFTER INSERT trigger on collective_posts
+# (replies only) calls it with a service-role bearer through a pg_net dispatch,
+# and the function does its own requireServiceRole() check. verify_jwt = false so
+# it is reachable at its public URL for that bearer check to be the gate (it is
+# NOT a user-facing, JWT-authenticated function). It can also be invoked manually
+# over HTTP for testing. See docs/edge-functions-setup.md for the per-environment
+# secret setup (the same edge_base_url / service_role_key secrets).
+[functions.notify_reply]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
