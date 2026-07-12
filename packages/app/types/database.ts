@@ -734,6 +734,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      unread_replies_for_user: { Args: { since: string }; Returns: number }
       user_has_password: { Args: never; Returns: boolean }
     }
     Enums: {

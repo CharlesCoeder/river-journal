@@ -1,4 +1,14 @@
-import { AnimatePresence, YStack, Text, XStack, ScrollView, View, useReducedMotion, StreakChip, CollectiveEntry } from '@my/ui'
+import {
+  AnimatePresence,
+  YStack,
+  Text,
+  XStack,
+  ScrollView,
+  View,
+  useReducedMotion,
+  StreakChip,
+  CollectiveEntry,
+} from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -12,11 +22,15 @@ import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialo
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
 import { ModerationReceiptGate } from 'app/features/moderation-receipts/ModerationReceiptGate'
 import { StreakReminderPermissionGate } from 'app/features/notifications/StreakReminderPermissionGate'
+import { InAppReminderGate } from 'app/features/notifications/InAppReminderGate'
 import { refreshReminderOffsetOnAppOpen } from 'app/features/notifications/reminderPreferences'
 import { useToday } from 'app/state/today'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
-import { COLLECTIVE_DEV_ROUTE, isCollectiveDevEnabled } from 'app/features/collective/isCollectiveDevEnabled'
+import {
+  COLLECTIVE_DEV_ROUTE,
+  isCollectiveDevEnabled,
+} from 'app/features/collective/isCollectiveDevEnabled'
 
 export function HomeScreen() {
   const router = useRouter()
@@ -105,7 +119,9 @@ export function HomeScreen() {
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
-        onScroll={() => { if (showLapsed) dismissLapsed() }}
+        onScroll={() => {
+          if (showLapsed) dismissLapsed()
+        }}
         scrollEventThrottle={1000}
         testID="home-scroll-view"
       >
@@ -212,6 +228,12 @@ export function HomeScreen() {
           here (the post-CelebrationScreen-handoff landing surface) so it
           re-evaluates on every home visit. */}
       <StreakReminderPermissionGate />
+      {/* Web/desktop in-app reminder card — the parity backstop for OS push on
+          those platforms. Self-gates on platform (web/desktop only), auth, and
+          whether any reminder category is pending; renders null on mobile and
+          whenever nothing is pending. Mounted here so it re-evaluates on every
+          home landing. */}
+      <InAppReminderGate />
     </YStack>
   )
 }
@@ -264,7 +286,10 @@ function HomeStreakChipSlot() {
       top="$4"
       right="$4"
     >
-      <StreakChip dayCount={currentStreak} state={state} />
+      <StreakChip
+        dayCount={currentStreak}
+        state={state}
+      />
     </View>
   )
 }
@@ -277,4 +302,3 @@ function HomeCollectiveEntrySlot({ onPress }: { onPress: () => void }) {
     </View>
   )
 }
-

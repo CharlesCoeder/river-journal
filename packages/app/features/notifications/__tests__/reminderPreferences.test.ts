@@ -683,3 +683,131 @@ describe('enableStreakRemindersDefault — reconciliation helper for the 6.2 opt
     expect(streak?.permissionLastDeniedAt).toBe('2026-07-02T00:00:00.000Z')
   })
 })
+
+/**
+ * Red-phase unit tests for `getRepliesLastSeenAt()` / `markRepliesSeen(now?)` —
+ * the server-synced "since" bound the web/desktop in-app reminder card's
+ * unread-replies signal is built on (the `repliesLastSeenAt` field on
+ * `users.preferences.reminders`).
+ *
+ * Contract locked in for the implementation, via the SAME whole-object
+ * read-merge-write pattern (`store$.profile.preferences.reminders.set(...)`)
+ * as every other writer in this module:
+ *
+ *   getRepliesLastSeenAt(): string | undefined
+ *     — synchronous, null-safe read of `reminders.repliesLastSeenAt`. Safe to
+ *       call during render / at mount to seed the card's non-reactive `since`
+ *       capture (peek semantics — NOT a reactive `use$` read, so a later
+ *       write from `markRepliesSeen` does not re-key an in-flight query).
+ *
+ *   markRepliesSeen(now?: string = new Date().toISOString()): void
+ *     — writes `reminders.repliesLastSeenAt = now`. NOT write-once (unlike
+ *       `markStreakPromptSeen`) — every call advances the value, since the
+ *       whole point is moving the bound forward on every app open. Preserves
+ *       sibling `streak` / `replies` / `moderation` categories. Null-safe (no
+ *       throw when `store$.profile` is null).
+ *
+ * Mirrors the real-`store$` (not mocked), reset-per-test convention used
+ * throughout this file.
+ */
+
+describe('getRepliesLastSeenAt / markRepliesSeen — the repliesLastSeenAt server-synced bound', () => {
+  let store$: typeof import('app/state/store').store$
+
+  beforeEach(async () => {
+    const storeModule = await import('app/state/store')
+    store$ = storeModule.store$
+    store$.profile.set(null)
+  })
+
+  // ── Null-safety ──────────────────────────────────────────────────────────
+  it('getRepliesLastSeenAt returns undefined when store$.profile is null', async () => {
+    const { getRepliesLastSeenAt } = await import('../reminderPreferences')
+    expect(getRepliesLastSeenAt()).toBeUndefined()
+  })
+
+  it('markRepliesSeen does not throw when store$.profile is null', async () => {
+    const { markRepliesSeen } = await import('../reminderPreferences')
+    expect(() => markRepliesSeen()).not.toThrow()
+  })
+
+  it('markRepliesSeen is a genuine no-op on a null profile — it does NOT materialize a partial profile', async () => {
+    // Legend-State `.set()` on a null profile MATERIALIZES intermediate objects
+    // rather than throwing, which would write a partial `{ preferences: {…} }`
+    // profile (dropping sibling keys) and race hydration/sync. The writer must
+    // early-return on a null profile, leaving it null.
+    const { markRepliesSeen } = await import('../reminderPreferences')
+    markRepliesSeen('2026-07-11T10:00:00.000Z')
+    expect(store$.profile.peek()).toBeNull()
+  })
+
+  it('getRepliesLastSeenAt returns undefined when preferences.reminders is undefined (null-safe read)', async () => {
+    store$.profile.set({ ...BASE_PROFILE, preferences: {} } as any)
+    const { getRepliesLastSeenAt } = await import('../reminderPreferences')
+    expect(getRepliesLastSeenAt()).toBeUndefined()
+  })
+
+  // ── markRepliesSeen writes ──────────────────────────────────────────────
+  it('markRepliesSeen writes a non-empty ISO repliesLastSeenAt under preferences.reminders', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    const { markRepliesSeen } = await import('../reminderPreferences')
+    markRepliesSeen()
+
+    const seenAt = (store$.profile as any).preferences?.reminders?.repliesLastSeenAt?.get?.()
+    expect(typeof seenAt).toBe('string')
+    expect(new Date(seenAt).toISOString()).toBe(seenAt)
+  })
+
+  it('markRepliesSeen accepts an explicit `now` argument', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    const { markRepliesSeen } = await import('../reminderPreferences')
+    const now = '2026-07-11T10:00:00.000Z'
+    markRepliesSeen(now)
+
+    const seenAt = (store$.profile as any).preferences?.reminders?.repliesLastSeenAt?.get?.()
+    expect(seenAt).toBe(now)
+  })
+
+  it('getRepliesLastSeenAt returns the written value immediately after markRepliesSeen (synchronous read)', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    const { markRepliesSeen, getRepliesLastSeenAt } = await import('../reminderPreferences')
+    expect(getRepliesLastSeenAt()).toBeUndefined()
+    const now = '2026-07-11T10:00:00.000Z'
+    markRepliesSeen(now)
+    expect(getRepliesLastSeenAt()).toBe(now)
+  })
+
+  it('a SECOND markRepliesSeen call OVERWRITES the first value (NOT write-once, unlike markStreakPromptSeen) -- the whole point is advancing it every open', async () => {
+    store$.profile.set({ ...BASE_PROFILE } as any)
+    const { markRepliesSeen } = await import('../reminderPreferences')
+    const first = '2026-07-01T10:00:00.000Z'
+    const second = '2026-07-05T10:00:00.000Z'
+
+    markRepliesSeen(first)
+    markRepliesSeen(second)
+
+    const seenAt = (store$.profile as any).preferences?.reminders?.repliesLastSeenAt?.get?.()
+    expect(seenAt).toBe(second)
+  })
+
+  it('preserves sibling reminders.streak / reminders.replies / reminders.moderation across the write (whole-object read-merge-write, not a clobber)', async () => {
+    store$.profile.set({
+      ...BASE_PROFILE,
+      preferences: {
+        reminders: {
+          streak: { enabled: true, local_time: '20:00' },
+          replies: { enabled: true },
+          moderation: { enabled: false },
+        },
+      },
+    } as any)
+    const { markRepliesSeen } = await import('../reminderPreferences')
+    markRepliesSeen('2026-07-11T10:00:00.000Z')
+
+    const reminders = (store$.profile as any).preferences?.reminders?.get?.()
+    expect(reminders?.streak).toEqual({ enabled: true, local_time: '20:00' })
+    expect(reminders?.replies).toEqual({ enabled: true })
+    expect(reminders?.moderation).toEqual({ enabled: false })
+    expect(reminders?.repliesLastSeenAt).toBe('2026-07-11T10:00:00.000Z')
+  })
+})

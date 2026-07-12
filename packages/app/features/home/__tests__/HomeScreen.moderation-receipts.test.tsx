@@ -23,7 +23,8 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } = props
+    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } =
+      props
     return {
       ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
@@ -44,7 +45,14 @@ vi.mock('@my/ui', async () => {
   const AnimatePresence = ({ children }: any) =>
     ReactModule.createElement(ReactModule.Fragment, null, children)
 
-  const Text = ({ children, onPress, testID, accessibilityRole, accessibilityLabel, ...props }: any) =>
+  const Text = ({
+    children,
+    onPress,
+    testID,
+    accessibilityRole,
+    accessibilityLabel,
+    ...props
+  }: any) =>
     ReactModule.createElement(
       'span',
       {
@@ -56,9 +64,14 @@ vi.mock('@my/ui', async () => {
       children
     )
 
-  const StreakChip = () => ReactModule.createElement('span', { 'data-testid': 'streak-chip' }, 'Day 0')
+  const StreakChip = () =>
+    ReactModule.createElement('span', { 'data-testid': 'streak-chip' }, 'Day 0')
   const CollectiveEntry = () =>
-    ReactModule.createElement('span', { 'data-testid': 'collective-entry', role: 'button' }, 'COLLECTIVE')
+    ReactModule.createElement(
+      'span',
+      { 'data-testid': 'collective-entry', role: 'button' },
+      'COLLECTIVE'
+    )
 
   return {
     AnimatePresence,
@@ -116,10 +129,12 @@ vi.mock('app/features/home/components/KeyringPrompt', () => ({
   KeyringPrompt: () => React.createElement('div', { 'data-testid': 'keyring-prompt' }, null),
 }))
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
-  OrphanFlowsDialog: () => React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+  OrphanFlowsDialog: () =>
+    React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
 }))
 vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
-  EncryptionModeDialog: () => React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
+  EncryptionModeDialog: () =>
+    React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
 }))
 vi.mock('app/features/navigation/WordLinkNav', () => ({
   WordLinkNav: () => React.createElement('nav', { 'data-testid': 'word-link-nav' }, null),
@@ -142,6 +157,11 @@ vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
 vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
   StreakReminderPermissionGate: () =>
     React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
+}))
+
+vi.mock('app/features/notifications/InAppReminderGate', () => ({
+  InAppReminderGate: () =>
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
 }))
 
 // ─── Import under test ───────────────────────────────────────────────────────

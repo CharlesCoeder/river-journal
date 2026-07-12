@@ -2,25 +2,48 @@
 //
 // Fired asynchronously by an AFTER INSERT trigger on moderation_actions (via
 // pg_net) whenever a destructive moderation action is taken. It resolves the
-// affected user, composes a structured notification, and — at this milestone —
-// STUBS the push fan-out (logs the intended notification, redacted; no
-// user_push_tokens lookup, no Expo POST — those arrive in the push-delivery
-// milestone). It is trigger-context: gated by a service-role bearer
+// affected user, checks their moderation-notification opt-in, looks up their
+// live push tokens, and dispatches one Expo push per token through the shared
+// fanOutExpoPush helper. It is trigger-context: gated by a service-role bearer
 // (verify_jwt = false), DB access via the RLS-bypassing service-role client.
+//
+// IDEMPOTENCY — claim-first, at-most-once (deliberate). The FIRST DB write
+// claims the action in moderation_notification_log; a re-fired/duplicated
+// trigger inserts zero rows and short-circuits to a no-op BEFORE any preference
+// read / token lookup / send. The claim is never rolled back on a downstream or
+// Expo failure — so ANY post-claim failure permanently forgoes that one push.
+// This is the accepted trade against ever DOUBLE-notifying a moderated user
+// (who also sees the in-app receipt, so the push is not their sole channel).
+// The ledger is intentionally NOT evolved into a two-state sent/delivered
+// record; a dropped push is preferred to a duplicated one.
 //
 // SECURITY POSTURE. The function is reachable at its public URL with only the
 // bearer check as a wall, so:
 //   - the SUCCESS response is a minimal `ok()` with NO resolved user / author
 //     data (echoing it would make the function a target_post_id -> author
 //     enumeration oracle for anyone holding the bearer);
-//   - resolution results stay server-side, in a redacted log line only;
-//   - the private moderator `note` is never received (the trigger payload omits
-//     it) and never composed/logged (defense in depth below).
+//   - resolution results stay server-side, in a metadata-only log line;
+//   - the push body is the TEMPLATED reason only (composeMessage) — never the
+//     raw payload.reason, which can carry a moderator's free-text note
+//     (suspend_user folds an optional custom note into `reason`); and the
+//     `data` payload carries no reason/reason_code — so no free text ever
+//     reaches the notification or any log field (NFR19).
 
 import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
 import { logError, logInfo, redact } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
+import { type ExpoMessage, fanOutExpoPush } from '../_shared/expoPush.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
+
+// The deep-link payload attached to each moderation push. EXACTLY these four
+// fields — the in-app moderation-receipt UI routes a tapped push to the correct
+// receipt from them. reason / reason_code are DELIBERATELY absent (free-text leak).
+export interface ModerationNotificationData {
+  type: 'moderation_action'
+  action_type: string
+  target_post_id: string | null
+  guidelines_link: string
+}
 
 // Loose but sufficient UUID-shape check (8-4-4-4-12 hex, version-agnostic —
 // moderation_actions.id is a plain `UUID` column, not pinned to v4). Used to
@@ -145,11 +168,48 @@ export function composeNotification(
   }
 }
 
-// Pre-log redaction for the stub push-intent line — recursively drops content
-// keys (note, reason, ...) even nested inside metadata, keeping safe flat
-// fields (action_type, resolved user_id, target_post_id, kind, duration_days).
+// Action-aware push copy. The TITLE maps off action_type; the BODY is the
+// existing composeMessage() templated string — built from action_type + safe
+// metadata (kind/duration_days) ONLY. The body MUST NEVER interpolate
+// payload.reason: suspend_user folds the moderator's optional free-text note
+// INTO `reason`, so echoing it would leak the private note (NFR19).
+export function composeModerationPushCopy(
+  payload: ModerationActionPayload,
+): { title: string; body: string } {
+  const metadata = (payload.metadata ?? {}) as Record<string, unknown>
+  const kind = typeof metadata.kind === 'string' ? metadata.kind : undefined
+  const durationDays = typeof metadata.duration_days === 'number'
+    ? metadata.duration_days
+    : undefined
+  // TODO(tone): titles pending tone review (as with the sibling functions).
+  let title: string
+  switch (payload.action_type) {
+    case 'remove_post':
+      title = 'Post removed'
+      break
+    case 'suspend_user':
+      title = 'Account suspended'
+      break
+    case 'reinstate':
+      title = 'Post restored'
+      break
+    default:
+      title = 'Account update'
+  }
+  return { title, body: composeMessage(payload.action_type, kind, durationDays) }
+}
+
+// Pre-log redaction for the run log line — recursively drops content keys
+// (note, reason, ...) even nested inside metadata, keeping safe flat fields
+// (action_type, resolved user_id, target_post_id, kind, duration_days).
 export function redactForLog(fields: Record<string, unknown>): Record<string, unknown> {
   return redact(fields) as Record<string, unknown>
+}
+
+// Shape of a live push-token row for the affected user.
+interface TokenRow {
+  user_id: string
+  expo_push_token: string
 }
 
 // `clientOverride` exists so tests can inject a mocked Supabase client (e.g.
@@ -157,6 +217,7 @@ export function redactForLog(fields: Record<string, unknown>): Record<string, un
 // without a live database. Production callers (Deno.serve below) never pass
 // it — the handler falls back to createServiceRoleClient().
 export async function handler(req: Request, clientOverride?: SupabaseClient): Promise<Response> {
+  const started = Date.now()
   const denied = requireServiceRole(req)
   if (denied) {
     return denied
@@ -200,10 +261,13 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
     return err('service misconfigured', { code: 'internal', status: 500 })
   }
 
-  // Insert-first idempotency (at-most-once for the STUB). The first DB write
+  // Insert-first idempotency (claim-first, at-most-once). The first DB write
   // claims the action in the ledger; a re-fired/duplicated trigger inserts zero
-  // rows and short-circuits to a no-op. (Push-delivery milestone must evolve
-  // this into a two-state record so a crash-before-delivery is retryable.)
+  // rows and short-circuits to a no-op BEFORE any preference read / token lookup
+  // / send. The claim is never rolled back on a downstream/Expo failure, and the
+  // ledger is deliberately NOT a two-state sent/delivered record — a dropped push
+  // is the accepted trade against ever double-notifying a moderated user (see the
+  // header's IDEMPOTENCY note).
   const { data: claimed, error: ledgerError } = await client
     .from('moderation_notification_log')
     .upsert(
@@ -246,22 +310,116 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
     return ok()
   }
 
-  const notification = composeNotification(payload, affectedUserId)
-  const metadata = (payload.metadata ?? {}) as Record<string, unknown>
+  // Strict opt-in gate, read INLINE (no RPC). Moderation has no private-schema
+  // predicate to hide behind a SECURITY DEFINER function (unlike notify_reply's
+  // block filter) — it is admin->user with no block gate — so the service-role
+  // client reads users.preferences directly (users is public; service-role
+  // bypasses RLS). Gate strictly on `=== true` (default OFF, like every other
+  // reminder category). FAIL CLOSED: a missing/false flag OR a SELECT error
+  // means DO NOT SEND — an unknown preference state must never notify. The
+  // ledger is already claimed, so the action counts as processed; a later
+  // toggle-on does not retroactively notify past actions.
+  let moderationEnabled = false
+  try {
+    const { data: prefRow, error: prefError } = await client
+      .from('users')
+      .select('preferences')
+      .eq('id', affectedUserId)
+      .maybeSingle()
+    if (prefError) {
+      logError(
+        'moderation.notify.preference_error',
+        redactForLog({ action_type: payload.action_type }),
+      )
+    } else {
+      const preferences = (prefRow as { preferences?: unknown } | null)?.preferences as
+        | { reminders?: { moderation?: { enabled?: boolean } } }
+        | null
+        | undefined
+      moderationEnabled = preferences?.reminders?.moderation?.enabled === true
+    }
+  } catch {
+    logError(
+      'moderation.notify.preference_error',
+      redactForLog({ action_type: payload.action_type }),
+    )
+  }
 
-  // STUB push fan-out: log the intended (redacted) notification. The
-  // push-delivery milestone resolves user_push_tokens + POSTs to Expo Push
-  // here. Never log body/reason/note — only IDs, action type, kind, duration.
-  logInfo(
-    'moderation.notify.push_intent',
-    redactForLog({
-      action_type: notification.action_type,
+  if (!moderationEnabled) {
+    // Opted out / unknown state — processed, but no send. Metadata-only log.
+    logInfo('moderation.notify.run', {
+      action_type: payload.action_type,
       user_id: affectedUserId,
-      target_post_id: notification.target_post_id,
-      kind: metadata.kind,
-      duration_days: metadata.duration_days,
-    }),
-  )
+      token_count: 0,
+      sent_count: 0,
+      device_not_registered_count: 0,
+      error_ticket_count: 0,
+      chunk_failure_count: 0,
+      duration_ms: Date.now() - started,
+    })
+    return ok()
+  }
+
+  // Look up the affected user's live tokens (service-role, RLS-bypassing).
+  // FAIL-CLOSED on error: a lookup failure forgoes the push (claim-first
+  // at-most-once — never retried into a possible double-notify).
+  let tokens: TokenRow[] = []
+  try {
+    const { data, error } = await client
+      .from('user_push_tokens')
+      .select('user_id, expo_push_token')
+      .eq('user_id', affectedUserId)
+      .eq('is_deleted', false)
+    if (error) {
+      logError(
+        'moderation.notify.token_lookup_error',
+        redactForLog({ action_type: payload.action_type }),
+      )
+      return ok()
+    }
+    tokens = (data ?? []) as TokenRow[]
+  } catch {
+    logError(
+      'moderation.notify.token_lookup_error',
+      redactForLog({ action_type: payload.action_type }),
+    )
+    return ok()
+  }
+
+  // Build one message per live token. body/title from composeModerationPushCopy
+  // (templated — never raw reason); data = EXACTLY the four routing fields (no
+  // reason/reason_code). A zero-token recipient yields no messages and is NOT
+  // an error — fanOutExpoPush no-ops on an empty list.
+  const copy = composeModerationPushCopy(payload)
+  const guidelinesLink = communityGuidelinesUrl()
+  const messages: ExpoMessage<ModerationNotificationData>[] = tokens.map((t) => ({
+    to: t.expo_push_token,
+    title: copy.title,
+    body: copy.body,
+    data: {
+      type: 'moderation_action',
+      action_type: payload.action_type,
+      target_post_id: payload.target_post_id ?? null,
+      guidelines_link: guidelinesLink,
+    },
+  }))
+
+  // Reuse the shared fan-out (chunking + response-shape guard +
+  // DeviceNotRegistered soft-delete) — never re-implemented here.
+  const result = await fanOutExpoPush(client, messages)
+
+  // NFR19-safe: metadata only — never the composed title/body, reason, note,
+  // or kind/duration_days as content (redact() strips them anyway as a backstop).
+  logInfo('moderation.notify.run', {
+    action_type: payload.action_type,
+    user_id: affectedUserId,
+    token_count: tokens.length,
+    sent_count: result.sentCount,
+    device_not_registered_count: result.deviceNotRegisteredCount,
+    error_ticket_count: result.errorTicketCount,
+    chunk_failure_count: result.chunkFailureCount,
+    duration_ms: Date.now() - started,
+  })
 
   // Minimal success body — NO resolved user / author (enumeration-oracle guard).
   return ok()

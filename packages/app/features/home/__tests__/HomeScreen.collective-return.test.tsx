@@ -50,7 +50,8 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } = props
+    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } =
+      props
     return {
       ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
@@ -113,12 +114,14 @@ vi.mock('solito/navigation', () => ({
 // ─── Real observables shared between the test body and HomeScreen's own
 // subscriptions — created from the actual ESM @legendapp/state instance ─────
 vi.mock('app/state/syncConfig', async () => {
-  const { observable } = await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
+  const { observable } =
+    await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
   return { isSyncReady$: observable(false) }
 })
 
 vi.mock('app/state/store', async () => {
-  const { observable } = await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
+  const { observable } =
+    await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
   const isAuthenticated$ = observable(false)
   return {
     store$: {
@@ -144,17 +147,25 @@ vi.mock('app/features/home/components/KeyringPrompt', () => ({
   KeyringPrompt: () => React.createElement('div', { 'data-testid': 'keyring-prompt' }, null),
 }))
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
-  OrphanFlowsDialog: () => React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+  OrphanFlowsDialog: () =>
+    React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
 }))
 vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
-  ModerationReceiptGate: () => React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
+  ModerationReceiptGate: () =>
+    React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
 }))
 vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
   StreakReminderPermissionGate: () =>
     React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
 }))
+
+vi.mock('app/features/notifications/InAppReminderGate', () => ({
+  InAppReminderGate: () =>
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
+}))
 vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
-  EncryptionModeDialog: () => React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
+  EncryptionModeDialog: () =>
+    React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
 }))
 vi.mock('app/features/navigation/WordLinkNav', () => ({
   WordLinkNav: () => React.createElement('nav', { 'data-testid': 'word-link-nav' }, null),

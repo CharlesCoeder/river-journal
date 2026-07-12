@@ -24,8 +24,53 @@
 // Red phase: `./index.ts` does not exist yet, so every test in this file
 // fails at import resolution before a single assertion runs.
 
+// ---------------------------------------------------------------------------
+// Extension for push delivery (replacing the STUB): the moderation.enabled
+// preference gate, the action-aware push copy, the exact `data` payload
+// shape, and the reused `fanOutExpoPush` dispatch.
+//
+// Additional contract pinned down by this extension (the surviving tests
+// above still hold verbatim -- the claim-first ledger, the add_note no-op,
+// resolveAffectedUserId, and composeNotification are all unchanged):
+//   - composeModerationPushCopy(payload): { title: string; body: string } --
+//     title is action-aware (`remove_post` -> 'Post removed', `suspend_user`
+//     -> 'Account suspended', `reinstate` -> 'Post restored', any other ->
+//     'Account update'); body is the existing composeMessage(...)-templated
+//     string -- built from action_type + safe metadata ONLY, NEVER the raw
+//     `reason` (which can carry a moderator's free-text note, since
+//     suspend_user folds an optional custom note into the `reason` column).
+//   - After the existing claim-first ledger insert + resolveAffectedUserId,
+//     the handler reads the affected user's preference via
+//     `client.from('users').select('preferences').eq('id', affectedUserId)
+//     .maybeSingle()`. `preferences?.reminders?.moderation?.enabled !== true`
+//     (missing, false, or a SELECT error) is a strict, fail-CLOSED no-send:
+//     `ok()` after a metadata-only run log, no fetch call at all.
+//   - Only when enabled does it look up live tokens via
+//     `client.from('user_push_tokens').select('user_id, expo_push_token')
+//     .eq('user_id', affectedUserId).eq('is_deleted', false)`, build one
+//     ExpoMessage per token with `data` EXACTLY
+//     `{ type: 'moderation_action', action_type, target_post_id,
+//     guidelines_link }` (no `reason`/`reason_code`), and dispatch through the
+//     shared `fanOutExpoPush(client, messages)` -- the SAME helper
+//     `notify_reply` reuses, never re-implemented here. A zero-live-token
+//     recipient is NOT an error: ok() after a metadata-only run log.
+//   - The success response stays a minimal ok() throughout (enumeration-oracle
+//     guard unchanged).
+//
+// Red phase: composeModerationPushCopy does not exist on ./index.ts yet, so
+// this file's own top-level import fails at module resolution before any
+// assertion (including the pre-existing ones above) runs -- an unambiguous
+// whole-file red phase, same shape as every other Deno red-phase precedent in
+// this repo.
+
 import { assertEquals } from 'jsr:@std/assert@1'
-import { composeNotification, handler, redactForLog, resolveAffectedUserId } from './index.ts'
+import {
+  composeModerationPushCopy,
+  composeNotification,
+  handler,
+  redactForLog,
+  resolveAffectedUserId,
+} from './index.ts'
 
 const SERVICE_ROLE_KEY = 'handler-test-service-role-key-0123456789abcdef'
 
@@ -221,7 +266,7 @@ Deno.test('composeNotification carries reason_code for a reinstate action (posit
   assertEquals(notification.target_post_id, 'post-3')
 })
 
-Deno.test('redactForLog drops note and reason even nested inside metadata for the stub push-intent log line', () => {
+Deno.test('redactForLog drops note and reason even nested inside metadata in the run-log metadata', () => {
   const redacted = redactForLog({
     action_type: 'suspend_user',
     user_id: 'user-abc',
@@ -402,6 +447,482 @@ Deno.test('handler returns a wrapped 500 error envelope (not an uncaught throw) 
       } else {
         Deno.env.set('SUPABASE_URL', originalUrl)
       }
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// composeModerationPushCopy — action-aware title map + templated-reason-only
+// body (NFR19: never the raw `reason`, which can carry a moderator's free
+// text, since suspend_user folds an optional custom note into `reason`).
+// ---------------------------------------------------------------------------
+
+const SEEDED_REASON_MARKER = 'zzseeded-nfr19-free-text-marker-must-never-leak-zz'
+
+Deno.test('composeModerationPushCopy: remove_post -> "Post removed"', () => {
+  const copy = composeModerationPushCopy(
+    {
+      id: 'action-1',
+      action_type: 'remove_post',
+      target_post_id: 'post-1',
+      reason: SEEDED_REASON_MARKER,
+    } as Parameters<typeof composeModerationPushCopy>[0],
+  )
+  assertEquals(copy.title, 'Post removed')
+})
+
+Deno.test('composeModerationPushCopy: suspend_user -> "Account suspended"', () => {
+  const copy = composeModerationPushCopy(
+    {
+      id: 'action-2',
+      action_type: 'suspend_user',
+      target_user_id: 'user-1',
+      reason: SEEDED_REASON_MARKER,
+      metadata: { kind: 'post_react', duration_days: 3 },
+    } as Parameters<typeof composeModerationPushCopy>[0],
+  )
+  assertEquals(copy.title, 'Account suspended')
+})
+
+Deno.test('composeModerationPushCopy: reinstate -> "Post restored"', () => {
+  const copy = composeModerationPushCopy(
+    {
+      id: 'action-3',
+      action_type: 'reinstate',
+      target_post_id: 'post-3',
+    } as Parameters<typeof composeModerationPushCopy>[0],
+  )
+  assertEquals(copy.title, 'Post restored')
+})
+
+Deno.test('composeModerationPushCopy: any other action_type -> "Account update" (default)', () => {
+  const copy = composeModerationPushCopy(
+    {
+      id: 'action-4',
+      action_type: 'some_future_action_type',
+    } as Parameters<typeof composeModerationPushCopy>[0],
+  )
+  assertEquals(copy.title, 'Account update')
+})
+
+Deno.test('composeModerationPushCopy body is the existing templated composeMessage(...) string for suspend_user, including the safe duration/kind', () => {
+  const copy = composeModerationPushCopy(
+    {
+      id: 'action-5',
+      action_type: 'suspend_user',
+      target_user_id: 'user-1',
+      reason: SEEDED_REASON_MARKER,
+      metadata: { kind: 'post_react', duration_days: 3 },
+    } as Parameters<typeof composeModerationPushCopy>[0],
+  )
+  assertEquals(
+    copy.body,
+    'Your ability to post and react in the Collective is paused for 3 days. Writing and reading remain available.',
+  )
+})
+
+Deno.test('composeModerationPushCopy body for remove_post is the fixed templated string', () => {
+  const copy = composeModerationPushCopy(
+    {
+      id: 'action-6',
+      action_type: 'remove_post',
+      target_post_id: 'post-1',
+      reason: SEEDED_REASON_MARKER,
+    } as Parameters<typeof composeModerationPushCopy>[0],
+  )
+  assertEquals(copy.body, 'A post of yours was removed from the Collective.')
+})
+
+Deno.test('composeModerationPushCopy body NEVER contains the seeded reason free-text marker, for any action_type', () => {
+  for (const actionType of ['remove_post', 'suspend_user', 'reinstate', 'unknown_action']) {
+    const copy = composeModerationPushCopy(
+      {
+        id: 'action-marker',
+        action_type: actionType,
+        target_post_id: 'post-1',
+        target_user_id: 'user-1',
+        reason: SEEDED_REASON_MARKER,
+        metadata: { kind: 'post_react', duration_days: 5 },
+      } as Parameters<typeof composeModerationPushCopy>[0],
+    )
+    assertEquals(
+      copy.body.includes(SEEDED_REASON_MARKER),
+      false,
+      `leaked for action_type=${actionType}`,
+    )
+    assertEquals(
+      copy.title.includes(SEEDED_REASON_MARKER),
+      false,
+      `leaked in title for action_type=${actionType}`,
+    )
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Handler-level push-delivery extension: the moderation.enabled preference
+// gate, the token lookup, the exact `data` payload, and the reused
+// fanOutExpoPush dispatch. A fuller fake client than the dedupe-only fixture
+// above -- covers moderation_notification_log, collective_posts (unused here
+// since these tests use suspend_user's direct target_user_id path), users
+// (the new preference read), and user_push_tokens (both the SELECT the
+// handler issues directly AND the UPDATE fanOutExpoPush issues for
+// DeviceNotRegistered pruning).
+// ---------------------------------------------------------------------------
+
+interface FullMockConfig {
+  ledger?: { data: unknown; error: unknown }
+  preferences?: { data: unknown; error: unknown }
+  tokens?: { data: unknown; error: unknown }
+  onTokenPrune?: (token: string) => void
+}
+
+function buildFullMockClient(actionId: string, config: FullMockConfig) {
+  return {
+    from(table: string) {
+      if (table === 'moderation_notification_log') {
+        return {
+          upsert(row: { moderation_action_id: string }, opts: Record<string, unknown>) {
+            assertEquals(row.moderation_action_id, actionId)
+            assertEquals(opts.onConflict, 'moderation_action_id')
+            assertEquals(opts.ignoreDuplicates, true)
+            return {
+              select(_cols: string) {
+                if (!config.ledger) {
+                  throw new Error('ledger claim not configured for this test')
+                }
+                return Promise.resolve(config.ledger)
+              },
+            }
+          },
+        }
+      }
+      if (table === 'users') {
+        return {
+          select(cols: string) {
+            assertEquals(cols, 'preferences')
+            return {
+              eq(col: string, _value: string) {
+                assertEquals(col, 'id')
+                return {
+                  maybeSingle() {
+                    if (!config.preferences) {
+                      throw new Error('preferences lookup not configured for this test')
+                    }
+                    return Promise.resolve(config.preferences)
+                  },
+                }
+              },
+            }
+          },
+        }
+      }
+      if (table === 'user_push_tokens') {
+        return {
+          select(_cols: string) {
+            return {
+              eq(col1: string, _val1: unknown) {
+                assertEquals(col1, 'user_id')
+                return {
+                  eq(col2: string, val2: unknown) {
+                    assertEquals(col2, 'is_deleted')
+                    assertEquals(val2, false)
+                    if (!config.tokens) {
+                      throw new Error('token lookup not configured for this test')
+                    }
+                    return Promise.resolve(config.tokens)
+                  },
+                }
+              },
+            }
+          },
+          update(_patch: { is_deleted: boolean }) {
+            return {
+              eq(_col: string, token: string) {
+                config.onTokenPrune?.(token)
+                return Promise.resolve({ data: null, error: null })
+              },
+            }
+          },
+        }
+      }
+      throw new Error(`unexpected table access "${table}"`)
+    },
+    // deno-lint-ignore no-explicit-any
+  } as any
+}
+
+function suspendUserPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    id: '00000000-0000-0000-0000-0000000000b1',
+    action_type: 'suspend_user',
+    target_user_id: '00000000-0000-0000-0000-0000000000b2',
+    target_post_id: null,
+    reason: SEEDED_REASON_MARKER,
+    metadata: { kind: 'post_react', duration_days: 3 },
+    ...overrides,
+  }
+}
+
+const AFFECTED_USER_ID = '00000000-0000-0000-0000-0000000000b2'
+
+function withFetchCapture(
+  fn: (get: () => { called: boolean; body: unknown }) => Promise<void>,
+): Promise<void> {
+  const originalFetch = globalThis.fetch
+  let called = false
+  let capturedBody: unknown = null
+  globalThis.fetch = ((_url: string, init?: RequestInit) => {
+    called = true
+    capturedBody = JSON.parse(init?.body as string)
+    const tickets = (capturedBody as unknown[]).map(() => ({ status: 'ok' }))
+    return Promise.resolve(new Response(JSON.stringify({ data: tickets }), { status: 200 }))
+  }) as typeof fetch
+  return fn(() => ({ called, body: capturedBody })).finally(() => {
+    globalThis.fetch = originalFetch
+  })
+}
+
+Deno.test('handler dispatches an Expo push when moderation.enabled is true, with the exact documented data shape and no reason/reason_code leak', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withFetchCapture(async (getFetch) => {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: {
+          data: { preferences: { reminders: { moderation: { enabled: true } } } },
+          error: null,
+        },
+        tokens: {
+          data: [{ user_id: AFFECTED_USER_ID, expo_push_token: 'ExponentPushToken[mod-1]' }],
+          error: null,
+        },
+      })
+
+      const response = await handler(moderationRequest(suspendUserPayload()), client)
+      assertEquals(response.status, 200)
+      const body = await response.json()
+      assertEquals(Object.keys(body).sort(), ['ok'])
+
+      const { called, body: fetchBody } = getFetch()
+      assertEquals(called, true)
+      const messages = fetchBody as Array<{
+        to: string
+        title: string
+        body: string
+        data: Record<string, unknown>
+      }>
+      assertEquals(messages.length, 1)
+      assertEquals(messages[0]?.to, 'ExponentPushToken[mod-1]')
+      assertEquals(messages[0]?.title, 'Account suspended')
+
+      const data = messages[0]?.data ?? {}
+      assertEquals(Object.keys(data).sort(), [
+        'action_type',
+        'guidelines_link',
+        'target_post_id',
+        'type',
+      ])
+      assertEquals(data.type, 'moderation_action')
+      assertEquals(data.action_type, 'suspend_user')
+      assertEquals(data.target_post_id, null)
+      assertEquals(typeof data.guidelines_link, 'string')
+      assertEquals('reason' in data, false)
+      assertEquals('reason_code' in data, false)
+      assertEquals(JSON.stringify(messages).includes(SEEDED_REASON_MARKER), false)
+    })
+  })
+})
+
+Deno.test('handler does NOT send (no fetch call) when reminders.moderation.enabled is entirely absent from preferences', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withFetchCapture(async (getFetch) => {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: { data: { preferences: {} }, error: null },
+      })
+
+      const response = await handler(moderationRequest(suspendUserPayload()), client)
+      assertEquals(response.status, 200)
+      const responseBody = await response.json()
+      assertEquals(responseBody.ok, true)
+      assertEquals(getFetch().called, false)
+    })
+  })
+})
+
+Deno.test('handler does NOT send when reminders.moderation.enabled is explicitly false', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withFetchCapture(async (getFetch) => {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: {
+          data: { preferences: { reminders: { moderation: { enabled: false } } } },
+          error: null,
+        },
+      })
+
+      const response = await handler(moderationRequest(suspendUserPayload()), client)
+      assertEquals(response.status, 200)
+      assertEquals(getFetch().called, false)
+    })
+  })
+})
+
+Deno.test('handler does NOT send when the affected user has a null preferences row', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withFetchCapture(async (getFetch) => {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: { data: null, error: null },
+      })
+
+      const response = await handler(moderationRequest(suspendUserPayload()), client)
+      assertEquals(response.status, 200)
+      assertEquals(getFetch().called, false)
+    })
+  })
+})
+
+Deno.test('handler fails CLOSED (still ok(), no send) when the preference SELECT itself errors', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withFetchCapture(async (getFetch) => {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: { data: null, error: { message: 'connection reset' } },
+      })
+
+      const response = await handler(moderationRequest(suspendUserPayload()), client)
+      assertEquals(response.status, 200)
+      const responseBody = await response.json()
+      assertEquals(responseBody.ok, true)
+      assertEquals(getFetch().called, false)
+    })
+  })
+})
+
+Deno.test('handler returns ok() with no send when the enabled recipient has zero live tokens (not an error)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withFetchCapture(async (getFetch) => {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: {
+          data: { preferences: { reminders: { moderation: { enabled: true } } } },
+          error: null,
+        },
+        tokens: { data: [], error: null },
+      })
+
+      const response = await handler(moderationRequest(suspendUserPayload()), client)
+      assertEquals(response.status, 200)
+      const responseBody = await response.json()
+      assertEquals(responseBody.ok, true)
+      assertEquals(getFetch().called, false)
+    })
+  })
+})
+
+Deno.test('handler soft-deletes a DeviceNotRegistered token through the reused fanOutExpoPush (integration seam, not a re-test of expoPush.ts itself)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    const originalFetch = globalThis.fetch
+    const prunedTokens: string[] = []
+    globalThis.fetch = (() => {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: [{ status: 'error', details: { error: 'DeviceNotRegistered' } }],
+          }),
+          { status: 200 },
+        ),
+      )
+    }) as typeof fetch
+
+    try {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: {
+          data: { preferences: { reminders: { moderation: { enabled: true } } } },
+          error: null,
+        },
+        tokens: {
+          data: [{ user_id: AFFECTED_USER_ID, expo_push_token: 'ExponentPushToken[stale]' }],
+          error: null,
+        },
+        onTokenPrune: (token) => prunedTokens.push(token),
+      })
+
+      const response = await handler(moderationRequest(suspendUserPayload()), client)
+      assertEquals(response.status, 200)
+      assertEquals(prunedTokens, ['ExponentPushToken[stale]'])
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+})
+
+Deno.test('the seeded reason free-text marker appears in NO captured console.log/console.error line across a full enabled-and-sent run (NFR19 defense in depth beyond body/data)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (() => {
+      return Promise.resolve(
+        new Response(JSON.stringify({ data: [{ status: 'ok' }] }), { status: 200 }),
+      )
+    }) as typeof fetch
+
+    const originalLog = console.log
+    const originalError = console.error
+    const capturedLines: string[] = []
+    console.log = ((...args: unknown[]) => {
+      capturedLines.push(String(args[0] ?? ''))
+    }) as typeof console.log
+    console.error = ((...args: unknown[]) => {
+      capturedLines.push(String(args[0] ?? ''))
+    }) as typeof console.error
+
+    try {
+      const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
+        ledger: {
+          data: [{ moderation_action_id: '00000000-0000-0000-0000-0000000000b1' }],
+          error: null,
+        },
+        preferences: {
+          data: { preferences: { reminders: { moderation: { enabled: true } } } },
+          error: null,
+        },
+        tokens: {
+          data: [{ user_id: AFFECTED_USER_ID, expo_push_token: 'ExponentPushToken[mod-log]' }],
+          error: null,
+        },
+      })
+
+      await handler(moderationRequest(suspendUserPayload()), client)
+
+      for (const line of capturedLines) {
+        assertEquals(line.includes(SEEDED_REASON_MARKER), false, `leaked in log line: ${line}`)
+      }
+    } finally {
+      console.log = originalLog
+      console.error = originalError
+      globalThis.fetch = originalFetch
     }
   })
 })

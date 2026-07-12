@@ -19,7 +19,13 @@ import type {
   FontPairingId,
   HotkeyActionId,
 } from './types'
-import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES, FONT_PAIRING_IDS, DEFAULT_FONT_PAIRING } from './types'
+import {
+  THEME_NAMES,
+  DEFAULT_THEME,
+  DARK_THEMES,
+  FONT_PAIRING_IDS,
+  DEFAULT_FONT_PAIRING,
+} from './types'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
@@ -132,6 +138,31 @@ export const ephemeral$ = observable<{
    * correct than swallowing it.
    */
   surfacedUnlockMilestones: Set<number>
+  /**
+   * Per-session dismissal flag for the web/desktop in-app reminder card. Set
+   * true when the user dismisses the card; hides it for the rest of the
+   * session. Non-persisted (per-session, like `surfacedUnlockMilestones`) —
+   * resets to false on cold start so the card re-evaluates against fresh
+   * pending state on the next app open. Do NOT add to persistConfig/store$.
+   */
+  reminderCardDismissed: boolean
+  /**
+   * The unread-replies `since` bound the in-app reminder card pinned for THIS
+   * app session (an ISO string), or null before the card has seeded it. Seeded
+   * ONCE — on the first mount of the card in a session, after the profile has
+   * hydrated — from the persisted `reminders.repliesLastSeenAt` (or `now` on a
+   * first-ever open); the same mount advances `repliesLastSeenAt` to `now`.
+   *
+   * Session-scoping is load-bearing: the card mounts on every Home landing
+   * (journal → back, collective → back), so keying the pinned `since` + the
+   * once-per-open advance to the SESSION (not the mount) is what stops a Home
+   * bounce from advancing the bound and self-clearing an unacted-on replies
+   * reminder. Later mounts in the same session reuse this value and do NOT
+   * re-advance. Non-persisted (per-session, like `reminderCardDismissed`) —
+   * resets to null on cold start so the next app open re-seeds and re-advances.
+   * Do NOT add to persistConfig/store$.
+   */
+  reminderRepliesSince: string | null
 }>({
   persistentEditor: {
     isVisible: false,
@@ -145,6 +176,8 @@ export const ephemeral$ = observable<{
   keyboardHeight: 0,
   thresholdCrossing: null,
   surfacedUnlockMilestones: new Set<number>(),
+  reminderCardDismissed: false,
+  reminderRepliesSince: null,
 })
 
 // =================================================================
@@ -336,7 +369,9 @@ export const adoptOrphanFlows = (userId: string): void => {
     // eslint-disable-next-line no-console
     console.log(
       `🏠 [adoptOrphanFlows] POST-ADOPT: adopted ${adoptedEntries} entries, ${adoptedFlows} flows for user ${userId.slice(0, 8)}…${
-        skippedForeignParent > 0 ? ` (skipped ${skippedForeignParent} flows under foreign-owned parent)` : ''
+        skippedForeignParent > 0
+          ? ` (skipped ${skippedForeignParent} flows under foreign-owned parent)`
+          : ''
       }`
     )
   }

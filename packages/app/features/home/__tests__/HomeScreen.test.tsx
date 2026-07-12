@@ -16,7 +16,8 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } = props
+    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } =
+      props
     return {
       ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
@@ -39,7 +40,20 @@ vi.mock('@my/ui', async () => {
 
   // Stateful Text: exposes onHoverIn/onHoverOut/onPressIn/onPressOut as mouse events
   // Also captures transition and x props via data attributes for assertion.
-  const Text = ({ children, onPress, onHoverIn, onHoverOut, onPressIn, onPressOut, testID, accessibilityRole, accessibilityLabel, transition, x, ...props }: any) =>
+  const Text = ({
+    children,
+    onPress,
+    onHoverIn,
+    onHoverOut,
+    onPressIn,
+    onPressOut,
+    testID,
+    accessibilityRole,
+    accessibilityLabel,
+    transition,
+    x,
+    ...props
+  }: any) =>
     ReactModule.createElement(
       'span',
       {
@@ -58,7 +72,7 @@ vi.mock('@my/ui', async () => {
       children
     )
 
-    // ─── StreakChip stub — forwards dayCount, state and a11y props for HomeScreen assertions
+  // ─── StreakChip stub — forwards dayCount, state and a11y props for HomeScreen assertions
   const StreakChip = ({ dayCount, state, ...props }: any) => {
     const label = dayCount != null ? `Day ${dayCount} streak` : 'Day — streak'
     const text = dayCount != null ? `Day ${dayCount}` : 'Day —'
@@ -165,18 +179,26 @@ vi.mock('app/features/home/components/KeyringPrompt', () => ({
 }))
 
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
-  OrphanFlowsDialog: () => React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+  OrphanFlowsDialog: () =>
+    React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
 }))
 vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
-  ModerationReceiptGate: () => React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
+  ModerationReceiptGate: () =>
+    React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
 }))
 vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
   StreakReminderPermissionGate: () =>
     React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
 }))
 
+vi.mock('app/features/notifications/InAppReminderGate', () => ({
+  InAppReminderGate: () =>
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
+}))
+
 vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
-  EncryptionModeDialog: () => React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
+  EncryptionModeDialog: () =>
+    React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
 }))
 
 // ─── WordLinkNav ─────────────────────────────────────────────────────────────
@@ -236,7 +258,8 @@ describe('HomeScreen renders hero content', () => {
     render(React.createElement(HomeScreen))
     // new Date().toLocaleDateString renders e.g. "Saturday, May 2, 2026"
     // assert that at least a month-name substring is present
-    const months = /January|February|March|April|May|June|July|August|September|October|November|December/
+    const months =
+      /January|February|March|April|May|June|July|August|September|October|November|December/
     const dateEl = screen.getByText(months)
     expect(dateEl).toBeTruthy()
   })
@@ -627,7 +650,9 @@ describe('Lapsed prompt', () => {
     expect(prompt).toBeTruthy()
     expect(cta).toBeTruthy()
     // DOM order: prompt must appear before CTA
-    const allNodes = Array.from(document.body.querySelectorAll('[data-testid="lapsed-prompt"], [aria-label="Begin writing"]'))
+    const allNodes = Array.from(
+      document.body.querySelectorAll('[data-testid="lapsed-prompt"], [aria-label="Begin writing"]')
+    )
     const promptIdx = allNodes.findIndex((n) => n.getAttribute('data-testid') === 'lapsed-prompt')
     const ctaIdx = allNodes.findIndex((n) => n.getAttribute('aria-label') === 'Begin writing')
     expect(promptIdx).toBeLessThan(ctaIdx)

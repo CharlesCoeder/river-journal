@@ -1,21 +1,19 @@
 // @vitest-environment happy-dom
-// HomeScreen — streak-reminder permission gate mounting.
+// HomeScreen — web/desktop in-app reminder card mounting.
 //
-// Red-phase contract: FAILS until <StreakReminderPermissionGate /> is
-// mounted inside HomeScreen.tsx (mirrors the mount precedent for
-// ModerationReceiptGate / OrphanFlowsDialog / EncryptionModeDialog /
-// LapsedPrompt in HomeScreen.test.tsx). HomeScreen is where the
-// CelebrationScreen handoff routes back to after the user's first
-// >=500-word flow of the day (Dev Notes "How the trigger chains off the
-// CelebrationScreen handoff"), so mounting the gate here — not in the
-// provider tree — lets it re-evaluate `store$.views.streak.currentStreak`
-// on every home landing without a broader per-route wrap.
+// Red-phase contract: FAILS until <InAppReminderGate /> is mounted inside
+// HomeScreen.tsx (mirrors the mount precedent for ModerationReceiptGate /
+// StreakReminderPermissionGate / OrphanFlowsDialog / EncryptionModeDialog in
+// HomeScreen.test.tsx / HomeScreen.streak-reminder-gate.test.tsx). Home is the
+// bottom self-gating region (a sibling of <ModerationReceiptGate />), so
+// mounting here — not in the provider tree — lets the card re-evaluate its
+// pending-category signals on every home landing.
 //
-// This suite is isolated from the main HomeScreen.test.tsx file (and from
-// HomeScreen.moderation-receipts.test.tsx) so it can mock
-// `app/features/notifications/StreakReminderPermissionGate` — a module
-// neither of those suites has any reason to know about — without perturbing
-// their existing mock surfaces.
+// This suite is isolated from the main HomeScreen.test.tsx file (and from the
+// other gate-specific suites) so it can mock
+// `app/features/notifications/InAppReminderGate` — a module neither of those
+// suites has any reason to know about — without perturbing their existing
+// mock surfaces.
 
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -153,19 +151,18 @@ vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
   ModerationReceiptGate: () =>
     React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
 }))
-
-// ─── The surface under test: the streak-reminder gate — mock it the same way
-// the other post-auth surfaces above are mocked, so this suite asserts
-// MOUNTING only (the gate's own internal behavior is covered by
-// StreakReminderPermissionGate.test.tsx). ──────────────────────────────────
 vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
   StreakReminderPermissionGate: () =>
     React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
 }))
 
+// ─── The surface under test: the in-app reminder gate — mock it the same way
+// the other post-auth surfaces above are mocked, so this suite asserts
+// MOUNTING only (the gate's own internal behavior is covered by
+// InAppReminderGate.test.tsx). ──────────────────────────────────────────────
 vi.mock('app/features/notifications/InAppReminderGate', () => ({
   InAppReminderGate: () =>
-    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate-mount' }, null),
 }))
 
 // ─── Import under test ───────────────────────────────────────────────────────
@@ -175,22 +172,23 @@ afterEach(() => {
   cleanup()
 })
 
-describe('HomeScreen mounts the streak-reminder permission gate', () => {
-  it('mounts <StreakReminderPermissionGate /> alongside the existing post-auth surfaces', () => {
+describe('HomeScreen mounts the web/desktop in-app reminder gate', () => {
+  it('mounts <InAppReminderGate /> alongside the existing post-auth surfaces', () => {
     render(React.createElement(HomeScreen))
-    expect(screen.getByTestId('streak-reminder-permission-gate')).toBeTruthy()
+    expect(screen.getByTestId('in-app-reminder-gate-mount')).toBeTruthy()
   })
 
-  it('mounts StreakReminderPermissionGate alongside ModerationReceiptGate, OrphanFlowsDialog, and EncryptionModeDialog simultaneously (all post-auth surfaces present together)', () => {
+  it('mounts InAppReminderGate alongside ModerationReceiptGate, StreakReminderPermissionGate, OrphanFlowsDialog, and EncryptionModeDialog simultaneously (all post-auth surfaces present together)', () => {
     render(React.createElement(HomeScreen))
-    expect(screen.getByTestId('streak-reminder-permission-gate')).toBeTruthy()
+    expect(screen.getByTestId('in-app-reminder-gate-mount')).toBeTruthy()
     expect(screen.getByTestId('moderation-receipt-gate')).toBeTruthy()
+    expect(screen.getByTestId('streak-reminder-permission-gate')).toBeTruthy()
     expect(screen.getByTestId('orphan-flows-dialog')).toBeTruthy()
     expect(screen.getByTestId('encryption-mode-dialog')).toBeTruthy()
   })
 
   it('does NOT mount the gate inside the provider tree file (mount site is HomeScreen.tsx, asserted by this file importing directly from HomeScreen)', () => {
     render(React.createElement(HomeScreen))
-    expect(screen.getByTestId('streak-reminder-permission-gate')).toBeTruthy()
+    expect(screen.getByTestId('in-app-reminder-gate-mount')).toBeTruthy()
   })
 })

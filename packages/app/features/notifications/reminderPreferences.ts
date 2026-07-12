@@ -39,22 +39,35 @@ function readReminders(): RemindersPref | undefined {
 }
 
 /**
+ * Whole-object write of the `reminders` preference blob, guarded against a null
+ * profile. This is the shared write seam for every reminders writer below.
+ *
+ * The guard is load-bearing, not defensive decoration: Legend-State `.set()` on
+ * a null `store$.profile` does NOT throw — it MATERIALIZES the intermediate
+ * `profile` / `preferences` objects, writing a PARTIAL profile (e.g.
+ * `{ preferences: { reminders: {…} } }`) that drops every sibling profile key
+ * and can race IndexedDB hydration / server sync. So a `try/catch` alone is not
+ * genuinely null-safe (its `catch` is dead code). A legitimately authenticated
+ * caller always has a hydrated profile; when it is not yet present, skip the
+ * write entirely rather than materialize a corrupt partial profile.
+ */
+function writeReminders(next: RemindersPref): void {
+  if (store$.profile.peek() == null) return
+  try {
+    store$.profile.preferences.reminders.set(next)
+  } catch {
+    // Observable path unavailable — nothing to persist.
+  }
+}
+
+/**
  * Whole-object read-merge-write of `reminders`, patching only the streak
  * sub-object with `patch` while preserving any sibling `replies` / `moderation`
  * shape and existing streak fields. Guards a null profile / unavailable path.
  */
 function mergeStreak(patch: Partial<StreakReminderPref>): void {
-  try {
-    const current = readReminders() ?? {}
-    store$.profile.preferences.reminders.set({
-      ...current,
-      streak: { ...current.streak, ...patch },
-    })
-  } catch {
-    // Profile is null / observable path unavailable — nothing to persist.
-    // The gate's session-local state still suppresses the prompt for this
-    // mount; a legitimately authenticated caller always has a profile.
-  }
+  const current = readReminders() ?? {}
+  writeReminders({ ...current, streak: { ...current.streak, ...patch } })
 }
 
 /**
@@ -111,15 +124,11 @@ export function computeLocalOffsetMinutes(date: Date = new Date()): number {
  * null profile). Not write-once: every call applies the given value.
  */
 export function setReminderCategoryEnabled(category: ReminderCategory, enabled: boolean): void {
-  try {
-    const current = readReminders() ?? {}
-    store$.profile.preferences.reminders.set({
-      ...current,
-      [category]: { ...current[category], enabled },
-    } as RemindersPref)
-  } catch {
-    // Profile is null / observable path unavailable — nothing to persist.
-  }
+  const current = readReminders() ?? {}
+  writeReminders({
+    ...current,
+    [category]: { ...current[category], enabled },
+  } as RemindersPref)
 }
 
 /**
@@ -135,19 +144,15 @@ export function setReminderCategoryEnabled(category: ReminderCategory, enabled: 
  * app open) keeps that conversion correct across travel / DST changes.
  */
 export function setStreakReminderTime(localTime: string): void {
-  try {
-    const current = readReminders() ?? {}
-    store$.profile.preferences.reminders.set({
-      ...current,
-      streak: {
-        ...current.streak,
-        local_time: localTime,
-        last_local_offset_minutes: computeLocalOffsetMinutes(),
-      },
-    })
-  } catch {
-    // Profile is null / observable path unavailable — nothing to persist.
-  }
+  const current = readReminders() ?? {}
+  writeReminders({
+    ...current,
+    streak: {
+      ...current.streak,
+      local_time: localTime,
+      last_local_offset_minutes: computeLocalOffsetMinutes(),
+    },
+  })
 }
 
 /**
@@ -179,6 +184,28 @@ export function enableStreakRemindersDefault(): void {
 }
 
 /**
+ * Reads the current `repliesLastSeenAt` bound, null-safe. Synchronous — safe to
+ * call at the in-app reminder card's mount to seed its NON-reactive `since`
+ * capture (peek semantics, NOT a reactive `use$` read, so a later
+ * `markRepliesSeen` write does not re-key the in-flight unread-replies query).
+ * Returns undefined when the profile / reminders path is absent.
+ */
+export function getRepliesLastSeenAt(): string | undefined {
+  return readReminders()?.repliesLastSeenAt
+}
+
+/**
+ * Advances the `repliesLastSeenAt` bound to `now` (the next app open counts only
+ * replies newer than this). NOT write-once (unlike `markStreakPromptSeen`) —
+ * every call moves the bound forward. Whole-object read-merge-write, preserving
+ * sibling `streak` / `replies` / `moderation` categories. Null-safe.
+ */
+export function markRepliesSeen(now: string = new Date().toISOString()): void {
+  const current = readReminders() ?? {}
+  writeReminders({ ...current, repliesLastSeenAt: now })
+}
+
+/**
  * Keeps `streak.last_local_offset_minutes` current on app open. Writes a fresh
  * offset ONLY when streak reminders are enabled AND the freshly-computed offset
  * differs from the stored one — otherwise a no-op, so an unchanged zone causes
@@ -191,7 +218,7 @@ export function refreshReminderOffsetOnAppOpen(): void {
     if (!streak || streak.enabled !== true) return
     const fresh = computeLocalOffsetMinutes()
     if (streak.last_local_offset_minutes === fresh) return
-    store$.profile.preferences.reminders.set({
+    writeReminders({
       ...current,
       streak: { ...streak, last_local_offset_minutes: fresh },
     })

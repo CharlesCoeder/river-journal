@@ -180,6 +180,7 @@ export interface UserProfile {
       }
       replies?: { enabled?: boolean } // reserved for the reply-notification category
       moderation?: { enabled?: boolean } // reserved for the moderation-notification category
+      repliesLastSeenAt?: string // ISO; the "since" bound the in-app reminder card advances once per open
     }
   }
 

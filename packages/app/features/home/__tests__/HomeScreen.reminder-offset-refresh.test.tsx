@@ -180,6 +180,11 @@ vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
     React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
 }))
 
+vi.mock('app/features/notifications/InAppReminderGate', () => ({
+  InAppReminderGate: () =>
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
+}))
+
 // ─── The surface under test: the app-open offset-refresh side effect ───────
 const refreshReminderOffsetOnAppOpenMock = vi.fn()
 vi.mock('app/features/notifications/reminderPreferences', () => ({
