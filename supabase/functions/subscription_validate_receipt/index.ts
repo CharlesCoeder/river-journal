@@ -21,10 +21,11 @@
 // ALWAYS server-derived from the provider receipt — a client-supplied tier is
 // never trusted.
 //
-// PCI / NFR13 invariant. raw_receipt holds provider-issued identifiers and
-// metadata ONLY — never card numbers, CVVs, or PAN data (provider receipts do
-// not carry these). NFR19: the receipt is never placed in a log field or an
-// error body; log lines carry ids/counts/durations/outcome/provider/tier only.
+// Card data never touches this system — payment surfaces are provider-hosted, so
+// raw_receipt holds provider-issued identifiers and metadata ONLY — never card
+// numbers, CVVs, or PAN data (provider receipts do not carry these). The receipt
+// is never placed in a log field or an error body; logs carry metadata only —
+// ids/counts/durations/outcome/provider/tier.
 // The provider_subscription_id is deliberately NOT logged — for the Stripe path
 // it equals the caller's raw_receipt, so logging it would echo receipt content.
 //
@@ -38,7 +39,7 @@ import { createServiceRoleClient, getAuthenticatedUser } from '../_shared/auth.t
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
 import { ReceiptValidationError, type SubscriptionTier } from '../_shared/billing/types.ts'
-import { type StripeClientSeam, validateStripeReceipt } from '../_shared/billing/stripe.ts'
+import { buildStripeClient, validateStripeReceipt } from '../_shared/billing/stripe.ts'
 import { validateAppleReceipt } from '../_shared/billing/apple.ts'
 import { validateGoogleReceipt } from '../_shared/billing/google.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -336,39 +337,6 @@ function defaultValidatorFor(provider: Provider): ProviderValidator {
       packageName: Deno.env.get('GOOGLE_PLAY_PACKAGE_NAME') ?? '',
       productTierMap,
     })
-  }
-}
-
-// A thin fetch adapter satisfying the StripeClientSeam. The Stripe provider
-// endpoints are hardcoded here — NEVER derived from the caller's raw_receipt
-// (SSRF guard); the raw_receipt supplies only the opaque id path segment.
-//
-// Stripe-Version is pinned explicitly so the response shape is deterministic
-// regardless of the account's default API version. 2025-03-31.basil reports
-// current_period_end at the line-item level (items.data[].current_period_end),
-// which the validator reads (with a top-level fallback for older versions).
-function buildStripeClient(secretKey: string): StripeClientSeam {
-  const base = 'https://api.stripe.com/v1'
-  const headers = {
-    Authorization: `Bearer ${secretKey}`,
-    'Stripe-Version': '2025-03-31.basil',
-  }
-  const getJson = async (path: string): Promise<unknown> => {
-    const response = await fetch(`${base}${path}`, { headers })
-    if (!response.ok) {
-      throw new Error(`stripe api responded ${response.status}`)
-    }
-    return response.json()
-  }
-  return {
-    subscriptions: {
-      retrieve: (id: string) => getJson(`/subscriptions/${encodeURIComponent(id)}`),
-    },
-    checkout: {
-      sessions: {
-        retrieve: (id: string) => getJson(`/checkout/sessions/${encodeURIComponent(id)}`),
-      },
-    },
   }
 }
 

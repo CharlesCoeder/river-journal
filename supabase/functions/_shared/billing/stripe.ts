@@ -32,9 +32,17 @@ import {
 // The minimal Stripe client surface this validator touches — narrowed so tests
 // inject a stub and production injects a thin fetch adapter over the Stripe API
 // (built from STRIPE_SECRET_KEY in the handler), without vendoring the SDK.
+//
+// Every seam method takes an OPTIONAL trailing AbortSignal so withTimeout's
+// signal is threaded through to the underlying fetch — an in-flight provider
+// request is actually torn down on a fired timeout, not just abandoned. The
+// mutation method `subscriptions.update` powers the cancel-at-period-end path.
 export interface StripeClientSeam {
-  subscriptions: { retrieve(id: string): Promise<unknown> }
-  checkout: { sessions: { retrieve(id: string): Promise<unknown> } }
+  subscriptions: {
+    retrieve(id: string, signal?: AbortSignal): Promise<unknown>
+    update(id: string, params: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
+  }
+  checkout: { sessions: { retrieve(id: string, signal?: AbortSignal): Promise<unknown> } }
 }
 
 export interface StripeDeps {
@@ -234,7 +242,7 @@ async function retrieveSubscription(
 ): Promise<StripeSubscription> {
   try {
     return (await withTimeout(
-      () => Promise.resolve(client.subscriptions.retrieve(id)),
+      (signal) => Promise.resolve(client.subscriptions.retrieve(id, signal)),
       timeoutMs,
     )) as StripeSubscription
   } catch (error) {
@@ -249,11 +257,76 @@ async function retrieveSession(
 ): Promise<StripeSession> {
   try {
     return (await withTimeout(
-      () => Promise.resolve(client.checkout.sessions.retrieve(id)),
+      (signal) => Promise.resolve(client.checkout.sessions.retrieve(id, signal)),
       timeoutMs,
     )) as StripeSession
   } catch (error) {
     rethrowStripeError(error)
+  }
+}
+
+// Cancel-at-period-end (NOT immediate cancel — paid access must continue until
+// current_period_end so the user keeps what they paid for). Calls subscriptions.update(id,
+// { cancel_at_period_end: true }) via the injected seam, wrapped in withTimeout
+// so an unreachable Stripe aborts into a provider-fault timeout rather than
+// hanging. The updated subscription's period end is re-read with the same
+// item-level-first / top-level-fallback resolution as the validate path.
+//
+// Idempotent: re-issuing cancel_at_period_end=true on an already-scheduled
+// subscription is Stripe's own no-op, resolving normally — no special-case here.
+//
+// Fault mapping: a rejection carrying `status === 404` is a local↔Stripe desync
+// (our receipt says the caller owns it; Stripe says it is gone) → a CLIENT-fault
+// provider_resource_missing (the handler collapses this into the generic 404,
+// never a 5xx alarm). Any other rejection (Stripe 5xx / 429 / network) is a
+// PROVIDER-fault provider_cancel_failed. A ReceiptValidationError thrown by the
+// seam itself (e.g. a fired timeout) passes through untouched. A missing or
+// unparseable period end on the response is a provider-contract violation (502).
+export async function cancelStripeSubscriptionAtPeriodEnd(
+  id: string,
+  deps: { stripeClient: StripeClientSeam; timeoutMs?: number },
+): Promise<{ current_period_end: string }> {
+  const timeoutMs = deps.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS
+  let subscription: StripeSubscription
+  try {
+    subscription = (await withTimeout(
+      (signal) =>
+        Promise.resolve(
+          deps.stripeClient.subscriptions.update(id, { cancel_at_period_end: true }, signal),
+        ),
+      timeoutMs,
+    )) as StripeSubscription
+  } catch (error) {
+    if (error instanceof ReceiptValidationError) {
+      throw error
+    }
+    const status = (error as { status?: unknown } | null)?.status
+    if (status === 404) {
+      throw new ReceiptValidationError('stripe reports no matching subscription to cancel', {
+        code: 'provider_resource_missing',
+        fault: 'client',
+        status: 404,
+      })
+    }
+    throw new ReceiptValidationError('stripe could not cancel the subscription', {
+      code: 'provider_cancel_failed',
+      fault: 'provider',
+    })
+  }
+
+  // A missing period end throws provider_contract_violation (502) inside
+  // resolveCurrentPeriodEnd; a numerically-out-of-range value that throws on
+  // normalization (RangeError) is likewise a provider-contract violation, not a
+  // generic 500 (carry-in hardening: honor the fault split on a malformed ts).
+  const currentPeriodEnd = resolveCurrentPeriodEnd(subscription)
+  try {
+    return { current_period_end: normalizeStripeTimestamp(currentPeriodEnd) }
+  } catch {
+    throw new ReceiptValidationError('provider returned an unparseable period end', {
+      code: 'provider_contract_violation',
+      fault: 'provider',
+      status: 502,
+    })
   }
 }
 
@@ -268,4 +341,72 @@ function rethrowStripeError(error: unknown): never {
     code: 'receipt_not_found',
     fault: 'client',
   })
+}
+
+// The production thin fetch adapter satisfying the StripeClientSeam — shared by
+// both the validate and cancel handlers (built from STRIPE_SECRET_KEY), without
+// vendoring the SDK. The Stripe endpoints are hardcoded here — NEVER derived from
+// caller input (SSRF guard); the caller supplies ONLY the opaque id path segment.
+//
+// Stripe-Version is pinned so the response shape is deterministic regardless of
+// the account default (2025-03-31.basil reports current_period_end at the
+// line-item level; the resolvers read that first with a top-level fallback).
+//
+// The withTimeout-provided AbortSignal is threaded into EVERY fetch (both the
+// GETs and the cancel POST) so an in-flight request is actually torn down on a
+// fired timeout. A non-2xx response throws an Error carrying the numeric `status`
+// so cancelStripeSubscriptionAtPeriodEnd can distinguish a 404 desync from a 5xx.
+export function buildStripeClient(secretKey: string): StripeClientSeam {
+  const base = 'https://api.stripe.com/v1'
+  const headers = {
+    Authorization: `Bearer ${secretKey}`,
+    'Stripe-Version': '2025-03-31.basil',
+  }
+  const request = async (
+    path: string,
+    init: { method: 'GET' | 'POST'; body?: string; signal?: AbortSignal },
+  ): Promise<unknown> => {
+    const response = await fetch(`${base}${path}`, {
+      method: init.method,
+      headers: init.body === undefined
+        ? headers
+        : { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: init.body,
+      signal: init.signal,
+    })
+    if (!response.ok) {
+      throw Object.assign(new Error(`stripe api responded ${response.status}`), {
+        status: response.status,
+      })
+    }
+    return response.json()
+  }
+  return {
+    subscriptions: {
+      retrieve: (id: string, signal?: AbortSignal) =>
+        request(`/subscriptions/${encodeURIComponent(id)}`, { method: 'GET', signal }),
+      update: (id: string, params: Record<string, unknown>, signal?: AbortSignal) =>
+        request(`/subscriptions/${encodeURIComponent(id)}`, {
+          method: 'POST',
+          body: encodeStripeForm(params),
+          signal,
+        }),
+    },
+    checkout: {
+      sessions: {
+        retrieve: (id: string, signal?: AbortSignal) =>
+          request(`/checkout/sessions/${encodeURIComponent(id)}`, { method: 'GET', signal }),
+      },
+    },
+  }
+}
+
+// Stripe expects application/x-www-form-urlencoded bodies. The only param the
+// cancel path sends is cancel_at_period_end=true.
+function encodeStripeForm(params: Record<string, unknown>): string {
+  const usp = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    usp.set(key, String(value))
+  }
+  return usp.toString()
 }

@@ -53,12 +53,55 @@
 //     budget); a call that never settles within budget throws
 //     { code: 'provider_timeout', fault: 'provider' }.
 //
-// Red phase: ./stripe.ts does not exist yet, so every test in this file
-// fails at import resolution before a single assertion runs.
+// Cancel-path contract (folded in alongside the validate-path contract above
+// -- inferred from the acceptance criteria, not verbatim named in the source
+// spec):
+//   - cancelStripeSubscriptionAtPeriodEnd(id: string, deps: { stripeClient:
+//     StripeClientSeam, timeoutMs?: number }): Promise<{ current_period_end:
+//     string }>. Calls deps.stripeClient.subscriptions.update(id,
+//     { cancel_at_period_end: true }, signal) wrapped in withTimeout, and
+//     reads current_period_end back from the updated subscription using the
+//     SAME item-level-first / top-level-fallback resolution as the validate
+//     path (Stripe 2025-03-31.basil+ shape).
+//   - StripeClientSeam is extended with a mutation method:
+//     subscriptions.update(id, params, signal?): Promise<unknown>. Every seam
+//     method (retrieve, update, checkout.sessions.retrieve) now accepts an
+//     OPTIONAL trailing AbortSignal, and withTimeout's signal is threaded
+//     through on every call (carry-in hardening: the previous adapter built a
+//     timeout AbortController but never actually passed its signal anywhere,
+//     so an in-flight request was never torn down on a fired timeout).
+//   - Calling update() on a subscription Stripe already reports as scheduled
+//     for cancellation (cancel_at_period_end already true) is a successful
+//     no-op that resolves normally -- Stripe's own idempotent behavior,
+//     requiring no special-case handling here.
+//   - A rejection from subscriptions.update that carries a numeric `status`
+//     property of 404 (the thin fetch adapter's not-found signal) maps to
+//     { code: 'provider_resource_missing', fault: 'client', status: 404 } --
+//     a local <-> Stripe desync, NOT a provider-contract violation. Any other
+//     rejection (5xx, 429, network failure, no status) maps to
+//     { code: 'provider_cancel_failed', fault: 'provider' } (no explicit
+//     status override, so the caller's fault-based default applies). A
+//     ReceiptValidationError thrown by the seam itself (e.g. a fired timeout)
+//     passes through untouched.
+//   - A missing/malformed current_period_end on the updated subscription is a
+//     provider-contract violation, identical to the validate path:
+//     { code: 'provider_contract_violation', fault: 'provider', status: 502 }.
+//   - A call that never settles within the timeout budget throws
+//     { code: 'provider_timeout', fault: 'provider' }, never a hang.
+//
+// Red phase: ./stripe.ts does not export cancelStripeSubscriptionAtPeriodEnd
+// yet, so the import below fails module resolution and every test in this
+// file (including the pre-existing validate-path tests) fails until the
+// cancel path lands.
 
 import { assertEquals, assertRejects } from 'jsr:@std/assert@1'
 import { ReceiptValidationError } from './types.ts'
-import { mapStripeStatus, normalizeStripeTimestamp, validateStripeReceipt } from './stripe.ts'
+import {
+  cancelStripeSubscriptionAtPeriodEnd,
+  mapStripeStatus,
+  normalizeStripeTimestamp,
+  validateStripeReceipt,
+} from './stripe.ts'
 
 const SUBSCRIPTION_ID = 'sub_test0000000000000001'
 const SESSION_ID = 'cs_test0000000000000001'
@@ -101,6 +144,11 @@ function sessionFixture(overrides: Record<string, unknown> = {}) {
 function stripeClientStub(config: {
   retrieveSubscription?: (id: string) => Promise<unknown>
   retrieveSession?: (id: string) => Promise<unknown>
+  updateSubscription?: (
+    id: string,
+    params: Record<string, unknown>,
+    signal?: AbortSignal,
+  ) => Promise<unknown>
 }) {
   return {
     subscriptions: {
@@ -109,6 +157,12 @@ function stripeClientStub(config: {
           throw new Error('subscriptions.retrieve not configured for this test')
         }
         return config.retrieveSubscription(id)
+      },
+      update(id: string, params: Record<string, unknown>, signal?: AbortSignal) {
+        if (!config.updateSubscription) {
+          throw new Error('subscriptions.update not configured for this test')
+        }
+        return config.updateSubscription(id, params, signal)
       },
     },
     checkout: {
@@ -433,4 +487,159 @@ Deno.test('validateStripeReceipt maps an SDK call that never settles within the 
     ReceiptValidationError,
   )
   assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+// ---------------------------------------------------------------------------
+// cancelStripeSubscriptionAtPeriodEnd -- cancel-at-period-end dispatch, period
+// end re-read, idempotent re-cancel, resource-missing vs. generic provider
+// fault, and AbortSignal threading.
+// ---------------------------------------------------------------------------
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd calls subscriptions.update with cancel_at_period_end: true and returns the re-read period end', async () => {
+  let capturedParams: Record<string, unknown> | null = null
+  const client = stripeClientStub({
+    updateSubscription: (id, params) => {
+      assertEquals(id, SUBSCRIPTION_ID)
+      capturedParams = params
+      return Promise.resolve(subscriptionFixture())
+    },
+  })
+  const result = await cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(result.current_period_end, new Date(PERIOD_END_SECONDS * 1000).toISOString())
+  assertEquals((capturedParams as unknown as Record<string, unknown>).cancel_at_period_end, true)
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd reads the item-level current_period_end (Basil+ shape) after the update call', async () => {
+  const client = stripeClientStub({
+    updateSubscription: () =>
+      Promise.resolve(
+        subscriptionFixture({
+          items: {
+            data: [
+              {
+                current_period_end: PERIOD_END_SECONDS,
+                price: { id: PRICE_ID, recurring: { interval: 'month', interval_count: 1 } },
+              },
+            ],
+          },
+        }),
+      ),
+  })
+  const result = await cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(result.current_period_end, new Date(PERIOD_END_SECONDS * 1000).toISOString())
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd falls back to a top-level current_period_end for a pre-Basil subscription', async () => {
+  const client = stripeClientStub({
+    updateSubscription: () =>
+      Promise.resolve(
+        subscriptionFixture({
+          current_period_end: PERIOD_END_SECONDS,
+          items: {
+            data: [
+              { price: { id: PRICE_ID, recurring: { interval: 'month', interval_count: 1 } } },
+            ],
+          },
+        }),
+      ),
+  })
+  const result = await cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(result.current_period_end, new Date(PERIOD_END_SECONDS * 1000).toISOString())
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd succeeds idempotently when Stripe reports the subscription already scheduled for cancellation', async () => {
+  // Stripe treats a repeat cancel_at_period_end=true call on an
+  // already-scheduled subscription as a successful no-op -- the seam simply
+  // resolves again with the current state, requiring no special-case
+  // handling in the helper itself.
+  const client = stripeClientStub({
+    updateSubscription: () =>
+      Promise.resolve(subscriptionFixture({ cancel_at_period_end: true })),
+  })
+  const result = await cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(result.current_period_end, new Date(PERIOD_END_SECONDS * 1000).toISOString())
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd maps a 404/resource_missing rejection to a client-fault provider_resource_missing error, never a 502', async () => {
+  const client = stripeClientStub({
+    updateSubscription: () =>
+      Promise.reject(Object.assign(new Error('stripe api responded 404'), { status: 404 })),
+  })
+  const error = await assertRejects(
+    () => cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_resource_missing')
+  assertEquals((error as ReceiptValidationError).fault, 'client')
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd maps a non-404 rejection (e.g. Stripe 5xx/429) to a generic provider-fault error', async () => {
+  const client = stripeClientStub({
+    updateSubscription: () =>
+      Promise.reject(Object.assign(new Error('stripe api responded 503'), { status: 503 })),
+  })
+  const error = await assertRejects(
+    () => cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_cancel_failed')
+  assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd maps a rejection with no status information to the same generic provider-fault error', async () => {
+  const client = stripeClientStub({
+    updateSubscription: () => Promise.reject(new Error('network failure')),
+  })
+  const error = await assertRejects(
+    () => cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_cancel_failed')
+  assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd treats a missing current_period_end on the updated subscription as a provider-contract violation (502-worthy)', async () => {
+  const client = stripeClientStub({
+    updateSubscription: () =>
+      Promise.resolve(
+        subscriptionFixture({
+          current_period_end: null,
+          items: {
+            data: [
+              { price: { id: PRICE_ID, recurring: { interval: 'month', interval_count: 1 } } },
+            ],
+          },
+        }),
+      ),
+  })
+  const error = await assertRejects(
+    () => cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_contract_violation')
+  assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd maps an update call that never settles within the timeout budget to a provider-fault timeout error, never a hang', async () => {
+  const client = stripeClientStub({
+    updateSubscription: () => new Promise(() => {}), // never resolves
+  })
+  const error = await assertRejects(
+    () => cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client, timeoutMs: 15 }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_timeout')
+  assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+Deno.test('cancelStripeSubscriptionAtPeriodEnd threads the withTimeout AbortSignal into the subscriptions.update seam call', async () => {
+  let capturedSignal: AbortSignal | undefined
+  const client = stripeClientStub({
+    updateSubscription: (_id, _params, signal) => {
+      capturedSignal = signal
+      return Promise.resolve(subscriptionFixture())
+    },
+  })
+  await cancelStripeSubscriptionAtPeriodEnd(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(capturedSignal instanceof AbortSignal, true)
 })
