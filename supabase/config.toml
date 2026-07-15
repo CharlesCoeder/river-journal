@@ -427,6 +427,21 @@ verify_jwt = true
 [functions.subscription_cancel]
 verify_jwt = true
 
+# User-facing function: invoked by an AUTHENTICATED USER's client requesting to
+# delete their own account (NOT a trigger/cron). verify_jwt = true — the THIRD
+# user-JWT function, the same posture as subscription_validate_receipt /
+# subscription_cancel — so the Supabase gateway rejects a missing/invalid JWT at
+# the edge before the body runs. The function resolves the caller from that JWT
+# (getAuthenticatedUser) for identity and uses a service-role client for the
+# whole cascade: it cancels the caller's still-billing subscriptions with the
+# provider, runs the atomic delete_my_account SQL cascade, then removes the auth
+# identity LAST via the Auth admin API (which only the service-role key
+# authorizes). A daily pg_cron sweep backstops the auth-identity removal if the
+# invocation dies mid-saga. See docs/edge-functions-setup.md for the
+# per-environment provider secrets (reuses STRIPE_SECRET_KEY).
+[functions.delete_my_account]
+verify_jwt = true
+
 # Public webhook: invoked by Stripe (NOT a user client, NOT a trigger/cron) when a
 # subscription renews or changes. verify_jwt = false so it is reachable at its
 # public URL BY DESIGN — but this is a THIRD, distinct auth posture from both

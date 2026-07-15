@@ -30,9 +30,11 @@
 --     of paid tier, so a receipt-less grant is stomped by the sweep;
 --   * hardening trio (carried forward from an earlier privilege-hardening pass):
 --       - the `authenticated` UPDATE column allow-list on public.users is
---         EXACTLY every column except subscription_tier (allow-list
---         completeness -- guards a future ADD COLUMN silently reopening
---         client write access to every new column, including this one);
+--         EXACTLY every column except subscription_tier and
+--         deletion_requested_at (the account-deletion partial-state marker,
+--         also server-write-only -- allow-list completeness guards a future
+--         ADD COLUMN silently reopening client write access to every new
+--         column, including this one);
 --       - the `authenticated` INSERT column allow-list mirrors the same
 --         shape (closes the INSERT path the same way the UPDATE path was
 --         already closed -- a bare column-scoped REVOKE INSERT is a
@@ -60,6 +62,18 @@
 -- migration lands. The btrim-CHECK assertion (14) would additionally FAIL
 -- outright (not abort) against the pre-migration schema, since the current
 -- CHECK only rejects an exact empty string, not a whitespace-only one.
+--
+-- Amendment (account-deletion follow-up): assertions (11)/(12) now also
+-- exclude deletion_requested_at from the expected allow-list. This is a
+-- forward-compatible, currently-a-no-op change against the pre-migration
+-- schema -- deletion_requested_at does not exist yet, so excluding a column
+-- that is not there does not change either side of the comparison, and this
+-- file stays GREEN today. The assertion becomes load-bearing the moment the
+-- account-deletion migration adds the column: it will correctly FAIL if that
+-- migration forgets to exclude deletion_requested_at from the authenticated
+-- UPDATE/INSERT grants, exactly the same allow-list-completeness guarantee
+-- subscription_tier already has. This file was updated ahead of that
+-- migration landing, per the account-deletion story's explicit contract.
 
 BEGIN;
 \i _helpers.psql
@@ -206,9 +220,14 @@ BEGIN
 
   -- ── (11) UPDATE column allow-list completeness ───────────────────────────
   -- The effective set of users columns `authenticated` may UPDATE must be
-  -- EXACTLY every column except subscription_tier -- computed dynamically
-  -- (not hardcoded) so a future ADD COLUMN that forgets to extend the
-  -- allow-list fails this assertion rather than silently reopening access.
+  -- EXACTLY every column except subscription_tier AND deletion_requested_at
+  -- -- computed dynamically (not hardcoded) so a future ADD COLUMN that
+  -- forgets to extend the allow-list fails this assertion rather than
+  -- silently reopening access. deletion_requested_at joined this exclusion
+  -- set alongside subscription_tier: it is the account-deletion partial-state
+  -- marker and must stay server-write-only (a client could otherwise dodge
+  -- the retry sweep by writing it to a future value, or erase it to hide an
+  -- in-progress deletion).
   -- MATERIALIZED fence: has_column_privilege() raises a hard ERROR on a column
   -- name absent from public.users, and the planner is free to evaluate it before
   -- the table_schema/table_name filter — hitting auth.users columns
@@ -229,12 +248,12 @@ BEGIN
   INTO v_expected_cols
   FROM information_schema.columns c
   WHERE c.table_schema = 'public' AND c.table_name = 'users'
-    AND c.column_name <> 'subscription_tier';
+    AND c.column_name NOT IN ('subscription_tier', 'deletion_requested_at');
 
   PERFORM tap_ok(
     v_actual_update_cols = v_expected_cols,
     format(
-      'authenticated UPDATE column allow-list on users is exactly every column except subscription_tier (actual: %s)',
+      'authenticated UPDATE column allow-list on users is exactly every column except subscription_tier and deletion_requested_at (actual: %s)',
       array_to_string(v_actual_update_cols, ', ')
     )
   );
@@ -253,7 +272,7 @@ BEGIN
   PERFORM tap_ok(
     v_actual_insert_cols = v_expected_cols,
     format(
-      'authenticated INSERT column allow-list on users mirrors the UPDATE allow-list (every column except subscription_tier) (actual: %s)',
+      'authenticated INSERT column allow-list on users mirrors the UPDATE allow-list (every column except subscription_tier and deletion_requested_at) (actual: %s)',
       array_to_string(v_actual_insert_cols, ', ')
     )
   );
