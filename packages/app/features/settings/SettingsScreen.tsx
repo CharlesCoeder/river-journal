@@ -18,6 +18,7 @@ import { KeyboardShortcutsSection } from './components/KeyboardShortcutsSection'
 import { PreviousAccountBanner } from './PreviousAccountBanner'
 import { SuspensionStatusSection } from './SuspensionStatusSection'
 import { ReminderSettings } from 'app/features/notifications/ReminderSettings'
+import { BillingSection } from 'app/features/paid/BillingSection'
 
 // ---------------------------------------------------------------------------
 // Privacy Tier — stacked vertical list matching design
@@ -90,7 +91,7 @@ function SectionHeader({ children }: { children: string }) {
 // ---------------------------------------------------------------------------
 
 const STAGGER_MS = 100
-const SECTION_COUNT = 10
+const SECTION_COUNT = 11
 
 export function SettingsScreen() {
   const router = useRouter()
@@ -419,10 +420,19 @@ export function SettingsScreen() {
               </YStack>
             )}
 
-            {/* Section 10: Footer */}
-            {visibleCount >= 10 && (
+            {/* Section 10: Billing (authenticated — subscription status +
+                period end + cancel affordance; self-renders null for a
+                free-tier user). */}
+            {visibleCount >= 10 && isAuthenticated && (
+              <YStack key="section-10" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$4">
+                <BillingSection />
+              </YStack>
+            )}
+
+            {/* Section 11: Footer */}
+            {visibleCount >= 11 && (
               <XStack
-                key="section-10"
+                key="section-11"
                 transition="designEnter"
                 enterStyle={{ opacity: 0, y: 10 }}
                 opacity={1}

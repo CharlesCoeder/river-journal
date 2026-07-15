@@ -48,7 +48,11 @@ vi.mock('app/utils/supabase', () => ({
 }))
 
 // Import under test — fails until subscriptionApi.ts exists.
-import { validateReceipt, reValidateStoredReceiptOnAppOpen } from '../subscriptionApi'
+import {
+  validateReceipt,
+  reValidateStoredReceiptOnAppOpen,
+  cancelSubscription,
+} from '../subscriptionApi'
 
 function httpErrorWithBody(status: number, body: Record<string, unknown>) {
   const response = new Response(JSON.stringify(body), { status })
@@ -354,5 +358,261 @@ describe('reValidateStoredReceiptOnAppOpen — app-open re-validation', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(onSuccess).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cancelSubscription — the wrapper around the cancel Edge Function.
+//
+// Reuses the exact same error-extraction mechanics as validateReceipt (same
+// `error.context.status` + `await error.context.json()` recovery, same
+// `FunctionsFetchError` -> generic-failure fallback). The success envelope
+// carries `current_period_end` + `requires_native_action` and, unlike
+// validateReceipt, NEVER a `subscription_tier`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('cancelSubscription — invocation contract', () => {
+  it('calls supabase.functions.invoke with the exact function name and body', async () => {
+    invokeMock.mockResolvedValue({
+      data: { ok: true, current_period_end: '2026-08-14T00:00:00Z', requires_native_action: false },
+      error: null,
+    })
+
+    await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(invokeMock).toHaveBeenCalledWith('subscription_cancel', {
+      body: { provider: 'stripe', subscription_id: 'sub_test_123' },
+    })
+  })
+
+  it('resolves the Stripe success envelope with requires_native_action: false', async () => {
+    invokeMock.mockResolvedValue({
+      data: { ok: true, current_period_end: '2026-08-14T00:00:00Z', requires_native_action: false },
+      error: null,
+    })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result).toEqual({
+      ok: true,
+      current_period_end: '2026-08-14T00:00:00Z',
+      requires_native_action: false,
+    })
+  })
+
+  it('resolves the apple_iap success envelope with requires_native_action: true', async () => {
+    invokeMock.mockResolvedValue({
+      data: { ok: true, current_period_end: '2026-09-01T00:00:00Z', requires_native_action: true },
+      error: null,
+    })
+
+    const result = await cancelSubscription({
+      provider: 'apple_iap',
+      subscription_id: '1000000123456789',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      current_period_end: '2026-09-01T00:00:00Z',
+      requires_native_action: true,
+    })
+  })
+
+  it('resolves the play_iap success envelope with requires_native_action: true', async () => {
+    invokeMock.mockResolvedValue({
+      data: { ok: true, current_period_end: '2026-09-01T00:00:00Z', requires_native_action: true },
+      error: null,
+    })
+
+    const result = await cancelSubscription({
+      provider: 'play_iap',
+      subscription_id: 'gpa.token.123',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      current_period_end: '2026-09-01T00:00:00Z',
+      requires_native_action: true,
+    })
+  })
+
+  it('never includes a subscription_tier field on the success result (cancel is tier-silent, unlike validate)', async () => {
+    invokeMock.mockResolvedValue({
+      data: { ok: true, current_period_end: '2026-08-14T00:00:00Z', requires_native_action: false },
+      error: null,
+    })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result).not.toHaveProperty('subscription_tier')
+  })
+})
+
+describe('cancelSubscription — error extraction from FunctionsHttpError.context', () => {
+  it('extracts a 401 unauthorized from error.context, never from error.message', async () => {
+    const httpError = httpErrorWithBody(401, { error: 'unauthorized', code: 'unauthorized' })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(401)
+      expect(result.code).toBe('unauthorized')
+    }
+  })
+
+  it('extracts a 400 bad_request', async () => {
+    const httpError = httpErrorWithBody(400, {
+      error: 'missing or empty subscription_id',
+      code: 'bad_request',
+    })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(400)
+      expect(result.code).toBe('bad_request')
+    }
+  })
+
+  it('extracts the generic 404 subscription_not_found (identical for "no row" and "foreign-owned row")', async () => {
+    const httpError = httpErrorWithBody(404, {
+      error: 'no active subscription found for this account',
+      code: 'subscription_not_found',
+    })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await cancelSubscription({
+      provider: 'stripe',
+      subscription_id: 'sub_foreign_or_missing',
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(404)
+      expect(result.code).toBe('subscription_not_found')
+    }
+  })
+
+  it('extracts a 502 provider fault', async () => {
+    const httpError = httpErrorWithBody(502, {
+      error: 'provider cancellation failed',
+      code: 'provider_fault',
+    })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(502)
+      expect(result.code).toBe('provider_fault')
+    }
+  })
+
+  it('extracts a 500 internal', async () => {
+    const httpError = httpErrorWithBody(500, {
+      error: 'subscription cancellation failed',
+      code: 'internal',
+    })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(500)
+      expect(result.code).toBe('internal')
+    }
+  })
+
+  it('never reads error.message for the surfaced code (SDK generic string trap)', async () => {
+    const httpError = httpErrorWithBody(404, {
+      error: 'x',
+      code: 'subscription_not_found',
+    })
+    expect(httpError.message).toBe('Edge Function returned a non-2xx status code')
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe('subscription_not_found')
+      expect(result.code).not.toBe('Edge Function returned a non-2xx status code')
+    }
+  })
+})
+
+describe('cancelSubscription — network-level failure guard', () => {
+  it('falls back to a generic failure on a FunctionsFetchError without throwing', async () => {
+    const fetchError = new FunctionsFetchError(new TypeError('Failed to fetch'))
+    invokeMock.mockResolvedValue({ data: null, error: fetchError })
+
+    await expect(
+      cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+    ).resolves.not.toThrow()
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+    expect(result.ok).toBe(false)
+  })
+
+  it('never throws on a hard rejection from invoke (e.g. network down)', async () => {
+    invokeMock.mockRejectedValue(new Error('network down'))
+
+    await expect(
+      cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+    ).resolves.toMatchObject({ ok: false })
+  })
+})
+
+describe('cancelSubscription — never leaks subscription_id / raw_receipt', () => {
+  it('does not include subscription_id in the returned failure value', async () => {
+    const httpError = httpErrorWithBody(404, {
+      error: 'no active subscription found for this account',
+      code: 'subscription_not_found',
+    })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await cancelSubscription({
+      provider: 'stripe',
+      subscription_id: 'sub_should_never_leak_9999',
+    })
+
+    expect(JSON.stringify(result)).not.toContain('sub_should_never_leak_9999')
+  })
+
+  it('does not console-log or console-error the subscription_id on failure', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const httpError = httpErrorWithBody(500, { error: 'internal', code: 'internal' })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_should_never_leak_9999' })
+
+    const allCalls = [...errorSpy.mock.calls, ...logSpy.mock.calls, ...warnSpy.mock.calls]
+    const serialized = JSON.stringify(allCalls)
+    expect(serialized).not.toContain('sub_should_never_leak_9999')
+  })
+
+  it('does not include a raw_receipt field in the success result', async () => {
+    invokeMock.mockResolvedValue({
+      data: {
+        ok: true,
+        current_period_end: '2026-08-14T00:00:00Z',
+        requires_native_action: false,
+        raw_receipt: { should: 'never appear' },
+      },
+      error: null,
+    })
+
+    const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
+
+    expect(result).not.toHaveProperty('raw_receipt')
   })
 })

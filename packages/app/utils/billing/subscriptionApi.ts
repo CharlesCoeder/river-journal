@@ -101,6 +101,58 @@ export async function validateReceipt(
   }
 }
 
+// ─── cancelSubscription — the wrapper around the cancel Edge Function ─────────
+//
+// Reuses the exact same error-extraction mechanics as validateReceipt (same
+// `error.context.status` + `await error.context.json()` recovery, same
+// `FunctionsFetchError` → generic-failure fallback). The success envelope
+// carries `current_period_end` + `requires_native_action` and, unlike
+// validateReceipt, NEVER a `subscription_tier`. `subscription_id`/`raw_receipt`
+// never appear in any thrown, logged, or returned value.
+
+export interface CancelSubscriptionRequest {
+  provider: BillingProvider
+  subscription_id: string
+}
+
+export interface CancelSubscriptionSuccess {
+  ok: true
+  current_period_end: string
+  requires_native_action: boolean
+}
+
+// Reuse validateReceipt's failure shape verbatim.
+export type CancelSubscriptionFailure = ValidateReceiptFailure
+
+export type CancelSubscriptionResult = CancelSubscriptionSuccess | CancelSubscriptionFailure
+
+export async function cancelSubscription(
+  request: CancelSubscriptionRequest
+): Promise<CancelSubscriptionResult> {
+  try {
+    const { data, error } = await supabase.functions.invoke('subscription_cancel', {
+      body: { provider: request.provider, subscription_id: request.subscription_id },
+    })
+
+    if (error) {
+      return await extractFailure(error)
+    }
+
+    if (data && data.ok === true) {
+      return {
+        ok: true,
+        current_period_end: data.current_period_end as string,
+        requires_native_action: data.requires_native_action === true,
+      }
+    }
+
+    return GENERIC_FAILURE
+  } catch {
+    // A hard throw (e.g. network down) — never leak the subscription id, never rethrow.
+    return GENERIC_FAILURE
+  }
+}
+
 export interface StoredReceipt {
   provider: BillingProvider
   raw_receipt: string

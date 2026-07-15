@@ -144,6 +144,10 @@ vi.mock('app/features/notifications/ReminderSettings', () => ({
     React.createElement('div', { 'data-testid': 'reminder-settings-stub' }, 'ReminderSettingsStub'),
 }))
 
+vi.mock('app/features/paid/BillingSection', () => ({
+  BillingSection: () => null,
+}))
+
 // ─── @my/ui mock — minimal passthrough, preserving onPress/testID ────────────
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
@@ -181,12 +185,12 @@ vi.mock('@my/ui', async () => {
 import { SettingsScreen } from '../SettingsScreen'
 
 const STAGGER_MS = 100
-// The OLD (pre-change) section count, matching the current SettingsScreen's
-// SECTION_COUNT (Privacy Tier through the Collective section, plus the
-// footer). If the Notifications section addition forgets to bump
-// SECTION_COUNT, the footer will already be visible by this point — the
-// regression this file guards against.
-const OLD_SECTION_COUNT = 9
+// The stagger slot immediately before the footer (the footer reveals at
+// SECTION_COUNT). If a section-addition forgets to bump SECTION_COUNT, the
+// footer will already be visible by this point — the regression this file
+// guards against. The Notifications section itself reveals well before this
+// slot.
+const OLD_SECTION_COUNT = 10
 const NEW_SECTION_COUNT = OLD_SECTION_COUNT + 1
 
 function flushStagger(steps: number) {

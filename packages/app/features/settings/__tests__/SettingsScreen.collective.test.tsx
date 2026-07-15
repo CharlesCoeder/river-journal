@@ -135,6 +135,10 @@ vi.mock('../SuspensionStatusSection', () => ({
 // The reminder-settings child is stubbed here — its own behavior is covered by
 // its dedicated suite; this file only asserts the existing section mounting +
 // stagger correctness after the new section was added.
+vi.mock('app/features/paid/BillingSection', () => ({
+  BillingSection: () => null,
+}))
+
 vi.mock('app/features/notifications/ReminderSettings', () => ({
   ReminderSettings: () => null,
 }))
@@ -174,10 +178,11 @@ vi.mock('@my/ui', async () => {
 import { SettingsScreen } from '../SettingsScreen'
 
 const STAGGER_MS = 100
-// The OLD (pre-story) section count. If the implementation forgets to bump
-// SECTION_COUNT, the footer will already be visible by this point — that is
-// exactly the regression this file guards against.
-const OLD_SECTION_COUNT = 9
+// The stagger slot immediately before the footer (footer reveals at
+// SECTION_COUNT). If a later section-addition forgets to bump SECTION_COUNT,
+// the footer will already be visible by this point — the regression this file
+// guards against. The Collective section itself reveals well before this slot.
+const OLD_SECTION_COUNT = 10
 
 function flushStagger(steps: number) {
   act(() => {
@@ -266,7 +271,7 @@ describe('t3 — SECTION_COUNT grew by exactly one (renumber correctness)', () =
 describe('t4 — all pre-existing sections still render after the renumber', () => {
   it('renders every pre-existing section marker plus Collective plus the footer', () => {
     render(React.createElement(SettingsScreen))
-    flushStagger(10)
+    flushStagger(11)
 
     // Section 1 (authenticated) — Privacy Tier
     expect(screen.getByText('Privacy Tier')).toBeTruthy()
@@ -297,7 +302,7 @@ describe('t4 — all pre-existing sections still render after the renumber', () 
 describe('t5 — footer remains the last section to reveal', () => {
   it('the footer is not visible until every other section (including Collective) is visible', () => {
     render(React.createElement(SettingsScreen))
-    flushStagger(9)
+    flushStagger(10)
     expect(screen.queryByText('River Journal', { exact: false })).toBeNull()
 
     flushStagger(1)
