@@ -153,6 +153,60 @@ export async function cancelSubscription(
   }
 }
 
+// ─── deleteMyAccount — the wrapper around the account-deletion Edge Function ──
+//
+// Fires the cascading server-side deletion saga (which cancels subscriptions,
+// anonymizes Collective contributions, and hard-deletes private data). Takes NO
+// arguments and sends an EMPTY body — identity comes exclusively from the
+// caller's JWT; a client-supplied user id is ignored server-side, so we never
+// send one. Reuses the exact same `extractFailure` error-recovery path as
+// `validateReceipt`/`cancelSubscription`.
+//
+// Success envelope: `{ ok: true, deleted_at, requires_native_subscription_action }`
+// — note the field name is `requires_native_subscription_action`, deliberately
+// NOT `requires_native_action` like `cancelSubscription`'s envelope.
+//
+// Retry-safety: any error response means nothing was committed server-side (the
+// deletion marker is cleared on every pre-cascade terminal failure), so calling
+// this again after a failure is safe and idempotent.
+
+export interface DeleteMyAccountSuccess {
+  ok: true
+  deleted_at: string
+  requires_native_subscription_action: boolean
+}
+
+// Reuse validateReceipt's failure shape verbatim.
+export type DeleteMyAccountFailure = ValidateReceiptFailure
+
+export type DeleteMyAccountResult = DeleteMyAccountSuccess | DeleteMyAccountFailure
+
+export async function deleteMyAccount(): Promise<DeleteMyAccountResult> {
+  try {
+    const { data, error } = await supabase.functions.invoke('delete_my_account', {
+      body: {},
+    })
+
+    if (error) {
+      return await extractFailure(error)
+    }
+
+    if (data && data.ok === true) {
+      return {
+        ok: true,
+        deleted_at: data.deleted_at as string,
+        requires_native_subscription_action: data.requires_native_subscription_action === true,
+      }
+    }
+
+    return GENERIC_FAILURE
+  } catch {
+    // A hard throw (e.g. network down) — never rethrow, never log content. Any
+    // failure is safely retryable.
+    return GENERIC_FAILURE
+  }
+}
+
 export interface StoredReceipt {
   provider: BillingProvider
   raw_receipt: string

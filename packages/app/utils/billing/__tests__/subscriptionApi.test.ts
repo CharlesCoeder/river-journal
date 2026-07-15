@@ -48,10 +48,20 @@ vi.mock('app/utils/supabase', () => ({
 }))
 
 // Import under test — fails until subscriptionApi.ts exists.
+//
+// `deleteMyAccount` is a NEW export this suite pins (red phase): the module
+// does not export it yet, so every test below that calls it fails with
+// "deleteMyAccount is not a function" until the wrapper is added. The named
+// import itself does not break the OTHER already-implemented exports above —
+// Vitest's Vite-powered ESM transform resolves a missing named export as
+// `undefined` rather than failing module load, so `validateReceipt` /
+// `cancelSubscription` / `reValidateStoredReceiptOnAppOpen` coverage stays
+// green throughout red phase.
 import {
   validateReceipt,
   reValidateStoredReceiptOnAppOpen,
   cancelSubscription,
+  deleteMyAccount,
 } from '../subscriptionApi'
 
 function httpErrorWithBody(status: number, body: Record<string, unknown>) {
@@ -614,5 +624,210 @@ describe('cancelSubscription — never leaks subscription_id / raw_receipt', () 
     const result = await cancelSubscription({ provider: 'stripe', subscription_id: 'sub_test_123' })
 
     expect(result).not.toHaveProperty('raw_receipt')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// deleteMyAccount — the wrapper around the `delete_my_account` Edge Function.
+//
+// `deleteMyAccount()` takes NO arguments and calls
+// `supabase.functions.invoke('delete_my_account', { body: {} })` — identity
+// comes from the JWT, never a request body. Reuses the exact same
+// `extractFailure` error-recovery path as `validateReceipt`/`cancelSubscription`
+// (same `error.context.status` + `await error.context.json()` recovery, same
+// `FunctionsFetchError` -> generic-failure fallback). The success envelope is
+// `{ ok: true, deleted_at, requires_native_subscription_action }` — note the
+// FIELD NAME is `requires_native_subscription_action`, deliberately NOT
+// `requires_native_action` like `cancelSubscription`'s envelope.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('deleteMyAccount — invocation contract', () => {
+  it('calls supabase.functions.invoke with the exact function name and an EMPTY body', async () => {
+    invokeMock.mockResolvedValue({
+      data: {
+        ok: true,
+        deleted_at: '2026-07-15T00:00:00Z',
+        requires_native_subscription_action: false,
+      },
+      error: null,
+    })
+
+    await deleteMyAccount()
+
+    expect(invokeMock).toHaveBeenCalledWith('delete_my_account', { body: {} })
+  })
+
+  it('never sends a user_id (or any other field) in the request body', async () => {
+    invokeMock.mockResolvedValue({
+      data: {
+        ok: true,
+        deleted_at: '2026-07-15T00:00:00Z',
+        requires_native_subscription_action: false,
+      },
+      error: null,
+    })
+
+    await deleteMyAccount()
+
+    const [, callArgs] = invokeMock.mock.calls[0] as [string, { body: Record<string, unknown> }]
+    expect(Object.keys(callArgs.body)).toHaveLength(0)
+  })
+
+  it('resolves the success envelope faithfully mapping requires_native_subscription_action: false', async () => {
+    invokeMock.mockResolvedValue({
+      data: {
+        ok: true,
+        deleted_at: '2026-07-15T00:00:00Z',
+        requires_native_subscription_action: false,
+      },
+      error: null,
+    })
+
+    const result = await deleteMyAccount()
+
+    expect(result).toEqual({
+      ok: true,
+      deleted_at: '2026-07-15T00:00:00Z',
+      requires_native_subscription_action: false,
+    })
+  })
+
+  it('resolves the success envelope faithfully mapping requires_native_subscription_action: true (a cancelled apple_iap/play_iap sub)', async () => {
+    invokeMock.mockResolvedValue({
+      data: {
+        ok: true,
+        deleted_at: '2026-07-16T12:34:56Z',
+        requires_native_subscription_action: true,
+      },
+      error: null,
+    })
+
+    const result = await deleteMyAccount()
+
+    expect(result).toEqual({
+      ok: true,
+      deleted_at: '2026-07-16T12:34:56Z',
+      requires_native_subscription_action: true,
+    })
+  })
+
+  it('never includes a subscription_tier field on the success result (mirrors cancelSubscription, unlike validateReceipt)', async () => {
+    invokeMock.mockResolvedValue({
+      data: {
+        ok: true,
+        deleted_at: '2026-07-15T00:00:00Z',
+        requires_native_subscription_action: false,
+      },
+      error: null,
+    })
+
+    const result = await deleteMyAccount()
+
+    expect(result).not.toHaveProperty('subscription_tier')
+  })
+
+  it('the success envelope key is requires_native_subscription_action, NOT requires_native_action', async () => {
+    invokeMock.mockResolvedValue({
+      data: {
+        ok: true,
+        deleted_at: '2026-07-15T00:00:00Z',
+        requires_native_subscription_action: true,
+      },
+      error: null,
+    })
+
+    const result = await deleteMyAccount()
+
+    expect(result).not.toHaveProperty('requires_native_action')
+    expect(result).toHaveProperty('requires_native_subscription_action', true)
+  })
+})
+
+describe('deleteMyAccount — error extraction reuses extractFailure (never error.message)', () => {
+  it('extracts a 401 unauthorized from error.context', async () => {
+    const httpError = httpErrorWithBody(401, { error: 'unauthorized', code: 'unauthorized' })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await deleteMyAccount()
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(401)
+      expect(result.code).toBe('unauthorized')
+    }
+  })
+
+  it('extracts a 500 internal failure', async () => {
+    const httpError = httpErrorWithBody(500, {
+      error: 'account deletion failed',
+      code: 'internal',
+    })
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await deleteMyAccount()
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.status).toBe(500)
+      expect(result.code).toBe('internal')
+    }
+  })
+
+  it('never reads error.message for the surfaced code (SDK generic string trap)', async () => {
+    const httpError = httpErrorWithBody(500, { error: 'x', code: 'internal' })
+    expect(httpError.message).toBe('Edge Function returned a non-2xx status code')
+    invokeMock.mockResolvedValue({ data: null, error: httpError })
+
+    const result = await deleteMyAccount()
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe('internal')
+      expect(result.code).not.toBe('Edge Function returned a non-2xx status code')
+    }
+  })
+})
+
+describe('deleteMyAccount — network-level failure guard', () => {
+  it('falls back to a generic failure on a FunctionsFetchError without throwing', async () => {
+    const fetchError = new FunctionsFetchError(new TypeError('Failed to fetch'))
+    invokeMock.mockResolvedValue({ data: null, error: fetchError })
+
+    await expect(deleteMyAccount()).resolves.not.toThrow()
+
+    const result = await deleteMyAccount()
+    expect(result.ok).toBe(false)
+  })
+
+  it('never throws on a hard rejection from invoke (e.g. network down) — resolves a generic failure instead', async () => {
+    invokeMock.mockRejectedValue(new Error('network down'))
+
+    await expect(deleteMyAccount()).resolves.toMatchObject({ ok: false })
+  })
+
+  it('every error response is safely retryable: calling deleteMyAccount() again after a failure re-invokes the Edge Function', async () => {
+    invokeMock.mockResolvedValueOnce({
+      data: null,
+      error: httpErrorWithBody(500, { error: 'internal', code: 'internal' }),
+    })
+    const first = await deleteMyAccount()
+    expect(first.ok).toBe(false)
+
+    invokeMock.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        deleted_at: '2026-07-15T00:00:00Z',
+        requires_native_subscription_action: false,
+      },
+      error: null,
+    })
+    const second = await deleteMyAccount()
+
+    expect(invokeMock).toHaveBeenCalledTimes(2)
+    expect(second).toEqual({
+      ok: true,
+      deleted_at: '2026-07-15T00:00:00Z',
+      requires_native_subscription_action: false,
+    })
   })
 })

@@ -164,6 +164,14 @@ export const ephemeral$ = observable<{
    * Do NOT add to persistConfig/store$.
    */
   reminderRepliesSince: string | null
+  /**
+   * Set true the moment account deletion is confirmed server-side, signalling
+   * that post-deletion local cleanup should run and, if the app is closed
+   * mid-cleanup, resume on next boot. The confirmation flow sets it; the
+   * boot-resume cleanup step owns clearing it (it flips back to false once the
+   * local-store purge + sign-out finish). Non-persisted like its siblings.
+   */
+  pendingAccountCleanup: boolean
 }>({
   persistentEditor: {
     isVisible: false,
@@ -179,6 +187,7 @@ export const ephemeral$ = observable<{
   surfacedUnlockMilestones: new Set<number>(),
   reminderCardDismissed: false,
   reminderRepliesSince: null,
+  pendingAccountCleanup: false,
 })
 
 // =================================================================
