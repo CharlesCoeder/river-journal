@@ -29,15 +29,19 @@ export interface SubscriptionReceiptRow {
 
 /**
  * The caller's own subscription-receipt row (furthest-future period end among
- * live rows), or null if none exists yet (loading, or an unsynced apple/play
- * seam-stub state, or every row is 'expired').
+ * cancelable rows), or null if none exists yet (loading, an unsynced apple/play
+ * seam-stub state, or no row in a cancelable status).
  *
- * Expired rows are filtered out (`.neq('status', 'expired')`): a stale expired
- * row can carry a dead `sub_...` that would 404 the cancel Edge Function, and a
- * provider switch can leave an old expired row whose `current_period_end` is
- * still further-future than the live row — so it must not win the tiebreak. If
- * EVERY row is expired the read resolves null-like, which correctly shows no
- * cancel affordance (there is no live subscription to cancel).
+ * Only cancelable statuses are admitted (`.in('status', ['active', 'canceled',
+ * 'past_due'])`). This intentionally excludes both `expired` and `pending`:
+ *   - a stale `expired` row can carry a dead `sub_...` that would 404 the cancel
+ *     Edge Function, and a provider switch can leave an old expired row whose
+ *     `current_period_end` is still further-future than the live row — so it must
+ *     not win the desc tiebreak;
+ *   - a `pending` row has no confirmed subscription yet, so rendering it would
+ *     show a "Renews [date]" line plus a Cancel affordance that 404s.
+ * If NO row is in a cancelable status the read resolves null-like, which
+ * correctly shows no cancel affordance (there is no live subscription to cancel).
  *
  * queryKey: ['billing', 'receipt', userId]
  * staleTime: 60_000
@@ -51,7 +55,7 @@ export function useSubscriptionReceipt(userId: string | null): SubscriptionRecei
         .from('subscription_receipts')
         .select('provider, provider_subscription_id, status, current_period_end')
         .eq('user_id', userId!)
-        .neq('status', 'expired')
+        .in('status', ['active', 'canceled', 'past_due'])
         .order('current_period_end', { ascending: false })
         .limit(1)
         .maybeSingle()

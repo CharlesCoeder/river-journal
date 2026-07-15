@@ -98,7 +98,9 @@ export function BillingSection() {
               fontSize="$3"
               color="$color8"
             >
-              {`Renews ${formattedPeriodEnd}`}
+              {receipt.status === 'active'
+                ? `Renews ${formattedPeriodEnd}`
+                : `Current period ends ${formattedPeriodEnd}`}
             </Text>
           ) : null}
           <XStack marginTop="$2">

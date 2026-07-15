@@ -1,34 +1,48 @@
 /**
- * CancelSubscriptionFlow — the locked-Dialog ≤3-step cancel state machine.
+ * CancelSubscriptionFlow — the ≤3-step cancel state machine Dialog.
  *
- * A controlled, locked Dialog (mirrors the locked-dialog styling: $shadow6
- * overlay, $color3 1px content border, reduced-motion-gated 'quick' animation,
- * no tap-outside-dismiss) that walks the user through cancellation in at most
- * three in-app steps and NO retention friction:
+ * A controlled modal Dialog (mirrors the shared dialog styling: $shadow6
+ * overlay, $color3 1px content border, reduced-motion-gated 'quick' animation)
+ * that walks the user through cancellation in at most three in-app steps and NO
+ * retention friction:
  *
  *   confirm → cancelling → cancelled | native-action | error
+ *
+ * Dismissal: Keep subscription / Done, plus the standard modal overlay/escape
+ * dismiss, all route through `onOpenChange(false)`. The state machine resets to
+ * `confirm` (and clears the in-flight guard) on every open transition, so a
+ * dialog that was dismissed mid-error or mid-native-action always reopens on a
+ * clean confirmation screen — no stale error + Retry, no stale native leg.
  *
  * Step 1 (confirm): plain-language summary + Confirm cancel + Keep subscription.
  *   No retention questionnaire, no discount offer, no reason field, no
  *   are-you-sure loop.
- * Step 2 (cancelling): the cancel Edge Function is called; Confirm is disabled
- *   in flight so a double-tap can't fire two cancels.
+ * Step 2 (cancelling): the cancel Edge Function is called; both Confirm and Keep
+ *   are disabled in flight so a double-tap can't fire two cancels and a mid-flight
+ *   Keep can't close the dialog over a cancel the server is already applying.
  * Step 3 (terminal):
  *   - Stripe (requires_native_action: false): "Cancelled. Thanks for being
  *     here." + Done.
  *   - Apple/Play (requires_native_action: true): the native-action screen
  *     appears automatically (no extra reveal tap) with an Open [Store]
- *     deep-link and a calm, always-visible fallback line — never a dead end.
+ *     deep-link, a calm always-visible fallback line, and an explicit Done — never
+ *     a dead end. If the envelope claims native action but no store link resolves
+ *     (a provider/flag mismatch, e.g. stripe + requires_native_action), it falls
+ *     back to the Done acknowledgment rather than rendering a blank dialog.
  *   - Any failure: a calm inline message (role="status") + a single Retry,
  *     never a support loop, never a scarier message for the generic 404. Keep
  *     subscription stays available.
+ *
+ * On every successful terminal (Stripe done OR native-action reached OR the
+ * mismatch fallback), `onCancelled()` fires exactly once to drive the Billing
+ * surface's receipt-query refetch.
  *
  * This flow NEVER writes an early downgrade to the client store — the tier flip
  * to free at period end is exclusively server-owned. Telemetry is server-owned
  * and metadata-only (`subscription.cancel.ok`); no client capture is built.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Dialog, Text, XStack, YStack, ExpandingLineButton, useReducedMotion } from '@my/ui'
 import { cancelSubscription } from 'app/utils/billing/subscriptionApi'
 import type { BillingProvider } from 'app/utils/billing/subscriptionApi'
@@ -100,13 +114,33 @@ export function CancelSubscriptionFlow({
   const inFlightRef = useRef(false)
 
   // Warm the react-native Linking cache so the store deep-link can open promptly
-  // once the native-action screen is reached.
-  warmLinking()
+  // once the native-action screen is reached. Runs as an effect (not during
+  // render) so it stays pure and StrictMode's double-invoke can't double-fire
+  // the pre-cache.
+  useEffect(() => {
+    warmLinking()
+  }, [])
+
+  // Reset the state machine on every closed→open transition. Without this, a
+  // dialog dismissed mid-error (or mid-native-action) would reopen showing the
+  // stale terminal screen — and a single Retry tap would fire a cancel the user
+  // never re-confirmed. Clearing inFlightRef here also unlatches the double-fire
+  // guard if the dialog was torn down while a request was still pending.
+  const prevOpenRef = useRef(open)
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setState('confirm')
+      inFlightRef.current = false
+    }
+    prevOpenRef.current = open
+  }, [open])
 
   const formattedPeriodEnd = formatPeriodEnd(currentPeriodEnd)
   const summary = formattedPeriodEnd
     ? `Your subscription will end on ${formattedPeriodEnd}. Cosmetics remain available until then. Streak progression continues unchanged.`
     : 'Your subscription will end at the end of your current billing period. Cosmetics remain available until then. Streak progression continues unchanged.'
+
+  const nativeLink = provider === 'stripe' ? null : resolveNativeStoreLink(provider)
 
   const runCancel = useCallback(async () => {
     // Double-fire guard — a double-tap or a rapid Retry must fire only one call.
@@ -114,21 +148,28 @@ export function CancelSubscriptionFlow({
     inFlightRef.current = true
     setState('cancelling')
 
-    const result = await cancelSubscription({ provider, subscription_id: subscriptionId })
-    inFlightRef.current = false
+    try {
+      const result = await cancelSubscription({ provider, subscription_id: subscriptionId })
 
-    if (result.ok) {
-      if (result.requires_native_action) {
-        setState('native-action')
-      } else {
-        setState('cancelled')
-        // Drives the receipt-query refetch so Billing reflects status='canceled'.
+      if (result.ok) {
+        if (result.requires_native_action && nativeLink) {
+          setState('native-action')
+        } else {
+          // Normal Stripe cancel OR a native-action envelope whose provider has
+          // no resolvable store link (a provider/flag mismatch) — never dead-end
+          // on a blank native screen; land on the Done acknowledgment instead.
+          setState('cancelled')
+        }
+        // Drives the receipt-query refetch so Billing reflects the cancel, on
+        // every successful terminal (including the native-action path).
         onCancelled()
+      } else {
+        setState('error')
       }
-    } else {
-      setState('error')
+    } finally {
+      inFlightRef.current = false
     }
-  }, [provider, subscriptionId, onCancelled])
+  }, [provider, subscriptionId, onCancelled, nativeLink])
 
   const handleKeep = useCallback(() => {
     onOpenChange(false)
@@ -137,8 +178,6 @@ export function CancelSubscriptionFlow({
   const handleDone = useCallback(() => {
     onOpenChange(false)
   }, [onOpenChange])
-
-  const nativeLink = provider === 'stripe' ? null : resolveNativeStoreLink(provider)
 
   const isCancelling = state === 'cancelling'
 
@@ -242,6 +281,7 @@ export function CancelSubscriptionFlow({
               <>
                 <ExpandingLineButton
                   onPress={handleKeep}
+                  disabled={isCancelling}
                   accessibilityLabel="Keep subscription"
                 >
                   Keep subscription
@@ -283,12 +323,20 @@ export function CancelSubscriptionFlow({
             )}
 
             {state === 'native-action' && nativeLink && (
-              <ExpandingLineButton
-                onPress={() => openStoreLink(nativeLink.url)}
-                accessibilityLabel={nativeLink.label}
-              >
-                {nativeLink.label}
-              </ExpandingLineButton>
+              <>
+                <ExpandingLineButton
+                  onPress={handleDone}
+                  accessibilityLabel="Done"
+                >
+                  Done
+                </ExpandingLineButton>
+                <ExpandingLineButton
+                  onPress={() => openStoreLink(nativeLink.url)}
+                  accessibilityLabel={nativeLink.label}
+                >
+                  {nativeLink.label}
+                </ExpandingLineButton>
+              </>
             )}
           </XStack>
         </Dialog.Content>

@@ -640,6 +640,119 @@ describe('Error handling — calm inline message + single Retry, no dark pattern
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Dialog lifecycle — reset on reopen, mid-flight Keep lock, native Done,
+// provider/flag mismatch fallback
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Dialog lifecycle — clean reopen + no dead-ends', () => {
+  it('reopening after an error resets to the confirm screen (no stale error + Retry)', async () => {
+    cancelSubscriptionMock.mockResolvedValue({ ok: false, status: 500, code: 'internal' })
+    const props = baseProps()
+    const { rerender } = render(React.createElement(CancelSubscriptionFlow, props))
+
+    // Drive into the error terminal.
+    fireEvent.click(screen.getByTestId('btn-confirm-cancel'))
+    await waitFor(() => expect(screen.getByTestId('btn-retry')).toBeTruthy())
+
+    // Dismiss (close) then reopen.
+    rerender(React.createElement(CancelSubscriptionFlow, { ...props, open: false }))
+    rerender(React.createElement(CancelSubscriptionFlow, { ...props, open: true }))
+
+    // Fresh confirmation screen — a stale error + one-tap Retry would re-fire an
+    // un-reconfirmed cancel.
+    expect(screen.getByTestId('btn-confirm-cancel')).toBeTruthy()
+    expect(screen.queryByTestId('btn-retry')).toBeNull()
+  })
+
+  it('reopening after the native-action screen resets to the confirm screen', async () => {
+    cancelSubscriptionMock.mockResolvedValue({
+      ok: true,
+      current_period_end: '2026-08-14T00:00:00Z',
+      requires_native_action: true,
+    })
+    const props = baseProps({ provider: 'apple_iap' })
+    const { rerender } = render(React.createElement(CancelSubscriptionFlow, props))
+
+    fireEvent.click(screen.getByTestId('btn-confirm-cancel'))
+    await waitFor(() => expect(screen.getByTestId('btn-open-app-store')).toBeTruthy())
+
+    rerender(React.createElement(CancelSubscriptionFlow, { ...props, open: false }))
+    rerender(React.createElement(CancelSubscriptionFlow, { ...props, open: true }))
+
+    expect(screen.getByTestId('btn-confirm-cancel')).toBeTruthy()
+    expect(screen.queryByTestId('btn-open-app-store')).toBeNull()
+  })
+
+  it('disables "Keep subscription" while the cancel request is in flight', async () => {
+    const { promise } = deferred<any>()
+    cancelSubscriptionMock.mockReturnValue(promise)
+
+    render(React.createElement(CancelSubscriptionFlow, baseProps()))
+    fireEvent.click(screen.getByTestId('btn-confirm-cancel'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-keep-subscription').hasAttribute('disabled')).toBe(true)
+    })
+  })
+
+  it('the native-action screen exposes an explicit Done affordance that dismisses the dialog', async () => {
+    cancelSubscriptionMock.mockResolvedValue({
+      ok: true,
+      current_period_end: '2026-08-14T00:00:00Z',
+      requires_native_action: true,
+    })
+    const onOpenChange = vi.fn()
+
+    render(
+      React.createElement(CancelSubscriptionFlow, baseProps({ provider: 'apple_iap', onOpenChange }))
+    )
+    fireEvent.click(screen.getByTestId('btn-confirm-cancel'))
+    await waitFor(() => expect(screen.getByTestId('btn-done')).toBeTruthy())
+
+    fireEvent.click(screen.getByTestId('btn-done'))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('fires onCancelled() exactly once on the native-action path (drives the receipt-query invalidation)', async () => {
+    cancelSubscriptionMock.mockResolvedValue({
+      ok: true,
+      current_period_end: '2026-08-14T00:00:00Z',
+      requires_native_action: true,
+    })
+    const onCancelled = vi.fn()
+
+    render(
+      React.createElement(CancelSubscriptionFlow, baseProps({ provider: 'apple_iap', onCancelled }))
+    )
+    fireEvent.click(screen.getByTestId('btn-confirm-cancel'))
+
+    await waitFor(() => expect(onCancelled).toHaveBeenCalledTimes(1))
+  })
+
+  it('a stripe + requires_native_action:true mismatch falls back to the Done screen, never a blank dialog', async () => {
+    cancelSubscriptionMock.mockResolvedValue({
+      ok: true,
+      current_period_end: '2026-08-14T00:00:00Z',
+      requires_native_action: true,
+    })
+    const onCancelled = vi.fn()
+
+    // Stripe resolves no native store link — the native-action UI would be a
+    // title with an empty button row. The flow must land on Done instead.
+    render(
+      React.createElement(CancelSubscriptionFlow, baseProps({ provider: 'stripe', onCancelled }))
+    )
+    fireEvent.click(screen.getByTestId('btn-confirm-cancel'))
+
+    await waitFor(() => expect(screen.getByTestId('btn-done')).toBeTruthy())
+    expect(screen.getByText('Cancelled. Thanks for being here.')).toBeTruthy()
+    expect(screen.queryByTestId('btn-open-app-store')).toBeNull()
+    expect(screen.queryByTestId('btn-open-play-store')).toBeNull()
+    expect(onCancelled).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Accessibility
 // ─────────────────────────────────────────────────────────────────────────────
 
