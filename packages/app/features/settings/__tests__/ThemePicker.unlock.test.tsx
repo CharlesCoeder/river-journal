@@ -327,7 +327,10 @@ describe('paid tier', () => {
 // ==========================================================================
 
 describe('"Unlock everything now" affordance', () => {
-  it('renders on free tier and routes to /paid/coming-soon when tapped', () => {
+  // Repointed by the purchase-surface story: the affordance now routes to the
+  // REAL PaidTierPurchaseSurface route (pinned as '/paid') instead of the
+  // '/paid/coming-soon' stub — the stub must not be left as a dead link.
+  it('renders on free tier and routes to /paid (the real purchase surface) when tapped', () => {
     mockTier = 'free'
 
     render(<ThemePicker />)
@@ -337,7 +340,8 @@ describe('"Unlock everything now" affordance', () => {
 
     fireEvent.click(button)
 
-    expect(mockRouterPush).toHaveBeenCalledWith('/paid/coming-soon')
+    expect(mockRouterPush).toHaveBeenCalledWith('/paid')
+    expect(mockRouterPush).not.toHaveBeenCalledWith('/paid/coming-soon')
   })
 
   it('is absent on paid tier', () => {

@@ -6,7 +6,7 @@
  * into a unified `AppState` interface.
  */
 
-import type { StreakState } from './streak'
+import type { StreakState, SubscriptionTier } from './streak'
 
 // =================================================================
 // 1. CORE INTERFACES
@@ -193,6 +193,15 @@ export interface UserProfile {
      */
     feature_flags?: { external_billing_link_enabled?: boolean }
   }
+
+  /**
+   * The user's subscription tier. Server-written only — the client never sets
+   * this directly; it is reflected from the authoritative receipt-validation
+   * response (and app-open re-validation) via `applySubscriptionTierFromServer`.
+   * Optional at the type level for backward compat with persisted profiles
+   * created before this field existed; consumers read with `?? 'free'`.
+   */
+  subscription_tier?: SubscriptionTier
 
   sync: {
     word_goal: boolean

@@ -19,6 +19,7 @@ import type {
   FontPairingId,
   HotkeyActionId,
 } from './types'
+import type { SubscriptionTier } from './streak'
 import {
   THEME_NAMES,
   DEFAULT_THEME,
@@ -1144,6 +1145,7 @@ export const ensureProfile = () => {
       hotkeyOverrides: {},
       editor: { focusMode: false, focusGranularity: 'paragraph' },
       unlockedThemes: [],
+      subscription_tier: 'free',
       sync: {
         word_goal: true,
         themeName: true,
@@ -1183,7 +1185,7 @@ export const setFocusMode = (value: boolean): void => {
 }
 
 /**
- * Sets the focus-mode granularity preference (Story 2.11).
+ * Sets the focus-mode granularity preference.
  * Creates a profile if none exists (mirrors setFocusMode).
  */
 export const setFocusGranularity = (value: 'paragraph' | 'sentence'): void => {
@@ -1279,6 +1281,21 @@ export const spendUnlockToken = (theme: ThemeName): void => {
   const current = store$.profile.unlockedThemes.peek() ?? []
   if (current.includes(theme)) return
   store$.profile.unlockedThemes.set([...current, theme])
+}
+
+/**
+ * Reflects the server-authoritative subscription tier onto the client profile.
+ *
+ * The client NEVER guesses this value — it is fed only by the receipt-validation
+ * response and the app-open re-validation refresh. Creates a profile if none
+ * exists (mirrors setTheme / spendUnlockToken). A paid tier is ADDITIVE: it
+ * unlocks cosmetics reactively via the streak-tier seam without ever writing
+ * `unlockedThemes` or any streak state, so this setter touches only the tier
+ * field and nothing else.
+ */
+export const applySubscriptionTierFromServer = (tier: SubscriptionTier): void => {
+  ensureProfile()
+  store$.profile.subscription_tier.set(tier)
 }
 
 /**

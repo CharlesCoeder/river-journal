@@ -4,6 +4,8 @@ import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
 import { configurePersistence } from './persistConfig'
 import { store$, countUndecidedOrphans } from './store'
+import { billingReceipt$ } from './billing'
+import { scheduleAppOpenReValidation } from './appOpenReValidation'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
@@ -52,6 +54,11 @@ function setupPersistence() {
   // Google OAuth redirect and be rehydrated before HomeScreen mounts (see the
   // isPersistLoaded gate below and state/authReturn.ts).
   syncObservable(authReturn$, configurePersistence({ persist: { name: 'auth-return' } }))
+
+  // Persist the app-open re-validation receipt (local-only, never synced,
+  // never encrypted) so the opportunistic entitlement refresh survives a cold
+  // start. See state/billing.ts.
+  syncObservable(billingReceipt$, configurePersistence({ persist: { name: 'billing-receipt' } }))
 
   // Activate the synced observables so their persistence loads.
   // syncedSupabase uses lazy activation — calling .get() triggers persistence
@@ -174,6 +181,7 @@ export async function initializePersistence() {
       when(syncState(deviceState$).isPersistLoaded),
       when(syncState(onboarding$).isPersistLoaded),
       when(syncState(authReturn$).isPersistLoaded),
+      when(syncState(billingReceipt$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)
@@ -183,6 +191,13 @@ export async function initializePersistence() {
     // Initialize auth listener — fires INITIAL_SESSION immediately to hydrate
     // session state, then handles SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.
     initAuthListener()
+
+    // Opportunistic app-open entitlement refresh (best-effort supplement to the
+    // server-side daily expiry sweep + provider push webhooks). Fire-and-forget
+    // and deferred until a session is known (the auth listener hydrates the
+    // session asynchronously, so firing before the JWT exists would 401 as a
+    // silent no-op on a cold boot). Never awaited on the boot path.
+    scheduleAppOpenReValidation()
 
     // Start the midnight-rollover tick so streak/day surfaces recompute when the
     // local clock crosses midnight (and on app foreground) rather than freezing
