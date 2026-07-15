@@ -42,11 +42,13 @@
  *   elsewhere): `app/utils/billing/subscriptionApi`'s `deleteMyAccount`,
  *   `app/state/subscriptionReceipt`'s `useSubscriptionReceipt`,
  *   `app/state/accountCleanup`'s `runPostDeletionCleanup`, `solito/navigation`'s
- *   `useRouter`, and `app/state/store` (getter-observable pattern — see
- *   `HomeScreen.collective-gate.test.tsx`). `../nativeStoreLinks` (well, its
- *   sibling in `features/paid/`) is NOT mocked for the native-action leg —
- *   it is a pure function independently covered elsewhere, and this file
- *   verifies the real deep-link output is wired.
+ *   `useRouter`, `app/state/store` (getter-observable pattern — see
+ *   `HomeScreen.collective-gate.test.tsx`), and `app/state/syncConfig` (same
+ *   getter-observable pattern, for the persisted `deviceState$.pendingAccountCleanup`
+ *   boot-resume flag). `../nativeStoreLinks` (well, its sibling in
+ *   `features/paid/`) is NOT mocked for the native-action leg — it is a pure
+ *   function independently covered elsewhere, and this file verifies the
+ *   real deep-link output is wired.
  *
  * Red-phase: `packages/app/features/settings/components/DeleteAccountFlow.tsx`
  * does not exist yet — this whole file fails at the top-level import with a
@@ -110,7 +112,6 @@ vi.mock('app/state/store', async () => {
   const email$ = observable<string | null>('user@example.com')
   const userId$ = observable<string | null>('user-1')
   const isAuthenticated$ = observable(true)
-  const pendingAccountCleanup$ = observable(false)
   return {
     store$: {
       session: {
@@ -119,7 +120,18 @@ vi.mock('app/state/store', async () => {
         isAuthenticated: isAuthenticated$,
       },
     },
-    ephemeral$: {
+  }
+})
+
+// ─── app/state/syncConfig — the persisted, device-scoped boot-resume flag ──
+// Same getter-observable pattern as the store$ mock above: built via
+// vi.importActual so the REAL use$/.set() reactivity works.
+vi.mock('app/state/syncConfig', async () => {
+  const { observable } =
+    await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
+  const pendingAccountCleanup$ = observable(false)
+  return {
+    deviceState$: {
       pendingAccountCleanup: pendingAccountCleanup$,
     },
   }
@@ -212,12 +224,13 @@ vi.mock('@my/ui', async () => {
 
 // ─── Import under test — fails until DeleteAccountFlow.tsx exists ─────────
 import { DeleteAccountFlow } from '../DeleteAccountFlow'
-import { store$, ephemeral$ } from 'app/state/store'
+import { store$ } from 'app/state/store'
+import { deviceState$ } from 'app/state/syncConfig'
 
 const email$ = store$.session.email
 const userId$ = store$.session.userId
 const isAuthenticated$ = store$.session.isAuthenticated
-const pendingAccountCleanup$ = ephemeral$.pendingAccountCleanup
+const pendingAccountCleanup$ = deviceState$.pendingAccountCleanup
 
 const CORRECT_EMAIL = 'user@example.com'
 
@@ -566,7 +579,7 @@ describe('Step 3 — final confirm fires deleteMyAccount exactly once (double-fi
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Success — flag set before the fire-and-forget cleanup seam, goodbye renders synchronously', () => {
-  it('sets ephemeral$.pendingAccountCleanup to true on ok, BEFORE the seam resolves', async () => {
+  it('sets deviceState$.pendingAccountCleanup to true on ok, BEFORE the seam resolves', async () => {
     const { promise, resolve } = deferred<{
       ok: true
       deleted_at: string
@@ -707,6 +720,115 @@ describe('Success — flag set before the fire-and-forget cleanup seam, goodbye 
     })
 
     expect(screen.getByTestId('delete-account-goodbye')).toBeTruthy()
+    expect(screen.getByTestId('btn-return-home')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('btn-return-home'))
+    expect(pushSpy).toHaveBeenCalledWith('/')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cleanup-failure sub-line — reactive, additive, non-blocking; reconciled
+// with the fire-and-forget goodbye above (never a second terminal screen)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CLEANUP_FAILED_COPY =
+  "Local cleanup didn't finish. Server-side deletion is complete. Reinstalling the app will fully clear local state."
+
+describe('Cleanup-failure sub-line — additive to the existing terminal state, never a second screen', () => {
+  it('surfaces the calm cleanup-failure copy inside the goodbye terminal state when the fire-and-forget seam rejects while it is still mounted', async () => {
+    deleteMyAccountMock.mockResolvedValue({
+      ok: true,
+      deleted_at: '2026-07-15T00:00:00Z',
+      requires_native_subscription_action: false,
+    })
+    runPostDeletionCleanupMock.mockRejectedValue(new Error('signOut failed'))
+
+    render(React.createElement(DeleteAccountFlow, baseProps()))
+    proceedPastWarningAndEmail()
+    fireEvent.click(screen.getByTestId('btn-delete-my-account'))
+
+    await waitFor(() => expect(screen.getByTestId('delete-account-goodbye')).toBeTruthy())
+
+    const subline = await waitFor(() => screen.getByText(CLEANUP_FAILED_COPY))
+    const statusRegion = subline.closest('[role="status"]')
+    expect(statusRegion, 'cleanup-failure copy must live inside a role="status" region').toBeTruthy()
+    expect(statusRegion?.getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('does NOT show the cleanup-failure copy when the seam resolves cleanly', async () => {
+    deleteMyAccountMock.mockResolvedValue({
+      ok: true,
+      deleted_at: '2026-07-15T00:00:00Z',
+      requires_native_subscription_action: false,
+    })
+    runPostDeletionCleanupMock.mockResolvedValue(undefined)
+
+    render(React.createElement(DeleteAccountFlow, baseProps()))
+    proceedPastWarningAndEmail()
+    fireEvent.click(screen.getByTestId('btn-delete-my-account'))
+
+    await waitFor(() => expect(screen.getByTestId('delete-account-goodbye')).toBeTruthy())
+    // Give the resolved seam's microtask a chance to run before asserting absence.
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(screen.queryByText(CLEANUP_FAILED_COPY)).toBeNull()
+  })
+
+  it('does NOT show the cleanup-failure copy while the seam is still pending (only appears on an actual rejection)', async () => {
+    deleteMyAccountMock.mockResolvedValue({
+      ok: true,
+      deleted_at: '2026-07-15T00:00:00Z',
+      requires_native_subscription_action: false,
+    })
+    const { promise: seamPromise } = deferred<void>()
+    runPostDeletionCleanupMock.mockReturnValue(seamPromise)
+
+    render(React.createElement(DeleteAccountFlow, baseProps()))
+    proceedPastWarningAndEmail()
+    fireEvent.click(screen.getByTestId('btn-delete-my-account'))
+
+    await waitFor(() => expect(screen.getByTestId('delete-account-goodbye')).toBeTruthy())
+
+    expect(screen.queryByText(CLEANUP_FAILED_COPY)).toBeNull()
+  })
+
+  it('surfaces the same cleanup-failure copy on the native-action terminal leg', async () => {
+    useSubscriptionReceiptMock.mockReturnValue({
+      provider: 'apple_iap',
+      status: 'active',
+      current_period_end: '2026-08-14T00:00:00Z',
+      provider_subscription_id: '1000000123',
+    })
+    deleteMyAccountMock.mockResolvedValue({
+      ok: true,
+      deleted_at: '2026-07-15T00:00:00Z',
+      requires_native_subscription_action: true,
+    })
+    runPostDeletionCleanupMock.mockRejectedValue(new Error('signOut failed'))
+
+    render(React.createElement(DeleteAccountFlow, baseProps()))
+    proceedPastWarningAndEmail()
+    fireEvent.click(screen.getByTestId('btn-continue')) // past the subscription warning
+    fireEvent.click(screen.getByTestId('btn-delete-my-account'))
+
+    await waitFor(() => expect(screen.getByTestId('delete-account-native-action')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(CLEANUP_FAILED_COPY)).toBeTruthy())
+  })
+
+  it('adds no second affordance — the existing route-home button remains the only Done action even when the sub-line is showing', async () => {
+    deleteMyAccountMock.mockResolvedValue({
+      ok: true,
+      deleted_at: '2026-07-15T00:00:00Z',
+      requires_native_subscription_action: false,
+    })
+    runPostDeletionCleanupMock.mockRejectedValue(new Error('signOut failed'))
+
+    render(React.createElement(DeleteAccountFlow, baseProps()))
+    proceedPastWarningAndEmail()
+    fireEvent.click(screen.getByTestId('btn-delete-my-account'))
+
+    await waitFor(() => expect(screen.getByText(CLEANUP_FAILED_COPY)).toBeTruthy())
+
     expect(screen.getByTestId('btn-return-home')).toBeTruthy()
     fireEvent.click(screen.getByTestId('btn-return-home'))
     expect(pushSpy).toHaveBeenCalledWith('/')

@@ -18,6 +18,7 @@ import { onboarding$ } from './onboarding'
 import { authReturn$, flushPendingAgeAttestation } from './authReturn'
 import { syncDeviceTimezone } from './timezoneSync'
 import { startTodayTracking } from './today'
+import { runPostDeletionCleanup } from './accountCleanup'
 import './streak' // attaches store$.views.streak side-effect
 
 export const appStatus$ = observable({
@@ -164,6 +165,27 @@ function ensureLocalSessionId() {
   store$.session.localSessionId.set(generateUUID())
 }
 
+/**
+ * Boot-resume for an interrupted post-deletion local cleanup. If the app was
+ * closed mid-cleanup, the persisted marker survives restart; re-fire the seam so
+ * the local purge + sign-out eventually finish without any user action. Called
+ * AFTER `initAuthListener()` so that if a deferred server-side auth-finalize
+ * re-hydrated a lingering session, this pass's `signOut()` still tears it down.
+ * Fire-and-forget with a metadata-only `.catch` — NEVER awaited on the boot
+ * critical path (a slow/failed network sign-out must not block startup); a
+ * failure leaves the marker set so the next launch retries.
+ */
+export function resumePendingAccountCleanupIfNeeded() {
+  if (!deviceState$.pendingAccountCleanup.peek()) return
+
+  void runPostDeletionCleanup().catch((error) => {
+    console.warn(
+      '[account-cleanup] boot-resume post-deletion cleanup did not complete',
+      error instanceof Error ? error.message : 'unknown error'
+    )
+  })
+}
+
 export async function initializePersistence() {
   try {
     setupPersistence()
@@ -191,6 +213,11 @@ export async function initializePersistence() {
     // Initialize auth listener — fires INITIAL_SESSION immediately to hydrate
     // session state, then handles SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.
     initAuthListener()
+
+    // Resume an interrupted post-deletion local cleanup, if one was left
+    // pending by a mid-cleanup app close. Placed after initAuthListener() so a
+    // re-hydrated lingering session still gets torn down. Fire-and-forget.
+    resumePendingAccountCleanupIfNeeded()
 
     // Opportunistic app-open entitlement refresh (best-effort supplement to the
     // server-side daily expiry sweep + provider push webhooks). Fire-and-forget

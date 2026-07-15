@@ -118,11 +118,23 @@ export const orphanFlowsPending$ = observable<{
 export interface DeviceState {
   lastAuthedUserId: string | null
   acknowledgedAccountTransitions: Record<string, true>
+  /**
+   * Persisted boot-resume marker owned by the post-deletion local-cleanup path.
+   * Set true the moment account deletion is confirmed server-side; the cleanup
+   * clears it only on a clean completion, so an app closed mid-cleanup resumes
+   * the local purge + sign-out on the next launch. Lives here (not on the
+   * non-persisted ephemeral store) because it must survive both app restart and
+   * the sign-out the cleanup performs, and is never wiped by the user-scoped
+   * `clearUserData()`. No `DB_VERSION` bump — the 'device-state' table already
+   * persists this observable.
+   */
+  pendingAccountCleanup: boolean
 }
 
 export const deviceState$ = observable<DeviceState>({
   lastAuthedUserId: null,
   acknowledgedAccountTransitions: {},
+  pendingAccountCleanup: false,
 })
 
 export interface PreviousAccountBannerState {

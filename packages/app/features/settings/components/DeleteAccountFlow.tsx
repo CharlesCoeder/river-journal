@@ -44,7 +44,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Dialog, Input, Text, XStack, YStack, ExpandingLineButton, useReducedMotion } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
-import { store$, ephemeral$ } from 'app/state/store'
+import { store$ } from 'app/state/store'
+import { deviceState$ } from 'app/state/syncConfig'
 import { deleteMyAccount } from 'app/utils/billing/subscriptionApi'
 import type { BillingProvider } from 'app/utils/billing/subscriptionApi'
 import { useSubscriptionReceipt } from 'app/state/subscriptionReceipt'
@@ -108,6 +109,13 @@ function providerDisplayName(provider: BillingProvider): string {
 const GOODBYE_COPY =
   'Your account has been deleted. Server-side cleanup will complete within 30 days. Goodbye.'
 
+// Calm, non-alarming sub-line shown only when the fire-and-forget local-cleanup
+// seam later rejects while the goodbye is still mounted. Server-side deletion is
+// already committed (the `ok` response is authoritative), so this is a local-only
+// reassurance — never a "partial deletion / might not have worked" state.
+const CLEANUP_FAILED_COPY =
+  "Local cleanup didn't finish. Server-side deletion is complete. Reinstalling the app will fully clear local state."
+
 type FlowState =
   | 'warning'
   | 'email'
@@ -134,6 +142,10 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
   const [state, setState] = useState<FlowState>('warning')
   const [typedEmail, setTypedEmail] = useState('')
   const [nativeLink, setNativeLink] = useState<NativeStoreLink | null>(null)
+  // Reactive, additive sub-line: set true only if the fire-and-forget cleanup
+  // seam rejects while the terminal goodbye is still mounted (the normal case is
+  // it resolves in a few ms and this never flips). Never blocks/delays goodbye.
+  const [cleanupFailed, setCleanupFailed] = useState(false)
   const inFlightRef = useRef(false)
 
   const router = useRouter()
@@ -158,6 +170,7 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
         setState('warning')
         setTypedEmail('')
         setNativeLink(null)
+        setCleanupFailed(false)
         inFlightRef.current = false
       }
     }
@@ -219,16 +232,20 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
       const result = await deleteMyAccount()
 
       if (result.ok) {
-        // Flag FIRST — a mid-cleanup app close is recoverable on next boot.
-        ephemeral$.pendingAccountCleanup.set(true)
+        // Flag FIRST — a mid-cleanup app close is recoverable on next boot (the
+        // marker is persisted + device-scoped, so it survives the sign-out the
+        // seam performs and drives boot-resume on the next launch).
+        deviceState$.pendingAccountCleanup.set(true)
         // Fire-and-forget: never await the seam. The goodbye renders
         // synchronously below; a slow/failed sign-out must not delay or block
-        // the confirmation. Log is metadata-only.
+        // the confirmation. On rejection, surface the calm cleanup-failure
+        // sub-line reactively (no second screen). Log is metadata-only.
         void runPostDeletionCleanup().catch((err) => {
           console.warn(
             '[delete-account] post-deletion cleanup seam failed',
             err instanceof Error ? err.message : 'unknown error'
           )
+          setCleanupFailed(true)
         })
 
         // The SERVER flag is authoritative for whether the user must still cancel
@@ -472,6 +489,20 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
               >
                 {GOODBYE_COPY}
               </Text>
+              {/* Reactive, additive cleanup-failure sub-line. Appears only if the
+                  fire-and-forget seam rejected while this terminal state is still
+                  mounted — never a second screen, never a second button; the
+                  route-home CTA below IS the Done affordance. Lives inside this
+                  role="status"/aria-live="polite" region so it announces calmly. */}
+              {cleanupFailed && (
+                <Text
+                  testID="delete-account-cleanup-failed"
+                  fontSize="$2"
+                  color="$color11"
+                >
+                  {CLEANUP_FAILED_COPY}
+                </Text>
+              )}
             </YStack>
           )}
 
