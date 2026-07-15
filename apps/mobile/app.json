@@ -41,7 +41,8 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-notifications"
+      "expo-notifications",
+      "@sentry/react-native/expo"
     ],
     "experiments": {
       "typedRoutes": true

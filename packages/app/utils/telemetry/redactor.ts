@@ -1,0 +1,132 @@
+/**
+ * redactor.ts — the pure function that IS the body of Sentry's `beforeSend`
+ * on every platform (web / desktop / mobile share this ONE module). It is the
+ * client-side enforcement point that guarantees user content never leaves the
+ * device in a crash report.
+ *
+ * This module has NO SDK or platform-only imports on purpose: it is the only
+ * part of the Sentry integration that can be unit-tested directly under Vitest
+ * (the native SDK cannot load there), and it is imported by both the web and
+ * native init wrappers so the redaction logic is defined exactly once.
+ *
+ * The event is typed structurally / loosely rather than against an SDK type so
+ * this module stays SDK-free and robust to shape drift across SDK versions.
+ *
+ * TWO INDEPENDENT NETS (a value is redacted if EITHER fires):
+ *  1. Known-key net: any value under a key that case-insensitively matches
+ *     `KNOWN_CONTENT_KEYS` is redacted regardless of its type (string, number,
+ *     nested object, array).
+ *  2. Free-text net: any string ANYWHERE (including under an unknown key) that
+ *     `looksLikeFreeText` flags as user prose is redacted.
+ */
+
+import { isContentKey, looksLikeFreeText } from './contentKeys'
+
+/** Loose structural shape of a Sentry event — intentionally not the SDK type. */
+type LooseEvent = Record<string, unknown>
+
+export const REDACTED = '[redacted]'
+
+/**
+ * Recursively scrub a single JSON-ish value.
+ *
+ * @param value      the value to scrub
+ * @param keyIsContent whether the KEY this value sits under matched a known
+ *                     content key (net #1) — if so, the whole subtree is
+ *                     redacted regardless of value type
+ * @param seen       set of already-visited objects (circular-reference guard)
+ */
+function scrubValue(value: unknown, keyIsContent: boolean, seen: WeakSet<object>): unknown {
+  // Net #1: the containing key is a known content key → redact wholesale.
+  if (keyIsContent) return REDACTED
+
+  // Net #2: free-text prose under ANY key (including unknown keys).
+  if (typeof value === 'string') {
+    return looksLikeFreeText(value) ? REDACTED : value
+  }
+
+  // Primitives (number/boolean/bigint/symbol) and null/undefined pass through
+  // when the key is not a content key.
+  if (value === null || typeof value !== 'object') {
+    return value
+  }
+
+  // Circular-reference guard: if we've already walked this object, stop.
+  if (seen.has(value as object)) return REDACTED
+  seen.add(value as object)
+
+  if (Array.isArray(value)) {
+    return value.map((item) => scrubValue(item, false, seen))
+  }
+
+  return scrubObject(value as LooseEvent, seen)
+}
+
+/** Walk an object, applying the known-key net per-key and recursing. */
+function scrubObject(obj: LooseEvent, seen: WeakSet<object>): LooseEvent {
+  const out: LooseEvent = {}
+  for (const key of Object.keys(obj)) {
+    out[key] = scrubValue(obj[key], isContentKey(key), seen)
+  }
+  return out
+}
+
+/**
+ * The `beforeSend` / `beforeSendTransaction` body. Scrubs the ENTIRE event
+ * tree through both nets rather than a hardcoded allowlist of locations, so
+ * content is stripped wherever it appears — including standard Sentry fields
+ * that earlier revisions never visited (`request` url/query/body/headers/
+ * cookies, `tags`, `transaction`, `spans[].description`/`.data`, `threads`,
+ * `server_name`, and `exception.values[].stacktrace.frames[].vars`) and any
+ * arbitrarily nested payload.
+ *
+ * A value is redacted if EITHER net fires (known content key, or free-text
+ * prose). Short technical strings (error messages, ids, urls, route names)
+ * and the Supabase `user.id` sit below the free-text floor and are preserved
+ * for debugging.
+ *
+ * ROBUSTNESS: never throws (a throwing `beforeSend` drops the event, or
+ * worse in some SDK versions sends it un-scrubbed), guards circular references,
+ * and is idempotent (re-running on an already-redacted event is a no-op —
+ * `[redacted]` is short + technical, so no net re-fires on it).
+ */
+export function redactEvent<T>(event: T): T {
+  // Null/undefined/non-object events: return as-is (nothing to leak). A null
+  // event still returns a defined value per the never-throw contract.
+  if (event === null || event === undefined) return event
+  if (typeof event !== 'object') return event
+
+  try {
+    const seen = new WeakSet<object>()
+    // Recursively scrub the whole event. `scrubValue` rebuilds every object
+    // and array as a fresh value, so the input is never mutated.
+    return scrubValue(event, false, seen) as T
+  } catch {
+    // Never let beforeSend throw. Fall back to a minimally-safe event: drop
+    // every field that can carry content-bearing subtrees rather than risk
+    // shipping them un-scrubbed.
+    try {
+      const source = event as LooseEvent
+      const CONTENT_BEARING_FIELDS = new Set([
+        'extra',
+        'contexts',
+        'breadcrumbs',
+        'exception',
+        'threads',
+        'request',
+        'tags',
+        'transaction',
+        'spans',
+        'message',
+      ])
+      const safe: LooseEvent = {}
+      for (const key of Object.keys(source)) {
+        if (CONTENT_BEARING_FIELDS.has(key)) continue
+        safe[key] = source[key]
+      }
+      return safe as T
+    } catch {
+      return {} as T
+    }
+  }
+}

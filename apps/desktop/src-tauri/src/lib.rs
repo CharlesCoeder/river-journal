@@ -119,6 +119,35 @@ async fn derive_encryption_key(password: Zeroizing<String>, salt_b64: String) ->
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  // Rust-side crash/panic capture. The guard MUST live for the whole process
+  // lifetime (dropping it flushes and disables the client), so it is bound here
+  // in run() and held until the app exits.
+  //
+  // Privacy: no user content ever reaches the Rust layer — it only handles
+  // encryption key material (Zeroizing<String>), which must NEVER be attached
+  // to a Sentry event. We only enable panic/backtrace capture.
+  //
+  // Dev quiet: disabled in debug builds (no DSN) so local runs never emit to
+  // the production project. In release builds the DSN is read from the
+  // compile-time env var `SENTRY_DSN` (empty ⇒ disabled).
+  let _sentry_guard = if cfg!(debug_assertions) {
+    None
+  } else {
+    let dsn = option_env!("SENTRY_DSN").unwrap_or("");
+    if dsn.is_empty() {
+      None
+    } else {
+      Some(sentry::init((
+        dsn,
+        sentry::ClientOptions {
+          release: sentry::release_name!(),
+          send_default_pii: false,
+          ..Default::default()
+        },
+      )))
+    }
+  };
+
   tauri::Builder::default()
     .invoke_handler(tauri::generate_handler![
       set_encryption_key,

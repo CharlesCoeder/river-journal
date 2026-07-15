@@ -12,6 +12,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@sentry/nextjs": "10.65.0",
     "@tamagui/config": "2.0.0-rc.16",
     "@tamagui/next-theme": "2.0.0-rc.16",
     "app": "0.0.0",

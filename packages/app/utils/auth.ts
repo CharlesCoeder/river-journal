@@ -16,6 +16,7 @@ import { clearStoredMasterKey } from './encryptionKeyStore'
 import { queryClient, QUERY_PERSIST_KEY } from '../state/queryClient'
 import { queryStorage } from '../state/queryStorage'
 import { resetSyncCursors } from '../state/persistConfig'
+import { setSentryUser } from './telemetry/sentry'
 
 /**
  * Common Supabase auth error codes mapped to user-friendly messages
@@ -95,6 +96,10 @@ const updateSessionState = (
       })
     }
   })
+
+  // Telemetry user context — Supabase user_id ONLY, never email/name/PII.
+  // Cleared on sign-out so a crash after sign-out is not misattributed.
+  setSentryUser(session?.user?.id ?? null)
 
   if (session?.user) {
     // Maintain device-state.lastAuthedUserId with WRITE-ONCE-PER-TRANSITION

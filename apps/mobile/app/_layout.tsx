@@ -2,6 +2,13 @@
 // registers at module load. See: packages/app/state/collective/mutations.ts.
 import 'app/state/collective/mutations'
 
+// Initialize crash/error telemetry as early as possible so a crash during app
+// startup is still captured. Kept AFTER the mutations eager import above (which
+// must run first) and before any providers mount. A no-op in local dev.
+import { initSentry } from 'app/utils/telemetry/sentry'
+
+initSentry()
+
 import { useEffect } from 'react'
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'

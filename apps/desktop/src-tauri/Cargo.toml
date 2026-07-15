@@ -27,6 +27,10 @@ log = "0.4"
 tauri = { version = "2.5.0", features = [] }
 tauri-plugin-log = "2.0.0-rc"
 zeroize = { version = "1.8.2", features = ["serde"] }
+# Rust-side crash/panic capture for the desktop shell. No user content flows
+# through Rust (only encryption key material, which is NEVER attached), so no
+# redactor is needed here — only panic + backtrace integration.
+sentry = "0.34"
 
 # Compile crypto crates with full optimizations even in dev/debug builds.
 # Without this, scrypt in unoptimized Rust is actually slower than V8's
