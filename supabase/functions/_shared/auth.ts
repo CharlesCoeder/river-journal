@@ -33,7 +33,14 @@ export function createServiceRoleClient(): SupabaseClient {
 // Length-checked, constant-time compare. A plain === (or startsWith) can leak
 // information via early-exit timing and would wrongly accept a prefix; encoding
 // to bytes + a length gate + timingSafeEqual avoids both.
-function constantTimeEquals(a: string, b: string): boolean {
+//
+// Exported so security-critical byte compares (the service-role bearer gate
+// here, the Stripe webhook HMAC compare in _shared/billing/stripe.ts) share ONE
+// vetted primitive rather than each re-deriving the length-gate + timingSafeEqual
+// shape ad-hoc. The length gate returns false on any length mismatch BEFORE
+// timingSafeEqual (which throws on unequal-length inputs), so a wrong-length
+// candidate leaks only "wrong length", never content timing.
+export function constantTimeEquals(a: string, b: string): boolean {
   const encoder = new TextEncoder()
   const aBytes = encoder.encode(a)
   const bBytes = encoder.encode(b)

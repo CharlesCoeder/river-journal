@@ -18,6 +18,8 @@
 // write plus a future Checkout-creation binding (client_reference_id /
 // metadata.user_id, surfaced here as bound_user_id) matter most for this provider.
 
+import { createHmac } from 'node:crypto'
+import { constantTimeEquals } from '../auth.ts'
 import {
   assertNonEmptyProviderId,
   DEFAULT_PROVIDER_TIMEOUT_MS,
@@ -81,6 +83,23 @@ export function mapStripeStatus(status: string): SubscriptionStatus {
 // Stripe reports current_period_end as Unix SECONDS — normalize to UTC ISO-8601.
 export function normalizeStripeTimestamp(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toISOString()
+}
+
+// Normalize a Unix-seconds period end, remapping a normalization RangeError
+// (an out-of-range/unparseable value) to a provider-contract violation (502)
+// rather than letting it surface as a generic 500. Shared by the validate,
+// cancel, and webhook-refresh paths so all three honor the same fault split on a
+// malformed provider timestamp.
+function normalizePeriodEndOr502(unixSeconds: number): string {
+  try {
+    return normalizeStripeTimestamp(unixSeconds)
+  } catch {
+    throw new ReceiptValidationError('provider returned an unparseable period end', {
+      code: 'provider_contract_violation',
+      fault: 'provider',
+      status: 502,
+    })
+  }
 }
 
 interface StripeSubscription {
@@ -180,10 +199,17 @@ export async function validateStripeReceipt(
 
   const boundUserId = sessionBoundUserId ?? resolveSubscriptionBoundUserId(subscription)
 
+  // A missing period end already threw provider_contract_violation (502) inside
+  // resolveCurrentPeriodEnd; a numerically-out-of-range value that throws on
+  // normalization (RangeError) is likewise a provider-contract violation, not a
+  // generic 500 (carry-in hardening: honor the fault split on a malformed ts,
+  // matching the cancel/refresh paths that share this same normalization call).
+  const currentPeriodEndIso = normalizePeriodEndOr502(currentPeriodEnd)
+
   return {
     provider_subscription_id: providerSubscriptionId,
     status,
-    current_period_end: normalizeStripeTimestamp(currentPeriodEnd),
+    current_period_end: currentPeriodEndIso,
     tier,
     bound_user_id: boundUserId,
     raw_metadata: {
@@ -319,15 +345,7 @@ export async function cancelStripeSubscriptionAtPeriodEnd(
   // normalization (RangeError) is likewise a provider-contract violation, not a
   // generic 500 (carry-in hardening: honor the fault split on a malformed ts).
   const currentPeriodEnd = resolveCurrentPeriodEnd(subscription)
-  try {
-    return { current_period_end: normalizeStripeTimestamp(currentPeriodEnd) }
-  } catch {
-    throw new ReceiptValidationError('provider returned an unparseable period end', {
-      code: 'provider_contract_violation',
-      fault: 'provider',
-      status: 502,
-    })
-  }
+  return { current_period_end: normalizePeriodEndOr502(currentPeriodEnd) }
 }
 
 // A ReceiptValidationError (timeout, contract violation) passes through
@@ -341,6 +359,172 @@ function rethrowStripeError(error: unknown): never {
     code: 'receipt_not_found',
     fault: 'client',
   })
+}
+
+// Verify a Stripe webhook's `Stripe-Signature` header against the raw request
+// body — the SOLE authentication for the public (verify_jwt = false)
+// billing_events webhook, since it carries no user JWT and no service-role
+// bearer. The scheme (Stripe's own): the header is `t=<unix>,v1=<hex>[,v1=...]`;
+// the signed payload is the exact string `${t}.${rawBody}`; the digest is
+// HMAC-SHA256 keyed by the endpoint's `whsec_…` secret; a signature verifies if
+// ANY delivered `v1` matches within a timestamp tolerance window (default 300 s,
+// Stripe's recommended default) that bounds replay.
+//
+// The raw body is HMAC'd UNMODIFIED — the caller reads it once with req.text()
+// and passes that exact string here, never a re-serialized variant
+// (JSON.stringify(JSON.parse(body)) would reorder keys / drop whitespace and
+// reject every real event). On success this returns JSON.parse(rawBody) — the
+// SAME string that was verified.
+//
+// EVERY failure (missing/malformed header, missing t or all v1, a bad timestamp,
+// no matching v1, wrong secret) throws ONE error shape —
+// ReceiptValidationError { code: 'webhook_signature_invalid', fault: 'client' }
+// — so the handler's fail-closed generic-400 mapping is uniform and leaks
+// nothing about which check failed. The v1 compare is length-gated + constant
+// time (the shared constantTimeEquals), so a wrong-length v1 leaks only "wrong
+// length", never content timing, and never throws on a length mismatch.
+export function verifyStripeWebhookSignature(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+  opts: { toleranceSeconds?: number; nowMs?: number } = {},
+): unknown {
+  const toleranceSeconds = opts.toleranceSeconds ?? 300
+  const nowMs = opts.nowMs ?? Date.now()
+
+  const fail = (): never => {
+    throw new ReceiptValidationError('stripe webhook signature verification failed', {
+      code: 'webhook_signature_invalid',
+      fault: 'client',
+    })
+  }
+
+  // Defense in depth: an empty/whitespace secret keys the HMAC to a known constant,
+  // so any caller could forge a matching v1 and bypass authentication. The handler
+  // already fails closed on an unset STRIPE_WEBHOOK_SECRET before reaching here, but
+  // a future caller that forgets that check must not open a forgeable-HMAC hole —
+  // reject INSIDE the verifier with the same no-detail signature failure.
+  if (typeof secret !== 'string' || secret.trim() === '') {
+    return fail()
+  }
+
+  if (typeof signatureHeader !== 'string' || signatureHeader.trim() === '') {
+    return fail()
+  }
+
+  let timestamp: string | null = null
+  const v1Values: string[] = []
+  for (const part of signatureHeader.split(',')) {
+    const eq = part.indexOf('=')
+    if (eq === -1) {
+      continue
+    }
+    const key = part.slice(0, eq).trim()
+    const value = part.slice(eq + 1).trim()
+    if (key === 't') {
+      timestamp = value
+    } else if (key === 'v1') {
+      v1Values.push(value)
+    }
+  }
+
+  if (timestamp === null || timestamp === '' || v1Values.length === 0) {
+    return fail()
+  }
+  const timestampSeconds = Number(timestamp)
+  if (!Number.isFinite(timestampSeconds)) {
+    return fail()
+  }
+  if (Math.abs(nowMs - timestampSeconds * 1000) > toleranceSeconds * 1000) {
+    return fail()
+  }
+
+  const expected = createHmac('sha256', secret).update(`${timestamp}.${rawBody}`).digest('hex')
+  const matches = v1Values.some((candidate) => constantTimeEquals(expected, candidate))
+  if (!matches) {
+    return fail()
+  }
+
+  return JSON.parse(rawBody)
+}
+
+// Retrieve a Subscription's LIVE authoritative state fresh by id and normalize it
+// for a freshness refresh — the webhook path's read. It ALWAYS retrieves by id
+// (never accepts a pre-fetched object and never trusts the delivered event
+// snapshot), so a redelivered OR out-of-order-older webhook still writes Stripe's
+// current truth: the stored current_period_end only ever moves forward for a
+// renewing subscription and can never regress into the daily expiry sweep's
+// window. Reuses the exact period-end resolution (item-level first, top-level
+// fallback), status mapping, and timestamp normalization as validateStripeReceipt.
+//
+// Unlike validateStripeReceipt it does NOT hard-throw on an underivable plan: a
+// tier_unresolvable is caught and returned as tier: null so a freshness refresh
+// of status/current_period_end is never wedged by a plan whose interval maps to
+// no tier (the handler then simply skips the tier update). A malformed/
+// out-of-range period end still maps to the same provider-contract 502 as the
+// validate/cancel paths (never an uncaught RangeError).
+export async function refreshStripeSubscriptionState(
+  subscriptionId: string,
+  deps: StripeDeps,
+): Promise<{
+  provider_subscription_id: string
+  status: SubscriptionStatus
+  current_period_end: string
+  tier: SubscriptionTier | null
+}> {
+  const timeoutMs = deps.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS
+  const productTierMap = deps.productTierMap ?? {}
+
+  let subscription: StripeSubscription
+  try {
+    subscription = (await withTimeout(
+      (signal) => Promise.resolve(deps.stripeClient.subscriptions.retrieve(subscriptionId, signal)),
+      timeoutMs,
+    )) as StripeSubscription
+  } catch (error) {
+    // A fired timeout (provider_timeout) or any other ReceiptValidationError
+    // passes through untouched. Any other rejection (Stripe 5xx / 429 / network)
+    // is a PROVIDER fault so the handler returns a 5xx and Stripe redelivers —
+    // the refresh is idempotent AND out-of-order-safe, so redelivery is safe.
+    if (error instanceof ReceiptValidationError) {
+      throw error
+    }
+    throw new ReceiptValidationError('stripe could not retrieve the subscription', {
+      code: 'provider_retrieve_failed',
+      fault: 'provider',
+    })
+  }
+
+  const providerSubscriptionId = assertNonEmptyProviderId(subscription.id)
+  const status = mapStripeStatus(String(subscription.status))
+  const currentPeriodEnd = normalizePeriodEndOr502(resolveCurrentPeriodEnd(subscription))
+
+  const priceItem = subscription.items?.data?.[0]?.price
+  const recurring = priceItem?.recurring
+  let tier: SubscriptionTier | null
+  try {
+    tier = deriveTierFromInterval(
+      String(recurring?.interval ?? ''),
+      Number(recurring?.interval_count ?? 0),
+      priceItem?.id ?? null,
+      productTierMap,
+    )
+  } catch (error) {
+    // An underivable plan must NOT wedge the freshness refresh — swallow ONLY the
+    // tier_unresolvable client fault and refresh status/period-end with tier null.
+    if (error instanceof ReceiptValidationError && error.code === 'tier_unresolvable') {
+      tier = null
+    } else {
+      throw error
+    }
+  }
+
+  return {
+    provider_subscription_id: providerSubscriptionId,
+    status,
+    current_period_end: currentPeriodEnd,
+    tier,
+  }
 }
 
 // The production thin fetch adapter satisfying the StripeClientSeam — shared by

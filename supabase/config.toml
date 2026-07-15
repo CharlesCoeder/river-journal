@@ -427,6 +427,23 @@ verify_jwt = true
 [functions.subscription_cancel]
 verify_jwt = true
 
+# Public webhook: invoked by Stripe (NOT a user client, NOT a trigger/cron) when a
+# subscription renews or changes. verify_jwt = false so it is reachable at its
+# public URL BY DESIGN — but this is a THIRD, distinct auth posture from both
+# above: it is neither a user-JWT function (subscription_*, verify_jwt = true) nor
+# a service-role-bearer trigger/cron function (notify_* / streak_reminder_cron,
+# which do a requireServiceRole() bearer compare). Here there is NO bearer check
+# and NO JWT — the Stripe-Signature HMAC over the raw body IS the authentication
+# (verified against STRIPE_WEBHOOK_SECRET with a timestamp-tolerance window). DB
+# writes use the service-role client because there is no caller identity to scope
+# to; instead every write is keyed to the exact (provider='stripe',
+# provider_subscription_id) natural key and the function NEVER inserts a row, so an
+# unauthenticated push cannot forge entitlement. See docs/edge-functions-setup.md
+# for the per-environment secrets (STRIPE_WEBHOOK_SECRET + the reused
+# STRIPE_SECRET_KEY) and the dashboard webhook-registration ops step.
+[functions.billing_events]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
