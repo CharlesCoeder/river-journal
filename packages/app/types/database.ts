@@ -688,6 +688,24 @@ export type Database = {
           reports: { id: string; reason_code: string; note: string | null; created_at: string }[]
         }[]
       }
+      collective_export_page: {
+        Args: { cursor: string | null; cursor_id?: string | null; page_size?: number }
+        Returns: {
+          id: string
+          user_id: string
+          parent_post_id: string | null
+          title: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          removed_reason: string | null
+          removed_at: string | null
+          reaction_count: number
+          descendant_count: number
+        }[]
+      }
       collective_my_removed_posts: {
         Args: { max_rows?: number }
         Returns: {
