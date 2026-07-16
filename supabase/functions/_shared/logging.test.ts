@@ -26,7 +26,7 @@
 // fail on a genuine assertion (the leaked marker survives redaction), not on
 // import resolution, until the denylist is extended.
 
-import { assertEquals } from 'jsr:@std/assert@1'
+import { assert, assertEquals } from 'jsr:@std/assert@1'
 import { logError, logInfo, redact } from './logging.ts'
 
 function captureConsole(method: 'log' | 'error', fn: () => void): string {
@@ -193,4 +193,83 @@ Deno.test('logInfo passes safe flat fields through unchanged (kind/duration_days
   assertEquals(parsed.fields.duration_days, 3)
   assertEquals(parsed.fields.target_post_id, 'post-123')
   assertEquals(parsed.fields.user_id, 'user-abc')
+})
+
+// ── Hardening additions below: case-insensitive key match + free-text value
+// net (closing the casing-rename escape and the off-list-key escape). Red
+// phase: the current DENYLIST.has(key) is an exact-match Set lookup with no
+// value-level net, so every case below fails on a genuine assertion (the
+// leaked marker survives redaction) until redact() is hardened to
+// isContentKey()'s case-insensitive matching and gains the looksLikeFreeText
+// value net.
+
+Deno.test('logInfo redacts denylisted keys case-insensitively, closing the casing-rename escape (Body, Reason)', () => {
+  const line = captureConsole('log', () =>
+    logInfo('subscription.receipt.validate', {
+      Body: 'leaked body via a case-variant key',
+      Reason: 'leaked reason via a case-variant key',
+      action_type: 'validate_receipt',
+    }))
+
+  assertEquals(line.includes('leaked body via a case-variant key'), false)
+  assertEquals(line.includes('leaked reason via a case-variant key'), false)
+  const parsed = JSON.parse(line)
+  assertEquals(parsed.fields.Body, undefined)
+  assertEquals(parsed.fields.Reason, undefined)
+  assertEquals(parsed.fields.action_type, 'validate_receipt')
+})
+
+Deno.test('logInfo redacts an ALL-CAPS-variant denylisted key nested inside another object', () => {
+  const line = captureConsole('log', () =>
+    logInfo('moderation.notify', {
+      action_type: 'suspend_user',
+      details: { REASON: 'leaked reason via an all-caps nested key' },
+    }))
+
+  assertEquals(line.includes('leaked reason via an all-caps nested key'), false)
+})
+
+Deno.test('logInfo redacts a free-text-shaped value riding under an OFF-list key (the looksLikeFreeText value net)', () => {
+  const freeText =
+    'This is a fairly long free-text note that a user might type into a draft field without anyone renaming the key to something on the denylist.'
+  assert(freeText.length >= 60 && freeText.trim().split(/\s+/).length >= 6)
+
+  const line = captureConsole('log', () =>
+    logInfo('moderation.notify', {
+      action_type: 'suspend_user',
+      userNote: freeText,
+    }))
+
+  assertEquals(line.includes(freeText), false)
+  const parsed = JSON.parse(line)
+  assertEquals(typeof parsed.fields.userNote, 'string')
+  // The key survives (it is not denylisted) but the VALUE must be replaced
+  // with a redacted marker, never the original prose.
+  assert(parsed.fields.userNote.includes('redacted'))
+})
+
+Deno.test('the free-text value net also catches a long prose string nested inside another object under an off-list key', () => {
+  const freeText =
+    'Another sufficiently long piece of free-text prose that a user typed, sitting inside a nested object under an off-list key so it has no exact-match key to hide behind.'
+  assert(freeText.length >= 60 && freeText.trim().split(/\s+/).length >= 6)
+
+  const line = captureConsole('log', () =>
+    logInfo('moderation.notify', {
+      action_type: 'suspend_user',
+      metadata: { draftText: freeText },
+    }))
+
+  assertEquals(line.includes(freeText), false)
+})
+
+Deno.test('logInfo preserves a short technical string under an off-list key (no over-redaction) alongside safe metadata', () => {
+  const line = captureConsole('log', () =>
+    logInfo('subscription.receipt.validate', {
+      errCode: 'E_TIMEOUT',
+      provider: 'stripe',
+    }))
+
+  const parsed = JSON.parse(line)
+  assertEquals(parsed.fields.errCode, 'E_TIMEOUT')
+  assertEquals(parsed.fields.provider, 'stripe')
 })

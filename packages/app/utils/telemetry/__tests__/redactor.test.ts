@@ -63,8 +63,22 @@ describe('looksLikeFreeText — prose vs technical strings', () => {
     expect(looksLikeFreeText('Failed to persist flow')).toBe(false)
   })
 
-  it('preserves a long single token (no whitespace → not prose)', () => {
-    expect(looksLikeFreeText('a'.repeat(200))).toBe(false)
+  it('preserves a long single token below the raw-length fallback (no whitespace → not prose)', () => {
+    expect(looksLikeFreeText('a'.repeat(100))).toBe(false)
+  })
+
+  it('preserves a 64-char hex hash (a technical token below the raw-length fallback)', () => {
+    expect(looksLikeFreeText('deadbeef'.repeat(8))).toBe(false)
+  })
+
+  it('flags space-less prose past the raw-length fallback (CJK collapses to one "word")', () => {
+    // A ~130-codepoint run of CJK with no whitespace splits into a single
+    // "word" and would evade the >= 6-word primary check, so the raw-length
+    // fallback must catch it.
+    const cjk = '今日はセラピストに去年の春の出来事を打ち明けた気持ちが軽くなった'.repeat(4)
+    expect(cjk.split(/\s+/).length).toBe(1)
+    expect(cjk.length).toBeGreaterThanOrEqual(120)
+    expect(looksLikeFreeText(cjk)).toBe(true)
   })
 })
 
@@ -111,6 +125,13 @@ describe('redactEvent — scrubs standard Sentry fields, not just a fixed allowl
   it('redacts free-text prose in spans[].description', () => {
     const result = redactEvent({ spans: [{ op: 'db.query', description: LONG_PROSE }] })
     expect(containsLeak(result, 'told my therapist')).toBe(false)
+  })
+
+  it('redacts space-less CJK prose under an off-list key via the raw-length fallback', () => {
+    const cjk = '今日はセラピストに去年の春の出来事を打ち明けた気持ちが軽くなった'.repeat(4)
+    const result = redactEvent({ extra: { draftText: cjk } }) as any
+    expect(containsLeak(result, cjk)).toBe(false)
+    expect(result.extra.draftText).toBe(REDACTED)
   })
 
   it('redacts content in stacktrace frame local vars', () => {

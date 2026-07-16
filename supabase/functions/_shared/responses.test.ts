@@ -78,3 +78,59 @@ Deno.test('err() never serializes a stack trace or Error.cause into the body', a
   assertEquals(raw.includes('secret internal cause'), false)
   assertEquals(raw.includes('db connection string'), false)
 })
+
+// ── Lock the regression: even when a caller extracts `.message` off a real
+// Error (the pattern already used at several call sites, e.g.
+// `err(thrown.message, { code: thrown.code, status })`), the body carries
+// ONLY { error, code? } — never the stack/cause the source Error object
+// still holds internally. This is a verify+lock test (Dev Notes: responses.ts
+// already implements this correctly) so it is expected to already be GREEN
+// pre-implementation; it guards against a future regression, not a gap in
+// today's code.
+
+Deno.test('err(thrown.message, ...) — the real call-site pattern — never leaks the source Error object, even though the Error still holds a stack + cause', async () => {
+  const boom = new Error('upstream provider timed out') // deno-lint-ignore no-explicit-any
+  ;(boom as any).cause = new Error('secret internal cause: connection pool exhausted')
+
+  const res = err(boom.message, { code: 'internal', status: 500 })
+  const body = await res.json()
+
+  assertEquals(body, { error: 'upstream provider timed out', code: 'internal' })
+  assertEquals('stack' in body, false)
+  assertEquals('cause' in body, false)
+  const raw = JSON.stringify(body)
+  assertEquals(raw.includes('connection pool exhausted'), false)
+})
+
+Deno.test('err() never spreads a raw exception object\'s own fields into the body, even when a caller mistakenly passes the Error itself (API-shape proof)', async () => {
+  const boom = new Error('should never appear verbatim in a response body') // deno-lint-ignore no-explicit-any
+  ;(boom as any).cause = new Error('secret internal cause: connection pool exhausted')
+
+  // Deliberately misuse the API the way a careless catch-block might --
+  // `err()` is typed to take a string, but at the JS runtime level nothing
+  // stops a caller from passing the Error object itself. Because the
+  // envelope only ever assigns the second argument onto `body.error` as a
+  // single value (never spreads the exception's own enumerable properties
+  // across the body), the top-level body must carry ONLY `error` (+ `code`)
+  // -- proving the envelope's shape is the safety net, not caller discipline
+  // alone.
+  // deno-lint-ignore no-explicit-any
+  const res = err(boom as any, { status: 500 })
+  const body = await res.json()
+  const raw = JSON.stringify(body)
+
+  assertEquals(Object.keys(body), ['error'])
+  assertEquals(raw.includes('should never appear verbatim in a response body'), false)
+  assertEquals(raw.toLowerCase().includes('stack'), false)
+  assertEquals(raw.includes('secret internal cause: connection pool exhausted'), false)
+})
+
+Deno.test('ok(data) never carries exception fields (stack/cause/message) even when data is built from a caught error\'s safe fields', async () => {
+  const res = ok({ safe: 1 })
+  const body = await res.json()
+
+  assertEquals(body, { ok: true, safe: 1 })
+  assertEquals('stack' in body, false)
+  assertEquals('cause' in body, false)
+  assertEquals('message' in body, false)
+})

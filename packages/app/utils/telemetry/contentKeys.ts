@@ -18,8 +18,11 @@
  *  - The Deno/Edge server-side logger keeps a MIRROR of this list at
  *    `supabase/functions/_shared/contentKeys.ts`. Edge Functions run in a
  *    separate runtime/bundle and CANNOT import from `packages/app`, so that
- *    copy is intentionally synchronized, not shared. If you add a content key
- *    here, add it there too.
+ *    copy is intentionally synchronized, not shared. These 5 BASE keys must
+ *    stay byte-identical in both files: if you add a base content key here, add
+ *    it there too. The server file ADDITIONALLY owns server-only content keys
+ *    (moderation reasons, billing receipt payloads) that never appear on the
+ *    client — those live only in the server mirror, not here.
  *
  * EXTENDING THIS LIST
  * -------------------
@@ -64,6 +67,16 @@ const FREE_TEXT_MIN_LENGTH = 60
 const FREE_TEXT_MIN_WORDS = 6
 
 /**
+ * Raw-length fallback (kept byte-identical to the server mirror). A string this
+ * long is treated as free text regardless of word count, so space-less prose
+ * (CJK/Thai and other non-whitespace scripts) that splits into a single "word"
+ * cannot evade the many-word primary check. Set safely above the longest
+ * technical token we want to preserve (a 64-char hex hash), so ids/urls/error
+ * codes still pass through.
+ */
+const FREE_TEXT_FALLBACK_LENGTH = 120
+
+/**
  * Heuristic: does this string look like user-supplied prose (a journal
  * sentence, a Collective post) rather than a technical error message?
  *
@@ -71,9 +84,12 @@ const FREE_TEXT_MIN_WORDS = 6
  * under an OFF-LIST key (e.g. `userNote`, `draftText`) so it cannot slip
  * through just because the key was not enumerated in `KNOWN_CONTENT_KEYS`.
  *
- * We flag a string only when BOTH hold:
- *  - it is long (>= 60 chars), AND
- *  - it is many-worded (>= 6 whitespace-delimited words).
+ * We flag a string when EITHER holds:
+ *  - it is long (>= 60 chars) AND many-worded (>= 6 whitespace-delimited
+ *    words) — the sentence-shaped primary check; OR
+ *  - it is very long (>= 120 chars) regardless of word count — the raw-length
+ *    fallback that catches space-less prose (CJK/Thai/etc.) which would
+ *    otherwise collapse to a single "word" and slip past the primary check.
  *
  * WHY NOT REQUIRE PUNCTUATION: real user content is frequently punctuation-free
  * (a run-on journal line with no period), so requiring sentence punctuation
@@ -91,7 +107,12 @@ const FREE_TEXT_MIN_WORDS = 6
  */
 export function looksLikeFreeText(value: string): boolean {
   if (typeof value !== 'string') return false
-  if (value.length < FREE_TEXT_MIN_LENGTH) return false
-  const words = value.trim().split(/\s+/)
+  const trimmed = value.trim()
+  // Raw-length fallback: very long strings are user content regardless of how
+  // many whitespace-delimited "words" they contain (space-less scripts leak
+  // otherwise).
+  if (trimmed.length >= FREE_TEXT_FALLBACK_LENGTH) return true
+  if (trimmed.length < FREE_TEXT_MIN_LENGTH) return false
+  const words = trimmed.split(/\s+/)
   return words.length >= FREE_TEXT_MIN_WORDS
 }
