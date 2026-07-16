@@ -56,7 +56,7 @@ vi.mock('posthog-react-native', () => ({
 
 const ORIGINAL_ENV = { ...process.env }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules()
   posthogConstructorMock.mockClear()
   posthogIdentifyMock.mockClear()
@@ -64,6 +64,12 @@ beforeEach(() => {
   posthogCaptureMock.mockClear()
   posthogRegisterMock.mockClear()
   process.env = { ...ORIGINAL_ENV }
+  // Telemetry is opt-in: grant device-local consent so these env/wiring tests
+  // exercise the enabled path. (Consent gating itself is covered in
+  // consentGate.test.ts.) Imported after resetModules so it shares the fresh
+  // module instance the SDK wrapper will read.
+  const { telemetryConsent$ } = await import('../../../state/telemetryConsent')
+  telemetryConsent$.enabled.set(true)
 })
 
 afterEach(() => {

@@ -87,15 +87,15 @@ describe('completeOnboarding — idempotent once completed', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // setOnboardingScreen clamps to [0, 2]
 // ─────────────────────────────────────────────────────────────────────────────
-describe('setOnboardingScreen — clamps to [0, 2]', () => {
+describe('setOnboardingScreen — clamps to [0, 3]', () => {
   it('clamps a negative value up to 0', () => {
     setOnboardingScreen(-1)
     expect(onboarding$.currentScreen.get()).toBe(0)
   })
 
-  it('clamps an out-of-range high value down to 2', () => {
+  it('clamps an out-of-range high value down to 3', () => {
     setOnboardingScreen(5)
-    expect(onboarding$.currentScreen.get()).toBe(2)
+    expect(onboarding$.currentScreen.get()).toBe(3)
   })
 
   it('truncates a fractional value (1.9 -> 1)', () => {
@@ -103,13 +103,15 @@ describe('setOnboardingScreen — clamps to [0, 2]', () => {
     expect(onboarding$.currentScreen.get()).toBe(1)
   })
 
-  it('passes through valid in-range values unchanged (0, 1, 2)', () => {
+  it('passes through valid in-range values unchanged (0, 1, 2, 3)', () => {
     setOnboardingScreen(0)
     expect(onboarding$.currentScreen.get()).toBe(0)
     setOnboardingScreen(1)
     expect(onboarding$.currentScreen.get()).toBe(1)
     setOnboardingScreen(2)
     expect(onboarding$.currentScreen.get()).toBe(2)
+    setOnboardingScreen(3)
+    expect(onboarding$.currentScreen.get()).toBe(3)
   })
 })
 

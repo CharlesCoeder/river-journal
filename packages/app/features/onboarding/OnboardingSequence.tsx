@@ -4,15 +4,17 @@ import { useRouter } from 'solito/navigation'
 import { PracticeScreen } from './components/PracticeScreen'
 import { CommunityScreen } from './components/CommunityScreen'
 import { ProgressionScreen } from './components/ProgressionScreen'
+import { ConsentScreen } from './components/ConsentScreen'
 
 // ---------------------------------------------------------------------------
-// OnboardingSequence — a calm, typography-led 3-screen intro to the product
-// model (practice → community → progression).
+// OnboardingSequence — a calm, typography-led 4-screen intro to the product
+// model (practice → community → progression → telemetry consent).
 //
-// Forward-only: each screen has exactly one primary CTA (Continue on 1–2,
-// Get started on 3) plus a quiet Skip. There is no Back. Skip exits to home
-// from anywhere; Get started completes and exits to home. Both exits are
-// single-pass and never blocking.
+// Forward-only: each screen has exactly one primary CTA (Continue on 1–3, then
+// Enable on the consent screen) plus a quiet secondary (Skip on 1–3, "Not now"
+// on the consent screen). There is no Back. Skip exits to home from anywhere;
+// the consent screen's Enable/"Not now" both complete and exit to home. Both
+// exits are single-pass and never blocking.
 //
 // Scope: this component is the sequence only. First-launch display logic and
 // completion persistence are wired downstream through the optional props
@@ -31,7 +33,7 @@ export interface OnboardingSequenceProps {
   onScreenChange?: (screen: number) => void
 }
 
-const LAST_SCREEN = 2
+const LAST_SCREEN = 3
 
 const headlineIdFor = (screen: number) => `onboarding-headline-${screen}`
 
@@ -98,16 +100,26 @@ export function OnboardingSequence({
   const headlineId = headlineIdFor(currentScreen)
   const handleContinue = () => advanceFrom(currentScreen)
   const handleSkip = () => exit('skipped')
-  const handleGetStarted = () => exit('completed')
+  const handleComplete = () => exit('completed')
 
   const renderScreen = () => {
     if (currentScreen >= LAST_SCREEN) {
+      return (
+        <ConsentScreen
+          key="onboarding-screen-3"
+          headlineId={headlineId}
+          transition={transition}
+          onComplete={handleComplete}
+        />
+      )
+    }
+    if (currentScreen === 2) {
       return (
         <ProgressionScreen
           key="onboarding-screen-2"
           headlineId={headlineId}
           transition={transition}
-          onGetStarted={handleGetStarted}
+          onContinue={handleContinue}
           onSkip={handleSkip}
         />
       )

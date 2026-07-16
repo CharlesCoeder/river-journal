@@ -1,9 +1,19 @@
-import { AnimatePresence, ScrollView, Text, YStack, XStack, View } from '@my/ui'
+import {
+  AnimatePresence,
+  ScrollView,
+  Text,
+  YStack,
+  XStack,
+  View,
+  ExpandingLineButton,
+} from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useEffect, useState } from 'react'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
+import { telemetryConsent$ } from 'app/state/telemetryConsent'
+import { setTelemetryConsent } from 'app/utils/telemetry/consent'
 import { ExportJournal } from './components/ExportJournal'
 import { ExportCollectivePosts } from './components/ExportCollectivePosts'
 import { BackupRestore } from './components/BackupRestore'
@@ -215,13 +225,17 @@ const STAGGER_MS = 100
 // Every section below is gated on `visibleCount >= n`; keep this equal to the
 // number of staggered sections so the last one actually reveals (a too-low
 // count would silently hide a section forever).
-const SECTION_COUNT = 6
+const SECTION_COUNT = 7
+
+const TELEMETRY_CONSENT_COPY =
+  'When on, the app sends anonymous crash reports and basic usage events (which features are used, not what you write) to help us find and fix problems. Your journal entries, Collective posts, and any free text are never collected. Off by default; changing it takes effect immediately.'
 
 export function PrivacyCenterScreen() {
   const router = useRouter()
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const currentMode = use$(encryptionSetup$.currentMode)
   const syncEnabled = use$(store$.session.syncEnabled)
+  const telemetryEnabled = use$(telemetryConsent$.enabled)
   const [visibleCount, setVisibleCount] = useState(0)
   // The Boundary A review disclosure, shared by the encrypted-journal and
   // Collective posture lines (its copy covers both). Review mode never mutates
@@ -506,6 +520,56 @@ export function PrivacyCenterScreen() {
               >
                 <SectionHeader>Encrypted Backup</SectionHeader>
                 <BackupRestore />
+              </YStack>
+            )}
+
+            {/* 7. Usage & Crash Reports — the device-local telemetry opt-in.
+                Default OFF; a single toggle gates both crash and product
+                analytics. Available to every user (never auth-gated) since the
+                preference is per-device and never synced. Flipping it applies
+                immediately with no restart. */}
+            {visibleCount >= 7 && (
+              <YStack
+                key="usage-crash-reports"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
+                <SectionHeader>Usage & Crash Reports</SectionHeader>
+                <YStack gap="$4">
+                  <XStack
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$4"
+                      color="$color"
+                    >
+                      Share usage & crash reports
+                    </Text>
+                    <ExpandingLineButton
+                      size="default"
+                      testID="telemetry-consent-toggle"
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share usage and crash reports"
+                      accessibilityState={{ checked: telemetryEnabled }}
+                      onPress={() => setTelemetryConsent(!telemetryEnabled)}
+                    >
+                      {telemetryEnabled ? 'On' : 'Off'}
+                    </ExpandingLineButton>
+                  </XStack>
+                  <Text
+                    fontFamily="$body"
+                    fontSize={13}
+                    color="$color8"
+                    lineHeight={20}
+                  >
+                    {TELEMETRY_CONSENT_COPY}
+                  </Text>
+                </YStack>
               </YStack>
             )}
           </AnimatePresence>

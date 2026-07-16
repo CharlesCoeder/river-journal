@@ -2,11 +2,12 @@
  * posthog.ts — web + desktop (Tauri renderer) product-analytics init + the ONE
  * sanctioned capture path.
  *
- * Both `apps/web` and `apps/desktop` consume THIS module via a thin
- * `instrumentation-client.ts` that calls `initPostHog()` right after
- * `initSentry()`. It mirrors the `sentry.ts` split exactly: the pure,
- * SDK-free validation lives in `eventAllowlist.ts` (importable everywhere and
- * unit-testable without loading the SDK); here we only wire the `posthog-js`
+ * `initPostHog()` is NOT called eagerly at the app entry: telemetry is opt-in,
+ * so init runs only after the persisted consent flag has loaded — from the boot
+ * gate in `state/initializeApp.ts` and, on a live toggle, from
+ * `utils/telemetry/consent.ts`. It mirrors the `sentry.ts` split exactly: the
+ * pure, SDK-free validation lives in `eventAllowlist.ts` (importable everywhere
+ * and unit-testable without loading the SDK); here we only wire the `posthog-js`
  * SDK, the EU host, the privacy-hardening options, and the runtime enforcement
  * nets. The native counterpart (`posthog.native.ts`) exposes the SAME surface
  * so call sites stay platform-agnostic.
@@ -19,26 +20,35 @@
  */
 
 import posthog from 'posthog-js'
+import { telemetryConsent$ } from '../../state/telemetryConsent'
 import { EVENT_ALLOWLIST, validateEventProps } from './eventAllowlist'
 import { isContentKey, looksLikeFreeText } from './contentKeys'
 
 /**
  * Whether PostHog should capture in the current environment.
  *
- * DEV QUIET (mirrors `sentryEnabled`): only enabled when a key is present AND
- * either this is a production build OR an explicit opt-in flag is set. In plain
- * local dev (flag unset) this is false, so the production key is never used and
- * no dev events pollute the production project.
+ * THREE AND-gates, all required: (1) a key is present, (2) the user has given
+ * telemetry consent (device-local, default OFF — the opt-in gate), and (3) the
+ * dev-quiet gate — a production build OR an explicit opt-in flag. In plain
+ * local dev (flag unset) gate 3 is false, so the production key is never used
+ * and no dev events pollute the production project. Consent is re-checked here
+ * per `captureEvent` call, so revoking it stops capture without a restart.
  */
 function posthogEnabled(): boolean {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
   if (!key) return false
+  if (!telemetryConsent$.enabled.peek()) return false
   return process.env.NEXT_PUBLIC_POSTHOG_ENABLED === 'true' || process.env.NODE_ENV === 'production'
 }
 
 function isDev(): boolean {
   return process.env.NODE_ENV !== 'production'
 }
+
+// posthog-js is a global singleton, so `enable`/`disablePostHog` could be
+// called before any `init` ran. `opt_*`/`reset` on an uninitialized instance is
+// not guaranteed safe, so gate them on this flag rather than the outer catch.
+let inited = false
 
 /**
  * Initialize PostHog for the browser/renderer. Safe to call once at client
@@ -64,6 +74,29 @@ export function initPostHog(): void {
     // are the only sanctioned emission.
     capture_pageview: false,
   })
+  inited = true
+}
+
+/**
+ * Immediately stop capturing when consent is revoked post-boot. `opt_out_capturing`
+ * halts all sends without tearing down the SDK, and the choice is persisted by
+ * posthog-js. Also drops the persisted analytics identity (distinct_id) via
+ * `reset()` per the privacy-first posture. A no-op if `init` never ran.
+ */
+export function disablePostHog(): void {
+  if (!inited) return
+  posthog.opt_out_capturing()
+  posthog.reset()
+}
+
+/**
+ * Re-permit capturing when consent is granted after a prior opt-out. posthog-js
+ * persists the opt-out flag, so a fresh `initPostHog()` alone would stay opted
+ * out; this clears that. A no-op if `init` never ran.
+ */
+export function enablePostHog(): void {
+  if (!inited) return
+  posthog.opt_in_capturing()
 }
 
 /**

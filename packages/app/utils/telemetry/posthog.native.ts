@@ -18,23 +18,28 @@
  */
 
 import { PostHog } from 'posthog-react-native'
+import { telemetryConsent$ } from '../../state/telemetryConsent'
 import { EVENT_ALLOWLIST, validateEventProps } from './eventAllowlist'
 import { isContentKey, looksLikeFreeText } from './contentKeys'
 
 declare const __DEV__: boolean
 
-/** Module-level instance — created on `initPostHog()`, null until then. */
+/** Module-level instance — created lazily on `initPostHog()`, null until then. */
 let client: PostHog | null = null
 
 /**
  * Whether PostHog should capture on device.
  *
- * DEV QUIET (mirrors `sentry.native.ts`): only enabled when a key is present
- * AND either this is a release build (`__DEV__` false) OR an explicit opt-in
- * flag is set. Under `__DEV__` without opt-in the production key is never used.
+ * THREE AND-gates, all required: (1) a key is present, (2) the user has given
+ * telemetry consent (device-local, default OFF — the opt-in gate), and (3) the
+ * dev-quiet gate — a release build (`__DEV__` false) OR an explicit opt-in
+ * flag. Under `__DEV__` without opt-in the production key is never used.
+ * Consent is read synchronously (peek); `captureEvent` re-checks it per call so
+ * revoking consent stops capture even though the instance persists.
  */
 function posthogEnabled(key: string | undefined): key is string {
   if (!key) return false
+  if (!telemetryConsent$.enabled.peek()) return false
   const isRelease = typeof __DEV__ === 'undefined' || __DEV__ === false
   return isRelease || process.env.EXPO_PUBLIC_POSTHOG_ENABLED === 'true'
 }
@@ -51,6 +56,14 @@ export function initPostHog(): void {
   const key = process.env.EXPO_PUBLIC_POSTHOG_KEY
   if (!posthogEnabled(key)) return
 
+  // Idempotent: reuse the existing instance across OFF→ON churn. Constructing a
+  // second `new PostHog(...)` would orphan the first (its flush timers keep
+  // running), so just clear any persisted opt-out and return.
+  if (client) {
+    client.optIn?.()
+    return
+  }
+
   const host = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://eu.posthog.com'
 
   // Privacy hardening (same rationale as the Sentry mobile replay exclusion): a
@@ -59,6 +72,25 @@ export function initPostHog(): void {
   // content the allowlist never inspects can't leak. Only explicit
   // captureEvent() calls emit.
   client = new PostHog(key, { host })
+}
+
+/**
+ * Immediately stop capturing when consent is revoked post-boot. `optOut()`
+ * halts all sends without tearing down the instance; `reset()` then drops the
+ * stored distinct_id per the privacy-first posture. A no-op (never throws) when
+ * no instance exists.
+ */
+export function disablePostHog(): void {
+  client?.optOut()
+  client?.reset()
+}
+
+/**
+ * Re-permit capturing when consent is granted after a prior opt-out. A no-op
+ * (never throws) when no instance exists — `initPostHog()` creates it.
+ */
+export function enablePostHog(): void {
+  client?.optIn()
 }
 
 /**
@@ -129,6 +161,9 @@ export function captureEvent(event: string, props?: Record<string, unknown>): vo
     })
   }
 
+  // Re-check the full gate (incl. consent) per call: the instance persists
+  // after creation, so a post-boot consent revoke must still stop capture here.
+  if (!posthogEnabled(process.env.EXPO_PUBLIC_POSTHOG_KEY)) return
   if (!client) return
 
   client.capture(event, finalProps as Parameters<PostHog['capture']>[1])

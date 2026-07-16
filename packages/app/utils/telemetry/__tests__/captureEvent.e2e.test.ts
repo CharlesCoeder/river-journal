@@ -47,7 +47,7 @@ vi.mock('posthog-js', () => ({
 
 const ORIGINAL_ENV = { ...process.env }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules()
   posthogInitMock.mockClear()
   posthogIdentifyMock.mockClear()
@@ -60,6 +60,11 @@ beforeEach(() => {
   // separately in posthogInit.web.e2e.test.ts).
   process.env.NEXT_PUBLIC_POSTHOG_ENABLED = 'true'
   process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key_web'
+  // Telemetry is opt-in: grant device-local consent so the sanctioned capture
+  // path is exercised. (Consent gating itself is covered in consentGate.test.ts.)
+  // Imported after resetModules so it shares the fresh module instance posthog reads.
+  const { telemetryConsent$ } = await import('../../../state/telemetryConsent')
+  telemetryConsent$.enabled.set(true)
 })
 
 afterEach(() => {

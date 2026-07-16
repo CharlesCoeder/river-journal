@@ -28,11 +28,20 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// Controllable session user id for the boot-telemetry gate's re-identify read.
+const { storeState } = vi.hoisted(() => ({
+  storeState: { userId: null as string | null },
+}))
+
 vi.mock('../persistConfig', () => ({
   configurePersistence: vi.fn(),
 }))
 vi.mock('../store', () => ({
-  store$: {},
+  store$: {
+    session: {
+      userId: { peek: () => storeState.userId },
+    },
+  },
   countUndecidedOrphans: vi.fn(() => ({ flowCount: 0, entryCount: 0 })),
 }))
 vi.mock('../billing', () => ({
@@ -68,6 +77,29 @@ vi.mock('../today', () => ({
 }))
 vi.mock('../streak', () => ({}))
 
+// Telemetry collaborators — mocked so importing initializeApp never pulls the
+// real Sentry/PostHog SDKs into this boot-resume unit test.
+vi.mock('../../utils/telemetry/sentry', () => ({
+  initSentry: vi.fn(),
+  setSentryUser: vi.fn(),
+  disableSentry: vi.fn(),
+}))
+vi.mock('../../utils/telemetry/posthog', () => ({
+  initPostHog: vi.fn(),
+  identifyPostHogUser: vi.fn(),
+  captureEvent: vi.fn(),
+  disablePostHog: vi.fn(),
+  enablePostHog: vi.fn(),
+}))
+vi.mock('../telemetryConsent', async () => {
+  const { observable } =
+    await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
+  return {
+    telemetryConsent$: observable({ enabled: false }),
+    setTelemetryConsentEnabled: vi.fn(),
+  }
+})
+
 // ─── app/state/accountCleanup — the seam the boot-resume helper re-fires ────
 const runPostDeletionCleanupMock = vi.fn()
 vi.mock('../accountCleanup', () => ({
@@ -89,9 +121,12 @@ vi.mock('../syncConfig', async () => {
 })
 
 import { deviceState$ } from '../syncConfig'
+import { telemetryConsent$ } from '../telemetryConsent'
+import { initSentry, setSentryUser } from '../../utils/telemetry/sentry'
+import { enablePostHog, identifyPostHogUser, initPostHog } from '../../utils/telemetry/posthog'
 // resumePendingAccountCleanupIfNeeded does not exist yet — fails at import
 // until the boot-resume extraction lands (this is the expected red state).
-import { resumePendingAccountCleanupIfNeeded } from '../initializeApp'
+import { applyBootTelemetryGate, resumePendingAccountCleanupIfNeeded } from '../initializeApp'
 
 const pendingAccountCleanup$ = deviceState$.pendingAccountCleanup
 
@@ -132,6 +167,54 @@ describe('resumePendingAccountCleanupIfNeeded — boot resume', () => {
     // Flush the rejected microtask — an unhandled rejection here would fail
     // the test run, which is exactly the "swallowed" contract being checked.
     await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+})
+
+describe('applyBootTelemetryGate — persisted-consent boot gate (executed, not grepped)', () => {
+  beforeEach(() => {
+    vi.mocked(initSentry).mockClear()
+    vi.mocked(initPostHog).mockClear()
+    vi.mocked(enablePostHog).mockClear()
+    vi.mocked(setSentryUser).mockClear()
+    vi.mocked(identifyPostHogUser).mockClear()
+    storeState.userId = null
+    telemetryConsent$.enabled.set(false)
+  })
+
+  it('consent OFF ⇒ initializes nothing', () => {
+    telemetryConsent$.enabled.set(false)
+
+    applyBootTelemetryGate()
+
+    expect(initSentry).not.toHaveBeenCalled()
+    expect(initPostHog).not.toHaveBeenCalled()
+    expect(enablePostHog).not.toHaveBeenCalled()
+    expect(setSentryUser).not.toHaveBeenCalled()
+    expect(identifyPostHogUser).not.toHaveBeenCalled()
+  })
+
+  it('consent ON ⇒ inits Sentry + PostHog and re-asserts opt-in', () => {
+    telemetryConsent$.enabled.set(true)
+    storeState.userId = null
+
+    applyBootTelemetryGate()
+
+    expect(initSentry).toHaveBeenCalledTimes(1)
+    expect(initPostHog).toHaveBeenCalledTimes(1)
+    expect(enablePostHog).toHaveBeenCalledTimes(1)
+    // No persisted user ⇒ no identify.
+    expect(setSentryUser).not.toHaveBeenCalled()
+    expect(identifyPostHogUser).not.toHaveBeenCalled()
+  })
+
+  it('consent ON with a persisted user ⇒ re-identifies that user (user_id only)', () => {
+    telemetryConsent$.enabled.set(true)
+    storeState.userId = 'user-persisted-123'
+
+    applyBootTelemetryGate()
+
+    expect(setSentryUser).toHaveBeenCalledWith('user-persisted-123')
+    expect(identifyPostHogUser).toHaveBeenCalledWith('user-persisted-123')
   })
 })
 

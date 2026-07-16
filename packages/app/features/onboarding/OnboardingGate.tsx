@@ -17,9 +17,9 @@ import { onboarding$, completeOnboarding, setOnboardingScreen } from 'app/state/
 // the sequence is showing.
 // ---------------------------------------------------------------------------
 
-/** Clamp a persisted screen index into OnboardingSequence's valid [0, 2] range. */
+/** Clamp a persisted screen index into OnboardingSequence's valid [0, 3] range. */
 function clampScreen(screen: number): number {
-  return Math.max(0, Math.min(2, Math.trunc(screen)))
+  return Math.max(0, Math.min(3, Math.trunc(screen)))
 }
 
 export function OnboardingGate({ children }: { children: React.ReactNode }) {

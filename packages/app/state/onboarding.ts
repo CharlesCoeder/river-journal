@@ -17,8 +17,8 @@
 
 import { observable } from '@legendapp/state'
 
-/** Last valid onboarding screen index (0-based). Sequence has 3 screens. */
-const LAST_SCREEN = 2
+/** Last valid onboarding screen index (0-based). Sequence has 4 screens. */
+const LAST_SCREEN = 3
 
 /**
  * `onboarding$` observable — persisted, local-only.

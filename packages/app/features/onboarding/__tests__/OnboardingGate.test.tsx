@@ -23,8 +23,9 @@
  * this file does not modify it or its existing tests. `OnboardingGate`
  * mounts `OnboardingSequence` unmodified when no completion flag is present,
  * so this file's mocks mirror OnboardingSequence.test.tsx's skeleton exactly
- * (same @my/ui / solito/navigation stubs) so Screen 1-3 copy, roles, and
- * headlines resolve the same way here as in that suite.
+ * (same @my/ui / solito/navigation stubs) so every screen's copy, roles, and
+ * headlines across the four-screen sequence resolve the same way here as in
+ * that suite.
  *
  * Mock strategy: @my/ui mocked to map Tamagui primitives to testable HTML
  * elements (copied from features/onboarding/__tests__/OnboardingSequence.test.tsx),
@@ -54,8 +55,14 @@ vi.mock('solito/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
 }))
 
+// ─── Mock the telemetry consent orchestrator (the consent screen calls it) ───
+vi.mock('../../../utils/telemetry/consent', () => ({
+  setTelemetryConsent: vi.fn(),
+}))
+
 // ─── Mock @my/ui — map Tamagui primitives to testable HTML elements ──────────
-// Copied from OnboardingSequence.test.tsx so Screen 1-3 render identically here.
+// Copied from OnboardingSequence.test.tsx so the four-screen sequence renders
+// identically here.
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
@@ -238,12 +245,13 @@ describe('lapsed prompt excluded for brand-new users', () => {
 // Completion persistence on "Get started"
 // =============================================================================
 
-describe('Get started writes onboardingCompletedAt and swaps to home', () => {
+describe('Consent screen Enable writes onboardingCompletedAt and swaps to home', () => {
   it('sets onboarding$.onboardingCompletedAt to a non-null ISO string', () => {
     renderGate()
     fireEvent.click(screen.getByRole('button', { name: /continue/i })) // -> screen 2
     fireEvent.click(screen.getByRole('button', { name: /continue/i })) // -> screen 3
-    fireEvent.click(screen.getByRole('button', { name: /get started/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // -> screen 4 (consent)
+    fireEvent.click(screen.getByRole('button', { name: /enable/i }))
 
     const completedAt = onboarding$.onboardingCompletedAt.get()
     expect(typeof completedAt).toBe('string')
@@ -254,11 +262,12 @@ describe('Get started writes onboardingCompletedAt and swaps to home', () => {
     renderGate()
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    fireEvent.click(screen.getByRole('button', { name: /get started/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /enable/i }))
 
     expect(queryHomeSentinel()).not.toBeNull()
     expect(queryOnboardingHeadline()).toBeNull()
-    expect(screen.queryByRole('button', { name: /get started/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /enable/i })).toBeNull()
   })
 })
 
@@ -337,19 +346,19 @@ describe('per-device: gate ignores synced account state entirely', () => {
 // =============================================================================
 
 describe('resumes mid-flow from the persisted currentScreen', () => {
-  it('mounts directly on Screen 3 when currentScreen was persisted as 2', () => {
-    onboarding$.currentScreen.set(2)
+  it('mounts directly on the consent screen when currentScreen was persisted as 3', () => {
+    onboarding$.currentScreen.set(3)
     renderGate()
 
-    expect(screen.getByRole('button', { name: /get started/i })).not.toBeNull()
+    expect(screen.getByRole('button', { name: /enable/i })).not.toBeNull()
     expect(screen.queryByRole('button', { name: /^continue$/i })).toBeNull()
   })
 
-  it('clamps an out-of-range persisted currentScreen (5) down to Screen 3, no crash', () => {
+  it('clamps an out-of-range persisted currentScreen (5) down to the consent screen, no crash', () => {
     onboarding$.currentScreen.set(5)
     expect(() => renderGate()).not.toThrow()
 
-    expect(screen.getByRole('button', { name: /get started/i })).not.toBeNull()
+    expect(screen.getByRole('button', { name: /enable/i })).not.toBeNull()
   })
 
   it('advancing via Continue writes the new screen back to onboarding$.currentScreen', () => {

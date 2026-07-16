@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 /**
- * `OnboardingSequence` (3 screens: practice / community / progression)
+ * `OnboardingSequence` (4 screens: practice / community / progression / consent)
  *
  * E2E test covering:
- *   - component structure: 3 sequential full-screen views with the specified
- *     copy, Continue/Get started/Skip affordances
+ *   - component structure: 4 sequential full-screen views with the specified
+ *     copy, Continue/Skip affordances, then Enable/"Not now" on the consent screen
  *   - Continue transitions the next screen in via the designEnterSlow spring
  *   - Skip exits from anywhere, routing directly to home
  *   - typography-only layout (no imagery / icons anywhere)
@@ -38,6 +38,12 @@ const { mockReducedMotion, mockRouterPush } = vi.hoisted(() => {
 // ─── Mock solito/navigation — spy on router.push ──────────────────────────────
 vi.mock('solito/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
+}))
+
+// ─── Mock the telemetry consent orchestrator (pulls Sentry/PostHog SDKs) ─────
+const { mockSetTelemetryConsent } = vi.hoisted(() => ({ mockSetTelemetryConsent: vi.fn() }))
+vi.mock('../../../utils/telemetry/consent', () => ({
+  setTelemetryConsent: mockSetTelemetryConsent,
 }))
 
 // ─── Mock @my/ui — map Tamagui primitives to testable HTML elements ──────────
@@ -139,6 +145,7 @@ function getHeadline(): HTMLElement {
 beforeEach(() => {
   mockReducedMotion.current = false
   mockRouterPush.mockClear()
+  mockSetTelemetryConsent.mockClear()
 })
 
 afterEach(() => {
@@ -190,20 +197,60 @@ describe('Continue advances Screen 1 → Screen 2 (Community)', () => {
 })
 
 describe('Continue advances Screen 2 → Screen 3 (Progression)', () => {
-  it('renders the Progression headline copy and "Get started" (Continue gone)', () => {
+  it('renders the Progression headline copy and a Continue (still forward, consent screen is next)', () => {
     render(React.createElement(OnboardingSequence))
     fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 2
-    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 3
+    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 3 (Progression)
     expect(screen.getByText(/Sustained practice unlocks more/i)).not.toBeNull()
-    expect(screen.getByRole('button', { name: /get started/i })).not.toBeNull()
-    expect(screen.queryByRole('button', { name: /^continue$/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /^continue$/i })).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /get started/i })).toBeNull()
   })
 
-  it('Screen 3 still exposes Skip', () => {
+  it('Progression still exposes Skip', () => {
     render(React.createElement(OnboardingSequence))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     expect(screen.getByRole('button', { name: /skip/i })).not.toBeNull()
+  })
+})
+
+describe('Continue advances Screen 3 (Progression) → Screen 4 (Consent)', () => {
+  it('renders the consent headline + "Enable" and quiet "Not now"; Continue/Skip gone', () => {
+    render(React.createElement(OnboardingSequence))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 2
+    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 3
+    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 4 (Consent)
+    expect(screen.getByText(/Help improve River Journal/i)).not.toBeNull()
+    expect(screen.getByRole('button', { name: /enable/i })).not.toBeNull()
+    expect(screen.getByRole('button', { name: /not now/i })).not.toBeNull()
+    expect(screen.queryByRole('button', { name: /^continue$/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /skip/i })).toBeNull()
+  })
+
+  it('Enable turns telemetry consent ON and completes onboarding', () => {
+    const onDone = vi.fn()
+    render(React.createElement(OnboardingSequence, { onDone }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /enable/i }))
+
+    expect(mockSetTelemetryConsent).toHaveBeenCalledWith(true)
+    expect(onDone).toHaveBeenCalledWith('completed')
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
+  })
+
+  it('"Not now" leaves consent OFF (never calls setTelemetryConsent) but still completes onboarding', () => {
+    const onDone = vi.fn()
+    render(React.createElement(OnboardingSequence, { onDone }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    fireEvent.click(screen.getByRole('button', { name: /not now/i }))
+
+    expect(mockSetTelemetryConsent).not.toHaveBeenCalled()
+    expect(onDone).toHaveBeenCalledWith('completed')
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
   })
 })
 
@@ -319,10 +366,10 @@ describe('section/h1 semantics and focus management', () => {
     expect(document.activeElement).toBe(screen2Headline)
   })
 
-  it('with initialScreen=2, Screen 3 renders directly and its headline receives focus', async () => {
-    render(React.createElement(OnboardingSequence, { initialScreen: 2 }))
+  it('with initialScreen=3, the consent screen renders directly and its headline receives focus', async () => {
+    render(React.createElement(OnboardingSequence, { initialScreen: 3 }))
     await flushRaf()
-    expect(screen.getByRole('button', { name: /get started/i })).not.toBeNull()
+    expect(screen.getByRole('button', { name: /enable/i })).not.toBeNull()
     expect(screen.queryByRole('button', { name: /^continue$/i })).toBeNull()
     expect(document.activeElement).toBe(getHeadline())
   })
@@ -378,17 +425,15 @@ describe('re-entrancy guard on Continue', () => {
   })
 })
 
-describe('re-entrancy guard on exit navigation (Get started / Skip)', () => {
-  it('two synchronous Get started taps call router.push and onDone("completed") exactly once each', () => {
+describe('re-entrancy guard on exit navigation (Enable / Skip)', () => {
+  it('two synchronous Enable taps call router.push and onDone("completed") exactly once each', () => {
     const onDone = vi.fn()
-    render(React.createElement(OnboardingSequence, { onDone }))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 2
-    fireEvent.click(screen.getByRole('button', { name: /continue/i })) // → screen 3
+    render(React.createElement(OnboardingSequence, { onDone, initialScreen: 3 }))
 
-    const getStartedBtn = screen.getByRole('button', { name: /get started/i })
+    const enableBtn = screen.getByRole('button', { name: /enable/i })
     act(() => {
-      fireEvent.click(getStartedBtn)
-      fireEvent.click(getStartedBtn)
+      fireEvent.click(enableBtn)
+      fireEvent.click(enableBtn)
     })
 
     expect(mockRouterPush).toHaveBeenCalledTimes(1)
@@ -431,41 +476,48 @@ describe('no Back affordance anywhere in the sequence', () => {
     expect(screen.queryByText(/←/)).toBeNull()
   })
 
-  it('renders no Back/← labeled element when mounted directly on Screen 3 via initialScreen', () => {
-    render(React.createElement(OnboardingSequence, { initialScreen: 2 }))
+  it('renders no Back/← labeled element when mounted directly on the consent screen via initialScreen', () => {
+    render(React.createElement(OnboardingSequence, { initialScreen: 3 }))
     expect(screen.queryByRole('button', { name: /back/i })).toBeNull()
     expect(screen.queryByText(/←/)).toBeNull()
   })
 })
 
 describe('exactly one primary CTA per screen', () => {
-  it('Screen 1 exposes exactly one Continue button and no Get started', () => {
+  it('Screen 1 exposes exactly one Continue button and no Enable', () => {
     render(React.createElement(OnboardingSequence))
     expect(screen.getAllByRole('button', { name: /^continue$/i }).length).toBe(1)
-    expect(screen.queryByRole('button', { name: /get started/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /enable/i })).toBeNull()
   })
 
-  it('Screen 3 exposes exactly one Get started button and no Continue', () => {
-    render(React.createElement(OnboardingSequence))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
-    expect(screen.getAllByRole('button', { name: /get started/i }).length).toBe(1)
+  it('the consent screen exposes exactly one Enable button and no Continue', () => {
+    render(React.createElement(OnboardingSequence, { initialScreen: 3 }))
+    expect(screen.getAllByRole('button', { name: /enable/i }).length).toBe(1)
     expect(screen.queryByRole('button', { name: /^continue$/i })).toBeNull()
   })
 })
 
-describe('Screen 3 Skip vs Get started report distinct onDone reasons', () => {
-  it('Get started reports onDone("completed") while routing home', () => {
+describe('consent screen Enable / "Not now" both complete; earlier Skip is "skipped"', () => {
+  it('Enable reports onDone("completed") while routing home', () => {
     const onDone = vi.fn()
-    render(React.createElement(OnboardingSequence, { onDone, initialScreen: 2 }))
-    fireEvent.click(screen.getByRole('button', { name: /get started/i }))
+    render(React.createElement(OnboardingSequence, { onDone, initialScreen: 3 }))
+    fireEvent.click(screen.getByRole('button', { name: /enable/i }))
     expect(mockRouterPush).toHaveBeenCalledWith('/')
     expect(onDone).toHaveBeenCalledWith('completed')
   })
 
-  it('Skip on Screen 3 reports onDone("skipped") while routing home (distinct from Get started)', () => {
+  it('"Not now" reports onDone("completed") while routing home (completion, without consent)', () => {
     const onDone = vi.fn()
-    render(React.createElement(OnboardingSequence, { onDone, initialScreen: 2 }))
+    render(React.createElement(OnboardingSequence, { onDone, initialScreen: 3 }))
+    fireEvent.click(screen.getByRole('button', { name: /not now/i }))
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
+    expect(onDone).toHaveBeenCalledWith('completed')
+    expect(mockSetTelemetryConsent).not.toHaveBeenCalled()
+  })
+
+  it('Skip on an earlier screen reports onDone("skipped") (distinct from completion)', () => {
+    const onDone = vi.fn()
+    render(React.createElement(OnboardingSequence, { onDone }))
     fireEvent.click(screen.getByRole('button', { name: /skip/i }))
     expect(mockRouterPush).toHaveBeenCalledWith('/')
     expect(onDone).toHaveBeenCalledWith('skipped')
@@ -474,10 +526,10 @@ describe('Screen 3 Skip vs Get started report distinct onDone reasons', () => {
 })
 
 describe('onDone is optional; navigation still happens without throwing', () => {
-  it('Get started with no onDone prop navigates without throwing', () => {
-    render(React.createElement(OnboardingSequence, { initialScreen: 2 }))
+  it('Enable with no onDone prop navigates without throwing', () => {
+    render(React.createElement(OnboardingSequence, { initialScreen: 3 }))
     expect(() => {
-      fireEvent.click(screen.getByRole('button', { name: /get started/i }))
+      fireEvent.click(screen.getByRole('button', { name: /enable/i }))
     }).not.toThrow()
     expect(mockRouterPush).toHaveBeenCalledWith('/')
   })

@@ -10,6 +10,7 @@
  */
 
 import * as Sentry from '@sentry/react-native'
+import { telemetryConsent$ } from '../../state/telemetryConsent'
 import { redactEvent } from './redactor'
 
 declare const __DEV__: boolean
@@ -17,12 +18,15 @@ declare const __DEV__: boolean
 /**
  * Whether Sentry should send on device.
  *
- * DEV QUIET: we only enable when a DSN is present AND either this is a
- * release build (`__DEV__` false) OR an explicit opt-in flag is set. Under
- * `__DEV__` without opt-in the production DSN is never used.
+ * THREE AND-gates, all required: (1) a DSN is present, (2) the user has given
+ * telemetry consent (device-local, default OFF — the opt-in gate), and (3) the
+ * dev-quiet gate — a release build (`__DEV__` false) OR an explicit opt-in
+ * flag. Under `__DEV__` without opt-in the production DSN is never used.
+ * Consent is read synchronously (peek) because no hooks exist at init time.
  */
 function sentryEnabled(dsn: string | undefined): dsn is string {
   if (!dsn) return false
+  if (!telemetryConsent$.enabled.peek()) return false
   const isRelease = typeof __DEV__ === 'undefined' || __DEV__ === false
   return isRelease || process.env.EXPO_PUBLIC_SENTRY_ENABLED === 'true'
 }
@@ -57,6 +61,20 @@ export function initSentry(): void {
     // screen verbatim and would capture journal/Collective content that
     // beforeSend never inspects. Do not add `Sentry.mobileReplayIntegration()`.
   })
+}
+
+/**
+ * Immediately stop Sentry when consent is revoked post-boot, without a restart.
+ * Uses `Sentry.close()` rather than flipping `options.enabled`: the options
+ * flip leaves the native (iOS/Android) crash handlers installed, so native
+ * crashes keep uploading after a revoke — `close()` tears the whole client (and
+ * those native handlers) down. A later re-enable re-runs `initSentry()`, which
+ * starts a fresh client (there is no module-level inited guard to clear).
+ * `close()` returns a Promise; callers are sync, so fire-and-forget with a
+ * swallowed rejection.
+ */
+export function disableSentry(): void {
+  Sentry.close().catch(() => {})
 }
 
 /**

@@ -1,10 +1,12 @@
 /**
  * sentry.ts — web + desktop (Tauri renderer) crash/error telemetry init.
  *
- * Both `apps/web` and `apps/desktop` consume THIS module via a thin
- * `instrumentation-client.ts` that just calls `initSentry()`. Desktop is a
- * static export (no Next server runtime), so only the browser SDK applies
- * there; the Rust layer handles Rust-side crashes separately.
+ * `initSentry()` is NOT called eagerly at the app entry: telemetry is opt-in,
+ * so init runs only after the persisted consent flag has loaded — from the
+ * boot gate in `state/initializeApp.ts` and, on a live toggle, from
+ * `utils/telemetry/consent.ts`. Desktop is a static export (no Next server
+ * runtime), so only the browser SDK applies there; the Rust layer handles
+ * Rust-side crashes separately.
  *
  * The actual redaction logic lives in the SDK-free `redactor.ts` so it can be
  * unit-tested; here we only wire `beforeSend: redactEvent` and the privacy
@@ -13,18 +15,22 @@
  */
 
 import * as Sentry from '@sentry/nextjs'
+import { telemetryConsent$ } from '../../state/telemetryConsent'
 import { redactEvent } from './redactor'
 
 /**
  * Whether Sentry should send in the current environment.
  *
- * DEV QUIET (privacy/noise): we only enable when a DSN is present AND either
- * we're in a production build OR an explicit opt-in flag is set. In plain local
- * dev (flag unset) this is false, so the production DSN is never used and no
- * dev noise pollutes the production project.
+ * THREE AND-gates, all required: (1) a DSN is present, (2) the user has given
+ * telemetry consent (device-local, default OFF — the opt-in gate), and (3) the
+ * dev-quiet env gate — a production build OR an explicit opt-in flag. In plain
+ * local dev (flag unset) gate 3 is false, so the production DSN is never used
+ * and no dev noise pollutes the production project. Consent is read
+ * synchronously (peek) because no hooks are available at init time.
  */
 function sentryEnabled(dsn: string | undefined): dsn is string {
   if (!dsn) return false
+  if (!telemetryConsent$.enabled.peek()) return false
   return process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true' || process.env.NODE_ENV === 'production'
 }
 
@@ -61,6 +67,20 @@ export function initSentry(): void {
     // string on `breadcrumb.message`, which the redactor's free-text net
     // scrubs. If that guarantee ever weakens, disable the console integration.
   })
+}
+
+/**
+ * Immediately stop Sentry when consent is revoked post-boot, without a restart.
+ * Uses `Sentry.close()` rather than flipping `options.enabled`: the options
+ * flip does NOT uninstall the native (iOS/Android) crash handlers, so on mobile
+ * native crashes keep uploading after a revoke — `close()` tears the whole
+ * client (and those handlers) down. We mirror it here so both platforms behave
+ * identically. A later re-enable re-runs `initSentry()`, which starts a fresh
+ * client (there is no module-level inited guard to clear). `close()` returns a
+ * Promise; callers are sync, so fire-and-forget with a swallowed rejection.
+ */
+export function disableSentry(): void {
+  Sentry.close().catch(() => {})
 }
 
 /**

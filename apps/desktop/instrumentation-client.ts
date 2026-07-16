@@ -1,17 +1,14 @@
 // Client-side telemetry entry point for the desktop (Tauri) renderer. Desktop
-// is a static export with no Next server runtime, so only this browser-side
-// init runs; Rust-side crashes are captured separately by the `sentry` crate
-// in src-tauri. Init options (including the content-redacting `beforeSend`)
-// live in the shared telemetry module.
+// is a static export with no Next server runtime; Rust-side crashes are
+// captured separately by the `sentry` crate in src-tauri.
+//
+// Telemetry is OPT-IN, so init does NOT run here: the consent flag is only
+// readable after persistence loads, which happens later than this module. The
+// consent-gated Sentry/PostHog init therefore lives in
+// `app/state/initializeApp.ts`, after the persisted flag is awaited. A late
+// opt-in re-runs init via `app/utils/telemetry/consent.ts` — no reload.
 import * as Sentry from '@sentry/nextjs'
-import { initSentry } from 'app/utils/telemetry/sentry'
-import { initPostHog } from 'app/utils/telemetry/posthog'
-
-initSentry()
-// Product analytics — initialized right after crash telemetry. A no-op in local
-// dev (no key / opt-in flag unset). Only explicit captureEvent() calls emit.
-initPostHog()
 
 // Instrument client-side route navigations (App Router). No-op unless Sentry
-// was actually initialized above.
+// was actually initialized (consent granted).
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart

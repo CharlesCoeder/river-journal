@@ -74,17 +74,22 @@ describe('— new shared TS files exist', () => {
   })
 })
 
-describe('— client init call sites exist and call initSentry()', () => {
-  it('apps/web/instrumentation-client.ts imports and calls initSentry()', () => {
-    const file = readText('apps/web/instrumentation-client.ts')
-    expect(file).toMatch(/initSentry/)
+describe('— telemetry init is consent-gated in initializeApp (opt-in), not eager at the entry', () => {
+  it('initializeApp.ts calls initSentry() gated on the persisted telemetry consent flag', () => {
+    const file = readText('packages/app/state/initializeApp.ts')
     expect(file).toMatch(/initSentry\s*\(\s*\)/)
+    // The gate reads the persisted consent flag synchronously after load.
+    expect(file).toMatch(/telemetryConsent\$\.enabled\.peek\(\)/)
   })
 
-  it('apps/desktop/instrumentation-client.ts imports and calls initSentry()', () => {
-    const file = readText('apps/desktop/instrumentation-client.ts')
-    expect(file).toMatch(/initSentry/)
-    expect(file).toMatch(/initSentry\s*\(\s*\)/)
+  it('web/desktop instrumentation-client.ts still export onRouterTransitionStart (unchanged Sentry route hook)', () => {
+    for (const rel of [
+      'apps/web/instrumentation-client.ts',
+      'apps/desktop/instrumentation-client.ts',
+    ]) {
+      const file = readText(rel)
+      expect(file).toContain('onRouterTransitionStart')
+    }
   })
 })
 
@@ -140,10 +145,10 @@ describe('— source map / symbolication scaffolding is wired into each build pi
     }
   })
 
-  it('apps/mobile/eas.json adds EXPO_PUBLIC_SENTRY_DSN to the preview and production profiles (EAS cloud builds do not read local .env)', () => {
+  it('apps/mobile/eas.json declares EXPO_PUBLIC_SENTRY_DSN in the preview and production profiles (present; value may be empty — an empty DSN cleanly disables the SDK)', () => {
     const eas = readJson('apps/mobile/eas.json')
-    expect(eas.build.preview.env?.EXPO_PUBLIC_SENTRY_DSN).toBeTruthy()
-    expect(eas.build.production.env?.EXPO_PUBLIC_SENTRY_DSN).toBeTruthy()
+    expect(eas.build.preview.env).toHaveProperty('EXPO_PUBLIC_SENTRY_DSN')
+    expect(eas.build.production.env).toHaveProperty('EXPO_PUBLIC_SENTRY_DSN')
     // Existing Supabase env vars in those profiles must survive the edit.
     expect(eas.build.preview.env?.EXPO_PUBLIC_SUPABASE_URL).toBeTruthy()
     expect(eas.build.production.env?.EXPO_PUBLIC_SUPABASE_URL).toBeTruthy()

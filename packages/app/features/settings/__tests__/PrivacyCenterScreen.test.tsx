@@ -57,6 +57,17 @@ vi.mock('@my/ui', async () => {
   const AnimatePresence = ({ children }: any) =>
     ReactModule.createElement(ReactModule.Fragment, null, children)
 
+  const ExpandingLineButton = ({ children, onPress, testID }: any) =>
+    ReactModule.createElement(
+      'button',
+      {
+        type: 'button',
+        ...(testID ? { 'data-testid': testID } : {}),
+        onClick: onPress,
+      },
+      children
+    )
+
   return {
     AnimatePresence,
     ScrollView,
@@ -64,8 +75,15 @@ vi.mock('@my/ui', async () => {
     View: passthrough('div'),
     XStack: passthrough('div'),
     YStack: passthrough('div'),
+    ExpandingLineButton,
   }
 })
+
+// The telemetry consent orchestrator pulls the Sentry/PostHog SDKs; stub it so
+// this screen suite stays a light placement/wiring check.
+vi.mock('app/utils/telemetry/consent', () => ({
+  setTelemetryConsent: vi.fn(),
+}))
 
 vi.mock('@legendapp/state/react', () => ({
   use$: (obs$: any) => {

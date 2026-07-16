@@ -400,9 +400,7 @@ describe('appLock$ persists device-scoped and non-synced; ephemeral$.isLocked ne
 
   it('appLock$ is never added to SYNC_CURSOR_TABLES', () => {
     const persistConfigSrc = readFileSync(path.join(STATE_DIR, 'persistConfig.ts'), 'utf8')
-    const cursorTablesMatch = persistConfigSrc.match(
-      /SYNC_CURSOR_TABLES\s*=\s*\[([^\]]*)\]/
-    )
+    const cursorTablesMatch = persistConfigSrc.match(/SYNC_CURSOR_TABLES\s*=\s*\[([^\]]*)\]/)
     expect(cursorTablesMatch).not.toBeNull()
     expect(cursorTablesMatch?.[1] ?? '').not.toMatch(/app-lock/)
   })

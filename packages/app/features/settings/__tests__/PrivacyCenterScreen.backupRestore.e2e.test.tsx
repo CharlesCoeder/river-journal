@@ -99,6 +99,17 @@ vi.mock('@my/ui', async () => {
       onChange: (e: any) => onChangeText?.(e.target.value),
     })
 
+  const ExpandingLineButton = ({ children, onPress, testID }: any) =>
+    ReactModule.createElement(
+      'button',
+      {
+        type: 'button',
+        ...(testID ? { 'data-testid': testID } : {}),
+        onClick: onPress,
+      },
+      children
+    )
+
   return {
     AnimatePresence: ({ children }: any) =>
       ReactModule.createElement(ReactModule.Fragment, null, children),
@@ -109,8 +120,15 @@ vi.mock('@my/ui', async () => {
     View: passthrough('div'),
     XStack: passthrough('div'),
     YStack: passthrough('div'),
+    ExpandingLineButton,
   }
 })
+
+// The telemetry consent orchestrator pulls the Sentry/PostHog SDKs; stub it so
+// this backup-focused suite stays light and SDK-free.
+vi.mock('app/utils/telemetry/consent', () => ({
+  setTelemetryConsent: vi.fn(),
+}))
 
 // ─── Pre-existing heavy siblings — stubbed exactly as PrivacyCenterScreen.test.tsx
 // does: their own dedicated suites cover their workflows; here only PLACEMENT

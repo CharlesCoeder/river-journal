@@ -2,17 +2,11 @@
 // registers at module load. See: packages/app/state/collective/mutations.ts.
 import 'app/state/collective/mutations'
 
-// Initialize crash/error telemetry as early as possible so a crash during app
-// startup is still captured. Kept AFTER the mutations eager import above (which
-// must run first) and before any providers mount. A no-op in local dev.
-import { initSentry } from 'app/utils/telemetry/sentry'
-import { initPostHog } from 'app/utils/telemetry/posthog'
-
-initSentry()
-// Product analytics — initialized right after crash telemetry, still before any
-// providers mount. A no-op under __DEV__ without opt-in. Kept AFTER the eager
-// mutations import above.
-initPostHog()
+// Telemetry is OPT-IN, so init does NOT run here: the consent flag is only
+// readable after persistence loads, which happens later than this module. The
+// consent-gated Sentry/PostHog init lives in app/state/initializeApp.ts, after
+// the persisted flag is awaited. A late opt-in re-runs init via
+// app/utils/telemetry/consent.ts — no restart.
 
 import { useEffect } from 'react'
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native'

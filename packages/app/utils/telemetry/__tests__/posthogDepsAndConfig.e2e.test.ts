@@ -62,43 +62,37 @@ describe('— new shared TS files exist', () => {
   })
 })
 
-describe('— client init call sites exist and call initPostHog() after initSentry()', () => {
-  it('apps/web/instrumentation-client.ts imports and calls initPostHog(), and initSentry()/onRouterTransitionStart survive', () => {
-    const file = readText('apps/web/instrumentation-client.ts')
-    expect(file).toMatch(/initPostHog\s*\(\s*\)/)
-    // Do not regress the existing Sentry wiring this story must not disturb.
+describe('— telemetry init is consent-gated in initializeApp (opt-in), not eager at the entries', () => {
+  it('initializeApp.ts calls initSentry() then initPostHog(), gated on the persisted consent flag', () => {
+    const file = readText('packages/app/state/initializeApp.ts')
     expect(file).toMatch(/initSentry\s*\(\s*\)/)
-    expect(file).toContain('onRouterTransitionStart')
-    // initPostHog must run after initSentry (Dev Notes: "Add initPostHog()
-    // immediately after initSentry(); do not disturb the existing lines").
+    expect(file).toMatch(/initPostHog\s*\(\s*\)/)
+    expect(file).toMatch(/telemetryConsent\$\.enabled\.peek\(\)/)
+    // initPostHog runs right after initSentry, both inside the consent gate.
     const sentryIdx = file.indexOf('initSentry()')
     const postHogIdx = file.indexOf('initPostHog()')
     expect(sentryIdx).toBeGreaterThan(-1)
     expect(postHogIdx).toBeGreaterThan(sentryIdx)
   })
 
-  it('apps/desktop/instrumentation-client.ts imports and calls initPostHog() after initSentry(), and onRouterTransitionStart survives', () => {
-    const file = readText('apps/desktop/instrumentation-client.ts')
-    expect(file).toMatch(/initPostHog\s*\(\s*\)/)
-    expect(file).toMatch(/initSentry\s*\(\s*\)/)
-    expect(file).toContain('onRouterTransitionStart')
-    const sentryIdx = file.indexOf('initSentry()')
-    const postHogIdx = file.indexOf('initPostHog()')
-    expect(sentryIdx).toBeGreaterThan(-1)
-    expect(postHogIdx).toBeGreaterThan(sentryIdx)
+  it('web/desktop instrumentation-client.ts no longer eagerly init but still export onRouterTransitionStart', () => {
+    for (const rel of [
+      'apps/web/instrumentation-client.ts',
+      'apps/desktop/instrumentation-client.ts',
+    ]) {
+      const file = readText(rel)
+      expect(file).toContain('onRouterTransitionStart')
+      // Opt-in: init must NOT run at module load (before persistence).
+      expect(file).not.toMatch(/initSentry\s*\(\s*\)/)
+      expect(file).not.toMatch(/initPostHog\s*\(\s*\)/)
+    }
   })
 
-  it('apps/mobile/app/_layout.tsx calls initPostHog() after initSentry(), which itself stays after the eager mutations import', () => {
+  it('apps/mobile/app/_layout.tsx keeps the eager mutations import but no longer eagerly inits telemetry', () => {
     const file = readText('apps/mobile/app/_layout.tsx')
-    expect(file).toMatch(/initPostHog\s*\(\s*\)/)
-
-    const mutationsIdx = file.indexOf(`import 'app/state/collective/mutations'`)
-    const sentryImportIdx = file.indexOf('initSentry()')
-    const postHogIdx = file.indexOf('initPostHog()')
-
-    expect(mutationsIdx).toBeGreaterThan(-1)
-    expect(sentryImportIdx).toBeGreaterThan(mutationsIdx)
-    expect(postHogIdx).toBeGreaterThan(sentryImportIdx)
+    expect(file).toContain(`import 'app/state/collective/mutations'`)
+    expect(file).not.toMatch(/initSentry\s*\(\s*\)/)
+    expect(file).not.toMatch(/initPostHog\s*\(\s*\)/)
   })
 })
 
@@ -114,15 +108,15 @@ describe('— auth session lifecycle identifies/resets the PostHog user next to 
 })
 
 describe('— EAS cloud builds carry the PostHog keys', () => {
-  it('apps/mobile/eas.json adds EXPO_PUBLIC_POSTHOG_KEY to the preview and production profiles, preserving existing Supabase/Sentry env vars', () => {
+  it('apps/mobile/eas.json declares EXPO_PUBLIC_POSTHOG_KEY in the preview and production profiles (present, intentionally empty until a real key is minted), preserving existing Supabase/Sentry env vars', () => {
     const eas = readJson('apps/mobile/eas.json')
-    expect(eas.build.preview.env?.EXPO_PUBLIC_POSTHOG_KEY).toBeTruthy()
-    expect(eas.build.production.env?.EXPO_PUBLIC_POSTHOG_KEY).toBeTruthy()
+    expect(eas.build.preview.env).toHaveProperty('EXPO_PUBLIC_POSTHOG_KEY')
+    expect(eas.build.production.env).toHaveProperty('EXPO_PUBLIC_POSTHOG_KEY')
     // Existing env vars in those profiles must survive the edit.
     expect(eas.build.preview.env?.EXPO_PUBLIC_SUPABASE_URL).toBeTruthy()
     expect(eas.build.production.env?.EXPO_PUBLIC_SUPABASE_URL).toBeTruthy()
-    expect(eas.build.preview.env?.EXPO_PUBLIC_SENTRY_DSN).toBeTruthy()
-    expect(eas.build.production.env?.EXPO_PUBLIC_SENTRY_DSN).toBeTruthy()
+    expect(eas.build.preview.env).toHaveProperty('EXPO_PUBLIC_SENTRY_DSN')
+    expect(eas.build.production.env).toHaveProperty('EXPO_PUBLIC_SENTRY_DSN')
     // Dev-client builds (development/simulator) stay quiet — no key there.
     expect(eas.build.development.env?.EXPO_PUBLIC_POSTHOG_KEY).toBeFalsy()
     expect(eas.build.simulator.env?.EXPO_PUBLIC_POSTHOG_KEY).toBeFalsy()

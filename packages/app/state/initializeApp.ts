@@ -27,6 +27,9 @@ import { startTodayTracking } from './today'
 import { appLock$ } from './appLock'
 import { startAppLockTracking } from './appLockTracking'
 import { runPostDeletionCleanup } from './accountCleanup'
+import { telemetryConsent$ } from './telemetryConsent'
+import { initSentry, setSentryUser } from '../utils/telemetry/sentry'
+import { enablePostHog, identifyPostHogUser, initPostHog } from '../utils/telemetry/posthog'
 import './streak' // attaches store$.views.streak side-effect
 
 export const appStatus$ = observable({
@@ -72,6 +75,14 @@ function setupPersistence() {
   // Persist the App Lock preference (on/off + auto-lock interval + passcode
   // salt/verifier). Local-only, per-device, never synced — see state/appLock.ts.
   syncObservable(appLock$, configurePersistence({ persist: { name: 'app-lock' } }))
+
+  // Persist the telemetry consent flag (opt-in, default OFF). Local-only,
+  // per-device, never synced — see state/telemetryConsent.ts. Read after load
+  // to decide whether telemetry SDKs may initialize this launch.
+  syncObservable(
+    telemetryConsent$,
+    configurePersistence({ persist: { name: 'telemetry-consent' } })
+  )
 
   // Activate the synced observables so their persistence loads.
   // syncedSupabase uses lazy activation — calling .get() triggers persistence
@@ -198,6 +209,46 @@ export function resumePendingAccountCleanupIfNeeded() {
   })
 }
 
+/**
+ * Boot telemetry gate: run once after persistence load. Telemetry is opt-in, so
+ * the SDKs must NOT initialize at module load (before persistence) — the
+ * consent flag is only readable after `initializePersistence()` awaits
+ * `isPersistLoaded`. Init both only if the user opted in; otherwise no init runs
+ * and zero telemetry traffic leaves the device this launch (on web/desktop the
+ * SDK module is still statically imported; only init is deferred). A late toggle
+ * re-runs init via utils/telemetry/consent.ts, no restart.
+ *
+ * Accepted tradeoff: consented users have no crash coverage during the
+ * module-load → persistence-loaded window — inherent to a persisted opt-in gate,
+ * since the flag isn't readable until persistence resolves.
+ */
+export function applyBootTelemetryGate() {
+  if (!telemetryConsent$.enabled.peek()) return
+
+  try {
+    initSentry()
+    initPostHog()
+    // posthog-js PERSISTS its opt-out choice, so a prior opted-out session would
+    // rehydrate that flag and leave capture silently dead while the toggle reads
+    // On — re-assert opt-in after init.
+    enablePostHog()
+    // Auth INITIAL_SESSION can hydrate the persisted session before these SDKs
+    // init on boot, dropping the identify that utils/auth.ts would fire.
+    // Re-identify the persisted user now (user_id only, never PII).
+    const userId = store$.session.userId.peek()
+    if (userId) {
+      setSentryUser(userId)
+      identifyPostHogUser(userId)
+    }
+  } catch (error) {
+    // Telemetry must never reject initializePersistence() and blank the app.
+    console.warn(
+      '[telemetry] boot init failed',
+      error instanceof Error ? error.message : 'unknown error'
+    )
+  }
+}
+
 export async function initializePersistence() {
   try {
     setupPersistence()
@@ -217,11 +268,17 @@ export async function initializePersistence() {
       when(syncState(authReturn$).isPersistLoaded),
       when(syncState(billingReceipt$).isPersistLoaded),
       when(syncState(appLock$).isPersistLoaded),
+      when(syncState(telemetryConsent$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)
     ensureLocalSessionId()
     recordSessionOpen()
+
+    // Telemetry cold-start gate: consent is opt-in and only readable now that
+    // persistence has loaded. See applyBootTelemetryGate for the full rationale
+    // and the accepted pre-persistence-load coverage gap.
+    applyBootTelemetryGate()
 
     // App Lock cold-start gate: once the (persisted) preference has loaded, a
     // fresh launch with App Lock enabled must lock BEFORE any journal frame
