@@ -459,6 +459,16 @@ verify_jwt = true
 [functions.billing_events]
 verify_jwt = false
 
+# Cron-invoked internal function: a pg_cron schedule calls it every 30 minutes
+# through a pg_net dispatch wrapper carrying a service-role bearer, and the
+# function does its own requireServiceRole() check. verify_jwt = false so it is
+# reachable at its public URL for that bearer check to be the gate (it is NOT a
+# user-facing, JWT-authenticated function). It can also be invoked manually over
+# HTTP for testing. See docs/edge-functions-setup.md for the per-environment
+# secret setup (the same edge_base_url / service_role_key secrets).
+[functions.operational_health_cron]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
