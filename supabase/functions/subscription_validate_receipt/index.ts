@@ -42,6 +42,7 @@ import { ReceiptValidationError, type SubscriptionTier } from '../_shared/billin
 import { buildStripeClient, validateStripeReceipt } from '../_shared/billing/stripe.ts'
 import { validateAppleReceipt } from '../_shared/billing/apple.ts'
 import { validateGoogleReceipt } from '../_shared/billing/google.ts'
+import { emitServerEvent as defaultEmitServerEvent } from '../_shared/posthog.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // The three provider literals — matched EXACTLY against the values the
@@ -75,6 +76,14 @@ export interface HandlerDeps {
   // Falls back to the real per-provider dispatch table. Injected by tests so
   // handler-logic tests never fake three providers' HTTP/SDK traffic.
   validators?: Partial<Record<Provider, ProviderValidator>>
+  // Falls back to the real _shared/posthog.ts emitServerEvent (itself inert
+  // unless POSTHOG_API_KEY is set). Injected by tests to observe the emission
+  // without a live PostHog call. Best-effort — never alters the response.
+  emitServerEvent?: (
+    event: string,
+    distinctId: string,
+    props?: Record<string, unknown>,
+  ) => Promise<void>
 }
 
 // Defensive body cap — a giant raw_receipt cannot be used to abuse the function.
@@ -286,6 +295,17 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
     tier: result.tier,
     status: result.status,
     duration_ms: Date.now() - started,
+  })
+
+  // Best-effort, fail-open product-analytics emit on the success path only
+  // (after the entitlement is unlocked). distinct_id is the JWT-resolved
+  // callerUid — allowlisted for this event. Awaited but returns void and never
+  // throws, so it cannot turn a completed purchase into a 500.
+  const emit = deps.emitServerEvent ?? defaultEmitServerEvent
+  await emit('subscription_purchased', callerUid, {
+    user_id: callerUid,
+    provider,
+    tier: result.tier,
   })
 
   // Success body carries ONLY the caller's own derived entitlement — never the

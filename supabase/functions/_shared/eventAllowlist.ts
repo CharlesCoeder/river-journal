@@ -1,42 +1,28 @@
-/**
- * eventAllowlist.ts — the single source of truth for every product-analytics
- * event the product captures, and the exact prop keys each event is permitted
- * to emit.
- *
- * CROSS-SURFACE CONTRACT (do NOT fork per-consumer copies):
- * This map is consumed by THREE surfaces that must agree:
- *  1. `captureEvent` (the ONLY sanctioned client capture path) validates every
- *     call against this map before sending.
- *  2. `scripts/lint-posthog-events.mjs` (the CI lint) reads this same map to
- *     statically reject any `captureEvent(...)` call that names an unknown
- *     event or passes an unpermitted prop key.
- *  3. The server-side emitters (Edge Functions) and the operational-health cron
- *     reuse THIS map as the single source of truth for their event shapes —
- *     they enumerate their events here and add no client call site.
- *
- * DEPENDENCY-FREE BY DESIGN: this module MUST NOT import `posthog-js`,
- * `posthog-react-native`, or any platform-only code, so it is safe to import
- * from shared code, from the Node CI lint script, and from pure Vitest unit
- * tests. This mirrors the `contentKeys.ts` / `redactor.ts` testability split
- * established for the crash-telemetry redactor.
- *
- * CROSS-RUNTIME SYNC (keep these aligned by hand — they are NOT one import):
- * The Deno/Edge server-side emitters keep a MIRROR of this file at
- * `supabase/functions/_shared/eventAllowlist.ts`. Edge Functions run in a
- * separate Deno runtime/bundle and CANNOT import from `packages/app`, so that
- * copy is a hand-maintained duplicate (the same sanctioned pattern as the
- * `contentKeys.ts` mirror pair). Any event added, removed, or changed in THIS
- * file — its name or its permitted prop keys — must be added, removed, or
- * changed identically in the server mirror. A parity test
- * (`__tests__/eventAllowlistServerParity.test.ts`) fails closed if the two
- * ever silently diverge.
- *
- * CONTENT-KEY INVARIANT (NFR19): a content-shaped prop key (`body`, `content`,
- * `note`, `postBody`, `flowContent`, or anything `isContentKey()` matches) can
- * NEVER appear in a `props` list. This is enforced statically by the CI lint
- * (which derives the denylist from `contentKeys.ts`, the single source of
- * truth) and by an executable test twin — it is NOT re-hardcoded here.
- */
+// eventAllowlist.ts — the server-side (Deno/Edge) single source of truth for
+// every product-analytics event the Edge Functions may emit, and the exact
+// prop keys each event is permitted to carry.
+//
+// CROSS-RUNTIME SYNC (keep these aligned by hand — they are NOT one import):
+//  - This is a hand-maintained MIRROR of
+//    `packages/app/utils/telemetry/eventAllowlist.ts`. Edge Functions run in a
+//    separate Deno runtime/bundle and CANNOT import from `packages/app`, so the
+//    client allowlist is duplicated here (the same sanctioned pattern as the
+//    `contentKeys.ts` mirror pair). Any event added, removed, or changed in the
+//    client file — its name or its permitted prop keys — must be added, removed,
+//    or changed identically here.
+//  - The parity test
+//    `packages/app/utils/telemetry/__tests__/eventAllowlistServerParity.test.ts`
+//    imports BOTH files (both are dependency-free and Node-importable) and fails
+//    closed if the two ever silently diverge.
+//
+// DEPENDENCY-FREE BY DESIGN: this module MUST NOT import any SDK or platform
+// API (no `Deno.*`, no npm/jsr), so `deno test` and the Node parity test can
+// both load it.
+//
+// CONTENT-KEY INVARIANT (NFR19): a content-shaped prop key (`body`, `content`,
+// `note`, `reason`, ... — anything `isContentKey()` matches) can NEVER appear
+// in a `props` list. An executable test (`eventAllowlist.test.ts`) pins this on
+// the map itself.
 
 /** Shape of a single allowlist entry: the permitted prop keys + a one-line doc. */
 export type EventAllowlistEntry = {
@@ -45,14 +31,9 @@ export type EventAllowlistEntry = {
 }
 
 /**
- * The full allowlist. Every event the product captures — client-originated
- * (instrumented in this app) AND server/cron-originated (enumerated here for
- * the Edge Functions and the operational-health cron to consume) — appears
+ * The full allowlist — the byte-faithful mirror of the client map. Every event
+ * the product captures, client-originated AND server/cron-originated, appears
  * here with its exact permitted prop keys.
- *
- * `word_count` is deliberately NEVER a permitted prop: word counts are emitted
- * only as the bucketed `word_count_bucket` (see `getWordCountBucket`), never as
- * a raw number.
  */
 export const EVENT_ALLOWLIST = {
   // ─── v2 success-metric + client product events ────────────────────────────
@@ -136,22 +117,7 @@ export const EVENT_ALLOWLIST = {
 /** The set of every event name the product is allowed to capture. */
 export type AllowlistedEvent = keyof typeof EVENT_ALLOWLIST
 
-/** The four word-count buckets emitted for `flow_completed`. Never a raw count. */
-export type WordCountBucket = '<100' | '100-499' | '500-999' | '1000+'
-
-/**
- * Maps a raw word count to its emitted bucket. Boundaries are lower-inclusive:
- * `<100` (0–99), `100-499`, `500-999`, `1000+`. The raw number is NEVER emitted —
- * only the bucket string leaves the device.
- */
-export function getWordCountBucket(count: number): WordCountBucket {
-  if (count < 100) return '<100'
-  if (count < 500) return '100-499'
-  if (count < 1000) return '500-999'
-  return '1000+'
-}
-
-/** Result of validating a `captureEvent` payload against the allowlist. */
+/** Result of validating an emit payload against the allowlist. */
 export interface ValidatedEventProps {
   /** Props whose keys are permitted for the event (unknown keys removed). */
   sanitizedProps: Record<string, unknown>
@@ -162,17 +128,17 @@ export interface ValidatedEventProps {
 }
 
 /**
- * Pure validation shared by `captureEvent`, the CI lint, and unit tests — the
- * single validation implementation (the analog of `redactor.ts`'s pure core).
+ * Pure validation shared by the server emitter and its tests — the identical
+ * core to the client twin.
  *
  * - Keys not permitted for `event` are removed and reported in `strippedKeys`.
  * - Documented keys the caller omitted are reported in `missingKeys`.
  * - An event name absent from the allowlist yields empty results and never
- *   throws (the no-op contract `captureEvent` relies on).
+ *   throws (the no-op contract `emitServerEvent` relies on).
  */
 export function validateEventProps(
   event: string,
-  props?: Record<string, unknown> | null
+  props?: Record<string, unknown> | null,
 ): ValidatedEventProps {
   const entry = (EVENT_ALLOWLIST as Record<string, EventAllowlistEntry>)[event]
   const safeProps = props ?? {}

@@ -65,6 +65,10 @@ import {
   buildStripeClient,
   cancelStripeSubscriptionAtPeriodEnd,
 } from '../_shared/billing/stripe.ts'
+import {
+  emitServerEvent as defaultEmitServerEvent,
+  SERVER_DISTINCT_ID,
+} from '../_shared/posthog.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // A still-billing receipt row, read BEFORE the cascade deletes it. `provider`
@@ -108,6 +112,18 @@ export interface HandlerDeps {
   runCascade?: (userId: string) => Promise<{ error: unknown }>
   // Wraps client.auth.admin.deleteUser(userId) — the LAST step.
   deleteAuthUser?: (userId: string) => Promise<{ error: unknown }>
+  // Reads users.subscription_tier BEFORE the cascade wipes it (captured in the
+  // identity/Phase-A window). A null/absent row is defaulted to 'free' by the
+  // handler (not the seam). Injectable, consistent with the other seams.
+  readSubscriptionTier?: (userId: string) => Promise<string | null>
+  // Falls back to the real _shared/posthog.ts emitServerEvent (itself inert
+  // unless POSTHOG_API_KEY is set). Injected by tests to observe the emission
+  // without a live PostHog call. Best-effort — never alters the response.
+  emitServerEvent?: (
+    event: string,
+    distinctId: string,
+    props?: Record<string, unknown>,
+  ) => Promise<void>
 }
 
 // Defensive body cap — a giant body cannot be used to abuse the function. The
@@ -148,7 +164,8 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
     !deps.clearDeletionRequested ||
     !deps.listCancelableReceipts ||
     !deps.runCascade ||
-    !deps.deleteAuthUser
+    !deps.deleteAuthUser ||
+    !deps.readSubscriptionTier
   let client: SupabaseClient | undefined = deps.client
   if (!client && needsDefaultClient) {
     try {
@@ -171,6 +188,9 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
   const cancelStripeSubscription = deps.cancelStripeSubscription ?? defaultStripeCancel()
   const runCascade = deps.runCascade ?? defaultRunCascade(client as SupabaseClient)
   const deleteAuthUser = deps.deleteAuthUser ?? defaultDeleteAuthUser(client as SupabaseClient)
+  const readSubscriptionTier = deps.readSubscriptionTier ??
+    defaultReadSubscriptionTier(client as SupabaseClient)
+  const emitServerEvent = deps.emitServerEvent ?? defaultEmitServerEvent
 
   // 4. Phase 0 — MARKER-FIRST. The dedicated pre-cancel marker write, ahead of
   // any provider call, so a crash from this point on is recoverable by the
@@ -265,6 +285,18 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
     }
   }
 
+  // Capture the subscription tier BEFORE the cascade, which wipes the
+  // users.subscription_tier column. Best-effort and metadata-only — a null /
+  // absent row defaults to 'free'. This feeds the anonymized account_deleted
+  // analytics event emitted after the deletion commits (below).
+  let capturedTier = 'free'
+  try {
+    capturedTier = (await readSubscriptionTier(callerUid)) ?? 'free'
+  } catch {
+    logError('account.delete.tier_read_error', { user_id: callerUid })
+    capturedTier = 'free'
+  }
+
   // 6. Phase B — CASCADE. The atomic SECURITY DEFINER RPC. An error → 500
   // (retryable; the RPC is one transaction, so nothing is half-done). The
   // auth-delete is never attempted after a cascade failure.
@@ -291,6 +323,15 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
       duration_ms: Date.now() - started,
     })
   }
+
+  // Best-effort, fail-open product-analytics emit — AFTER the cascade committed
+  // (deletion is done even if the auth-finalize step was deferred above). The
+  // event carries ONLY the tier captured before the wipe; distinct_id is the
+  // fixed SERVER_DISTINCT_ID, NEVER callerUid — account_deleted intentionally
+  // retains no user id, so re-using the deleted user's id as the distinct id
+  // would re-associate the event with them. Awaited but returns void and never
+  // throws, so it cannot change the committed-deletion ok() response.
+  await emitServerEvent('account_deleted', SERVER_DISTINCT_ID, { tier: capturedTier })
 
   logInfo('account.delete.ok', {
     user_id: callerUid,
@@ -364,6 +405,25 @@ function defaultRunCascade(
   return async (userId: string) => {
     const { error } = await client.rpc('delete_my_account', { p_user_id: userId })
     return { error }
+  }
+}
+
+// Default subscription-tier read: the caller's users.subscription_tier, read
+// BEFORE the cascade wipes it. A missing row or a query error resolves to null
+// (the handler defaults it to 'free'). Only reached in production.
+function defaultReadSubscriptionTier(
+  client: SupabaseClient,
+): (userId: string) => Promise<string | null> {
+  return async (userId: string) => {
+    const { data, error } = await client
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .maybeSingle()
+    if (error) {
+      return null
+    }
+    return (data as { subscription_tier?: string | null } | null)?.subscription_tier ?? null
   }
 }
 

@@ -56,6 +56,7 @@ import {
   buildStripeClient,
   cancelStripeSubscriptionAtPeriodEnd,
 } from '../_shared/billing/stripe.ts'
+import { emitServerEvent as defaultEmitServerEvent } from '../_shared/posthog.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // The three provider literals — matched EXACTLY against the values the
@@ -76,6 +77,14 @@ export interface HandlerDeps {
   // adapter-level correctness lives in _shared/billing/stripe.test.ts. apple/play
   // never call a provider, so no separate seam is needed for them.
   cancelStripeSubscription?: (id: string) => Promise<{ current_period_end: string }>
+  // Falls back to the real _shared/posthog.ts emitServerEvent (itself inert
+  // unless POSTHOG_API_KEY is set). Injected by tests to observe the emission
+  // without a live PostHog call. Best-effort — never alters the response.
+  emitServerEvent?: (
+    event: string,
+    distinctId: string,
+    props?: Record<string, unknown>,
+  ) => Promise<void>
 }
 
 // Defensive body cap — a giant body cannot be used to abuse the function.
@@ -305,6 +314,21 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
     requires_native_action: requiresNativeAction,
     duration_ms: Date.now() - started,
   })
+
+  // Best-effort, fail-open product-analytics emit — ONLY on the Stripe
+  // (server-confirmed) terminal state. The apple/play requires_native_action
+  // path is NOT a confirmed cancellation (the user must still complete the
+  // native flow), so it is deliberately not emitted. `tier` is omitted: this
+  // function never reads subscription_tier, and validateEventProps permits a
+  // subset. distinct_id is the JWT-resolved callerUid (allowlisted here).
+  // Awaited but returns void and never throws.
+  if (!requiresNativeAction) {
+    const emit = deps.emitServerEvent ?? defaultEmitServerEvent
+    await emit('subscription_cancel_confirmed', callerUid, {
+      user_id: callerUid,
+      provider: providerLiteral,
+    })
+  }
 
   // Success body carries ONLY the period end + native-action flag — never the
   // provider_subscription_id / raw_receipt / provider PII.

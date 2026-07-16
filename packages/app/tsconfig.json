@@ -1,6 +1,11 @@
 {
   "extends": "../../tsconfig.base",
   "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": [
+    "_",
+    "utils/telemetry/__tests__/eventAllowlist.test.ts",
+    "utils/telemetry/__tests__/eventAllowlistServerParity.test.ts"
+  ],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",

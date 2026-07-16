@@ -84,6 +84,20 @@
 //
 // Red phase: ./index.ts does not exist yet, so every test in this file fails
 // at import resolution before a single assertion runs.
+//
+// ---------------------------------------------------------------------------
+// Extension for server-side PostHog emission: HandlerDeps gains
+// `emitServerEvent?: (event, distinctId, props?) => Promise<void>`, falling
+// back to the real `_shared/posthog.ts` emitServerEvent (inert in test
+// environments unless POSTHOG_API_KEY is set, so every pre-existing test
+// above is unaffected by leaving this seam unoverridden). The handler now
+// calls `emitServerEvent('subscription_cancel_confirmed', callerUid, {
+// user_id: callerUid, provider: providerLiteral })` ONLY on the FINAL SUCCESS
+// path where `requiresNativeAction === false` (the Stripe/server-confirmed
+// branch) -- never on the apple/play requires_native_action === true branch
+// (that cancellation is not confirmed server-side), and never on any failure
+// path (not-found, provider dispatch failure, write error).
+// ---------------------------------------------------------------------------
 
 import { assertEquals } from 'jsr:@std/assert@1'
 import { ReceiptValidationError } from '../_shared/billing/types.ts'
@@ -887,4 +901,130 @@ Deno.test('handler returns a wrapped 500 error envelope (not an uncaught throw) 
       Deno.env.set('SUPABASE_URL', originalUrl)
     }
   }
+})
+
+// ---------------------------------------------------------------------------
+// Server-side PostHog emission -- subscription_cancel_confirmed fires ONLY on
+// the Stripe (server-confirmed) success path, with distinct_id = callerUid.
+// ---------------------------------------------------------------------------
+
+interface EmitCall {
+  event: string
+  distinctId: string
+  props: Record<string, unknown> | undefined
+}
+
+function capturingEmit(): {
+  emitServerEvent: (
+    event: string,
+    distinctId: string,
+    props?: Record<string, unknown>,
+  ) => Promise<void>
+  calls: EmitCall[]
+} {
+  const calls: EmitCall[] = []
+  return {
+    emitServerEvent: (event, distinctId, props) => {
+      calls.push({ event, distinctId, props })
+      return Promise.resolve()
+    },
+    calls,
+  }
+}
+
+function refusingEmit() {
+  return (): Promise<void> => {
+    throw new Error('emitServerEvent must never be called for this test')
+  }
+}
+
+Deno.test('handler emits subscription_cancel_confirmed with { user_id: callerUid, provider } and distinct_id = callerUid on the Stripe (server-confirmed) success path', async () => {
+  const emit = capturingEmit()
+  const response = await handler(requestFor(basePayload()), {
+    resolveUser: resolveCaller,
+    client: buildMockClient({
+      ownership: { data: ownedRow(), error: null },
+      update: { data: [{ id: 'row-1' }], error: null },
+    }),
+    cancelStripeSubscription: () =>
+      Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END }),
+    emitServerEvent: emit.emitServerEvent,
+  })
+  assertEquals(response.status, 200)
+  const body = await response.json()
+  assertEquals(body.requires_native_action, false)
+  assertEquals(emit.calls.length, 1)
+  assertEquals(emit.calls[0]?.event, 'subscription_cancel_confirmed')
+  assertEquals(emit.calls[0]?.distinctId, CALLER_UID)
+  assertEquals(emit.calls[0]?.props, { user_id: CALLER_UID, provider: 'stripe' })
+})
+
+Deno.test('handler does NOT call emitServerEvent on the apple_iap requires_native_action path (not server-confirmed)', async () => {
+  const response = await handler(
+    requestFor(basePayload({ provider: 'apple_iap', subscription_id: 'apple-original-tx-002' })),
+    {
+      resolveUser: resolveCaller,
+      client: buildMockClient({
+        ownership: { data: ownedRow(), error: null },
+        update: { data: [{ id: 'row-1' }], error: null },
+      }),
+      cancelStripeSubscription: refusingCancel(),
+      emitServerEvent: refusingEmit(),
+    },
+  )
+  assertEquals(response.status, 200)
+  const body = await response.json()
+  assertEquals(body.requires_native_action, true)
+})
+
+Deno.test('handler does NOT call emitServerEvent on the play_iap requires_native_action path (not server-confirmed)', async () => {
+  const response = await handler(
+    requestFor(basePayload({ provider: 'play_iap', subscription_id: 'play-token-002' })),
+    {
+      resolveUser: resolveCaller,
+      client: buildMockClient({
+        ownership: { data: ownedRow(), error: null },
+        update: { data: [{ id: 'row-1' }], error: null },
+      }),
+      cancelStripeSubscription: refusingCancel(),
+      emitServerEvent: refusingEmit(),
+    },
+  )
+  assertEquals(response.status, 200)
+  const body = await response.json()
+  assertEquals(body.requires_native_action, true)
+})
+
+Deno.test('handler does NOT call emitServerEvent when no receipt row matches (404 subscription_not_found)', async () => {
+  const response = await handler(requestFor(basePayload()), {
+    resolveUser: resolveCaller,
+    client: buildMockClient({ ownership: { data: null, error: null } }),
+    cancelStripeSubscription: refusingCancel(),
+    emitServerEvent: refusingEmit(),
+  })
+  assertEquals(response.status, 404)
+})
+
+Deno.test('handler does NOT call emitServerEvent when the Stripe provider dispatch fails', async () => {
+  const response = await handler(requestFor(basePayload()), {
+    resolveUser: resolveCaller,
+    client: buildMockClient({ ownership: { data: ownedRow(), error: null } }),
+    cancelStripeSubscription: () => Promise.reject(new Error('unexpected SDK crash')),
+    emitServerEvent: refusingEmit(),
+  })
+  assertEquals(response.status, 500)
+})
+
+Deno.test('handler does NOT call emitServerEvent when the Stripe cancel succeeds but the receipt UPDATE errors (partial-write fail-closed)', async () => {
+  const response = await handler(requestFor(basePayload()), {
+    resolveUser: resolveCaller,
+    client: buildMockClient({
+      ownership: { data: ownedRow(), error: null },
+      update: { data: null, error: { code: '57P01', message: 'database is shutting down' } },
+    }),
+    cancelStripeSubscription: () =>
+      Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END }),
+    emitServerEvent: refusingEmit(),
+  })
+  assertEquals(response.status, 500)
 })

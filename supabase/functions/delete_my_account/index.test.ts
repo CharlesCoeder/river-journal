@@ -120,10 +120,33 @@
 //
 // Red phase: ./index.ts does not exist yet, so every test in this file fails
 // at import resolution before a single assertion runs.
+//
+// ---------------------------------------------------------------------------
+// Extension for server-side PostHog emission: HandlerDeps gains two seams:
+//   - readSubscriptionTier?: (userId) => Promise<string | null> -- reads
+//     users.subscription_tier BEFORE the cascade wipes it (captured in the
+//     identity/Phase-A window). A null/absent row defaults to 'free' (the
+//     handler's own guard, not the seam's).
+//   - emitServerEvent?: (event, distinctId, props?) => Promise<void> --
+//     falls back to the real `_shared/posthog.ts` emitServerEvent (inert in
+//     test environments unless POSTHOG_API_KEY is set, so leaving it
+//     unoverridden in the many pre-existing tests below via the updated
+//     happyPathDeps default is safe).
+// On the final success `ok(...)` (after runCascade succeeds -- deletion
+// committed -- even if the auth-finalize step was deferred), the handler
+// calls `emitServerEvent('account_deleted', SERVER_DISTINCT_ID, { tier:
+// <captured tier> })`. distinct_id is SERVER_DISTINCT_ID, NEVER callerUid
+// (account_deleted intentionally retains no user id). It does NOT fire on any
+// PRE-CASCADE failure (marker write, receipts lookup, Stripe cancel) or a
+// Phase B cascade failure -- no deletion committed on those paths.
+// readSubscriptionTier is called BEFORE runCascade (the tier column is wiped
+// by the cascade).
+// ---------------------------------------------------------------------------
 
 import { assertEquals } from 'jsr:@std/assert@1'
 import { ReceiptValidationError } from '../_shared/billing/types.ts'
 import { handler } from './index.ts'
+import { SERVER_DISTINCT_ID } from '../_shared/posthog.ts'
 
 const CALLER_UID = '00000000-0000-0000-0000-0000000000f1'
 const FOREIGN_UID = '00000000-0000-0000-0000-0000000000f2'
@@ -250,6 +273,41 @@ function okDeleteAuthUser(onCall?: (userId: string) => void) {
   }
 }
 
+function okReadSubscriptionTier(
+  tier: string | null = 'paid_monthly',
+  onCall?: (userId: string) => void,
+) {
+  return (userId: string): Promise<string | null> => {
+    onCall?.(userId)
+    return Promise.resolve(tier)
+  }
+}
+
+function refusingReadSubscriptionTier() {
+  return (): Promise<string | null> => {
+    throw new Error('readSubscriptionTier must never be called for this test')
+  }
+}
+
+interface EmitCall {
+  event: string
+  distinctId: string
+  props: Record<string, unknown> | undefined
+}
+
+function okEmitServerEvent(onCall?: (call: EmitCall) => void) {
+  return (event: string, distinctId: string, props?: Record<string, unknown>): Promise<void> => {
+    onCall?.({ event, distinctId, props })
+    return Promise.resolve()
+  }
+}
+
+function refusingEmitServerEvent() {
+  return (): Promise<void> => {
+    throw new Error('emitServerEvent must never be called for this test')
+  }
+}
+
 // A full, all-seams-overridden "happy path" deps builder, so individual tests
 // only need to override the one or two seams relevant to what they assert.
 function happyPathDeps(overrides: Record<string, unknown> = {}) {
@@ -264,6 +322,11 @@ function happyPathDeps(overrides: Record<string, unknown> = {}) {
     cancelStripeSubscription: refusingCancel(),
     runCascade: okCascade(),
     deleteAuthUser: okDeleteAuthUser(),
+    // A definite, non-null tier by default so pre-existing tests that don't
+    // care about the emitted tier value are unaffected; tests asserting the
+    // emission itself override this explicitly.
+    readSubscriptionTier: okReadSubscriptionTier('paid_monthly'),
+    emitServerEvent: okEmitServerEvent(),
     ...overrides,
   }
 }
@@ -798,6 +861,118 @@ Deno.test('a marker-clear FAILURE on a pre-cascade abort still returns the ORIGI
       )
     }
   }
+})
+
+// ---------------------------------------------------------------------------
+// Server-side PostHog emission -- account_deleted fires ONLY after the
+// cascade commits, carries ONLY { tier }, and uses SERVER_DISTINCT_ID (never
+// callerUid). readSubscriptionTier is captured BEFORE the cascade wipes it.
+// ---------------------------------------------------------------------------
+
+Deno.test('happy path: handler emits account_deleted with the captured tier and distinct_id = SERVER_DISTINCT_ID (never callerUid)', async () => {
+  const emitted: EmitCall[] = []
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      readSubscriptionTier: okReadSubscriptionTier('paid_yearly'),
+      emitServerEvent: okEmitServerEvent((call) => emitted.push(call)),
+    }),
+  )
+  assertEquals(response.status, 200)
+  assertEquals(emitted.length, 1)
+  assertEquals(emitted[0]?.event, 'account_deleted')
+  assertEquals(emitted[0]?.distinctId, SERVER_DISTINCT_ID)
+  assertEquals(emitted[0]?.props, { tier: 'paid_yearly' })
+  // Never the deleted account's own id -- that would re-associate the
+  // anonymized event with the deleted user and defeat the point of dropping
+  // user_id from this event's allowlist entry.
+  assertEquals(emitted[0]?.distinctId === CALLER_UID, false)
+})
+
+Deno.test('tier defaults to "free" when readSubscriptionTier resolves null (row absent/already cleared)', async () => {
+  const emitted: EmitCall[] = []
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      readSubscriptionTier: okReadSubscriptionTier(null),
+      emitServerEvent: okEmitServerEvent((call) => emitted.push(call)),
+    }),
+  )
+  assertEquals(response.status, 200)
+  assertEquals(emitted[0]?.props, { tier: 'free' })
+})
+
+Deno.test('readSubscriptionTier is called strictly BEFORE runCascade (the tier column is wiped by the cascade)', async () => {
+  const callOrder: string[] = []
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      readSubscriptionTier: okReadSubscriptionTier('paid_monthly', () =>
+        callOrder.push('read_tier')),
+      runCascade: okCascade(() => callOrder.push('cascade')),
+      emitServerEvent: okEmitServerEvent(() => callOrder.push('emit')),
+    }),
+  )
+  assertEquals(response.status, 200)
+  assertEquals(callOrder, ['read_tier', 'cascade', 'emit'])
+})
+
+Deno.test('handler does NOT call emitServerEvent when the pre-cancel marker write fails (no deletion happened)', async () => {
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      markDeletionRequested: () => Promise.resolve({ error: { message: 'connection reset' } }),
+      listCancelableReceipts: refusingListReceipts(),
+      cancelStripeSubscription: refusingCancel(),
+      runCascade: refusingCascade(),
+      deleteAuthUser: refusingDeleteAuthUser(),
+      readSubscriptionTier: refusingReadSubscriptionTier(),
+      emitServerEvent: refusingEmitServerEvent(),
+    }),
+  )
+  assertEquals(response.status, 500)
+})
+
+Deno.test('handler does NOT call emitServerEvent when a HARD Stripe-cancel failure aborts the saga before the cascade', async () => {
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      listCancelableReceipts: () =>
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+      cancelStripeSubscription: () => Promise.reject(new Error('unexpected SDK crash')),
+      clearDeletionRequested: okClear(),
+      runCascade: refusingCascade(),
+      deleteAuthUser: refusingDeleteAuthUser(),
+      emitServerEvent: refusingEmitServerEvent(),
+    }),
+  )
+  assertEquals(response.status, 500)
+})
+
+Deno.test('handler does NOT call emitServerEvent when the cascade RPC itself errors (nothing committed)', async () => {
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      runCascade: () => Promise.resolve({ error: { message: 'deadlock detected' } }),
+      deleteAuthUser: refusingDeleteAuthUser(),
+      emitServerEvent: refusingEmitServerEvent(),
+    }),
+  )
+  assertEquals(response.status, 500)
+})
+
+Deno.test('handler STILL calls emitServerEvent when the cascade succeeds but the auth-finalize step is deferred (deletion is already committed)', async () => {
+  const emitted: EmitCall[] = []
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      deleteAuthUser: () => Promise.resolve({ error: { message: 'gotrue unavailable' } }),
+      emitServerEvent: okEmitServerEvent((call) => emitted.push(call)),
+    }),
+  )
+  assertEquals(response.status, 200)
+  assertEquals(emitted.length, 1)
+  assertEquals(emitted[0]?.event, 'account_deleted')
 })
 
 // ---------------------------------------------------------------------------

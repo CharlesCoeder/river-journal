@@ -62,6 +62,66 @@ describe('EVENT_ALLOWLIST — content-key denylist is upheld on the map itself (
   })
 })
 
+describe('EVENT_ALLOWLIST — the two server-emitted delivery events this story adds', () => {
+  it('exposes exactly 17 events (the 15 pre-existing events plus the two new delivery events)', () => {
+    expect(Object.keys(EVENT_ALLOWLIST)).toHaveLength(17)
+  })
+
+  it('collective_reply_delivered is present with the metadata-only prop schema (recipient_count, sent_count, failed_count) and no user_id', () => {
+    const entry = (EVENT_ALLOWLIST as Record<string, { props: readonly string[] }>)
+      .collective_reply_delivered
+    expect(entry).toBeDefined()
+    expect([...entry.props].sort()).toEqual(['failed_count', 'recipient_count', 'sent_count'])
+    expect(entry.props).not.toContain('user_id')
+  })
+
+  it('moderation_notification_delivered is present with the metadata-only prop schema (action_type, sent_count, failed_count) and no user_id', () => {
+    const entry = (EVENT_ALLOWLIST as Record<string, { props: readonly string[] }>)
+      .moderation_notification_delivered
+    expect(entry).toBeDefined()
+    expect([...entry.props].sort()).toEqual(['action_type', 'failed_count', 'sent_count'])
+    expect(entry.props).not.toContain('user_id')
+  })
+
+  it('neither new event permits a content-shaped prop key (NFR19)', () => {
+    const events = ['collective_reply_delivered', 'moderation_notification_delivered'] as const
+    const offenders: Array<{ event: string; key: string }> = []
+    for (const event of events) {
+      const entry = (EVENT_ALLOWLIST as Record<string, { props: readonly string[] } | undefined>)[
+        event
+      ]
+      for (const key of entry?.props ?? []) {
+        if (isContentKey(key)) offenders.push({ event, key })
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('the 15 pre-existing client event shapes are unchanged by this story', () => {
+    const preExisting: Record<string, readonly string[]> = {
+      flow_started: ['user_id', 'tier'],
+      flow_completed: ['user_id', 'tier', 'word_count_bucket'],
+      flow_500_crossed: ['user_id', 'tier'],
+      streak_unlock_earned: ['user_id', 'tier', 'milestone'],
+      collective_post_submitted: ['user_id', 'tier'],
+      collective_reaction_toggled: ['user_id', 'tier', 'reaction_kind'],
+      collective_report_submitted: ['user_id', 'tier'],
+      subscription_purchased: ['user_id', 'provider', 'tier'],
+      subscription_cancel_initiated: ['user_id', 'provider', 'tier'],
+      subscription_cancel_confirmed: ['user_id', 'provider', 'tier'],
+      account_deleted: ['tier'],
+      moderation_action_taken: ['action_type', 'anonymized_actor', 'target_type'],
+      moderation_suspension_applied: ['kind', 'duration_days', 'anonymized_actor'],
+      moderation_queue_depth_sample: ['pending_count', 'oldest_pending_age_seconds'],
+      sync_opt_in_snapshot: ['opted_in_count', 'total_count'],
+    }
+    for (const [event, props] of Object.entries(preExisting)) {
+      const entry = (EVENT_ALLOWLIST as Record<string, { props: readonly string[] }>)[event]
+      expect([...entry.props].sort()).toEqual([...props].sort())
+    }
+  })
+})
+
 describe('getWordCountBucket — lower-inclusive boundaries, never a raw number', () => {
   const cases: Array<[number, string]> = [
     [0, '<100'],

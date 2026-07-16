@@ -48,9 +48,33 @@
 //
 // Red phase: `./index.ts` does not exist yet, so every test in this file
 // fails at import resolution before a single assertion runs.
+//
+// EXTENSION for server-side PostHog emission: on the path where
+// fanOutExpoPush actually runs (a real delivery attempt), the handler now
+// calls `emitServerEvent('collective_reply_delivered', SERVER_DISTINCT_ID,
+// { recipient_count, sent_count, failed_count })` derived from
+// recipientIds.length / result.sentCount / (result.errorTicketCount +
+// result.chunkFailureCount), awaited before the final `return ok()`. It does
+// NOT emit on any of the earlier no-op returns (already-processed dedupe,
+// null replier, zero candidates, zero eligible recipients). No handler
+// signature change is needed for this: emitServerEvent's own fetch defaults
+// to `globalThis.fetch` (the SAME global the existing Expo-fanout tests
+// already stub), gated on POSTHOG_API_KEY — tests that don't set the env var
+// (every pre-existing test above) see it no-op with zero fetch calls, so this
+// extension does not disturb any existing assertion. The new tests below set
+// POSTHOG_API_KEY and route the stubbed global fetch by URL (Expo's
+// EXPO_PUSH_ENDPOINT vs the PostHog capture endpoint) since a real delivery
+// run now issues BOTH kinds of POST.
+//
+// Red phase (this extension specifically): `../_shared/posthog.ts` does not
+// exist yet either, so this file's own top-level import of SERVER_DISTINCT_ID
+// fails at module resolution before ANY test in this file runs (including the
+// pre-existing ones above) — the same whole-file-red shape every other Deno
+// red-phase spec in this repo uses.
 
 import { assertEquals } from 'jsr:@std/assert@1'
 import { buildReplyRecipientCandidates, composeReplyCopy, handler } from './index.ts'
+import { SERVER_DISTINCT_ID } from '../_shared/posthog.ts'
 
 const SERVICE_ROLE_KEY = 'notify-reply-test-service-role-key-0123456789abcdef'
 
@@ -641,6 +665,187 @@ Deno.test("handler dispatches a single push to a surviving recipient's live toke
     } finally {
       globalThis.fetch = originalFetch
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Server-side PostHog emission -- collective_reply_delivered fires ONLY on a
+// real delivery attempt (the fanOutExpoPush path), never on an earlier no-op
+// return.
+// ---------------------------------------------------------------------------
+
+function withPosthogApiKey(value: string | undefined, fn: () => Promise<void>): Promise<void> {
+  const original = Deno.env.get('POSTHOG_API_KEY')
+  if (value === undefined) {
+    Deno.env.delete('POSTHOG_API_KEY')
+  } else {
+    Deno.env.set('POSTHOG_API_KEY', value)
+  }
+  return (async () => {
+    try {
+      await fn()
+    } finally {
+      if (original === undefined) {
+        Deno.env.delete('POSTHOG_API_KEY')
+      } else {
+        Deno.env.set('POSTHOG_API_KEY', original)
+      }
+    }
+  })()
+}
+
+// Routes the stubbed global fetch by URL: an Expo push POST (exp.host) vs a
+// PostHog capture POST (any other URL, e.g. the default eu.i.posthog.com
+// /capture/ endpoint) -- a real delivery run now issues both, and the
+// pre-existing Expo-only stub in this file can't tell them apart.
+function withRoutedFetch(
+  fn: (calls: {
+    expo: unknown[]
+    posthog: Array<{ url: string; body: unknown }>
+  }) => Promise<void>,
+): Promise<void> {
+  const originalFetch = globalThis.fetch
+  const calls = { expo: [] as unknown[], posthog: [] as Array<{ url: string; body: unknown }> }
+  globalThis.fetch = ((url: string, init?: RequestInit) => {
+    const body = init?.body ? JSON.parse(init.body as string) : undefined
+    if (typeof url === 'string' && url.includes('exp.host')) {
+      calls.expo.push(body)
+      const tickets = (body as unknown[]).map(() => ({ status: 'ok' }))
+      return Promise.resolve(new Response(JSON.stringify({ data: tickets }), { status: 200 }))
+    }
+    calls.posthog.push({ url: String(url), body })
+    return Promise.resolve(new Response(JSON.stringify({ status: 1 }), { status: 200 }))
+  }) as typeof fetch
+  return fn(calls).finally(() => {
+    globalThis.fetch = originalFetch
+  })
+}
+
+Deno.test('handler emits collective_reply_delivered with the derived metadata + SERVER_DISTINCT_ID after a real delivery attempt', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withPosthogApiKey('phc_test_key', async () => {
+      await withRoutedFetch(async (calls) => {
+        const client = buildMockClient({
+          ledger: { data: [{ reply_post_id: REPLY_ID }], error: null },
+          parentAuthor: { data: { user_id: PARENT_AUTHOR_ID }, error: null },
+          rootAuthor: { data: PARENT_AUTHOR_ID, error: null },
+          eligibility: { data: [PARENT_AUTHOR_ID], error: null },
+          tokens: {
+            data: [{ user_id: PARENT_AUTHOR_ID, expo_push_token: 'ExponentPushToken[a]' }],
+            error: null,
+          },
+        })
+        const response = await handler(replyRequest(basePayload()), client)
+        assertEquals(response.status, 200)
+
+        assertEquals(calls.posthog.length, 1)
+        const body = calls.posthog[0]?.body as Record<string, unknown>
+        assertEquals(body.event, 'collective_reply_delivered')
+        assertEquals(body.distinct_id, SERVER_DISTINCT_ID)
+        assertEquals(body.properties, { recipient_count: 1, sent_count: 1, failed_count: 0 })
+      })
+    })
+  })
+})
+
+Deno.test('handler does NOT call the PostHog capture endpoint on the zero-row ledger claim (already-processed no-op)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withPosthogApiKey('phc_test_key', async () => {
+      await withRoutedFetch(async (calls) => {
+        const client = buildMockClient({ ledger: { data: [], error: null } })
+        const response = await handler(replyRequest(basePayload()), client)
+        assertEquals(response.status, 200)
+        assertEquals(calls.posthog.length, 0)
+      })
+    })
+  })
+})
+
+Deno.test('handler does NOT call the PostHog capture endpoint when payload.user_id is null (already-anonymized replier, no-op)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withPosthogApiKey('phc_test_key', async () => {
+      await withRoutedFetch(async (calls) => {
+        const client = buildMockClient({
+          ledger: { data: [{ reply_post_id: REPLY_ID }], error: null },
+        })
+        const response = await handler(replyRequest(basePayload({ user_id: null })), client)
+        assertEquals(response.status, 200)
+        assertEquals(calls.posthog.length, 0)
+      })
+    })
+  })
+})
+
+Deno.test('handler does NOT call the PostHog capture endpoint when the candidate set is empty (self-reply degenerate case, no-op)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withPosthogApiKey('phc_test_key', async () => {
+      await withRoutedFetch(async (calls) => {
+        const client = buildMockClient({
+          ledger: { data: [{ reply_post_id: REPLY_ID }], error: null },
+          parentAuthor: { data: { user_id: REPLIER_ID }, error: null },
+          rootAuthor: { data: REPLIER_ID, error: null },
+        })
+        const response = await handler(
+          replyRequest(basePayload({ user_id: REPLIER_ID })),
+          client,
+        )
+        assertEquals(response.status, 200)
+        assertEquals(calls.posthog.length, 0)
+      })
+    })
+  })
+})
+
+Deno.test('handler does NOT call the PostHog capture endpoint when the eligibility rpc returns zero surviving recipients (no-op)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withPosthogApiKey('phc_test_key', async () => {
+      await withRoutedFetch(async (calls) => {
+        const client = buildMockClient({
+          ledger: { data: [{ reply_post_id: REPLY_ID }], error: null },
+          parentAuthor: { data: { user_id: PARENT_AUTHOR_ID }, error: null },
+          rootAuthor: { data: ROOT_AUTHOR_ID, error: null },
+          eligibility: { data: [], error: null },
+        })
+        const response = await handler(replyRequest(basePayload()), client)
+        assertEquals(response.status, 200)
+        assertEquals(calls.posthog.length, 0)
+      })
+    })
+  })
+})
+
+Deno.test('a rejected PostHog capture call does NOT change the handler response -- the emit is best-effort and fail-open end-to-end', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    await withPosthogApiKey('phc_test_key', async () => {
+      const originalFetch = globalThis.fetch
+      globalThis.fetch = ((url: string, init?: RequestInit) => {
+        if (typeof url === 'string' && url.includes('exp.host')) {
+          const body = JSON.parse(init?.body as string) as unknown[]
+          const tickets = body.map(() => ({ status: 'ok' }))
+          return Promise.resolve(new Response(JSON.stringify({ data: tickets }), { status: 200 }))
+        }
+        return Promise.reject(new Error('posthog capture unreachable'))
+      }) as typeof fetch
+
+      try {
+        const client = buildMockClient({
+          ledger: { data: [{ reply_post_id: REPLY_ID }], error: null },
+          parentAuthor: { data: { user_id: PARENT_AUTHOR_ID }, error: null },
+          rootAuthor: { data: PARENT_AUTHOR_ID, error: null },
+          eligibility: { data: [PARENT_AUTHOR_ID], error: null },
+          tokens: {
+            data: [{ user_id: PARENT_AUTHOR_ID, expo_push_token: 'ExponentPushToken[a]' }],
+            error: null,
+          },
+        })
+        const response = await handler(replyRequest(basePayload()), client)
+        assertEquals(response.status, 200)
+        const body = await response.json()
+        assertEquals(body.ok, true)
+      } finally {
+        globalThis.fetch = originalFetch
+      }
+    })
   })
 })
 

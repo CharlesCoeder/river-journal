@@ -47,6 +47,7 @@
       "apps/desktop": {
         "packageJson": {
           "dependencies": [
+            "npm:@sentry/nextjs@10.65.0",
             "npm:@tamagui/config@2.0.0-rc.16",
             "npm:@tamagui/next-plugin@2.0.0-rc.16",
             "npm:@tamagui/next-theme@2.0.0-rc.16",
@@ -55,6 +56,7 @@
             "npm:app@0.0.0",
             "npm:eslint-config-next@^16.1.1",
             "npm:next@16.1.1",
+            "npm:posthog-js@1.402.3",
             "npm:raf@^3.4.1",
             "npm:react-dom@19.1.0",
             "npm:react-native-web@0.21.2",
@@ -73,16 +75,19 @@
             "npm:@babel/runtime@^7.26.0",
             "npm:@lexical/react@~0.33.1",
             "npm:@my/ui@0.0.1",
+            "npm:@react-native-async-storage/async-storage@2.2.0",
             "npm:@react-native-community/netinfo@11.5.2",
             "npm:@react-navigation/bottom-tabs@^7.2.0",
             "npm:@react-navigation/native-stack@^7.3.25",
             "npm:@react-navigation/native@^7.0.14",
+            "npm:@sentry/react-native@8.18.0",
             "npm:@tamagui/babel-plugin@2.0.0-rc.16",
             "npm:@tamagui/lucide-icons@2.0.0-rc.16",
             "npm:@types/react@~19.1.10",
             "npm:app@0.0.0",
             "npm:babel-plugin-module-resolver@^5.0.2",
             "npm:burnt@~0.12.2",
+            "npm:expo-application@~7.0.8",
             "npm:expo-auth-session@7.0",
             "npm:expo-constants@~18.0.13",
             "npm:expo-crypto@15.0",
@@ -103,6 +108,7 @@
             "npm:expo@54",
             "npm:lexical@~0.33.1",
             "npm:metro-minify-terser@0.81",
+            "npm:posthog-react-native@4.56.3",
             "npm:react-dom@19.1.0",
             "npm:react-native-gesture-handler@2.28",
             "npm:react-native-keyboard-controller@^1.18.5",
@@ -127,6 +133,7 @@
       "apps/web": {
         "packageJson": {
           "dependencies": [
+            "npm:@sentry/nextjs@10.65.0",
             "npm:@tamagui/config@2.0.0-rc.16",
             "npm:@tamagui/next-plugin@2.0.0-rc.16",
             "npm:@tamagui/next-theme@2.0.0-rc.16",
@@ -134,6 +141,7 @@
             "npm:app@0.0.0",
             "npm:eslint-config-next@^16.1.1",
             "npm:next@16.1.1",
+            "npm:posthog-js@1.402.3",
             "npm:raf@^3.4.1",
             "npm:react-dom@19.1.0",
             "npm:react-native-web@0.21.2",
