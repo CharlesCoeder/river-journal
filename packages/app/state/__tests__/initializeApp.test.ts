@@ -249,7 +249,7 @@ describe('persistence store registration — every persisted store is a declared
   function declaredTableNames(): Set<string> {
     const block = PERSIST_CONFIG_SOURCE.match(/TABLE_NAMES\s*=\s*\[([\s\S]*?)\]\s*as const/)
     expect(block, 'TABLE_NAMES array literal not found in persistConfig.ts').not.toBeNull()
-    const names = [...block![1].matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]!)
+    const names = [...block![1]!.matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]!)
     return new Set(names)
   }
 
