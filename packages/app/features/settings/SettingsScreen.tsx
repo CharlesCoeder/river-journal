@@ -34,6 +34,7 @@ import { PreviousAccountBanner } from './PreviousAccountBanner'
 import { SuspensionStatusSection } from './SuspensionStatusSection'
 import { ReminderSettings } from 'app/features/notifications/ReminderSettings'
 import { BillingSection } from 'app/features/paid/BillingSection'
+import { AppLockSettings } from './AppLockSettings'
 
 // ---------------------------------------------------------------------------
 // Privacy Tier — stacked vertical list matching design
@@ -109,7 +110,7 @@ function SectionHeader({ children }: { children: string }) {
 // ---------------------------------------------------------------------------
 
 const STAGGER_MS = 100
-const SECTION_COUNT = 11
+const SECTION_COUNT = 12
 
 export function SettingsScreen() {
   const router = useRouter()
@@ -274,6 +275,24 @@ export function SettingsScreen() {
                       <PrivacyTierList activeTier={activeTier} />
                     </YStack>
                   ))}
+
+                {/* App Lock — sits with the privacy-oriented sections near the
+                top. Device-scoped and NEVER auth-gated: it has no server
+                profile dependency, so it renders for every identity state
+                (authenticated, anonymous, local-only). */}
+                {visibleCount >= 2 && (
+                  <YStack
+                    key="section-app-lock"
+                    transition="designEnter"
+                    enterStyle={{ opacity: 0, y: 10 }}
+                    opacity={1}
+                    y={0}
+                    gap="$4"
+                  >
+                    <SectionHeader>App Lock</SectionHeader>
+                    <AppLockSettings />
+                  </YStack>
+                )}
 
                 {/* Section 2: Data & Sync */}
                 {visibleCount >= 2 &&
@@ -566,10 +585,10 @@ export function SettingsScreen() {
                   </YStack>
                 )}
 
-                {/* Section 11: Footer */}
-                {visibleCount >= 11 && (
+                {/* Section 12: Footer */}
+                {visibleCount >= 12 && (
                   <XStack
-                    key="section-11"
+                    key="section-12"
                     transition="designEnter"
                     enterStyle={{ opacity: 0, y: 10 }}
                     opacity={1}

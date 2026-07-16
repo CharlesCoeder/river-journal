@@ -3,7 +3,7 @@ import { syncState, when, observe } from '@legendapp/state'
 import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
 import { configurePersistence } from './persistConfig'
-import { store$, countUndecidedOrphans } from './store'
+import { store$, ephemeral$, countUndecidedOrphans } from './store'
 import { billingReceipt$ } from './billing'
 import { scheduleAppOpenReValidation } from './appOpenReValidation'
 import { flows$ } from './flows'
@@ -24,6 +24,8 @@ import { onboarding$ } from './onboarding'
 import { authReturn$, flushPendingAgeAttestation } from './authReturn'
 import { syncDeviceTimezone } from './timezoneSync'
 import { startTodayTracking } from './today'
+import { appLock$ } from './appLock'
+import { startAppLockTracking } from './appLockTracking'
 import { runPostDeletionCleanup } from './accountCleanup'
 import './streak' // attaches store$.views.streak side-effect
 
@@ -66,6 +68,10 @@ function setupPersistence() {
   // never encrypted) so the opportunistic entitlement refresh survives a cold
   // start. See state/billing.ts.
   syncObservable(billingReceipt$, configurePersistence({ persist: { name: 'billing-receipt' } }))
+
+  // Persist the App Lock preference (on/off + auto-lock interval + passcode
+  // salt/verifier). Local-only, per-device, never synced — see state/appLock.ts.
+  syncObservable(appLock$, configurePersistence({ persist: { name: 'app-lock' } }))
 
   // Activate the synced observables so their persistence loads.
   // syncedSupabase uses lazy activation — calling .get() triggers persistence
@@ -210,11 +216,23 @@ export async function initializePersistence() {
       when(syncState(onboarding$).isPersistLoaded),
       when(syncState(authReturn$).isPersistLoaded),
       when(syncState(billingReceipt$).isPersistLoaded),
+      when(syncState(appLock$).isPersistLoaded),
     ]
 
     await Promise.all(persistencePromises)
     ensureLocalSessionId()
     recordSessionOpen()
+
+    // App Lock cold-start gate: once the (persisted) preference has loaded, a
+    // fresh launch with App Lock enabled must lock BEFORE any journal frame
+    // paints. `ephemeral$.isLocked` is non-persisted, so it starts false every
+    // launch; set it true here, after persistence load, so the overlay covers
+    // content from the first render. Then start the lifecycle controller for
+    // return-from-background re-locking.
+    if (appLock$.enabled.peek()) {
+      ephemeral$.isLocked.set(true)
+    }
+    startAppLockTracking()
 
     // Initialize auth listener — fires INITIAL_SESSION immediately to hydrate
     // session state, then handles SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.

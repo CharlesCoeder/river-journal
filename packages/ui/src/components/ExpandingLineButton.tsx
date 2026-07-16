@@ -27,6 +27,8 @@ export interface ExpandingLineButtonProps {
   accessibilityState?: { checked?: boolean }
   /** DOM id forwarded to the root button element — used for focus management. */
   id?: string
+  /** Test identifier forwarded to the root element (data-testid on web). */
+  testID?: string
 }
 
 export function ExpandingLineButton({
@@ -38,6 +40,7 @@ export function ExpandingLineButton({
   accessibilityRole,
   accessibilityState,
   id,
+  testID,
 }: ExpandingLineButtonProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isPressed, setIsPressed] = useState(false)
@@ -61,6 +64,7 @@ export function ExpandingLineButton({
       tag="button"
       role={(accessibilityRole ?? 'button') as 'button'}
       id={id}
+      testID={testID}
       aria-label={accessibilityLabel ?? (typeof children === 'string' ? children : undefined)}
       aria-checked={accessibilityState?.checked}
       aria-disabled={disabled || undefined}

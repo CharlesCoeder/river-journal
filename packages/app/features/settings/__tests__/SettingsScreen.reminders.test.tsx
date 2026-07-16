@@ -190,7 +190,7 @@ const STAGGER_MS = 100
 // footer will already be visible by this point — the regression this file
 // guards against. The Notifications section itself reveals well before this
 // slot.
-const OLD_SECTION_COUNT = 10
+const OLD_SECTION_COUNT = 11
 const NEW_SECTION_COUNT = OLD_SECTION_COUNT + 1
 
 function flushStagger(steps: number) {

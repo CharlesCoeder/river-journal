@@ -12,6 +12,7 @@ import { NextTamaguiProvider } from 'app/provider/NextTamaguiProvider'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
 import { SkipToContent } from 'app/features/navigation/SkipToContent'
 import { KeyboardShortcuts } from 'app/features/navigation/KeyboardShortcuts'
+import { AppLockOverlay } from 'app/features/settings/AppLockOverlay.web'
 import '../public/fonts/fonts.css'
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NextTamaguiProvider>
           <PersistenceGate>
             <KeyboardShortcuts />
+            <AppLockOverlay />
             <main
               id="main-content"
               tabIndex={-1}

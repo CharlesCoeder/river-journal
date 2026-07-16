@@ -168,6 +168,14 @@ export const ephemeral$ = observable<{
    * Do NOT add to persistConfig/store$.
    */
   reminderRepliesSince: string | null
+  /**
+   * Transient App Lock state: true while the App Lock overlay must gate the UI.
+   * Non-persisted by design — resets to false on every cold start, and a fresh
+   * launch re-locks (sets this true after persistence load) when the App Lock
+   * preference is enabled. Read reactively in the overlay via use$; write with
+   * .set(...). Do NOT persist this or add it to persistConfig/store$.
+   */
+  isLocked: boolean
 }>({
   persistentEditor: {
     isVisible: false,
@@ -183,6 +191,7 @@ export const ephemeral$ = observable<{
   surfacedUnlockMilestones: new Set<number>(),
   reminderCardDismissed: false,
   reminderRepliesSince: null,
+  isLocked: false,
 })
 
 // =================================================================

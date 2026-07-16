@@ -40,6 +40,12 @@
       "expo-font",
       "expo-web-browser",
       "expo-notifications",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Use Face ID to unlock your journal with App Lock."
+        }
+      ],
       "@sentry/react-native/expo"
     ],
     "experiments": {

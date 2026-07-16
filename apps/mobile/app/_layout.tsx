@@ -29,6 +29,8 @@ import { store$ } from 'app/state/store'
 import { useTheme } from '@my/ui'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
 import { PersistentEditor } from 'app/features/journal/components/PersistentEditor'
+import { AppLockOverlay } from 'app/features/settings/AppLockOverlay.native'
+import { AppLockPrivacyCover } from 'app/features/settings/AppLockPrivacyCover.native'
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -107,6 +109,11 @@ function RootLayoutNav() {
                   </SliderHub>
                   <PersistentEditor />
                   <NativeToast />
+                  {/* App Lock — covers all routes. The privacy cover hides
+                  content from the OS app-switcher snapshot on `inactive`; the
+                  overlay gates the UI while locked. */}
+                  <AppLockPrivacyCover />
+                  <AppLockOverlay />
                 </TamaguifiedSafeAreaView>
               </TamaguifiedReactNavigationThemeProvider>
             </Provider>
