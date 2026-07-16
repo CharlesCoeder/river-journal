@@ -196,7 +196,7 @@ function PostureLine({
       {...(interactive
         ? {
             onPress,
-            accessibilityRole: 'button' as const,
+            role: 'button' as const,
             cursor: 'pointer',
             hoverStyle: { opacity: 0.8 },
           }

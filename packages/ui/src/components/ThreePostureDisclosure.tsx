@@ -206,7 +206,7 @@ function BoundaryADialog({
               suppress the typecheck error while keeping the correct semantic tag. */}
           <TextAny
             tag="a"
-            accessibilityRole="link"
+            role="link"
             fontFamily="$body"
             fontSize="$3"
             color="$stone"

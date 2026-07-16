@@ -183,8 +183,8 @@ function InAppReminderCard() {
           testID="reminder-row-streak"
           cursor="pointer"
           onPress={() => router.push('/journal')}
-          accessibilityRole="button"
-          accessibilityLabel="Finish today's writing"
+          role="button"
+          aria-label="Finish today's writing"
         >
           <Text
             fontFamily="$body"
@@ -201,8 +201,8 @@ function InAppReminderCard() {
           testID="reminder-row-replies"
           cursor="pointer"
           onPress={() => router.push('/collective')}
-          accessibilityRole="button"
-          accessibilityLabel="See new replies in the Collective"
+          role="button"
+          aria-label="See new replies in the Collective"
         >
           <Text
             fontFamily="$body"
@@ -219,8 +219,8 @@ function InAppReminderCard() {
           testID="reminder-row-moderation"
           cursor="pointer"
           onPress={() => router.push('/settings')}
-          accessibilityRole="button"
-          accessibilityLabel="Review a moderation update"
+          role="button"
+          aria-label="Review a moderation update"
         >
           <Text
             fontFamily="$body"
@@ -236,8 +236,8 @@ function InAppReminderCard() {
         testID="reminder-dismiss"
         cursor="pointer"
         onPress={() => ephemeral$.reminderCardDismissed.set(true)}
-        accessibilityRole="button"
-        accessibilityLabel="Dismiss reminders"
+        role="button"
+        aria-label="Dismiss reminders"
         fontFamily="$body"
         fontSize={13}
         color="$color9"

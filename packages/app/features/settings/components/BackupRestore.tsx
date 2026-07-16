@@ -62,7 +62,7 @@ function EntryPoint({
       fontSize={18}
       color="$color"
       cursor="pointer"
-      accessibilityRole="button"
+      role="button"
       hoverStyle={{ opacity: 0.7 }}
       focusStyle={{ opacity: 0.7 }}
       onPress={onPress}
@@ -95,7 +95,7 @@ function ActionText({
       paddingBottom={6}
       alignSelf="flex-start"
       cursor="pointer"
-      accessibilityRole="button"
+      role="button"
       hoverStyle={{ opacity: 0.7 }}
       focusStyle={{ opacity: 0.7 }}
       onPress={onPress}
