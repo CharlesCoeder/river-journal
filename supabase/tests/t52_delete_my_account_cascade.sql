@@ -51,11 +51,12 @@
 --      per-row isolation the migration's BEGIN/EXCEPTION block provides must
 --      never stop the sweep short of a healthy row. Plus the UN-CANCELLED-
 --      BILLING GATE: an OLD-marked user who STILL has a live Stripe receipt
---      (status active/past_due) is NOT cascaded/auth-deleted by the sweep and
---      the receipt is preserved (so a later Edge retry can still cancel with
---      the provider), while an OLD-marked user with no live Stripe receipt --
---      or only an apple/play receipt, which is cancelled natively and must not
---      gate -- IS finalized.
+--      (status active/past_due/pending) is NOT cascaded/auth-deleted by the
+--      sweep and the receipt is preserved (so a later Edge retry can still
+--      cancel with the provider) -- 'pending'/incomplete gates too, since Phase
+--      A now cancels it and it can still activate + bill -- while an OLD-marked
+--      user with no live Stripe receipt -- or only an apple/play receipt, which
+--      is cancelled natively and must not gate -- IS finalized.
 --   H. auth.users DELETE privilege smoke-assertion -- the role that owns
 --      these SECURITY DEFINER functions can directly DELETE FROM auth.users
 --      (the sweep's finalizer relies on this raw SQL privilege, since a
@@ -75,7 +76,7 @@
 
 BEGIN;
 \i _helpers.psql
-SELECT plan(31);
+SELECT plan(32);
 
 -- ==========================================================================
 -- A. Cascade correctness -- one user seeded with a row in every affected
@@ -503,6 +504,37 @@ BEGIN
   PERFORM tap_ok(
     v_users_present AND v_auth_present AND v_receipt_present,
     'the sweep does NOT finalize an old-marked user with a live Stripe receipt, and the receipt is preserved for a provider retry'
+  );
+END $$;
+
+-- (G5b) The gate also covers 'pending'/incomplete Stripe receipts. Phase A now
+-- cancels a pending sub (it can still activate + bill AFTER a hard delete), so
+-- an OLD-marked user whose Phase A never cancelled a live pending receipt must
+-- NOT be finalized by the sweep -- the row + receipt are preserved for a later
+-- Edge retry, exactly like active/past_due (mirrors G5 with status = 'pending').
+DO $$
+DECLARE
+  v_user            UUID;
+  v_receipt         UUID := gen_random_uuid();
+  v_users_present   BOOLEAN;
+  v_auth_present    BOOLEAN;
+  v_receipt_present BOOLEAN;
+BEGIN
+  v_user := test_seed_user();
+  INSERT INTO subscription_receipts
+    (id, user_id, provider, provider_subscription_id, status, current_period_end)
+  VALUES (v_receipt, v_user, 'stripe', 'sub_gate_pending', 'pending', NOW() + INTERVAL '10 days');
+  UPDATE users SET deletion_requested_at = NOW() - INTERVAL '2 hours' WHERE id = v_user;
+
+  PERFORM complete_pending_account_deletions();
+
+  SELECT EXISTS(SELECT 1 FROM users WHERE id = v_user) INTO v_users_present;
+  SELECT EXISTS(SELECT 1 FROM auth.users WHERE id = v_user) INTO v_auth_present;
+  SELECT EXISTS(SELECT 1 FROM subscription_receipts WHERE id = v_receipt) INTO v_receipt_present;
+
+  PERFORM tap_ok(
+    v_users_present AND v_auth_present AND v_receipt_present,
+    'the sweep does NOT finalize an old-marked user with a live PENDING Stripe receipt, and the receipt is preserved for a provider retry'
   );
 END $$;
 

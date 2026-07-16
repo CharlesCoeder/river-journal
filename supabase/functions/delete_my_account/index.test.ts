@@ -202,6 +202,37 @@ function neverConfiguredClient(): unknown {
   }
 }
 
+// A minimal fake Supabase client that records the status array passed to the
+// terminal .in('status', [...]) of the subscription_receipts read and returns
+// `rows`. Used to exercise the REAL defaultListCancelableReceipts filter (via
+// the deps.client seam, leaving listCancelableReceipts un-injected) so the
+// production status set is asserted, not a hand-fed seam.
+function fakeReceiptClient(
+  captureStatuses: (statuses: unknown) => void,
+  rows: Array<{ provider: string; provider_subscription_id: string }>,
+): unknown {
+  const builder = {
+    select() {
+      return builder
+    },
+    eq() {
+      return builder
+    },
+    in(_column: string, statuses: unknown) {
+      captureStatuses(statuses)
+      return Promise.resolve({ data: rows, error: null })
+    },
+  }
+  return {
+    from(table: string) {
+      if (table !== 'subscription_receipts') {
+        throw new Error(`unexpected table access ("${table}")`)
+      }
+      return builder
+    },
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Refusing seam stubs -- each throws loudly if invoked, so a phase-ordering or
 // abort-before-mutation test fails clearly rather than silently passing.
@@ -493,6 +524,31 @@ Deno.test('happy path: an active Stripe receipt is cancelled, the cascade runs, 
   assertEquals(body.ok, true)
   assertEquals(body.requires_native_subscription_action, false)
   assertEquals(typeof body.deleted_at, 'string')
+  assertEquals(cancelledId, STRIPE_SUBSCRIPTION_ID)
+})
+
+Deno.test('the default receipt read includes pending: the still-billing status filter is active/past_due/pending, and a pending Stripe sub is cancelled', async () => {
+  let capturedStatuses: unknown = null
+  let cancelledId: string | null = null
+  const response = await handler(
+    requestFor({}),
+    // Leave listCancelableReceipts un-injected so the REAL default seam runs
+    // against a fake client; every other DB seam is injected, so the client is
+    // only ever touched by the receipt read.
+    happyPathDeps({
+      listCancelableReceipts: undefined,
+      client: fakeReceiptClient((statuses) => {
+        capturedStatuses = statuses
+      }, [{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]) as never,
+      cancelStripeSubscription: (id: string) => {
+        cancelledId = id
+        return Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END })
+      },
+    }),
+  )
+  assertEquals(response.status, 200)
+  // The exact production still-billing set — pending is what closes ghost billing.
+  assertEquals(capturedStatuses, ['active', 'past_due', 'pending'])
   assertEquals(cancelledId, STRIPE_SUBSCRIPTION_ID)
 })
 

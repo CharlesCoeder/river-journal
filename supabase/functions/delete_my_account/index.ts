@@ -31,10 +31,14 @@
 //     (WHERE deletion_requested_at IS NULL). A failure here fails closed to 500
 //     before anything external happened (trivially retryable).
 //   Phase A · CANCEL (external, before any cascade mutation). Read the caller's
-//     still-billing receipts (status IN ('active','past_due')); cancel each
-//     Stripe one at period end via the SHARED _shared/billing/stripe.ts helper
-//     (the same provider call subscription_cancel makes — NOT an internal HTTP
-//     re-invoke of that function). An already-cancelled/missing Stripe
+//     still-billing receipts (status IN ('active','past_due','pending')); cancel
+//     each Stripe one via the SHARED _shared/billing/stripe.ts helper (the same
+//     provider call subscription_cancel makes — NOT an internal HTTP re-invoke
+//     of that function). active/past_due cancel at period end keeping paid time;
+//     a 'pending'/incomplete sub has no collected payment, so the same call
+//     voids an unpaid sub and closes the ghost-billing hole where a pending sub
+//     could activate and bill AFTER the row is hard-deleted. An already-
+//     cancelled/missing Stripe
 //     subscription (typed provider_resource_missing) is treated as SUCCESS
 //     (idempotent-cancel — a retry after a prior cancel), not a hard failure.
 //     Any other typed error, or an unexpected throw, ABORTS the saga before the
@@ -100,8 +104,8 @@ export interface HandlerDeps {
   // markDeletionRequested (the same service-role seam). NEVER called once the
   // cascade has been invoked — deletion is committed at that point.
   clearDeletionRequested?: (userId: string) => Promise<{ error: unknown }>
-  // The still-billing rows (status IN ('active','past_due')) for the caller,
-  // read before the cascade deletes them.
+  // The still-billing rows (status IN ('active','past_due','pending')) for the
+  // caller, read before the cascade deletes them.
   listCancelableReceipts?: (userId: string) => Promise<CancelableReceipt[]>
   // Falls back to the real Stripe dispatch built from STRIPE_SECRET_KEY (the
   // SAME shared helper subscription_cancel calls). Injected so handler-logic
@@ -380,7 +384,9 @@ function defaultClearDeletionRequested(
 }
 
 // Default receipt read: the caller's still-billing rows (the states that may
-// still charge). Only reached in production.
+// still charge — 'pending'/incomplete included so a not-yet-collected sub that
+// could activate post-deletion is cancelled/voided too). Only reached in
+// production.
 function defaultListCancelableReceipts(
   client: SupabaseClient,
 ): (userId: string) => Promise<CancelableReceipt[]> {
@@ -389,7 +395,7 @@ function defaultListCancelableReceipts(
       .from('subscription_receipts')
       .select('provider, provider_subscription_id')
       .eq('user_id', userId)
-      .in('status', ['active', 'past_due'])
+      .in('status', ['active', 'past_due', 'pending'])
     if (error) {
       throw error
     }
