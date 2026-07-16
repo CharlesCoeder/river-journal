@@ -132,7 +132,7 @@ describe('scripts/lint-posthog-events.mjs — content-key denylist reused from c
 
       expect(status).not.toBe(0)
       expect(output).toContain("Field 'note' is in the content-key denylist.")
-      expect(output).toContain('PostHog events MUST NOT capture user-generated content (NFR19).')
+      expect(output).toContain('PostHog events MUST NOT capture user-generated content.')
     } finally {
       writeFileSync(ALLOWLIST_PATH, original)
     }

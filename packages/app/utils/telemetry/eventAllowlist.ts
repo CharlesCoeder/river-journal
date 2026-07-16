@@ -31,7 +31,7 @@
  * (`__tests__/eventAllowlistServerParity.test.ts`) fails closed if the two
  * ever silently diverge.
  *
- * CONTENT-KEY INVARIANT (NFR19): a content-shaped prop key (`body`, `content`,
+ * CONTENT-KEY INVARIANT: a content-shaped prop key (`body`, `content`,
  * `note`, `postBody`, `flowContent`, or anything `isContentKey()` matches) can
  * NEVER appear in a `props` list. This is enforced statically by the CI lint
  * (which derives the denylist from `contentKeys.ts`, the single source of

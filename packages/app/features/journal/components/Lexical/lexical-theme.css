@@ -65,7 +65,7 @@
   }
 }
 
-/* Per-sentence focus mode (Story 2.11). The dim animates via `color` on the
+/* Per-sentence focus mode. The dim animates via `color` on the
    STABLE SentenceNode <span> — class toggles only, never element recreation —
    so the transition runs (the CSS Custom Highlight API cannot transition, which
    is why a real node is used). color-mix dims the text to ~0.4 alpha, matching

@@ -3,9 +3,9 @@
  * Unit tests for `features/collective/ThreadView.tsx` — title-led redesign.
  *
  * Tests describe user-observable behavior only — no story IDs, AC numbers,
- * epic references, or BMAD labels in identifiers.
+ * epic references, or internal process labels in identifiers.
  *
- * Architecture under test (post Story 3-16 title-led port):
+ * Architecture under test (post title-led port):
  *   • The ROOT post is sourced from `useThreadRoot(postId)` (single-row query
  *     returning `{ data, isLoading, error, refetch }` where `data` is ONE object
  *     or `null`/`undefined`). The root is NO LONGER part of `useThread`'s items.

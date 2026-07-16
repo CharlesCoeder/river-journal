@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * lint-edge-function-logging.mjs — the CI lint that structurally enforces two
- * server-side invariants across every Edge Function (NFR19 + Boundary 1):
+ * server-side invariants across every Edge Function (Boundary 1):
  *
  *  1. NO RAW CONSOLE LOGGING. Content redaction lives in the shared logger's
  *     `logInfo` / `logError` wrappers. A raw `console.*` call bypasses that
@@ -159,7 +159,7 @@ function main() {
       if (!isConsoleExempt && CONSOLE_CALL_RE.test(code)) {
         violations.push(
           `${rel}:${lineNo}: raw console.* call is banned — log through ` +
-            `logInfo / logError from _shared/logging.ts (they redact user content per NFR19).`
+            `logInfo / logError from _shared/logging.ts (they redact user content).`
         )
       }
       if (ENCRYPTION_SPECIFIER_RE.test(withStrings)) {

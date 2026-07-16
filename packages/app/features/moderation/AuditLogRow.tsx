@@ -19,7 +19,7 @@
 //   - The tapped row's own action shares the target, so it appears in the
 //     rendered history (same table, same filter) — never filtered out.
 //
-// NFR19: reason/note are rendered in the UI only and NEVER passed to any logger.
+// Privacy invariant: reason/note are rendered in the UI only and NEVER passed to any logger.
 //
 // The panel hooks are called at the ROW level (always, never conditionally) and
 // gated via their `enabled` flag on `expanded` — so React's hook order is

@@ -19,7 +19,7 @@
 // API (no `Deno.*`, no npm/jsr), so `deno test` and the Node parity test can
 // both load it.
 //
-// CONTENT-KEY INVARIANT (NFR19): a content-shaped prop key (`body`, `content`,
+// CONTENT-KEY INVARIANT: a content-shaped prop key (`body`, `content`,
 // `note`, `reason`, ... — anything `isContentKey()` matches) can NEVER appear
 // in a `props` list. An executable test (`eventAllowlist.test.ts`) pins this on
 // the map itself.

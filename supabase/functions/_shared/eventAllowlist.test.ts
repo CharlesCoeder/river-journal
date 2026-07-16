@@ -20,7 +20,7 @@
 //     reports documented-but-omitted keys in `missingKeys`, and an unknown
 //     event yields empty results without throwing).
 //   - Every event's permitted prop keys pass isContentKey() = false (the
-//     executable NFR19 enforcement on the allowlist itself, mirroring the
+//     executable privacy enforcement on the allowlist itself, mirroring the
 //     client file's own content-key test).
 //
 // The client<->server deep-equality/drift guard (the parity test named in
@@ -87,7 +87,7 @@ Deno.test('the two new delivery events carry metadata-only props -- no user_id, 
   assertEquals(moderationDelivered.props.includes('user_id'), false)
 })
 
-Deno.test('no event in the server allowlist permits a prop key that isContentKey() matches (NFR19, executable on the map itself)', () => {
+Deno.test('no event in the server allowlist permits a prop key that isContentKey() matches (executable on the map itself)', () => {
   const offenders: Array<{ event: string; key: string }> = []
   for (const [event, entry] of Object.entries(EVENT_ALLOWLIST)) {
     for (const key of (entry as { props: readonly string[] }).props) {

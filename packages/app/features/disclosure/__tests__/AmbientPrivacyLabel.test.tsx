@@ -3,7 +3,6 @@
 // ALL tests MUST FAIL before implementation of
 // packages/app/features/disclosure/AmbientPrivacyLabel.tsx
 //
-// Story 3-6 ACs covered: 17, 18, 19, 20, 21, 22, 25
 
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -104,10 +103,10 @@ afterEach(() => {
 })
 
 // =============================================================================
-// AC #18: Boundary A label text
+// Boundary A label text
 // =============================================================================
 
-describe('AC18 — boundary=collective_post_v1 renders "VISIBLE TO THE COLLECTIVE"', () => {
+describe('boundary=collective_post_v1 renders "VISIBLE TO THE COLLECTIVE"', () => {
   it('renders the exact label text', () => {
     render(React.createElement(AmbientPrivacyLabel, { boundary: 'collective_post_v1' }))
     expect(screen.getByText('VISIBLE TO THE COLLECTIVE')).toBeTruthy()
@@ -127,10 +126,10 @@ describe('AC18 — boundary=collective_post_v1 renders "VISIBLE TO THE COLLECTIV
 })
 
 // =============================================================================
-// AC #19: Boundary B label text variants
+// Boundary B label text variants
 // =============================================================================
 
-describe('AC19 — boundary=ai_cloud_v1 renders "CLOUD · {provider}" or "LOCAL"', () => {
+describe('boundary=ai_cloud_v1 renders "CLOUD · {provider}" or "LOCAL"', () => {
   it('renders "CLOUD · OpenAI" when provider="OpenAI"', () => {
     render(
       React.createElement(AmbientPrivacyLabel, { boundary: 'ai_cloud_v1', provider: 'OpenAI' })
@@ -152,10 +151,10 @@ describe('AC19 — boundary=ai_cloud_v1 renders "CLOUD · {provider}" or "LOCAL"
 })
 
 // =============================================================================
-// AC #20: Tap behavior — opens the wrapper in mode="review"
+// Tap behavior — opens the wrapper in mode="review"
 // =============================================================================
 
-describe('AC20 — tapping the label opens ThreePostureDisclosure wrapper in mode=review', () => {
+describe('tapping the label opens ThreePostureDisclosure wrapper in mode=review', () => {
   it('does not mount the disclosure wrapper before tap', () => {
     render(React.createElement(AmbientPrivacyLabel, { boundary: 'collective_post_v1' }))
     expect(screen.queryByRole('dialog')).toBeNull()
@@ -195,10 +194,10 @@ describe('AC20 — tapping the label opens ThreePostureDisclosure wrapper in mod
 })
 
 // =============================================================================
-// AC #20 / #22: Tapping does NOT trigger acknowledgment write
+// Tapping does NOT trigger acknowledgment write
 // =============================================================================
 
-describe('AC20/AC22 — tapping the label does not write acknowledgment', () => {
+describe('tapping the label does not write acknowledgment', () => {
   it('does not call store$.profile.preferences write paths (no TQ imports)', () => {
     // This is a structural / import-boundary test: the component must not import
     // @tanstack/react-query. We verify indirectly by checking the component renders
@@ -213,10 +212,10 @@ describe('AC20/AC22 — tapping the label does not write acknowledgment', () => 
 })
 
 // =============================================================================
-// AC #17: Module exports
+// Module exports
 // =============================================================================
 
-describe('AC17 — AmbientPrivacyLabel module exports', () => {
+describe('AmbientPrivacyLabel module exports', () => {
   it('exports AmbientPrivacyLabel as a named export', async () => {
     const mod = await import('../AmbientPrivacyLabel')
     expect(typeof mod.AmbientPrivacyLabel).toBe('function')

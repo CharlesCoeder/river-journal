@@ -6,7 +6,7 @@
 // "your post was removed" receipt. `moderation_actions` is admin-only and
 // `collective_your_posts_page` deliberately excludes removed rows, so a
 // purpose-built SECURITY DEFINER RPC (`collective_my_removed_posts`) returns
-// removed-post metadata only — NO body, NO title (NFR19 structural leak guard).
+// removed-post metadata only — NO body, NO title (structural leak guard).
 // Reply-vs-top-level is derived from `parent_post_id`.
 
 import { useQuery } from '@tanstack/react-query'

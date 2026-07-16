@@ -278,8 +278,7 @@ Deno.test('buildReplyRecipientCandidates returns zero recipients when both paren
 })
 
 // ---------------------------------------------------------------------------
-// composeReplyCopy -- pseudonym-only body, never any post/reply content
-// (NFR19).
+// composeReplyCopy -- pseudonym-only body, never any post/reply content.
 // ---------------------------------------------------------------------------
 
 Deno.test('composeReplyCopy returns the fixed title "New reply"', () => {

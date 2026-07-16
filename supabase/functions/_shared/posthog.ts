@@ -5,7 +5,7 @@
 // enforcement, but POSTs a single event to PostHog's capture endpoint via a
 // direct `fetch` (modeled on `_shared/expoPush.ts`) rather than the SDK.
 //
-// PRIVACY (NFR19): every emitted event is validated against the SERVER
+// PRIVACY: every emitted event is validated against the SERVER
 // `EVENT_ALLOWLIST` mirror, then run through the SAME two runtime nets the
 // logger and the client applies — the content-key net (`isContentKey`) and the
 // free-text-value net (`looksLikeFreeText`), both from `_shared/contentKeys.ts`.

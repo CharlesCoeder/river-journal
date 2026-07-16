@@ -49,7 +49,7 @@ export function SliderHub({ children }: SliderHubProps) {
   const media = useMedia()
   const reduceMotion = useReducedMotion()
 
-  // Web-mobile short-circuit (AC #5):
+  // Web-mobile short-circuit:
   // • SSR: typeof window === 'undefined' → passthrough (conservative default)
   // • Web $sm breakpoint → passthrough (tap fallbacks only)
   const hasWindow = typeof window !== 'undefined'

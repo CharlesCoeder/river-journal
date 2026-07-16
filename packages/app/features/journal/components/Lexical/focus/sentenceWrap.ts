@@ -2,7 +2,7 @@
  * sentenceWrap — Lexical-coupled engine that partitions a block's text into
  * stable SentenceNode wrappers (and tears them back down).
  *
- * This is the STRUCTURE half of Story 2.11 (the rare, risky part). It is:
+ * This is the STRUCTURE half of the per-sentence focus mode (the rare, risky part). It is:
  *   - idempotent: re-running on stable text is a no-op (Lexical re-runs node
  *     transforms until the tree stops changing — a non-idempotent transform
  *     infinite-loops). The no-op check compares the current SentenceNode
@@ -180,7 +180,7 @@ export function reconcileBlockSentences(block: ElementNode): void {
   }
 }
 
-/** Unwrap all SentenceNodes in a block (back to the Story 2.6 paragraph state). */
+/** Unwrap all SentenceNodes in a block (back to the plain paragraph state). */
 export function unwrapBlockSentences(block: ElementNode): void {
   flattenBlock(block)
 }

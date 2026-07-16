@@ -1,27 +1,27 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-4 — TDD red-phase integration tests for `state/collective/thread.ts`
+ * TDD red-phase integration tests for `state/collective/thread.ts`
  * (the `useThread(postId, { role })` hook + `fetchThreadPage` pure function).
  *
- * These tests MUST fail before Story 3-4 is implemented and pass after.
+ * These tests MUST fail before implementation and pass after.
  *
  * Surface covered:
- *   - AC #1, #2: module exports (PAGE_SIZE, collectiveThreadKey, fetchThreadPage,
+ *   - module exports (PAGE_SIZE, collectiveThreadKey, fetchThreadPage,
  *     useThread, ThreadPageResult, Post type re-export).
- *   - AC #3, #4: `fetchThreadPage` RPC call shape, hasMore detection, preview-mode
+ *   - `fetchThreadPage` RPC call shape, hasMore detection, preview-mode
  *     unconditional `nextCursor: null`, preview-row client-side clamp to 3,
  *     empty-result default mode 'full', error path re-throw.
- *   - AC #5: useInfiniteQuery config (maxPages: 5, refetchInterval: 30_000,
+ *   - useInfiniteQuery config (maxPages: 5, refetchInterval: 30_000,
  *     staleTime: 25_000, refetchOnWindowFocus: true, role-based gcTime).
- *   - AC #7: Preview gate (4 returned rows clamped to 3, nextCursor null).
- *   - AC #8: Streak-cross-500 invalidation flows transitively through
+ *   - Preview gate (4 returned rows clamped to 3, nextCursor null).
+ *   - Streak-cross-500 invalidation flows transitively through
  *     ['collective'] prefix; thread.ts itself does NOT add an observe block.
- *   - AC #11: collectiveThreadKey shape `['collective', 'thread', postId]`.
- *   - AC #15: `Post` type structural parity with feed.ts (compile-time).
+ *   - collectiveThreadKey shape `['collective', 'thread', postId]`.
+ *   - `Post` type structural parity with feed.ts (compile-time).
  *
  * Note: thread.ts MUST NOT import @legendapp/state — that grep regression is
- * covered by `boundary-rule.test.ts` (extended with 'collective/thread.ts'
- * by this story per AC #11). This file does NOT duplicate that grep.
+ * covered by `boundary-rule.test.ts` (extended with 'collective/thread.ts').
+ * This file does NOT duplicate that grep.
  */
 
 import React from 'react'
@@ -70,7 +70,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> & { id: string; cre
   return {
     user_id: 'user-x',
     parent_post_id: 'post-A',
-    // Story 3-15: thread_page rows now carry `title` — always NULL for replies
+    // thread_page rows now carry `title` — always NULL for replies
     // (guaranteed server-side by the polarised CHECK). Passed through unchanged.
     title: null,
     body: 'hello',
@@ -107,9 +107,9 @@ function wrapper(qc: QueryClient) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #1 — module exports
+// module exports
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / module exports (AC #1)', () => {
+describe('module exports', () => {
   it('PAGE_SIZE === 20', () => {
     expect(PAGE_SIZE).toBe(20)
   })
@@ -128,9 +128,9 @@ describe('Story 3-4 / module exports (AC #1)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #3, #4 — fetchThreadPage RPC call shape & hasMore detection
+// fetchThreadPage RPC call shape & hasMore detection
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / fetchThreadPage RPC call shape (AC #3, #4)', () => {
+describe('fetchThreadPage RPC call shape', () => {
   it('calls supabase.rpc("collective_thread_page", { post_id, cursor: null, page_size: 21 }) on first page', async () => {
     rpcMock.mockResolvedValueOnce({ data: [], error: null })
     await fetchThreadPage('post-A', null)
@@ -154,9 +154,9 @@ describe('Story 3-4 / fetchThreadPage RPC call shape (AC #3, #4)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #3, #4, #12 — full-mode happy paths
+// full-mode happy paths
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / fetchThreadPage full-mode happy paths (AC #3, #4, #12)', () => {
+describe('fetchThreadPage full-mode happy paths', () => {
   it('21 rows → trims to 20 and surfaces nextCursor from items[19].created_at', async () => {
     const rows = makeRows(21, 'full')
     rpcMock.mockResolvedValueOnce({ data: rows, error: null })
@@ -195,9 +195,9 @@ describe('Story 3-4 / fetchThreadPage full-mode happy paths (AC #3, #4, #12)', (
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #3, #7, #12 — preview gate (canonical regression)
+// preview gate (canonical regression)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / fetchThreadPage preview gate (AC #3, #7, #12)', () => {
+describe('fetchThreadPage preview gate', () => {
   it('preview-mode + 4 rows → clamps items to 3 AND nextCursor unconditionally null', async () => {
     const rows = makeRows(4, 'preview')
     rpcMock.mockResolvedValueOnce({ data: rows, error: null })
@@ -229,9 +229,9 @@ describe('Story 3-4 / fetchThreadPage preview gate (AC #3, #7, #12)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #3 — error path
+// error path
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / fetchThreadPage error path (AC #3)', () => {
+describe('fetchThreadPage error path', () => {
   it('rejects with an Error carrying the supabase error message', async () => {
     rpcMock.mockResolvedValueOnce({
       data: null,
@@ -250,9 +250,9 @@ describe('Story 3-4 / fetchThreadPage error path (AC #3)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #5 — useThread hook config (queryKey, infinite query, role-based gcTime)
+// useThread hook config (queryKey, infinite query, role-based gcTime)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / useThread hook config (AC #5)', () => {
+describe('useThread hook config', () => {
   it('queryKey shape on first fetch is ["collective", "thread", postId]', async () => {
     const rows = makeRows(2, 'full')
     rpcMock.mockResolvedValue({ data: rows, error: null })
@@ -283,7 +283,7 @@ describe('Story 3-4 / useThread hook config (AC #5)', () => {
 
     const query = qc.getQueryCache().find({ queryKey: collectiveThreadKey('post-B') })
     expect(query).toBeDefined()
-    // AC #5: expansion role MUST resolve to 5 min cache time.
+    // expansion role MUST resolve to 5 min cache time.
     // The resolved value can be on the query itself or via observer options.
     const observerGcTime = (query as any)?.observers?.[0]?.options?.gcTime
     const directGcTime = (query as any)?.gcTime
@@ -351,7 +351,7 @@ describe('Story 3-4 / useThread hook config (AC #5)', () => {
     expect(opts?.refetchOnWindowFocus).toBe(true)
   })
 
-  it('maxPages === 5 on the resolved options (NFR31 memory bound)', async () => {
+  it('maxPages === 5 on the resolved options (memory bound)', async () => {
     const rows = makeRows(2, 'full')
     rpcMock.mockResolvedValue({ data: rows, error: null })
     const qc = makeQueryClient()
@@ -366,9 +366,9 @@ describe('Story 3-4 / useThread hook config (AC #5)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #5 — getNextPageParam wiring (preview-mode → no further pages)
+// getNextPageParam wiring (preview-mode → no further pages)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / useThread pagination semantics (AC #5, #7)', () => {
+describe('useThread pagination semantics', () => {
   it('preview-mode response → hasNextPage === false (gate is unbypassable)', async () => {
     const rows = makeRows(4, 'preview')
     rpcMock.mockResolvedValue({ data: rows, error: null })
@@ -404,7 +404,7 @@ describe('Story 3-4 / useThread pagination semantics (AC #5, #7)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #8 — streak-cross-500 invalidation flows transitively via ['collective']
+// streak-cross-500 invalidation flows transitively via ['collective']
 // ─────────────────────────────────────────────────────────────────────────────
 describe('thread query invalidation transitivity', () => {
   it('invalidateQueries({ queryKey: ["collective"] }) triggers a refetch of the seeded thread query', async () => {
@@ -439,9 +439,9 @@ describe('thread query invalidation transitivity', () => {
   })
 
   it('thread.ts source does NOT contain an observe() call (Legend-State exception lives in feed.ts only)', () => {
-    // AC #8: the streak-cross-500 invalidation observe block lives in feed.ts,
+    // The streak-cross-500 invalidation observe block lives in feed.ts,
     // NOT in thread.ts. This grep is a defensive regression — even though the
-    // boundary-rule grep (AC #11) catches @legendapp/state imports, this
+    // boundary-rule grep catches @legendapp/state imports, this
     // catches a more subtle "tried to import observe() from a different
     // legend subpath" mistake.
     const src = readFileSync(path.resolve(__dirname, '../collective/thread.ts'), 'utf8')
@@ -455,13 +455,13 @@ describe('thread query invalidation transitivity', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #15 — Post type structural parity with feed.ts (when both files exist)
+// Post type structural parity with feed.ts (when both files exist)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-4 / Post type structural parity with feed.ts (AC #15)', () => {
+describe('Post type structural parity with feed.ts', () => {
   it('if feed.ts exists and exports Post, thread.ts and feed.ts share the canonical type', async () => {
     const feedPath = path.resolve(__dirname, '../collective/feed.ts')
     if (!existsSync(feedPath)) {
-      // Story 3-3 has not landed yet; this story owns the canonical Post
+      // feed.ts has not landed yet; this file owns the canonical Post
       // declaration. The runtime check is satisfied trivially.
       expect(true).toBe(true)
       return
@@ -477,7 +477,7 @@ describe('Story 3-4 / Post type structural parity with feed.ts (AC #15)', () => 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Story 3-15 — collective_thread_root: fetchThreadRoot + useThreadRoot (AC #26)
+// collective_thread_root: fetchThreadRoot + useThreadRoot
 //
 // The thread ROOT is now its own single-row RPC (the feed dropped `body`).
 // fetchThreadRoot returns the single root row, or `null` for the removed/
@@ -502,7 +502,7 @@ function makeRoot(overrides: Partial<Record<string, unknown>> = {}) {
   }
 }
 
-describe('Story 3-15 / module exports (AC #20)', () => {
+describe('collectiveThreadRoot / module exports', () => {
   it('collectiveThreadRootKey(postId) nests under the thread key', () => {
     expect(collectiveThreadRootKey('post-A')).toEqual(['collective', 'thread', 'post-A', 'root'])
   })
@@ -513,7 +513,7 @@ describe('Story 3-15 / module exports (AC #20)', () => {
   })
 })
 
-describe('Story 3-15 / fetchThreadRoot (AC #20, #26)', () => {
+describe('fetchThreadRoot', () => {
   it('calls supabase.rpc("collective_thread_root", { post_id }) and returns the single row', async () => {
     rpcMock.mockResolvedValueOnce({ data: [makeRoot()], error: null })
     const root = await fetchThreadRoot('post-A')
@@ -527,7 +527,7 @@ describe('Story 3-15 / fetchThreadRoot (AC #20, #26)', () => {
     expect(root!.reactions).toEqual({ heart: 2 })
   })
 
-  it('returns null when the RPC returns an empty array (removed / not-found, AC #11)', async () => {
+  it('returns null when the RPC returns an empty array (removed / not-found)', async () => {
     rpcMock.mockResolvedValueOnce({ data: [], error: null })
     const root = await fetchThreadRoot('gone')
     expect(root).toBeNull()
@@ -545,7 +545,7 @@ describe('Story 3-15 / fetchThreadRoot (AC #20, #26)', () => {
   })
 })
 
-describe('Story 3-15 / useThreadRoot hook (AC #20)', () => {
+describe('useThreadRoot hook', () => {
   it('registers a single-row query under the root key and resolves the root', async () => {
     rpcMock.mockResolvedValue({ data: [makeRoot()], error: null })
     const qc = makeQueryClient()
@@ -573,7 +573,7 @@ describe('Story 3-15 / useThreadRoot hook (AC #20)', () => {
   })
 })
 
-describe('Story 3-15 / thread_page rows carry title (AC #26)', () => {
+describe('thread_page rows carry title', () => {
   it('fetchThreadPage passes through title on reply rows (always null by CHECK)', async () => {
     const rows = makeRows(2, 'full')
     rpcMock.mockResolvedValueOnce({ data: rows, error: null })

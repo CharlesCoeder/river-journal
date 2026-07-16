@@ -214,7 +214,7 @@ function renderNav(variant: 'home' | 'browse' = 'home', currentRoute?: string) {
 
 // Temporary: 'streak-profile' and 'account' entries are currently hidden from WORD_LINK_ITEMS;
 // when they are restored, re-add the matching assertions for /streak/ and /account/ below.
-describe('WordLinkNav renders items in locked order (AC 1, AC 3)', () => {
+describe('WordLinkNav renders items in locked order', () => {
   it('home variant renders the currently visible word-link items', () => {
     renderNav('home')
     expect(screen.getByText(/past entries/i)).toBeTruthy()
@@ -240,7 +240,7 @@ describe('WordLinkNav renders items in locked order (AC 1, AC 3)', () => {
     ])
   })
 
-  it('items appear in DOM in the correct visual order (AC 1)', () => {
+  it('items appear in DOM in the correct visual order', () => {
     renderNav('home')
     const links = screen.getAllByRole('link')
     const texts = links.map((el) => el.textContent?.toLowerCase() ?? '')
@@ -252,10 +252,10 @@ describe('WordLinkNav renders items in locked order (AC 1, AC 3)', () => {
 })
 
 // ===========================================================================
-// Suite 2 — href correctness (AC 17)
+// Suite 2 — href correctness
 // ===========================================================================
 
-describe('each anchor has the correct href attribute (AC 17)', () => {
+describe('each anchor has the correct href attribute', () => {
   const hrefTable = [
     { label: /past entries/i, href: '/day-view' },
     { label: /collective/i, href: '/collective' },
@@ -273,10 +273,10 @@ describe('each anchor has the correct href attribute (AC 17)', () => {
 })
 
 // ===========================================================================
-// Suite 3 — Click behaviour: preventDefault + router.push (AC 17)
+// Suite 3 — Click behaviour: preventDefault + router.push
 // ===========================================================================
 
-describe('plain click calls preventDefault then router.push (AC 17)', () => {
+describe('plain click calls preventDefault then router.push', () => {
   it('clicking "Past Entries" calls preventDefault() and router.push("/day-view")', async () => {
     renderNav('home')
     const link = screen.getByText(/past entries/i)
@@ -296,10 +296,10 @@ describe('plain click calls preventDefault then router.push (AC 17)', () => {
 })
 
 // ===========================================================================
-// Suite 4 — Cmd/Ctrl/middle-click must NOT preventDefault (AC 17)
+// Suite 4 — Cmd/Ctrl/middle-click must NOT preventDefault
 // ===========================================================================
 
-describe('modifier clicks do NOT call preventDefault — let browser handle (AC 17)', () => {
+describe('modifier clicks do NOT call preventDefault — let browser handle', () => {
   it('Cmd-click does not call router.push and does not preventDefault', async () => {
     renderNav('home')
     const link = screen.getByText(/past entries/i)
@@ -337,10 +337,10 @@ describe('modifier clicks do NOT call preventDefault — let browser handle (AC 
 })
 
 // ===========================================================================
-// Suite 5 — Active-route aria-current and color (AC 16, AC 11)
+// Suite 5 — Active-route aria-current and color
 // ===========================================================================
 
-describe('active route gets aria-current="page" (AC 16)', () => {
+describe('active route gets aria-current="page"', () => {
   it('link matching current pathname has aria-current="page"', () => {
     __currentPathname = '/settings'
     renderNav('home', '/settings')
@@ -369,10 +369,10 @@ describe('active route gets aria-current="page" (AC 16)', () => {
 })
 
 // ===========================================================================
-// Suite 6 — Auth-aware Log in/out label flip (AC 12)
+// Suite 6 — Auth-aware Log in/out label flip
 // ===========================================================================
 
-describe('auth-aware label flip: "Log in" when unauthenticated, "Log out" when authenticated (AC 12)', () => {
+describe('auth-aware label flip: "Log in" when unauthenticated, "Log out" when authenticated', () => {
   it('shows "Log in" when unauthenticated', () => {
     mockIsAuthenticated = false
     renderNav('home')
@@ -410,10 +410,10 @@ describe('auth-aware label flip: "Log in" when unauthenticated, "Log out" when a
 })
 
 // ===========================================================================
-// Suite 7 — Press-flood guard: second tap within ~400ms is ignored (AC 12)
+// Suite 7 — Press-flood guard: second tap within ~400ms is ignored
 // ===========================================================================
 
-describe('press-flood guard: second tap within ~400ms is ignored (AC 12)', () => {
+describe('press-flood guard: second tap within ~400ms is ignored', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())
 
@@ -454,10 +454,10 @@ describe('press-flood guard: second tap within ~400ms is ignored (AC 12)', () =>
 })
 
 // ===========================================================================
-// Suite 8 — Container semantics: <nav> with aria-label (AC 16)
+// Suite 8 — Container semantics: <nav> with aria-label
 // ===========================================================================
 
-describe('container has <nav> element with aria-label="Primary navigation" (AC 16)', () => {
+describe('container has <nav> element with aria-label="Primary navigation"', () => {
   it('renders a <nav> landmark element', () => {
     renderNav('home')
     expect(screen.getByRole('navigation')).toBeTruthy()
@@ -470,10 +470,10 @@ describe('container has <nav> element with aria-label="Primary navigation" (AC 1
 })
 
 // ===========================================================================
-// Suite 9 — focus-visible styling (AC 18)
+// Suite 9 — focus-visible styling
 // ===========================================================================
 
-describe('focus-visible styling: links expose :focus-visible variant, not bare :focus (AC 18)', () => {
+describe('focus-visible styling: links expose :focus-visible variant, not bare :focus', () => {
   it('each link element has a className or data attribute indicating focus-visible styling', () => {
     renderNav('home')
     const links = screen.getAllByRole('link')
@@ -509,10 +509,10 @@ describe('focus-visible styling: links expose :focus-visible variant, not bare :
 })
 
 // ===========================================================================
-// Suite 10 — Reduced-motion: entry animation collapses (AC 15)
+// Suite 10 — Reduced-motion: entry animation collapses
 // ===========================================================================
 
-describe('reduced-motion: entry animation collapses immediately (AC 15)', () => {
+describe('reduced-motion: entry animation collapses immediately', () => {
   afterEach(async () => {
     const myUi = (await import('@my/ui')) as any
     myUi.__setReducedMotion(false)

@@ -16,8 +16,8 @@ BEGIN
   v_uid := test_seed_user();
   PERFORM test_seed_500_today(v_uid);
 
-  -- Seed two top-level posts so the feed has rows to return. Story 3-15 added
-  -- a required, non-blank title on top-level posts (collective_posts_title_chk),
+  -- Seed two top-level posts so the feed has rows to return. A required,
+  -- non-blank title is enforced on top-level posts (collective_posts_title_chk),
   -- so every top-level INSERT below supplies one.
   PERFORM test_become(v_uid);
   INSERT INTO collective_posts (id, user_id, title, body)

@@ -1,14 +1,14 @@
 // packages/app/features/collective/YourPostsScreen.tsx
 //
 // Screen that shows the current user's own Collective posts.
-// UI consumer of useYourPosts() (Story 3-5).
+// UI consumer of useYourPosts().
 //
 // Defense-in-depth: NEVER read store$.streak.* for mode dispatch —
 // feed.data.pages[0].mode is the SOLE source of truth for the empty-state
-// CTA. See AC #17, AC #38 for the cold-cache fallback rationale.
+// CTA. See the cold-cache fallback rationale below.
 //
 // Read ONLY feed.data.pages[0].mode — do NOT pass feed.* into render trees
-// that subscribe (AC #2 hook allowlist; avoids transitive Legend-State leak
+// that subscribe (hook allowlist; avoids transitive Legend-State leak
 // since feed.ts itself observes streak$).
 //
 // Boundary rule (D7): no Legend-State or app/state/store imports.
@@ -16,11 +16,11 @@
 // (boundary-rule.test.ts covers state/collective/*.ts only, not features/collective/**).
 //
 // NOTE: Moderator-removed posts (is_removed === TRUE) are filtered upstream by
-// the collective_your_posts_page RPC (Story 3-5 AC #7). The defensive filter
+// the collective_your_posts_page RPC. The defensive filter
 // below is for symmetry with CollectiveFeedScreen. A moderator-removal marker
 // UI is intentionally NOT implemented here — it requires RPC widening to include
-// removed rows + moderation_actions JOIN (Epic 5 / Story 5.8). Deferred per
-// internal notes. (AC #42)
+// removed rows + moderation_actions JOIN (the moderation feature). Deferred per
+// internal notes.
 
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -46,7 +46,7 @@ export default function YourPostsScreen() {
   // User-scoped: keys the own-posts cache under the current user id so a stale
   // persisted cache can never serve another account's rows (cross-user defense).
   const yourPosts = useYourPosts(currentUserId)
-  // Read ONLY feed.data.pages[0].mode for the empty-state CTA dispatch (AC #17)
+  // Read ONLY feed.data.pages[0].mode for the empty-state CTA dispatch
   const feed = useFeed()
   const reducedMotion = useReducedMotion()
   const router = useRouter()
@@ -60,7 +60,7 @@ export default function YourPostsScreen() {
   }, [])
 
   // Flatten pages, apply defensive is_removed filter (defense-in-depth; RPC already filters)
-  // No local-hide filter — users cannot locally-hide their own posts via FlagAffordance (AC #4)
+  // No local-hide filter — users cannot locally-hide their own posts via FlagAffordance
   const allPosts = useMemo(
     () => yourPosts.data?.pages.flatMap((p) => p.items).filter((p) => !p.is_removed) ?? [],
     [yourPosts.data]
@@ -99,15 +99,15 @@ export default function YourPostsScreen() {
   }
 
   // ─── Mode dispatch for empty-state CTA ────────────────────────────────────
-  // Read only the mode field from feed — do NOT subscribe to feed observers (AC #17).
-  // When feed.data is undefined (cold cache), default to 'preview' semantics (AC #38):
+  // Read only the mode field from feed — do NOT subscribe to feed observers.
+  // When feed.data is undefined (cold cache), default to 'preview' semantics:
   // conservatively show "Begin writing" → / rather than "Compose" → /collective/compose.
   const feedMode = feed.data?.pages[0]?.mode
 
   const isEmptyState = allPosts.length === 0 && !yourPosts.isLoading
 
   // ─── Ambient strip precedence: error > offline > empty ────────────────────
-  // Mirror CollectiveFeedScreen.tsx pattern exactly (AC #22)
+  // Mirror CollectiveFeedScreen.tsx pattern exactly
   const showErrorStrip = yourPosts.isError && yourPosts.data !== undefined
   const showOfflineStrip = !showErrorStrip && !isOnline && yourPosts.dataUpdatedAt > 0
   const showEmptyState = !showErrorStrip && !showOfflineStrip && isEmptyState

@@ -1,12 +1,12 @@
 // packages/app/features/collective/ThreadView.tsx
 //
-// Flagship Collective thread surface — title-led redesign (Story 3-16).
+// Flagship Collective thread surface — title-led redesign.
 //
 // Shape (mirrors docs/collective-design-reference CollectiveThread.tsx):
 //   • a "Back to the room" link
 //   • the ROOT letter: title (h1) + byline + full body + interactive reactions
 //     + reply, sourced from useThreadRoot() (the feed RPC no longer carries
-//     `body`, so the root's body has no other source — Story 3-16 follow-up #1)
+//     `body`, so the root's body has no other source)
 //   • a branching reply tree: each reply is byline + body + reactions, nested
 //     under left depth rails, with a depth cap + "view N more replies" affordance
 //
@@ -147,7 +147,7 @@ function SkeletonRows() {
 // function-component render. The user taps "View N more replies" → ThreadView adds
 // the postId to expandedSubtreeIds → React mounts ThreadExpansion → useThread runs.
 //
-// Cache note: gcTime: 5min for expansion instances (Story 3-4). Collapsing unmounts
+// Cache note: gcTime: 5min for expansion instances. Collapsing unmounts
 // the component but the cache entry survives; re-expanding within 5min hits cache.
 
 interface ThreadExpansionProps {
@@ -185,7 +185,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   const isSuspended = useIsSuspended(currentUserId ?? null)
   const hiddenIds = useLocallyHiddenPostIds()
   // Root post (title + full body) — the feed RPC dropped `body`, so this is the
-  // ONLY source for the root's body. Story 3-16 follow-up #1.
+  // ONLY source for the root's body.
   const rootQuery = useThreadRoot(postId)
   // Reply tree (direct children of the root; deeper levels lazy-load).
   const tree = useThread(postId, { role: 'root' })
@@ -285,7 +285,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         loadedDescCount >= (post.descendant_count ?? 0)
       const hasUnloaded = hasDescendants && !allLoaded
 
-      // aria-expanded: omit when there is no content to expand/collapse (AC #6).
+      // aria-expanded: omit when there is no content to expand/collapse.
       const ariaExpanded = hasDescendants ? !isCollapsed : undefined
 
       // Deletion state: self-deleted → tombstone; anonymized → body shown, author
@@ -683,7 +683,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
 
   // ─── Removed / not-found root ──────────────────────────────────────────────
   // collective_thread_root returns null when the root is moderator-removed or
-  // does not exist (AC 11).
+  // does not exist.
   if (rootQuery.data === null) {
     return (
       <View

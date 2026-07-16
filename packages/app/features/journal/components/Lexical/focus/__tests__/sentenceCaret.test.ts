@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Caret ergonomics across sentence seams (Story 2.11, AC 5, 24).
+// Caret ergonomics across sentence seams.
 // Uses a REAL DOM-attached editor so Lexical's authentic selection / deletion /
 // insertion semantics drive the SentenceNode boundaries.
 
@@ -86,7 +86,7 @@ function emptySentenceCount(editor: LexicalEditor): number {
   return n
 }
 
-describe('caret ergonomics across sentence seams (AC 24)', () => {
+describe('caret ergonomics across sentence seams', () => {
   it('typing at a sentence seam continues in the correct (second) sentence', () => {
     const editor = makeAttachedEditor()
     seedParagraph(editor, 'Hello. World.')
@@ -160,7 +160,7 @@ describe('caret ergonomics across sentence seams (AC 24)', () => {
   })
 })
 
-describe('IME composition is not corrupted — transform skipped mid-composition (AC 7, 24)', () => {
+describe('IME composition is not corrupted — transform skipped mid-composition', () => {
   it('the plugin gate skips re-partition while editor.isComposing() is true', () => {
     const editor = makeAttachedEditor()
     seedParagraph(editor, 'Hello world. Second sentence.')

@@ -169,7 +169,7 @@ async function main() {
       if (isContentKey(key)) {
         errors.push(
           `${ALLOWLIST_REL}: Field '${key}' is in the content-key denylist. ` +
-            `PostHog events MUST NOT capture user-generated content (NFR19). ` +
+            `PostHog events MUST NOT capture user-generated content. ` +
             `(event '${event}')`
         )
       }

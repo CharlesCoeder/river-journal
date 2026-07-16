@@ -270,7 +270,7 @@ GRANT  EXECUTE ON FUNCTION complete_pending_account_deletions() TO service_role;
 -- 20260716000003 / 20260713000000 precedent). Pure SQL — no pg_net / Edge
 -- dispatch (the sweep is a DB state change + a direct auth.users delete).
 --
--- OPS FOLLOW-UP (manual review): this sweep is the SOLE backstop for
+-- OPS FOLLOW-UP: this sweep is the SOLE backstop for
 -- auth-identity removal within the 30-day window. If pg_cron is NOT actually
 -- enabled in the deployed environment, the guarded cron.schedule below is a
 -- SILENT no-op and the deletion guarantee is silently violated. Post-deploy the

@@ -3,10 +3,10 @@
 -- Adds three objects the operational_health_cron Edge Function builds on:
 --   1. operational_health_moderation_queue — the moderation-queue-depth
 --      aggregate (pending-flag count + oldest pending flag's age in seconds),
---      the recurring operator-visibility signal (NFR35).
+--      the recurring operator-visibility signal.
 --   2. operational_health_sync_opt_in — the once-daily cloud-sync opt-in
 --      aggregate (accounts with synced journal content vs. total accounts),
---      the "Sync Opt-in %" success-metric numerator/denominator (NFR33).
+--      the "Sync Opt-in %" success-metric numerator/denominator.
 --   3. operational_health_cron_dispatch — a best-effort pg_net wrapper the
 --      pg_cron schedule calls every 30 minutes to invoke the Edge Function.
 --

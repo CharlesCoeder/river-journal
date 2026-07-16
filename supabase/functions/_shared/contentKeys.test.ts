@@ -24,7 +24,7 @@ import { KNOWN_CONTENT_KEYS as LOGGING_KNOWN_CONTENT_KEYS, redact } from './logg
 const CLIENT_BASE_KEYS = ['body', 'content', 'flowContent', 'postBody', 'note']
 
 // The 5 server-only keys already relied upon by logging.test.ts's pre-existing
-// (Story 5.7) assertions — dropping any one of these would silently re-open a
+// assertions — dropping any one of these would silently re-open a
 // leak that suite already pins.
 const SERVER_ONLY_KEYS = ['reason', 'reason_code', 'title', 'raw_receipt', 'receipt']
 

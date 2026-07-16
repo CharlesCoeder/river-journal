@@ -1,6 +1,6 @@
 // packages/app/features/collective/CollectiveFeedScreen.tsx
 //
-// The Collective "room" — a title-led forum feed (title-led redesign, Story 3-16).
+// The Collective "room" — a title-led forum feed (title-led redesign).
 // Renders a scannable list of letter TITLES + metadata + a read-only reaction
 // tally; tapping a title opens the thread. Bodies are NOT shown in the list
 // (the feed RPC dropped `body`; see FeedPostRow).

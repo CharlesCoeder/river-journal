@@ -11,10 +11,10 @@
  * boundary is enforced by separate LexicalComposer instances.
  *
  * D7 carve-out: PostComposer is a UI feature file, not a state/collective file.
- * It MAY import store$ for the tenure-tier preference read (AC #22).
+ * It MAY import store$ for the tenure-tier preference read.
  *
- * No client-side 500-word gate: the server rejects sub-500 INSERT via RLS (Story 3.1).
- * If rejected, AC #16 error microcopy renders; no client guard is added here.
+ * No client-side 500-word gate: the server rejects sub-500 INSERT via RLS.
+ * If rejected, the error microcopy renders; no client guard is added here.
  */
 
 import type React from 'react'
@@ -58,7 +58,7 @@ export default function PostComposer({
     | undefined
 
   // ─── Top-level vs reply ────────────────────────────────────────────────────
-  // Title-led redesign (Story 3-16): top-level letters carry a required title;
+  // Title-led redesign: top-level letters carry a required title;
   // replies carry none (the server CHECK collective_posts_title_chk enforces
   // both — required on top-level, must be NULL on replies — we mirror it here).
   const isTopLevel = !compact && !replyContext
@@ -79,7 +79,7 @@ export default function PostComposer({
   const createPost = useCreatePost()
   const router = useRouter()
 
-  // ─── Tenure-tier opt-in — one-shot read at mount (AC #22) ─────────────────
+  // ─── Tenure-tier opt-in — one-shot read at mount ──────────────────────────
   // Sync read at mount only; no mid-session reactive update needed
   // (no UI to toggle this preference in v1 — future Epic 8 PrivacyCenterScreen).
   const showTenureTier = Boolean(
@@ -87,8 +87,8 @@ export default function PostComposer({
     (store$ as any).profile?.preferences?.collective_show_tenure_tier?.get?.() ?? false
   )
 
-  // ─── "Posting as" preview (AC #6) ─────────────────────────────────────────
-  // AC #6 — displayName placeholder mirrors Story 3.8 AC #28;
+  // ─── "Posting as" preview ──────────────────────────────────────────────────
+  // displayName placeholder mirrors the equivalent placeholder used elsewhere;
   // future RPC join replaces both call sites in lockstep.
   const previewName = currentUserId?.slice(0, 8) ?? '[deleted]'
   // Compute once at mount; binding to a timer would waste renders.
@@ -117,19 +117,19 @@ export default function PostComposer({
   // ─── Disclosure handlers ───────────────────────────────────────────────────
 
   // Called when the first-time disclosure is acknowledged.
-  // The wrapper (Story 3.6) writes acknowledged_at BEFORE calling onClose,
+  // The wrapper writes acknowledged_at BEFORE calling onClose,
   // so hasAcknowledgedBoundaryA() synchronously returns true here.
   const handleAcknowledge = () => {
     setShowDisclosure(false)
     // Defensive recheck (Failure Mode Analysis #1): if the wrapper's write failed
     // (network error, Supabase 4xx), re-show the disclosure.
     if (!hasAcknowledgedBoundaryA()) {
-      // WARNING: disclosure write may have failed — no content in message (AC #20)
+      // WARNING: disclosure write may have failed — no content in message
       console.warn('[PostComposer] disclosure write may have failed; re-showing')
       setShowDisclosure(true)
       return
     }
-    // Focus the editor within one frame after acknowledgment (AC #3).
+    // Focus the editor within one frame after acknowledgment.
     // JSDOM doesn't fully implement ContentEditable focus; production behavior
     // verified manually. Tests assert state change (composer becomes visible).
     if (typeof document !== 'undefined') {
@@ -147,7 +147,7 @@ export default function PostComposer({
   }
 
   // Called when the review-mode disclosure is dismissed.
-  // acknowledged_at is NOT modified (review-mode close path in Story 3.6).
+  // acknowledged_at is NOT modified (review-mode close path).
   const handleReviewClose = () => {
     setShowDisclosure(false)
     setDisclosureMode('first-time')
@@ -189,7 +189,7 @@ export default function PostComposer({
       router.push('/collective')
     } catch {
       // Failure: STAY on the composer with the draft intact and surface the
-      // error microcopy (AC #16). Never discard the letter on a rejected insert.
+      // error microcopy. Never discard the letter on a rejected insert.
       setShowError(true)
     } finally {
       submittingRef.current = false
@@ -251,7 +251,7 @@ export default function PostComposer({
         onClose={disclosureMode === 'review' ? handleReviewClose : handleAcknowledge}
       />
 
-      {/* Composer body — only visible after first-time acknowledgment (AC #1) */}
+      {/* Composer body — only visible after first-time acknowledgment */}
       {!showDisclosure && (
         <>
           {/* Eyebrow — title-led composer header (top-level letters only) */}
@@ -267,7 +267,7 @@ export default function PostComposer({
             </Text>
           ) : null}
 
-          {/* AmbientPrivacyLabel + "posting as" preview (AC #5, #6) */}
+          {/* AmbientPrivacyLabel + "posting as" preview */}
           <XStack
             alignItems="center"
             gap="$2"
@@ -327,7 +327,7 @@ export default function PostComposer({
             </YStack>
           ) : null}
 
-          {/* Writing surface — sharp-cornered, Newsreader serif, no chrome (AC #5) */}
+          {/* Writing surface — sharp-cornered, Newsreader serif, no chrome */}
           {/*
             Wrapping View gives the editor explicit dimensions. On native the
             `'use dom'` WebView fills its parent View — without an explicit
@@ -343,7 +343,7 @@ export default function PostComposer({
             />
           </View>
 
-          {/* Word/character count micro-typography (AC #11) */}
+          {/* Word/character count micro-typography */}
           <Text
             fontSize="$1"
             color="$color9"
@@ -351,7 +351,7 @@ export default function PostComposer({
             {wordCount} words · {charCount} chars
           </Text>
 
-          {/* Submit disabled-state microcopy (AC #13) */}
+          {/* Submit disabled-state microcopy */}
           {createPost.isPending && (
             <Text
               fontSize="$1"
@@ -361,7 +361,7 @@ export default function PostComposer({
             </Text>
           )}
 
-          {/* Error microcopy (AC #16) — generic, no body content logged */}
+          {/* Error microcopy — generic, no body content logged */}
           {showError && (
             <Text
               fontSize="$2"

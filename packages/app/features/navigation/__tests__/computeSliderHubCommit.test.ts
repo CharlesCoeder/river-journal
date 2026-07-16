@@ -23,12 +23,12 @@ import { computeSliderHubCommit } from '../SliderHub'
 const SCREEN_WIDTH = 400 // px — a common test device width
 const COMMIT_THRESHOLD = SCREEN_WIDTH * 0.25 // 100px
 
-describe('computeSliderHubCommit — displacement threshold (AC #1, #2, #3)', () => {
+describe('computeSliderHubCommit — displacement threshold', () => {
   it('zero translation + zero velocity → snap-back', () => {
     expect(computeSliderHubCommit(0, 0, SCREEN_WIDTH)).toBe('snap-back')
   })
 
-  it('positive translation exactly at threshold (inclusive) → right (AC #1)', () => {
+  it('positive translation exactly at threshold (inclusive) → right', () => {
     expect(computeSliderHubCommit(COMMIT_THRESHOLD, 0, SCREEN_WIDTH)).toBe('right')
   })
 
@@ -36,11 +36,11 @@ describe('computeSliderHubCommit — displacement threshold (AC #1, #2, #3)', ()
     expect(computeSliderHubCommit(COMMIT_THRESHOLD + 1, 0, SCREEN_WIDTH)).toBe('right')
   })
 
-  it('positive translation one px below threshold → snap-back (AC #2)', () => {
+  it('positive translation one px below threshold → snap-back', () => {
     expect(computeSliderHubCommit(COMMIT_THRESHOLD - 1, 0, SCREEN_WIDTH)).toBe('snap-back')
   })
 
-  it('negative translation exactly at threshold (inclusive) → left (AC #3)', () => {
+  it('negative translation exactly at threshold (inclusive) → left', () => {
     expect(computeSliderHubCommit(-COMMIT_THRESHOLD, 0, SCREEN_WIDTH)).toBe('left')
   })
 
@@ -48,7 +48,7 @@ describe('computeSliderHubCommit — displacement threshold (AC #1, #2, #3)', ()
     expect(computeSliderHubCommit(-(COMMIT_THRESHOLD + 1), 0, SCREEN_WIDTH)).toBe('left')
   })
 
-  it('negative translation one px below threshold → snap-back (symmetry, AC #2)', () => {
+  it('negative translation one px below threshold → snap-back (symmetry)', () => {
     expect(computeSliderHubCommit(-(COMMIT_THRESHOLD - 1), 0, SCREEN_WIDTH)).toBe('snap-back')
   })
 
@@ -61,7 +61,7 @@ describe('computeSliderHubCommit — displacement threshold (AC #1, #2, #3)', ()
   })
 })
 
-describe('computeSliderHubCommit — velocity escape hatch (AC #1, #3)', () => {
+describe('computeSliderHubCommit — velocity escape hatch', () => {
   it('velocity exactly at threshold 500 px/s (inclusive), rightward → right', () => {
     expect(computeSliderHubCommit(10, 500, SCREEN_WIDTH)).toBe('right')
   })
@@ -74,11 +74,11 @@ describe('computeSliderHubCommit — velocity escape hatch (AC #1, #3)', () => {
     expect(computeSliderHubCommit(50, 499, SCREEN_WIDTH)).toBe('snap-back')
   })
 
-  it('velocity 600 px/s with sub-threshold translation → right (fast flick AC #1)', () => {
+  it('velocity 600 px/s with sub-threshold translation → right (fast flick)', () => {
     expect(computeSliderHubCommit(50, 600, SCREEN_WIDTH)).toBe('right')
   })
 
-  it('velocity -600 px/s with sub-threshold translation → left (fast flick AC #3)', () => {
+  it('velocity -600 px/s with sub-threshold translation → left (fast flick)', () => {
     expect(computeSliderHubCommit(-50, -600, SCREEN_WIDTH)).toBe('left')
   })
 

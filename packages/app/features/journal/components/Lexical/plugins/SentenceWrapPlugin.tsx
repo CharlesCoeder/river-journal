@@ -3,8 +3,9 @@
  *
  * Registers Lexical node transforms that partition each block's text into stable
  * SentenceNode wrappers — but ONLY when focus mode is ON, granularity is
- * 'sentence', and the editor is editable. This is the STRUCTURE half of Story
- * 2.11; the STYLING half (the animated dim) lives in FocusModeParagraphPlugin.
+ * 'sentence', and the editor is editable. This is the STRUCTURE half of
+ * per-sentence focus mode; the STYLING half (the animated dim) lives in
+ * FocusModeParagraphPlugin.
  *
  * Lifecycle:
  *   - On activation: eager-wrap all existing blocks (history-merged) and register
@@ -14,7 +15,7 @@
  *     Composition (IME) is skipped to avoid corrupting CJK input.
  *   - On deactivation / unmount (granularity → paragraph, focus mode ON→OFF):
  *     unregister the transforms and unwrap every SentenceNode (history-merged),
- *     returning the document to the exact Story 2.6 paragraph state.
+ *     returning the document to the exact prior paragraph state.
  *
  * When inactive the plugin registers nothing and touches no nodes.
  */

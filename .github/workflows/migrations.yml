@@ -1,5 +1,5 @@
 # Migrations — apply schema changes to production ONLY through a manually
-# approved, forward-only gate (NFR37).
+# approved, forward-only gate.
 #
 # Triggers on a merge to main that touches supabase/migrations/**. The apply
 # job is bound to the `production` GitHub Environment, which is configured with

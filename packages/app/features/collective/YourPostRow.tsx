@@ -4,11 +4,11 @@
 // Renders a single own-post with self-deletion state branching.
 //
 // Diverges from PostRow intentionally:
-//   - No FlagAffordance (AC #14: no re-interaction surface)
-//   - No ReactionStrip (AC #14: record view, not action surface)
-//   - Adds self-deletion date marker (AC #11)
-//   - Shows aggregated engagement counts (AC #12)
-//   - Self-deleted rows show replies-only count (AC #12)
+//   - No FlagAffordance (no re-interaction surface)
+//   - No ReactionStrip (record view, not action surface)
+//   - Adds self-deletion date marker
+//   - Shows aggregated engagement counts
+//   - Self-deleted rows show replies-only count
 //
 // Boundary rule (D7): no Legend-State imports in this file.
 // features/collective/** MUST NOT import Legend-State or app/state/store.
@@ -59,7 +59,7 @@ export function YourPostRow({ post }: YourPostRowProps) {
         alignItems="center"
       >
         {/* Wrap AuthorByline in View for flexShrink — AuthorBylineProps does not extend ViewProps
-              and does not accept flexShrink directly (AC #8). */}
+              and does not accept flexShrink directly. */}
         <View flexShrink={1}>
           <AuthorByline
             displayName={displayName}
@@ -68,10 +68,10 @@ export function YourPostRow({ post }: YourPostRowProps) {
             deletedDisplay={post.is_user_deleted}
           />
         </View>
-        {/* NO FlagAffordance — AC #14: this is a record view, not an action surface */}
+        {/* NO FlagAffordance — this is a record view, not an action surface */}
       </XStack>
 
-      {/* Body area: match on is_user_deleted flag, NOT body string (AC #10).
+      {/* Body area: match on is_user_deleted flag, NOT body string.
             Self-deleted: render muted [deleted] placeholder in the body slot.
             Non-deleted: render the actual journal body text. */}
       {post.is_user_deleted ? (
@@ -92,7 +92,7 @@ export function YourPostRow({ post }: YourPostRowProps) {
         </Text>
       )}
 
-      {/* Self-deletion date marker: only when user_deleted_at is non-null (AC #11) */}
+      {/* Self-deletion date marker: only when user_deleted_at is non-null */}
       {post.is_user_deleted && deletionDateDisplay !== null ? (
         <Text
           fontSize="$1"
@@ -102,10 +102,10 @@ export function YourPostRow({ post }: YourPostRowProps) {
         </Text>
       ) : null}
 
-      {/* Engagement metadata row (AC #12)
-            - Self-deleted: suppresses reaction count (reactions deleted transactionally per Story 3-1),
+      {/* Engagement metadata row
+            - Self-deleted: suppresses reaction count (reactions deleted transactionally),
               shows replies-only count (replies survive self-delete per Reddit pattern).
-              AC #37: stale reaction_count post-delete is masked by this suppression branch —
+              Stale reaction_count post-delete is masked by this suppression branch —
               the optimistic update in useDeleteOwnPost does NOT decrement reaction_count,
               but it is invisible because this branch only renders reply count.
             - Non-deleted: show both reaction count and reply count (zeroes rendered — record view). */}

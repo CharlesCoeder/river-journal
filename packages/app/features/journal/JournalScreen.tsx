@@ -42,7 +42,7 @@ export function JournalScreen() {
 
   // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
-  // Focus granularity (Story 2.11) — read with ?? 'paragraph' (UI-only preference)
+  // Focus granularity — read with ?? 'paragraph' (UI-only preference)
   const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph'
 
   const handleBackToHome = () => {
@@ -53,7 +53,7 @@ export function JournalScreen() {
   const handleSaveFlow = () => {
     saveActiveFlowSession()
     // Completion metric — the raw word count is bucketed before it leaves the
-    // device; only the bucket string is ever emitted (NFR19).
+    // device; only the bucket string is ever emitted.
     const savedWordCount = store$.lastSavedFlow?.peek?.()?.wordCount ?? 0
     captureEvent('flow_completed', {
       user_id: store$.session?.userId?.peek?.() ?? null,

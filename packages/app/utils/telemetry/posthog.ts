@@ -12,7 +12,7 @@
  * nets. The native counterpart (`posthog.native.ts`) exposes the SAME surface
  * so call sites stay platform-agnostic.
  *
- * PRIVACY (NFR19 / NFR33): the allowlist + `captureEvent` is THE enforcement
+ * PRIVACY: the allowlist + `captureEvent` is THE enforcement
  * point for the analytics surface, the way `beforeSend` is for crash
  * telemetry. Autocapture and session recording are OFF (they fire independently
  * of `captureEvent` and would ship journal/Collective content the allowlist

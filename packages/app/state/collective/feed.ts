@@ -91,9 +91,9 @@ export async function fetchFeedPage(cursor: string | null): Promise<FeedPage> {
   let nextCursor: string | null = null
   if (data.length === PAGE_SIZE + 1) {
     items = data.slice(0, PAGE_SIZE) as Post[]
-    // AC #19 defensive guard — only compute cursor if slice non-empty.
+    // Defensive guard — only compute cursor if slice non-empty.
     if (items.length > 0) {
-      // AC #20 — coerce to string at the boundary so persistence layer never
+      // Coerce to string at the boundary so persistence layer never
       // chokes on a future Date-typed `created_at` from a Database regen.
       const lastItem = items[items.length - 1]
       if (lastItem) nextCursor = String(lastItem.created_at)
@@ -109,7 +109,7 @@ export async function fetchFeedPage(cursor: string | null): Promise<FeedPage> {
 /**
  * `useFeed()` — zero-arg hook returning the bounded infinite query.
  *
- * Memory bound: maxPages: 5 × PAGE_SIZE: 20 = 100 posts in memory (NFR31).
+ * Memory bound: maxPages: 5 × PAGE_SIZE: 20 = 100 posts in memory.
  * As the user scrolls past 100 posts, TanStack Query drops the oldest pages.
  *
  * Polling cadence: 30s (calm; faster polling burns Supabase egress).
@@ -178,7 +178,7 @@ observe(() => {
     const normalized = next ?? null
     if (previousLastQualifyingDate !== normalized) {
       previousLastQualifyingDate = normalized
-      // AC #21 — defer invalidation via queueMicrotask to break any potential
+      // Defer invalidation via queueMicrotask to break any potential
       // synchronous re-entry loop with Legend-State's reaction queue. Still
       // completes in the same event-loop turn (no user-visible delay).
       queueMicrotask(() => {
@@ -196,7 +196,7 @@ observe(() => {
       })
     }
   } catch (err) {
-    // AC #17 — swallow + warn so a single throw does NOT tear down the
+    // Swallow + warn so a single throw does NOT tear down the
     // observation. Legend-State's reaction runner *may* discard the
     // subscription if a callback throws (version-dependent). The try/catch
     // ensures the observation continues firing on subsequent transitions.

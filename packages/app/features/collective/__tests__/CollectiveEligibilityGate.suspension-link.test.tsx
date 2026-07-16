@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Covers the AC-9 advisory enhancement to CollectiveEligibilityGate: the
+ * Covers the advisory enhancement to CollectiveEligibilityGate: the
  * suspended branch appends a tappable "View details in Settings" affordance
  * that navigates to /settings. This is advisory only — it changes no gating.
  */

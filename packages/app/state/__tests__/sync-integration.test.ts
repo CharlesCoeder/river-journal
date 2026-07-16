@@ -153,7 +153,7 @@ describe('adoptOrphanFlows', () => {
     expect(flows$!['flow-1']!.user_id.get()).toBe('other-user')
   })
 
-  it('skips entries and flows with sync_excluded: true (AC #4)', () => {
+  it('skips entries and flows with sync_excluded: true', () => {
     entries$!['entry-excluded']!.set(makeEntry('entry-excluded', { sync_excluded: true }))
     flows$!['flow-excluded']!.set(makeFlow('flow-excluded', { sync_excluded: true }))
 
@@ -190,7 +190,7 @@ describe('countUndecidedOrphans', () => {
     expect(result).toEqual({ flowCount: 0, entryCount: 0 })
   })
 
-  it('counts entries and flows without user_id or sync_excluded (AC #1)', () => {
+  it('counts entries and flows without user_id or sync_excluded', () => {
     entries$!['e1']!.set(makeEntry('e1'))
     entries$!['e2']!.set(makeEntry('e2'))
     flows$!['f1']!.set(makeFlow('f1'))
@@ -207,7 +207,7 @@ describe('countUndecidedOrphans', () => {
     expect(result).toEqual({ flowCount: 0, entryCount: 0 })
   })
 
-  it('ignores entries/flows with sync_excluded: true (AC #4)', () => {
+  it('ignores entries/flows with sync_excluded: true', () => {
     entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true }))
     flows$!['f1']!.set(makeFlow('f1', { sync_excluded: true }))
 
@@ -215,7 +215,7 @@ describe('countUndecidedOrphans', () => {
     expect(result).toEqual({ flowCount: 0, entryCount: 0 })
   })
 
-  it('counts only undecided orphans when mixed data present (AC #8)', () => {
+  it('counts only undecided orphans when mixed data present', () => {
     entries$!['e-decided']!.set(makeEntry('e-decided', { sync_excluded: true }))
     entries$!['e-new']!.set(makeEntry('e-new'))
     flows$!['f-new']!.set(makeFlow('f-new'))
@@ -254,7 +254,7 @@ describe('excludeOrphanFlows', () => {
     entries$.set({})
   })
 
-  it('sets sync_excluded: true on all undecided orphan entries and flows (AC #3)', () => {
+  it('sets sync_excluded: true on all undecided orphan entries and flows', () => {
     entries$!['e1']!.set(makeEntry('e1'))
     flows$!['f1']!.set(makeFlow('f1'))
 
@@ -267,7 +267,7 @@ describe('excludeOrphanFlows', () => {
     expect(flows$!['f1']!.user_id.get()).toBeNull()
   })
 
-  it('skips already-excluded items (AC #4)', () => {
+  it('skips already-excluded items', () => {
     entries$!['e-excluded']!.set(makeEntry('e-excluded', { sync_excluded: true }))
     flows$!['f-excluded']!.set(makeFlow('f-excluded', { sync_excluded: true }))
 
@@ -453,7 +453,7 @@ describe('resolveOrphanFlows', () => {
     expect(isSyncReady$.get()).toBe(false)
   })
 
-  it('adopt=true: stamps user_id, clears pending, opens sync gate (AC #2)', () => {
+  it('adopt=true: stamps user_id, clears pending, opens sync gate', () => {
     orphanFlowsPending$.set({ flowCount: 1, entryCount: 1, userId: 'user-123' })
     entries$!['e1']!.set(makeEntry('e1'))
     flows$!['f1']!.set(makeFlow('f1'))
@@ -466,7 +466,7 @@ describe('resolveOrphanFlows', () => {
     expect(isSyncReady$.get()).toBe(true)
   })
 
-  it('adopt=false: marks sync_excluded, clears pending, opens sync gate (AC #3)', () => {
+  it('adopt=false: marks sync_excluded, clears pending, opens sync gate', () => {
     orphanFlowsPending$.set({ flowCount: 1, entryCount: 1, userId: 'user-123' })
     entries$!['e1']!.set(makeEntry('e1'))
     flows$!['f1']!.set(makeFlow('f1'))
@@ -624,7 +624,7 @@ describe('clearUserData', () => {
     entries$.set({})
   })
 
-  it('preserves sync_excluded flows and entries on logout (AC #7)', () => {
+  it('preserves sync_excluded flows and entries on logout', () => {
     entries$!['e-excluded']!.set(makeEntry('e-excluded', { sync_excluded: true }))
     flows$!['f-excluded']!.set(makeFlow('f-excluded', { sync_excluded: true }))
     entries$!['e-synced']!.set(makeEntry('e-synced', { user_id: 'user-123' }))
@@ -656,7 +656,7 @@ describe('clearUserData', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Integration: sync gate stays closed while orphanFlowsPending$ is set (AC #1)
+// Integration: sync gate stays closed while orphanFlowsPending$ is set
 // ---------------------------------------------------------------------------
 
 describe('Integration: sync gate with orphan pending state', () => {
@@ -665,13 +665,13 @@ describe('Integration: sync gate with orphan pending state', () => {
     orphanFlowsPending$.set(null)
   })
 
-  it('sync gate stays closed while orphanFlowsPending$ is non-null (AC #1)', () => {
+  it('sync gate stays closed while orphanFlowsPending$ is non-null', () => {
     orphanFlowsPending$.set({ flowCount: 2, entryCount: 1, userId: 'user-123' })
     // Gate must not open while pending
     expect(isSyncReady$.get()).toBe(false)
   })
 
-  it('no dialog when all flows have user_id — orphanFlowsPending$ stays null (AC #6)', async () => {
+  it('no dialog when all flows have user_id — orphanFlowsPending$ stays null', async () => {
     flows$.set({})
     entries$.set({})
 
@@ -688,7 +688,7 @@ describe('Integration: sync gate with orphan pending state', () => {
     expect(orphanFlowsPending$.get()).toBeNull()
   })
 
-  it('no dialog when all flows have sync_excluded — orphanFlowsPending$ stays null (AC #6)', async () => {
+  it('no dialog when all flows have sync_excluded — orphanFlowsPending$ stays null', async () => {
     flows$.set({})
     entries$.set({})
 
@@ -704,7 +704,7 @@ describe('Integration: sync gate with orphan pending state', () => {
     expect(orphanFlowsPending$.get()).toBeNull()
   })
 
-  it('fresh orphans after a previous decline trigger new dialog (AC #8)', async () => {
+  it('fresh orphans after a previous decline trigger new dialog', async () => {
     flows$.set({})
     entries$.set({})
 

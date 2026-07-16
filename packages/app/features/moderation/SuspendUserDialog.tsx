@@ -35,7 +35,7 @@ const DURATION_PRESETS = [
   { value: '30', label: '30 days' },
 ] as const
 
-// FR26 scope statement — rendered verbatim.
+// Scope statement — rendered verbatim.
 const SCOPE_WARNING =
   'Suspension blocks posting and reacting only. Writing and reading remain available.'
 

@@ -253,7 +253,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         <Button
           testID="save-custom-theme"
           size="$3"
-          // disabled is bound ONLY to hex-format validity — low contrast is a non-blocking advisory (NFR26 + epics.md:1358); do NOT widen.
+          // disabled is bound ONLY to hex-format validity — low contrast is a non-blocking advisory; do NOT widen.
           disabled={!allValid}
           opacity={allValid ? 1 : 0.5}
           onPress={handleSave}

@@ -56,7 +56,7 @@ export class SentenceNode extends ElementNode {
 
   // Caret ergonomics: text typed at a sentence's edges flows naturally into it,
   // and an emptied sentence wrapper does not linger (the node transform also
-  // removes empties). See AC 5 / AC 24.
+  // removes empties).
   canInsertTextBefore(): boolean {
     return true
   }

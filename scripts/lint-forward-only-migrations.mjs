@@ -2,7 +2,7 @@
 /**
  * lint-forward-only-migrations.mjs — the custom forward-only migration linter
  * that migrations.yml runs BEFORE `supabase db push`, as the repo's only
- * structural guarantee (NFR37) that a migration never ships a reversible /
+ * structural guarantee that a migration never ships a reversible /
  * down-migration section or an outright destructive schema operation without
  * deliberate human sign-off.
  *

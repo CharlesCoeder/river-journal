@@ -819,7 +819,7 @@ Deno.test('handler returns 500 (never a false success) when the receipt write su
 })
 
 // ---------------------------------------------------------------------------
-// NFR19 -- no log line ever carries the receipt.
+// Privacy invariant -- no log line ever carries the receipt.
 // ---------------------------------------------------------------------------
 
 Deno.test('no captured console.log/console.error line contains the submitted raw_receipt across a full success run', async () => {

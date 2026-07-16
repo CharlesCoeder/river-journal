@@ -1,6 +1,6 @@
 // contentKeys.ts — the server-side (Deno/Edge) single source of truth for
-// object keys whose VALUES must never reach a log line or an error response
-// (NFR19), plus the free-text value heuristic that catches user prose hiding
+// object keys whose VALUES must never reach a log line or an error response,
+// plus the free-text value heuristic that catches user prose hiding
 // under an unenumerated key.
 //
 // CROSS-RUNTIME SYNC (keep these aligned by hand — they are NOT one import):

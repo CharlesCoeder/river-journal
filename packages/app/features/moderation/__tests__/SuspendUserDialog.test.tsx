@@ -17,7 +17,7 @@
  *     the preset selection (if any) is used instead.
  *   - A required templated reason (same six codes as the removal dialog) +
  *     optional custom note.
- *   - Renders the FR26 scope-warning copy verbatim.
+ *   - Renders the scope-warning copy verbatim.
  *   - Confirm calls `mutation.mutate({ target_user_id, duration_days, reason
  *     })` — `kind` is NOT a var this dialog sends (fixed inside the mutation
  *     layer).
@@ -245,7 +245,7 @@ describe('preset durations + custom days', () => {
     expect(screen.getByTestId('suspend-custom-days-input')).not.toBeNull()
   })
 
-  it('renders the FR26 scope-warning copy verbatim', () => {
+  it('renders the scope-warning copy verbatim', () => {
     render(
       <SuspendUserDialog
         open
@@ -671,7 +671,7 @@ describe('source-grep guardrails', () => {
     expect(src).not.toMatch(/@legendapp\/state/)
   })
 
-  it('does NOT contain a console.* call with "reason" or "note" in the same expression (NFR19)', () => {
+  it('does NOT contain a console.* call with "reason" or "note" in the same expression', () => {
     expect(existsSync(DIALOG_PATH)).toBe(true)
     const src = readFileSync(DIALOG_PATH, 'utf8')
     expect(src).not.toMatch(/console\.(log|warn|error)\([^)]*(reason|note)/i)

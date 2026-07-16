@@ -6,8 +6,9 @@
  *
  * These assert the invariants three consumers depend on — `captureEvent`, the
  * CI lint, and the server-side emitters — without loading any SDK. The
- * content-key assertion is the executable enforcement of NFR19 on the analytics
- * surface (the analog of `redactor.test.ts` for crash telemetry): it fails the
+ * content-key assertion is the executable enforcement of the no-content-in-
+ * telemetry requirement on the analytics surface (the analog of
+ * `redactor.test.ts` for crash telemetry): it fails the
  * instant anyone adds a content-shaped key to an event's permitted props.
  */
 
@@ -43,7 +44,7 @@ describe('validateEventProps — the shared pure validation core', () => {
   })
 })
 
-describe('EVENT_ALLOWLIST — content-key denylist is upheld on the map itself (NFR19)', () => {
+describe('EVENT_ALLOWLIST — content-key denylist is upheld on the map itself', () => {
   it('no event permits a prop key that isContentKey() matches', () => {
     const offenders: Array<{ event: string; key: string }> = []
     for (const [event, entry] of Object.entries(EVENT_ALLOWLIST)) {
@@ -83,7 +84,7 @@ describe('EVENT_ALLOWLIST — the two server-emitted delivery events this story 
     expect(entry.props).not.toContain('user_id')
   })
 
-  it('neither new event permits a content-shaped prop key (NFR19)', () => {
+  it('neither new event permits a content-shaped prop key', () => {
     const events = ['collective_reply_delivered', 'moderation_notification_delivered'] as const
     const offenders: Array<{ event: string; key: string }> = []
     for (const event of events) {

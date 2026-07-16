@@ -18,11 +18,11 @@
 //      resolves the pending-flag count + the oldest pending flag's age in
 //      seconds (COALESCE-zeroed on an empty queue), emitted as
 //      moderation_queue_depth_sample so the operator dashboard sees the
-//      queue-clear state rather than a gap. (NFR35.)
+//      queue-clear state rather than a gap.
 //   2. Sync opt-in (once per operator-day): gated to the first 30-minute window
 //      of the operator-local day, the operational_health_sync_opt_in RPC
 //      resolves the opted-in vs. total account counts, emitted as
-//      sync_opt_in_snapshot. Dashboard math is opted_in / total. (NFR33.)
+//      sync_opt_in_snapshot. Dashboard math is opted_in / total.
 //
 // FAIL-OPEN. A DB error on either pass, or a PostHog outage, must not crash the
 // function or abort the other pass. emitServerEvent is already internally
@@ -32,7 +32,7 @@
 //
 // LOGGING. A single terse heartbeat via logInfo — which passes ran plus coarse
 // run metadata (duration_ms). NO content, NO per-row data, NO user IDs; the
-// aggregate counts ride exclusively on the emitted PostHog events. (NFR19.)
+// aggregate counts ride exclusively on the emitted PostHog events.
 
 import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'

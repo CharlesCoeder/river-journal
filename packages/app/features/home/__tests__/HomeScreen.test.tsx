@@ -5,7 +5,7 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
-// ─── Local push spy (NOT the shared lambda — see story 1-6, task 7 notes) ───
+// ─── Local push spy (NOT the shared lambda) ───
 const pushSpy = vi.fn()
 
 // ─── @my/ui mock — controllable useReducedMotion ────────────────────────────
@@ -266,7 +266,7 @@ describe('HomeScreen renders hero content', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. "Begin writing" CTA — accessibility (AC 7)
+// 2. "Begin writing" CTA — accessibility
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — accessibility', () => {
   it('renders "Begin writing" text', () => {
@@ -289,7 +289,7 @@ describe('Begin writing CTA — accessibility', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. CTA press navigates to /journal (AC 2)
+// 3. CTA press navigates to /journal
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — navigation', () => {
   beforeEach(() => {
@@ -312,7 +312,7 @@ describe('Begin writing CTA — navigation', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. CTA spring transition (AC 2)
+// 4. CTA spring transition
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — ctaSpring transition', () => {
   it('renders with transition="ctaSpring" when useReducedMotion returns false', () => {
@@ -332,7 +332,7 @@ describe('Begin writing CTA — ctaSpring transition', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. CTA translation x (AC 2)
+// 5. CTA translation x
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — x translation on hover/press', () => {
   it('x is 0 when not hovered / not pressed under normal motion', () => {
@@ -453,7 +453,7 @@ describe('CollectiveEntry slot wrapper (1-7: now contains CollectiveEntry compon
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. maxWidth={1024} reading-width cap preserved (AC 5)
+// 7. maxWidth={1024} reading-width cap preserved
 // Note: Tamagui style props are not forwarded to DOM via our passthrough mock,
 // so we assert via the component source pattern test: the slot tests above and
 // dialog tests below confirm the overall component renders. The maxWidth
@@ -470,7 +470,7 @@ describe('Reading-width container', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. Dialog preservation (AC 6)
+// 8. Dialog preservation
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Dialog components preserved', () => {
   it('mounts KeyringPrompt', () => {

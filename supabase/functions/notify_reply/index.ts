@@ -17,7 +17,7 @@
 //     enumeration oracle for anyone holding the bearer);
 //   - resolution results stay server-side, in metadata-only log lines;
 //   - the reply body text is NEVER fetched into the function and NEVER placed in
-//     a notification or a log field (NFR19).
+//     a notification or a log field.
 //
 // FAIL-CLOSED. The eligibility RPC's returned set is the ONLY recipient source.
 // Any error/timeout/non-array from it — or from thread_root_user_id, the
@@ -104,7 +104,7 @@ export function buildReplyRecipientCandidates(
 // The ONLY place user-facing English lives. Title is fixed; the body is built
 // solely from the replier's Collective pseudonym — the 8-char slice of their
 // user_id, the same pseudonym every Collective surface renders (there is no
-// display_name/username column). The reply body text is NEVER included (NFR19).
+// display_name/username column). The reply body text is NEVER included.
 // TODO(tone): copy pending review — the exact strings, and whether even the
 // pseudonym belongs in the body (a fully anonymous "Someone replied" is a
 // calmer alternative), are deferred to a tone review.
@@ -324,7 +324,7 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
 
   const result = await fanOutExpoPush(client, messages)
 
-  // NFR19-safe: metadata only — never the composed title/body or any content.
+  // Metadata only — never the composed title/body or any content.
   logInfo('collective.reply.notify.run', {
     reply_id: payload.id,
     parent_post_id: payload.parent_post_id,

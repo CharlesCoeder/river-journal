@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Covers the AC-9 advisory enhancement to CollectiveFeedScreen: the suspended
+ * Covers the advisory enhancement to CollectiveFeedScreen: the suspended
  * microcopy strip appends a tappable "View details in Settings" affordance that
  * navigates to /settings. Advisory only — it changes no gating/RLS.
  */

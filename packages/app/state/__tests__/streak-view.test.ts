@@ -2,7 +2,7 @@
 /**
  * streak-view.test.ts
  *
- * Story 2.3 — TDD Red-Phase E2E tests for:
+ * TDD Red-Phase E2E tests for:
  *   1. store$.views.streak reactive computed view
  *   2. useUnlockedThemes(tier) hook
  *   3. Boundary purity + module-graph smoke
@@ -10,10 +10,10 @@
  * "E2E" for this story means: full reactive cycle end-to-end —
  *   entries$/flows$/graceDays$ mutation → streak$ recompute → hook re-emits.
  *
- * This file MUST remain separate from streak.test.ts (Story 2.2 pure-function suite).
+ * This file MUST remain separate from streak.test.ts (a pure-function suite).
  * streak.test.ts has zero Legend-State imports. This file imports Legend-State observables.
  *
- * Red-phase: all tests fail until Story 2.3 implementation lands.
+ * Red-phase: all tests fail until the implementation lands.
  */
 
 import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from 'vitest'
@@ -32,7 +32,7 @@ vi.mock('@legendapp/state/react', async (importOriginal) => {
   return { ...actual }
 })
 
-// Import hook and MILESTONES — these come from streak.ts wiring (Story 2.3 output).
+// Import hook and MILESTONES — these come from streak.ts wiring.
 // Red-phase: useUnlockedThemes does not yet exist in streak.ts; this import will
 // resolve to undefined (named export missing) until implementation lands.
 import { useUnlockedThemes, MILESTONES } from '../streak'
@@ -105,7 +105,7 @@ beforeEach(() => {
 
 // afterAll at module scope (NOT inside any describe) — fires after every test
 // in this file, preventing fixtures leaking into sibling test files.
-// Mirrors the pattern in Story 2.1's grace_days test cleanup.
+// Mirrors the pattern used in the grace_days test cleanup.
 afterAll(() => {
   batch(() => {
     entries$.set({})
@@ -116,11 +116,11 @@ afterAll(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Module graph + initialization-order smoke tests
-// (AC 23, AC 30 — must pass as part of confirming wiring landed correctly)
+// (must pass as part of confirming wiring landed correctly)
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('module graph — initialization order and circular-import safety', () => {
-  it('AC30: useUnlockedThemes is importable as a function (no TDZ error)', () => {
+  it('useUnlockedThemes is importable as a function (no TDZ error)', () => {
     // This test validates the module graph is sound:
     // importing useUnlockedThemes loads streak.ts which must not cause a
     // TDZ / circular-import error with types.ts.
@@ -128,14 +128,14 @@ describe('module graph — initialization order and circular-import safety', () 
     expect(typeof useUnlockedThemes).toBe('function')
   })
 
-  it('AC30: store$.views.streak is defined and has a .get() method', () => {
+  it('store$.views.streak is defined and has a .get() method', () => {
     // Red-phase: fails because store$.assign({ views: { streak } }) has not yet
     // been appended to streak.ts, so store$.views.streak is undefined.
     expect(store$.views?.streak).toBeDefined()
     expect(typeof store$.views?.streak?.get).toBe('function')
   })
 
-  it('AC23: both store$.views.entryByDate AND store$.views.streak are functions (initialization order)', () => {
+  it('both store$.views.entryByDate AND store$.views.streak are functions (initialization order)', () => {
     // Validates that store.ts views (entryByDate etc.) and streak.ts wiring (streak)
     // are BOTH attached — i.e., streak.ts was imported and its side-effect ran
     // AFTER store.ts's own views block. If import order is wrong, one or both will be undefined.
@@ -147,10 +147,10 @@ describe('module graph — initialization order and circular-import safety', () 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // store$.views.streak — reactive computed view (R1–R8)
-// (AC 13 — full reactive cycle: state change → computed re-evaluates → new value)
+// (full reactive cycle: state change → computed re-evaluates → new value)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('store$.views.streak — reactive computed view (AC13)', () => {
+describe('store$.views.streak — reactive computed view', () => {
   it('R1: store$.views.streak.get() returns a StreakState object with all six fields', () => {
     // forward-compat seam comment: �� shape exhaustiveness
     // Red-phase: store$.views.streak is undefined.
@@ -289,7 +289,7 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
   })
 
   it('R7: tier baked-in as "free" — longestStreak=35 yields 2 unlocked themes, not 6 (paid bypass is NOT active)', () => {
-    // forward-compat seam comment: �� documents that computed view bakes in 'free' until Story 7.1.
+    // forward-compat seam comment: �� documents that computed view bakes in 'free' until later tier work.
     // MILESTONES [7, 30, 90, 180]: longestStreak 35 crosses 7 and 30 → 2 themes.
     // If a contributor flips the literal to a paid-tier value, this test fails loudly.
     const today = getTodayJournalDayString()
@@ -346,27 +346,27 @@ describe('store$.views.streak — reactive computed view (AC13)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useUnlockedThemes(tier) hook (H1–H3)
-// (AC 14 — hook tests using renderHook)
+// (hook tests using renderHook)
 // ─────────────────────────────────────────────────────────────────────'
 
-describe('useUnlockedThemes(tier) hook (AC14)', () => {
+describe('useUnlockedThemes(tier) hook', () => {
   it('H1a: paid_monthly returns all THEME_NAMES (paid bypass — no streak$ subscription)', () => {
-    // AC14 H1 — paid-tier early return fires BEFORE use$, so no React fiber needed.
-    // renderHook used for consistency per AC14 note.
+    // H1 — paid-tier early return fires BEFORE use$, so no React fiber needed.
+    // renderHook used for consistency (see note above).
     // Red-phase: fails because useUnlockedThemes is not yet exported from streak.ts.
     const { result } = renderHook(() => useUnlockedThemes('paid_monthly'))
     expect(result.current).toEqual([...THEME_NAMES])
   })
 
   it('H1b: paid_yearly returns all THEME_NAMES (paid bypass)', () => {
-    // AC14 H1 — same paid-tier early return for paid_yearly.
+    // H1 — same paid-tier early return for paid_yearly.
     // Red-phase: fails.
     const { result } = renderHook(() => useUnlockedThemes('paid_yearly'))
     expect(result.current).toEqual([...THEME_NAMES])
   })
 
   it('H2: free tier returns streak$.unlockedThemes (deeply equal to observable read)', () => {
-    // AC14 H2 — free tier reads from store$.views.streak via use$().
+    // H2 — free tier reads from store$.views.streak via use$().
     // With longestStreak=35: ['forest-morning', 'leather'].
     const today = getTodayJournalDayString()
 
@@ -394,7 +394,7 @@ describe('useUnlockedThemes(tier) hook (AC14)', () => {
   })
 
   it('H3: E2E reactive cycle — hook re-renders when flows$ mutation crosses a milestone', () => {
-    // AC14 H3 — the canonical renderHook + act() reactive-update test.
+    // H3 — the canonical renderHook + act() reactive-update test.
     // Start with longestStreak < 7 (no unlocks), then push past milestone 7
     // → hook should return 1 unlocked theme after the mutation.
     const today = getTodayJournalDayString()
@@ -440,13 +440,13 @@ describe('useUnlockedThemes(tier) hook (AC14)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Referential stability (AC 26 / AC 27)
+// Referential stability
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('useUnlockedThemes(tier) — paid-tier referential stability (AC26, AC27)', () => {
-  it('AC27: paid_monthly returns the same array reference across calls (PAID_TIER_THEMES constant)', () => {
+describe('useUnlockedThemes(tier) — paid-tier referential stability', () => {
+  it('paid_monthly returns the same array reference across calls (PAID_TIER_THEMES constant)', () => {
     // Calls outside a React component context; works because the paid-tier
-    // branch returns BEFORE use$() per AC 5 ordering. If a contributor flips
+    // branch returns BEFORE use$() by design. If a contributor flips
     // the branch order, this test throws "use$ must be called inside a component".
     // Red-phase: fails because useUnlockedThemes is not yet exported.
     const a = useUnlockedThemes('paid_monthly')
@@ -459,10 +459,10 @@ describe('useUnlockedThemes(tier) — paid-tier referential stability (AC26, AC2
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Boundary purity (P1 — AC 16 / AC 2)
+// Boundary purity (P1)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('state/streak.ts — boundary purity (AC16, AC2)', () => {
+describe('state/streak.ts — boundary purity', () => {
   it('P1: streak.ts contains no @tanstack/react-query import', async () => {
     // Reads streak.ts as text and asserts no forbidden imports are present.
     // This prevents a future contributor from adding useQuery() inside the hook.
@@ -490,15 +490,15 @@ describe('state/streak.ts — boundary purity (AC16, AC2)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Full reactive pipeline integration (AC 6 — hook returns reactively)
+// Full reactive pipeline integration (hook returns reactively)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Full reactive pipeline — entries$ → streak$ → useUnlockedThemes (AC6)', () => {
+describe('Full reactive pipeline — entries$ → streak$ → useUnlockedThemes', () => {
   it('writing a flow that qualifies today is immediately reflected in useUnlockedThemes("free") output', () => {
     // End-to-end pipeline test: single data write, full stack reactivity check.
     // entries$ update → computeStreakState recompute → streak$ updates → hook re-emits.
     //
-    // This is the "canonical" E2E test for Story 2.3: the whole reactive cycle in one test.
+    // This is the "canonical" E2E test: the whole reactive cycle in one test.
     //
     // Setup: empty state → hook returns []
     const { result } = renderHook(() => useUnlockedThemes('free'))

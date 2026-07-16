@@ -1,16 +1,16 @@
 /**
- * Story 3-8 — TDD red-phase unit tests for `state/collective/suspension.ts`.
+ * TDD red-phase unit tests for `state/collective/suspension.ts`.
  *
- * Red-phase contract: every test MUST fail until Story 3-8's Task 2 creates
+ * Red-phase contract: every test MUST fail until Task 2 creates
  * `packages/app/state/collective/suspension.ts`.
  *
- * AC coverage (AC #16, #23, #27):
- *   t1 — calls supabase.rpc('is_active_suspension') and returns boolean (AC #16, #27-t1)
- *   t2 — when userId===null, hook is disabled and RPC is NOT called (AC #16, #27-t2)
- *   t3 — boundary rule (D7): suspension.ts does NOT contain @legendapp/state (AC #23, #27-t3)
- *   t4 — queryKey is ['collective', 'suspension', userId, 'post_react'] (AC #16)
- *   t5 — staleTime is 60_000 (AC #16)
- *   t6 — currentUser.ts exists and does NOT contain @legendapp/state (AC #23)
+ * AC coverage:
+ *   t1 — calls supabase.rpc('is_active_suspension') and returns boolean
+ *   t2 — when userId===null, hook is disabled and RPC is NOT called
+ *   t3 — boundary rule (D7): suspension.ts does NOT contain @legendapp/state
+ *   t4 — queryKey is ['collective', 'suspension', userId, 'post_react']
+ *   t5 — staleTime is 60_000
+ *   t6 — currentUser.ts exists and does NOT contain @legendapp/state
  *
  * Mock strategy: vi.mock for supabase (hoisted RPC mock); vi.mock for useQuery;
  * mirrors reactions.test.ts patterns.
@@ -58,7 +58,7 @@ beforeEach(() => {
 // File existence check
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / suspension.ts existence', () => {
+describe('suspension.ts existence', () => {
   it('suspension.ts exists at the expected path', () => {
     expect(existsSync(SUSPENSION_PATH), `suspension.ts must exist at ${SUSPENSION_PATH}`).toBe(true)
   })
@@ -66,10 +66,9 @@ describe('Story 3-8 / suspension.ts existence', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — calls supabase.rpc('is_active_suspension') and returns boolean
-// AC #16, #27-t1
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t1 — useIsSuspended calls RPC correctly (AC #16)', () => {
+describe('t1 — useIsSuspended calls RPC correctly', () => {
   it('useQuery is called with a queryFn that invokes supabase.rpc("is_active_suspension")', async () => {
     useQueryMock.mockReturnValue({ data: false })
 
@@ -119,10 +118,9 @@ describe('Story 3-8 / t1 — useIsSuspended calls RPC correctly (AC #16)', () =>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — when userId===null, hook is disabled; RPC NOT called
-// AC #16, #27-t2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t2 — disabled when userId===null (AC #16)', () => {
+describe('t2 — disabled when userId===null', () => {
   it('passes enabled:false to useQuery when userId===null', async () => {
     useQueryMock.mockReturnValue({ data: undefined })
 
@@ -157,10 +155,9 @@ describe('Story 3-8 / t2 — disabled when userId===null (AC #16)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — boundary rule (D7): suspension.ts does NOT contain @legendapp/state
-// AC #23, #27-t3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t3 — boundary rule D7 (AC #23)', () => {
+describe('t3 — boundary rule D7', () => {
   it('suspension.ts does NOT contain @legendapp/state import', () => {
     expect(existsSync(SUSPENSION_PATH)).toBe(true)
     const src = readFileSync(SUSPENSION_PATH, 'utf8')
@@ -182,10 +179,9 @@ describe('Story 3-8 / t3 — boundary rule D7 (AC #23)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — queryKey is correct
-// AC #16
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t4 — useIsSuspended queryKey shape (AC #16)', () => {
+describe('t4 — useIsSuspended queryKey shape', () => {
   it('queryKey is ["collective", "suspension", userId, "post_react"]', async () => {
     useQueryMock.mockReturnValue({ data: undefined })
 
@@ -211,10 +207,9 @@ describe('Story 3-8 / t4 — useIsSuspended queryKey shape (AC #16)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t5 — staleTime is 60_000
-// AC #16
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t5 — useIsSuspended staleTime (AC #16)', () => {
+describe('t5 — useIsSuspended staleTime', () => {
   it('staleTime is 60_000 (60 seconds)', async () => {
     useQueryMock.mockReturnValue({ data: undefined })
 
@@ -229,10 +224,9 @@ describe('Story 3-8 / t5 — useIsSuspended staleTime (AC #16)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t6 — currentUser.ts exists and is D7-compliant
-// AC #23
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t6 — currentUser.ts D7 compliance (AC #23)', () => {
+describe('t6 — currentUser.ts D7 compliance', () => {
   it('currentUser.ts exists at the expected path', () => {
     expect(existsSync(CURRENT_USER_PATH), `currentUser.ts must exist at ${CURRENT_USER_PATH}`).toBe(
       true
@@ -267,7 +261,7 @@ describe('Story 3-8 / t6 — currentUser.ts D7 compliance (AC #23)', () => {
 // useIsSuspended hook — error handling
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / useIsSuspended error handling', () => {
+describe('useIsSuspended error handling', () => {
   it('queryFn throws when supabase returns a PostgrestError', async () => {
     const pgError = { message: 'permission denied', code: '42501', details: null, hint: null }
     rpcMock.mockResolvedValueOnce({ data: null, error: pgError })

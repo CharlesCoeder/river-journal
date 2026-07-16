@@ -82,7 +82,7 @@ function makeNavigateTo(
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('SliderHub navigateTo guard — same-route commit is a no-op (AC #8)', () => {
+describe('SliderHub navigateTo guard — same-route commit is a no-op', () => {
   let pushSpy: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -117,7 +117,7 @@ describe('SliderHub navigateTo guard — same-route commit is a no-op (AC #8)', 
   })
 })
 
-describe('SliderHub navigateTo guard — cross-route commit pushes normally (AC #8)', () => {
+describe('SliderHub navigateTo guard — cross-route commit pushes normally', () => {
   let pushSpy: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -165,7 +165,7 @@ describe('SliderHub navigateTo guard — cross-route commit pushes normally (AC 
   })
 })
 
-describe('SliderHub navigateTo guard — null/falsy pathname edge cases (AC #8)', () => {
+describe('SliderHub navigateTo guard — null/falsy pathname edge cases', () => {
   let pushSpy: ReturnType<typeof vi.fn>
 
   beforeEach(() => {

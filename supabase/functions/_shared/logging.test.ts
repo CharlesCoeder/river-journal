@@ -1,4 +1,4 @@
-// Deno unit tests for the structured JSON logger's NFR19 content redaction.
+// Deno unit tests for the structured JSON logger's content redaction.
 //
 // Run locally with: deno test supabase/functions/
 //

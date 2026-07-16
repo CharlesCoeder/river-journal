@@ -199,7 +199,7 @@ afterEach(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toggle renders (AC 1)
+// Toggle renders
 // ─────────────────────────────────────────────────────────────────────────────
 describe('View-mode toggle renders in DayViewScreen', () => {
   it('renders a "Linear" toggle button', () => {
@@ -214,7 +214,7 @@ describe('View-mode toggle renders in DayViewScreen', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Initial state — linear mode is default (AC 1, 2, 3)
+// Initial state — linear mode is default
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Default view mode is linear (preserves v1 behavior)', () => {
   it('calendar stub is NOT in the DOM on initial render', () => {
@@ -236,7 +236,7 @@ describe('Default view mode is linear (preserves v1 behavior)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toggle to calendar mode (AC 4)
+// Toggle to calendar mode
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Tapping Calendar toggle switches to calendar mode', () => {
   it('CalendarMonthView stub appears after tapping Calendar', () => {
@@ -270,7 +270,7 @@ describe('Tapping Calendar toggle switches to calendar mode', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toggle back to linear mode (AC 3)
+// Toggle back to linear mode
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Tapping Linear toggle returns to linear mode', () => {
   it('CalendarMonthView stub is removed after toggling back to Linear', () => {
@@ -301,7 +301,7 @@ describe('Tapping Linear toggle returns to linear mode', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Linear list preserved verbatim (AC 3) — empty state smoke
+// Linear list preserved verbatim — empty state smoke
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Linear mode preserves existing entry list behavior', () => {
   it('renders the "river is dry" empty state when there are no entries in linear mode', () => {
@@ -313,7 +313,7 @@ describe('Linear mode preserves existing entry list behavior', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Page header and navigation preserved in both modes (AC 4)
+// Page header and navigation preserved in both modes
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Page header and WordLinkNav remain visible in both modes', () => {
   it('Past Entries heading is visible in linear mode', () => {

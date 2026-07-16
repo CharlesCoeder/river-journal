@@ -4,7 +4,7 @@
 //
 // Surface:
 //   - `auditLogKey`                canonical query-key tuple for the audit list
-//   - `PAGE_SIZE`                  page size (NFR31 budget regression sentinel)
+//   - `PAGE_SIZE`                  page size (memory budget regression sentinel)
 //   - `AuditLogItem`               row shape (derived from the generated type)
 //   - `AuditLogPage`               one page of the infinite query
 //   - `fetchAuditLogPage()`        pure async fetcher (look-ahead keyset)
@@ -43,7 +43,7 @@ export const auditLogKey = ['moderation', 'audit'] as const
  * Page size for the audit-log pagination. The look-ahead idiom requests
  * `PAGE_SIZE + 1` rows per page to detect "has more" without a count query.
  * Combined with `maxPages: 5` in `useAuditLog()`, this caps in-memory rows at
- * 100 (NFR31 budget).
+ * 100 (memory budget).
  */
 export const PAGE_SIZE = 20
 
@@ -119,7 +119,7 @@ export async function fetchAuditLogPage(cursor: string | null): Promise<AuditLog
  * `useInfiniteQuery` wrapper for the audit log.
  *
  * Config rationale (mirrors feed/yourPosts):
- *   - `maxPages: 5` × `PAGE_SIZE: 20` = 100 in-memory cap (NFR31). On an
+ *   - `maxPages: 5` × `PAGE_SIZE: 20` = 100 in-memory cap. On an
  *     explicit "Load more" list this evicts the TOP page once past 100 rows —
  *     a visible upward jump, not a crash; there is no back-fill by design (the
  *     trail is append-only, newest-first — no `getPreviousPageParam`).

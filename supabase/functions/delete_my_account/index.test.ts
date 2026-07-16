@@ -103,7 +103,7 @@
 //      here (a genuine GoTrue error, OR a retry/concurrent invocation hitting
 //      an identity a prior invocation already removed) is logged
 //      metadata-only and does NOT fail the request -- the deletion_requested_at
-//      marker + the retry sweep are the backstop (NFR14). The handler STILL
+//      marker + the retry sweep are the backstop. The handler STILL
 //      returns ok.
 //
 //   8. Success -> ok({ deleted_at: <ISO-8601 string, now>,
@@ -1086,7 +1086,7 @@ Deno.test('deleted_at is a fresh ISO-8601 timestamp close to the moment of the c
 })
 
 // ---------------------------------------------------------------------------
-// Logging -- metadata-only (NFR19). No captured log line ever carries an
+// Logging -- metadata-only. No captured log line ever carries an
 // unexpected field (no email, no free text, no raw exception).
 // ---------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 -- Migration: Allow authenticated users to have no encryption choice yet.
--- Story 4.1 needs to distinguish:
+-- The encryption chooser needs to distinguish:
 --   1) brand-new users who have never chosen a mode
 --   2) users who explicitly chose 'e2e' or 'managed'
 --

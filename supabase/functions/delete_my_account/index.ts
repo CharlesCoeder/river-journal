@@ -55,10 +55,10 @@
 //     (a retry can still locate the user). ANY failure here — a genuine GoTrue
 //     error, OR a retry/concurrent invocation hitting an already-removed
 //     identity — is logged metadata-only and does NOT fail the request: the
-//     deletion_requested_at marker + the retry sweep are the NFR14 backstop, so
+//     deletion_requested_at marker + the retry sweep are the backstop, so
 //     the function still returns ok and the client can complete local cleanup.
 //
-// Logging is metadata-only (NFR19): user_id, step/outcome markers, counts,
+// Logging is metadata-only: user_id, step/outcome markers, counts,
 // durations. Never email, display name, post/entry content, or a raw exception.
 
 import { createServiceRoleClient, getAuthenticatedUser } from '../_shared/auth.ts'
@@ -317,7 +317,7 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
   // 7. Phase C — AUTH FINALIZE, LAST. Remove the identity. ANY failure here
   // (a genuine GoTrue error, or a retry/concurrent invocation hitting an
   // already-removed identity) is logged metadata-only and does NOT fail the
-  // request — the marker + retry sweep guarantee auth removal within the NFR14
+  // request — the marker + retry sweep guarantee auth removal within the backstop
   // window, and the client still needs the ok to complete local cleanup.
   const authDeleted = await deleteAuthUser(callerUid)
   if (authDeleted.error) {

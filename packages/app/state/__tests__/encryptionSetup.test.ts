@@ -1047,7 +1047,7 @@ describe('encryption setup orchestration', () => {
       expect(mockClearWebTrustData).toHaveBeenCalledWith('user-1')
     })
 
-    it('web trust return visit: preserves trust data on network error (AC 12)', async () => {
+    it('web trust return visit: preserves trust data on network error', async () => {
       mockHasWebTrustCapability.mockReturnValue(true)
       mockGetStoredDeviceToken.mockResolvedValueOnce('stored-token')
       mockLoadWrappedKey.mockResolvedValueOnce({

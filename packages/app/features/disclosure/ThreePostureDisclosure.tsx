@@ -86,11 +86,11 @@ export function ThreePostureDisclosure({
  * Returns true if the current user has acknowledged Boundary A
  * (`collective_post_v1` disclosure). Synchronous — safe to call during render.
  *
- * Story 3.9 (PostComposer) calls this during render to decide whether to mount
+ * PostComposer calls this during render to decide whether to mount
  * the disclosure. Async would cause a render-flash (un-guarded composer momentarily
  * visible) — sync is correct.
  *
- * A reactive `useHasAcknowledgedBoundaryA()` hook is out of scope; Story 3.9
+ * A reactive `useHasAcknowledgedBoundaryA()` hook is out of scope; PostComposer
  * will add it via Legend-State `use$()` if needed.
  */
 export function hasAcknowledgedBoundaryA(): boolean {

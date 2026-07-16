@@ -1,5 +1,5 @@
 /**
- * Story 3-2 — TDD red-phase boundary-rule grep test (AC #12, #13, #14).
+ * TDD red-phase boundary-rule grep test.
  *
  * Programmatic enforcement of the v2 D7 Boundary Rule: TanStack-Query files
  * must not import @legendapp/state, and Legend-State files must not import
@@ -13,7 +13,7 @@ import path from 'node:path'
 
 const STATE_DIR = path.resolve(__dirname, '..')
 
-// AC #12: TQ-side files MUST NOT import @legendapp/state (any subpath).
+// TQ-side files MUST NOT import @legendapp/state (any subpath).
 const TQ_FILES = [
   'queryClient.ts',
   'queryClient.native.ts',
@@ -27,7 +27,7 @@ const TQ_FILES = [
 
 const LEGEND_PATTERN = /@legendapp\/state(?:\/[\w-]+(?:\/[\w-]+)?)?/
 
-// AC #13: Legend-State-side files MUST NOT import @tanstack/react-query
+// Legend-State-side files MUST NOT import @tanstack/react-query
 // (or @tanstack/query-* subpaths).
 const LEGEND_FILES = [
   'store.ts',
@@ -48,11 +48,11 @@ function readIfExists(rel: string): string | null {
   return readFileSync(abs, 'utf8')
 }
 
-describe('Story 3-2 / Boundary rule D7 — TQ files do not import @legendapp/state (AC #12)', () => {
+describe('Boundary rule D7 — TQ files do not import @legendapp/state', () => {
   for (const rel of TQ_FILES) {
     it(`${rel} exists and is free of @legendapp/state imports`, () => {
       const contents = readIfExists(rel)
-      // The file MUST exist (Story 3-2 lands all five TQ-side files). A
+      // The file MUST exist (this work lands all five TQ-side files). A
       // missing file fails the red-phase test before implementation.
       expect(contents, `expected ${rel} to exist under packages/app/state/`).not.toBeNull()
       expect(contents).not.toMatch(LEGEND_PATTERN)
@@ -60,7 +60,7 @@ describe('Story 3-2 / Boundary rule D7 — TQ files do not import @legendapp/sta
   }
 })
 
-describe('Story 3-2 / Boundary rule D7 — Legend-State files do not import @tanstack/* (AC #13)', () => {
+describe('Boundary rule D7 — Legend-State files do not import @tanstack/*', () => {
   for (const rel of LEGEND_FILES) {
     it(`${rel} is free of @tanstack/(react-query|query-*) imports`, () => {
       const contents = readIfExists(rel)
@@ -72,7 +72,7 @@ describe('Story 3-2 / Boundary rule D7 — Legend-State files do not import @tan
   }
 })
 
-describe('Story 3-2 / Eager-import ordering grep (AC #7, #8, #9)', () => {
+describe('Eager-import ordering grep', () => {
   // The eager-import discipline lives in 4 files. Regression: if the eager
   // import is missing from any of them, the persisted-mutation replay can
   // silently drop offline-queued posts. We grep for the literal import path.
@@ -98,13 +98,13 @@ describe('Story 3-2 / Eager-import ordering grep (AC #7, #8, #9)', () => {
     })
   }
 
-  it('apps/web and apps/desktop layout.tsx remain byte-identical (AC #8)', () => {
+  it('apps/web and apps/desktop layout.tsx remain byte-identical', () => {
     const web = readFileSync(path.join(ROOT, 'apps/web/app/layout.tsx'), 'utf8')
     const desktop = readFileSync(path.join(ROOT, 'apps/desktop/app/layout.tsx'), 'utf8')
     expect(web).toBe(desktop)
   })
 
-  it('eager mutations import is the FIRST non-React import in provider/index.tsx (AC #7)', () => {
+  it('eager mutations import is the FIRST non-React import in provider/index.tsx', () => {
     const src = readFileSync(path.join(ROOT, 'packages/app/provider/index.tsx'), 'utf8')
     // Strip blank lines and comment-only lines, then find the first `import` line.
     const lines = src.split('\n')
@@ -115,7 +115,7 @@ describe('Story 3-2 / Eager-import ordering grep (AC #7, #8, #9)', () => {
   })
 })
 
-describe('Story 3-2 / packages/app/package.json sideEffects + deps (AC #1, #6)', () => {
+describe('packages/app/package.json sideEffects + deps', () => {
   const pkgPath = path.resolve(__dirname, '../../package.json')
 
   it('declares ./state/collective/mutations.ts as a side-effect', () => {
@@ -145,7 +145,7 @@ describe('Story 3-2 / packages/app/package.json sideEffects + deps (AC #1, #6)',
       '@tanstack/react-query-persist-client in deps'
     ).toBeDefined()
 
-    // Dev-only — devtools must NOT live in production deps (AC #11).
+    // Dev-only — devtools must NOT live in production deps.
     expect(
       devDeps['@tanstack/react-query-devtools'],
       '@tanstack/react-query-devtools in devDependencies'
@@ -189,7 +189,7 @@ describe('Boundary rule D7 — feed.ts narrow exception (single observe import)'
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Story 3-12 — D7 narrow exception: locallyHidden.ts
+// D7 narrow exception: locallyHidden.ts
 // This is the SECOND documented boundary-rule exception (the first is feed.ts).
 // locallyHidden.ts IS allowed to import use$ from @legendapp/state/react because
 // it bridges the Legend-State user preference into the TanStack-Query-driven feed
@@ -220,7 +220,7 @@ describe('Boundary rule D7 — locallyHidden.ts narrow exception (use$ bridge)',
   })
 })
 
-describe('Story 3-2 / persistConfig DB_VERSION + tanstack-query table (AC #2)', () => {
+describe('persistConfig DB_VERSION + tanstack-query table', () => {
   it('persistConfig.ts bumps DB_VERSION to 6 and includes tanstack-query table', () => {
     const src = readIfExists('persistConfig.ts')
     expect(src).not.toBeNull()

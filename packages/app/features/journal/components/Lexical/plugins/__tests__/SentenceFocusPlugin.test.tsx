@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Sentence styling smoke test (Story 2.11, AC 9, 11, 21).
+// Sentence styling smoke test.
 // Drives applySentenceFocusClasses against a REAL DOM-attached editor so the
 // class toggles are asserted on actual SentenceNode <span> elements — including
 // the DOM-level delay-bug guard (space after a period dims the sentence).
@@ -80,7 +80,7 @@ function sentenceClasses(editor: LexicalEditor): Array<'active' | 'dim' | 'none'
   return result
 }
 
-describe('SentenceFocusPlugin styling (AC 9, 11, 21)', () => {
+describe('SentenceFocusPlugin styling', () => {
   it('cursor in the first sentence → first active, second dim; moving to the second swaps', () => {
     const editor = makeAttachedEditor()
     editor.update(

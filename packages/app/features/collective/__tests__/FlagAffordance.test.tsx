@@ -1,23 +1,23 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-12 — TDD red-phase unit tests for `features/collective/FlagAffordance.tsx`.
+ * TDD red-phase unit tests for `features/collective/FlagAffordance.tsx`.
  *
- * Red-phase contract: every test MUST fail until Story 3-12's Task 3 creates
+ * Red-phase contract: every test MUST fail until Task 3 creates
  * `packages/app/features/collective/FlagAffordance.tsx`.
  *
- * AC coverage (AC #1–#8, #12–#15, #21, #23):
- *   t1  — trigger renders; null reporterUserId → null (AC #1, #2)
- *   t2  — disabled hides trigger entirely (AC #4)
- *   t3  — opens popover on trigger click; "Report" menu item visible (AC #4, #5)
- *   t4  — opens dialog on Report click; radio list + TextArea visible (AC #5, #6, #7)
- *   t5  — Submit disabled until reason chosen; selecting reason enables it (AC #6, #8)
+ * Test coverage:
+ *   t1  — trigger renders; null reporterUserId → null
+ *   t2  — disabled hides trigger entirely
+ *   t3  — opens popover on trigger click; "Report" menu item visible
+ *   t4  — opens dialog on Report click; radio list + TextArea visible
+ *   t5  — Submit disabled until reason chosen; selecting reason enables it
  *   t6  — Submit fires useReportPost.mutate with correct vars + calls addLocallyHiddenPost;
- *          no console.* called (AC #8, #12, #13/NFR19)
- *   t7  — empty note submits as null (AC #7, #8)
- *   t8  — Cancel does not mutate or hide; dialog closes (AC #8)
- *   t9  — Submit during isPending is a no-op (AC #8, #12)
- *   t10 — Reduced-motion: animation props undefined on overlay/content (AC #14)
- *   t11 — Source grep: FlagAffordance.tsx has no console.*+note or Sentry+note (NFR19, AC #13)
+ *          no console.* called
+ *   t7  — empty note submits as null
+ *   t8  — Cancel does not mutate or hide; dialog closes
+ *   t9  — Submit during isPending is a no-op
+ *   t10 — Reduced-motion: animation props undefined on overlay/content
+ *   t11 — Source grep: FlagAffordance.tsx has no console.*+note or Sentry+note
  *
  * Mock strategy: vi.mock for useReportPost, addLocallyHiddenPost, @my/ui, @tamagui/lucide-icons.
  * Mirrors ReactionStrip.test.tsx + CollectiveFeedScreen.test.tsx patterns.
@@ -50,7 +50,7 @@ vi.mock('app/state/collective/mutations', () => ({
     isPending: mockIsPending,
     error: null,
   }),
-  // Story 3-13: useDeleteOwnPost needed by FlagAffordance after prop rename.
+  // useDeleteOwnPost needed by FlagAffordance after prop rename.
   useDeleteOwnPost: () => ({
     mutate: vi.fn(),
     mutateAsync: vi.fn(),
@@ -437,10 +437,9 @@ afterEach(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — trigger renders; null reporterUserId renders nothing
-// AC #1, #2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
+describe('t1 — trigger renders', () => {
   it('renders a button with aria-label="Report this post" when canReport=true (only-report case)', () => {
     render(
       React.createElement(FlagAffordance, {
@@ -495,10 +494,9 @@ describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — disabled hides trigger entirely
-// AC #4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t2 — disabled renders nothing (AC #4)', () => {
+describe('t2 — disabled renders nothing', () => {
   it('returns null when disabled===true', () => {
     const { container } = render(
       React.createElement(FlagAffordance, {
@@ -526,10 +524,9 @@ describe('Story 3-12 / t2 — disabled renders nothing (AC #4)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — opens popover on trigger click; "Report" menu item is visible
-// AC #4, #5
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () => {
+describe('t3 — popover opens on trigger click', () => {
   it('clicking the trigger opens the popover (Popover becomes data-open="true")', () => {
     render(
       React.createElement(FlagAffordance, {
@@ -577,23 +574,22 @@ describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () =>
     expect(menuItem).not.toBeNull()
   })
 
-  it('Delete menu item is present in source (Story 3-13 implemented)', () => {
-    // The TODO(Story 3-13) placeholder was replaced by the real Delete menu item.
+  it('Delete menu item is present in source', () => {
+    // The TODO placeholder was replaced by the real Delete menu item.
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
     const src = readFileSync(FLAG_AFFORDANCE_PATH, 'utf8')
     // Verify the Delete menu item code is present (canSelfDelete conditional)
     expect(src).toMatch(/canSelfDelete/)
     // Verify the TODO placeholder is gone
-    expect(src).not.toMatch(/TODO\(Story 3-13\)/)
+    expect(src).not.toMatch(/TODO\(Story \d/)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — clicking "Report" opens dialog; radio list and TextArea visible
-// AC #5, #6, #7
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t4 — dialog opens with radio list + TextArea (AC #5, #6, #7)', () => {
+describe('t4 — dialog opens with radio list + TextArea', () => {
   function openDialog() {
     render(
       React.createElement(FlagAffordance, {
@@ -661,10 +657,9 @@ describe('Story 3-12 / t4 — dialog opens with radio list + TextArea (AC #5, #6
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t5 — Submit disabled until reason chosen; selecting reason enables it
-// AC #6, #8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t5 — Submit enabled only after reason selected (AC #6, #8)', () => {
+describe('t5 — Submit enabled only after reason selected', () => {
   function openDialog() {
     render(
       React.createElement(FlagAffordance, {
@@ -716,11 +711,10 @@ describe('Story 3-12 / t5 — Submit enabled only after reason selected (AC #6, 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t6 — Submit fires useReportPost.mutate with correct vars; adds to local-hide set;
-//      no console.* called during submit (NFR19)
-// AC #8, #12, #13/NFR19
+//      no console.* called during submit
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC #8, #12, NFR19)', () => {
+describe('t6 — Submit fires mutation + local-hide; no console', () => {
   beforeEach(() => {
     // Spy on console methods — must not be called
     vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -819,7 +813,7 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
     expect(mutateOrder).toBeLessThan(hideOrder)
   })
 
-  it('console.log NOT called during submit (NFR19)', () => {
+  it('console.log NOT called during submit', () => {
     render(
       React.createElement(FlagAffordance, {
         postId: 'p-nfr',
@@ -869,10 +863,9 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t7 — empty note submits as null
-// AC #7, #8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
+describe('t7 — empty note submits as null', () => {
   it('mutate called with note: null when TextArea is empty', () => {
     render(
       React.createElement(FlagAffordance, {
@@ -925,10 +918,9 @@ describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t8 — Cancel does not mutate or hide; dialog closes
-// AC #8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', () => {
+describe('t8 — Cancel closes dialog without mutation', () => {
   it('mutate NOT called when Cancel is tapped', () => {
     render(
       React.createElement(FlagAffordance, {
@@ -981,10 +973,9 @@ describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', ()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t9 — Submit during isPending is a no-op (double-submit guard)
-// AC #8, #12
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t9 — Submit disabled during isPending (AC #8, #12)', () => {
+describe('t9 — Submit disabled during isPending', () => {
   it('mutate NOT called when Submit is tapped while isPending===true', () => {
     mockIsPending = true
     render(
@@ -1046,17 +1037,16 @@ describe('Story 3-12 / t9 — Submit disabled during isPending (AC #8, #12)', ()
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     expect(screen.getByTestId('btn-submit').textContent).toBe('Submit')
-    // No "Submitting" or spinner text (AC #23)
+    // No "Submitting" or spinner text
     expect(screen.queryByText(/Submitting/i)).toBeNull()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t10 — Reduced-motion: animation prop undefined on overlay/content
-// AC #14
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', () => {
+describe('t10 — reduced-motion animation degradation', () => {
   it('Dialog overlay animation is undefined/empty when useReducedMotion returns true', () => {
     reduceMotionValue = true
     render(
@@ -1115,11 +1105,10 @@ describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', (
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// t11 — Source grep: no console.*+note or Sentry+note (NFR19)
-// AC #13/NFR19
+// t11 — Source grep: no console.*+note or Sentry+note
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t11 — telemetry guard source grep (NFR19, AC #13)', () => {
+describe('t11 — telemetry guard source grep', () => {
   it('FlagAffordance.tsx file exists on disk', () => {
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
   })
@@ -1136,13 +1125,13 @@ describe('Story 3-12 / t11 — telemetry guard source grep (NFR19, AC #13)', () 
     expect(src).not.toMatch(/Sentry[\s\S]{0,200}note/)
   })
 
-  it('FlagAffordance.tsx does NOT import @legendapp/state (D7 boundary rule, AC #21)', () => {
+  it('FlagAffordance.tsx does NOT import @legendapp/state (D7 boundary rule)', () => {
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
     const src = readFileSync(FLAG_AFFORDANCE_PATH, 'utf8')
     expect(src).not.toMatch(/@legendapp\/state/)
   })
 
-  it('FlagAffordance.tsx has TODO marker for onLongPress deferral (AC #3 amendment)', () => {
+  it('FlagAffordance.tsx has TODO marker for onLongPress deferral', () => {
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
     const src = readFileSync(FLAG_AFFORDANCE_PATH, 'utf8')
     expect(src).toMatch(/TODO\(post-3-12\).*onLongPress|onLongPress.*TODO\(post-3-12\)/i)

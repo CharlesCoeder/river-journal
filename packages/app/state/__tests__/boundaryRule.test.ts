@@ -23,7 +23,7 @@ import path from 'node:path'
 
 const STATE_DIR = path.resolve(__dirname, '..')
 
-// AC 13: these files (Legend-State side) must not pull in TanStack Query.
+// These files (Legend-State side) must not pull in TanStack Query.
 const LEGEND_FILES = [
   'syncConfig.ts',
   'store.ts',

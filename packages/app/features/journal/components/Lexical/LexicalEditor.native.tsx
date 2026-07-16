@@ -167,7 +167,7 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
           />
         )}
 
-        {/* Per-sentence focus mode (Story 2.11) — structure + styling. No-ops
+        {/* Per-sentence focus mode — structure + styling. No-ops
             unless focusMode is ON and granularity is 'sentence'. Mirrors web. */}
         {!readOnly && (
           <>

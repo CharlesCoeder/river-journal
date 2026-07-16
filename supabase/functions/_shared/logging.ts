@@ -1,6 +1,6 @@
 // Structured, content-redacted JSON logging for Edge Functions.
 //
-// NFR19: logs and telemetry must NEVER contain journal/post content or
+// Logs and telemetry must NEVER contain journal/post content or
 // user-supplied free text (post bodies, moderation reasons, private notes).
 // This logger enforces that structurally on TWO independent nets:
 //   1. KEY net — every field whose key is in KNOWN_CONTENT_KEYS is stripped

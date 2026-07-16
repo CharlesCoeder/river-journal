@@ -1,14 +1,14 @@
 /**
- * Story 3-2 — TDD red-phase tests for provider wiring (AC #7, #10, #19).
+ * TDD red-phase tests for provider wiring.
  *
  * Source-level integration assertions on packages/app/provider/index.tsx that
  * cover wiring concerns we don't want to require a full React render to test:
- *   - <PersistQueryClientProvider> wraps <ToastProvider> (AC #7).
- *   - The persister is created with `retry: removeOldestQuery` (AC #19).
- *   - The persister key is `'rj-tq-cache'` (AC #7).
- *   - DevTools mount is gated on process.env.NODE_ENV === 'development' (AC #10).
- *   - The dev-only ordering guard reads __collectiveMutationsLoadedAt (AC #18).
- *   - onSuccess invokes queryClient.resumePausedMutations() (AC #7).
+ *   - <PersistQueryClientProvider> wraps <ToastProvider>.
+ *   - The persister is created with `retry: removeOldestQuery`.
+ *   - The persister key is `'rj-tq-cache'`.
+ *   - DevTools mount is gated on process.env.NODE_ENV === 'development'.
+ *   - The dev-only ordering guard reads __collectiveMutationsLoadedAt.
+ *   - onSuccess invokes queryClient.resumePausedMutations().
  *
  * Rationale: the story explicitly says "Do NOT test that
  * <PersistQueryClientProvider> renders correctly" (it would establish a heavy
@@ -28,7 +28,7 @@ function providerSrc(): string {
   return readFileSync(PROVIDER_PATH, 'utf8')
 }
 
-describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () => {
+describe('Provider PersistQueryClientProvider wiring', () => {
   it('imports PersistQueryClientProvider from @tanstack/react-query-persist-client', () => {
     const src = providerSrc()
     expect(src).toMatch(
@@ -36,7 +36,7 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
     )
   })
 
-  it('imports createAsyncStoragePersister and removeOldestQuery (AC #19)', () => {
+  it('imports createAsyncStoragePersister and removeOldestQuery', () => {
     const src = providerSrc()
     expect(src).toMatch(/createAsyncStoragePersister/)
     expect(src).toMatch(/removeOldestQuery/)
@@ -59,7 +59,7 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
     )
   })
 
-  it('configures the persister with key QUERY_PERSIST_KEY === "rj-tq-cache" (AC #7)', async () => {
+  it('configures the persister with key QUERY_PERSIST_KEY === "rj-tq-cache"', async () => {
     // The provider now references the shared QUERY_PERSIST_KEY constant (the
     // sign-out hygiene path in utils/auth.ts removes the same key, so the two
     // callsites must never drift). Assert the wiring uses the constant AND
@@ -70,7 +70,7 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
     expect(QUERY_PERSIST_KEY).toBe('rj-tq-cache')
   })
 
-  it('configures the persister with retry: removeOldestQuery (AC #19)', () => {
+  it('configures the persister with retry: removeOldestQuery', () => {
     const src = providerSrc()
     expect(src).toMatch(/retry:\s*removeOldestQuery/)
   })
@@ -81,12 +81,12 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
     expect(src).toMatch(/maxAge:\s*(?:24\s*\*\s*60\s*\*\s*60\s*\*\s*1000|86_?400_?000)/)
   })
 
-  it('onSuccess calls queryClient.resumePausedMutations() (AC #7)', () => {
+  it('onSuccess calls queryClient.resumePausedMutations()', () => {
     const src = providerSrc()
     expect(src).toMatch(/onSuccess\s*=\s*\{[^}]*resumePausedMutations\s*\(\s*\)/)
   })
 
-  it('PersistQueryClientProvider wraps ToastProvider (AC #7 ordering)', () => {
+  it('PersistQueryClientProvider wraps ToastProvider (ordering)', () => {
     const src = providerSrc()
     const persistOpenIdx = src.indexOf('<PersistQueryClientProvider')
     const toastOpenIdx = src.indexOf('<ToastProvider')
@@ -109,7 +109,7 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
   })
 })
 
-describe('Story 3-2 / DevTools gating (AC #10, #11)', () => {
+describe('DevTools gating', () => {
   it('imports ReactQueryDevtools from @tanstack/react-query-devtools', () => {
     const src = providerSrc()
     expect(src).toMatch(
@@ -127,14 +127,14 @@ describe('Story 3-2 / DevTools gating (AC #10, #11)', () => {
     )
   })
 
-  it('does NOT use dynamic() or React.lazy for devtools (AC #10 explicitly forbids)', () => {
+  it('does NOT use dynamic() or React.lazy for devtools (explicitly forbids)', () => {
     const src = providerSrc()
     expect(src).not.toMatch(/dynamic\(\s*\(\s*\)\s*=>\s*import\([^)]*react-query-devtools/)
     expect(src).not.toMatch(/lazy\(\s*\(\s*\)\s*=>\s*import\([^)]*react-query-devtools/)
   })
 })
 
-describe('Story 3-2 / Eager-import ordering guard (AC #18)', () => {
+describe('Eager-import ordering guard', () => {
   it('imports __collectiveMutationsLoadedAt from app/state/collective/mutations', () => {
     const src = providerSrc()
     expect(src).toMatch(

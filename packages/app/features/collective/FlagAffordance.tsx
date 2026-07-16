@@ -163,7 +163,7 @@ export function FlagAffordance({
   function handleDeleteConfirm() {
     // Guard against double-tap: if already pending, the second tap's mutation
     // will hit the 42501 ambiguous-error swallow path on the server and resolve
-    // cleanly. AC #34.
+    // cleanly.
     if (deleteMutation.isPending) return
     // Fire-and-forget — do NOT await. Optimistic cache update is synchronous.
     deleteMutation.mutate({ post_id: postId })
@@ -189,7 +189,7 @@ export function FlagAffordance({
     addLocallyHiddenPost(postId)
 
     // Report metric — metadata ONLY. The reporter's free-text note is NEVER
-    // part of this payload (NFR19); only the tier + user id leave the device.
+    // part of this payload; only the tier + user id leave the device.
     captureEvent('collective_report_submitted', {
       user_id: reporterUserId!,
       tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
@@ -346,7 +346,7 @@ export function FlagAffordance({
               </YStack>
             </RadioGroup>
 
-            {/* Disclosure microcopy — placeholder route; link deferred per AC #24 */}
+            {/* Disclosure microcopy — placeholder route; link deferred */}
             {/* TODO(post-3-12): link to /about/guidelines once that route lands */}
             <Text
               fontSize="$1"

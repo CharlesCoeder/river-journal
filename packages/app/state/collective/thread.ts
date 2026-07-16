@@ -1,6 +1,6 @@
 // packages/app/state/collective/thread.ts
 //
-// Story 3-4 — TanStack Query thread hook for the Collective domain.
+// TanStack Query thread hook for the Collective domain.
 //
 // This module exports the `useThread(postId, { role })` hook plus the pure
 // `fetchThreadPage` function that powers it. Consumers (the upcoming
@@ -19,17 +19,17 @@ import type { Database } from 'app/types/database'
 import type { Post } from './feed'
 
 // Re-export the canonical Post type for consumer ergonomics. The
-// declaration lives in `feed.ts` (Story 3-3 landed first); this file
+// declaration lives in `feed.ts` (landed first); this file
 // imports it to enforce a single source of truth across feed/thread.
 export type { Post }
 
 /**
  * ThreadPost — the per-row shape returned by `collective_thread_page`.
  * Unlike the feed's `Post` type, ThreadPost includes `descendant_count`
- * (added in Story 3-10 via Pattern B recursive CTE). ThreadView imports
+ * (added via Pattern B recursive CTE). ThreadView imports
  * this type rather than `Post` for correct type-checking.
  *
- * Story 3-15: ThreadPost now also carries `title`. It auto-derives from the
+ * ThreadPost now also carries `title`. It auto-derives from the
  * RPC `Returns`, which always emits `NULL` for replies (guaranteed by the
  * polarised `collective_posts_title_chk` CHECK) — so no manual `title: null`
  * mapping is needed anywhere; replies are always `title: null` by CHECK.
@@ -38,8 +38,8 @@ export type ThreadPost =
   Database['public']['Functions']['collective_thread_page']['Returns'][number]
 
 /**
- * ThreadRoot — the single root row returned by `collective_thread_root`
- * (Story 3-15). This is the body source for the thread view now that the
+ * ThreadRoot — the single root row returned by `collective_thread_root`.
+ * This is the body source for the thread view now that the
  * feed RPC dropped full `body`. Carries `title` + full `body` +
  * `descendant_count` + `reactions` tally + `mode`.
  */
@@ -57,14 +57,14 @@ export const PAGE_SIZE = 20
  * The canonical query key for a thread rooted at `postId`. The shape
  * `['collective', 'thread', postId]` lets the broader `['collective']`
  * prefix invalidation (fired from `feed.ts`'s streak-cross-500 observe
- * block in Story 3-3) drop every thread cache transitively.
+ * block) drop every thread cache transitively.
  */
 export function collectiveThreadKey(postId: string) {
   return ['collective', 'thread', postId] as const
 }
 
 /**
- * Query key for a thread's ROOT row (Story 3-15). Nested UNDER the thread key
+ * Query key for a thread's ROOT row. Nested UNDER the thread key
  * (`['collective', 'thread', postId, 'root']`) so the existing `['collective']`
  * prefix invalidation — fired from `feed.ts`'s streak-cross-500 observe and
  * from every mutation's `onSettled` — drops it transitively, with no new
@@ -143,15 +143,15 @@ export async function fetchThreadPage(
  * for a thread rooted at any post id (top-level thread root or focused
  * subthread root; structurally identical).
  *
- * Memory bound (NFR31): worst-case in-memory footprint is
+ * Memory bound: worst-case in-memory footprint is
  *   `(open expansion count) × maxPages × PAGE_SIZE`
  * = `open_expansions × 5 × 20`
  * = `open_expansions × 100 posts`.
  *
  * The 5-minute `gcTime` on `'expansion'` instances caps how long
  * collapsed-but-not-yet-evicted expansions persist in the cache. The
- * load-bearing UX rule that makes this bound hold: ThreadView (Story
- * 3-10) MUST mount expansions lazily — only when the user expands a
+ * load-bearing UX rule that makes this bound hold: ThreadView
+ * MUST mount expansions lazily — only when the user expands a
  * subtree. NEVER auto-walk the tree.
  *
  * Role semantics:
@@ -182,10 +182,10 @@ export function useThread(postId: string, { role }: { role: 'root' | 'expansion'
 }
 
 /**
- * Pure async fetcher for a thread's root row (Story 3-15). Calls
+ * Pure async fetcher for a thread's root row. Calls
  * `supabase.rpc('collective_thread_root', { post_id })`, throws on RPC error,
  * and returns `data?.[0] ?? null`. A `null` return is the removed/not-found
- * case (AC 11) — the RPC returns zero rows when the root is moderator-removed
+ * case — the RPC returns zero rows when the root is moderator-removed
  * or absent — so the consumer renders a removed/not-found state rather than an
  * error boundary. Exported separately so it is unit-testable in isolation.
  */
@@ -213,7 +213,7 @@ export function useThreadRoot(postId: string) {
   return useQuery({
     queryKey: collectiveThreadRootKey(postId),
     queryFn: () => fetchThreadRoot(postId),
-    // Consumer-side guard (Story 3-16): a falsy postId would fire
+    // Consumer-side guard: a falsy postId would fire
     // collective_thread_root({ post_id: '' }) → invalid-UUID error. Skip the
     // query until we have a real id. This is the single state-hook touch the
     // UI-port task is authorised to make (the deferred-note guard).

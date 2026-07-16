@@ -76,18 +76,18 @@ function wordsText(n: number): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T1 — ephemeral$.thresholdCrossing initial value is null (AC12 T1)
+// T1 — ephemeral$.thresholdCrossing initial value is null
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T1: ephemeral$.thresholdCrossing initial value (AC12 T1)', () => {
+describe('T1: ephemeral$.thresholdCrossing initial value', () => {
   it('is null on a fresh state load', () => {
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T2 — setInstantWordCountFromText does NOT set thresholdCrossing for sub-500 counts (AC12 T2)
+// T2 — setInstantWordCountFromText does NOT set thresholdCrossing for sub-500 counts
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T2: thresholdCrossing stays null for sub-500 word counts (AC12 T2)', () => {
+describe('T2: thresholdCrossing stays null for sub-500 word counts', () => {
   it('remains null after setting 0 words', () => {
     setInstantWordCountFromText('')
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
@@ -110,9 +110,9 @@ describe('T2: thresholdCrossing stays null for sub-500 word counts (AC12 T2)', (
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T3 — setInstantWordCountFromText sets thresholdCrossing at first 500-crossing (AC12 T3)
+// T3 — setInstantWordCountFromText sets thresholdCrossing at first 500-crossing
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T3: thresholdCrossing is set on the first crossing of 500 words (AC12 T3)', () => {
+describe('T3: thresholdCrossing is set on the first crossing of 500 words', () => {
   it('is null before crossing 500', () => {
     setInstantWordCountFromText(wordsText(100))
     expect(ephemeral$.thresholdCrossing.peek()).toBeNull()
@@ -144,9 +144,9 @@ describe('T3: thresholdCrossing is set on the first crossing of 500 words (AC12 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T4 — Idempotency: subsequent calls past 500 do NOT overwrite thresholdCrossing (AC12 T4)
+// T4 — Idempotency: subsequent calls past 500 do NOT overwrite thresholdCrossing
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T4: thresholdCrossing is set only once — idempotency (AC12 T4)', () => {
+describe('T4: thresholdCrossing is set only once — idempotency', () => {
   it('does not overwrite crossedAt on a second crossing at a higher count', async () => {
     setInstantWordCountFromText(wordsText(500))
     const firstCrossing = ephemeral$.thresholdCrossing.peek()
@@ -174,9 +174,9 @@ describe('T4: thresholdCrossing is set only once — idempotency (AC12 T4)', () 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T5 — Paste-in past 500 in one go records wordCountAtCrossing at actual count (AC12 T5)
+// T5 — Paste-in past 500 in one go records wordCountAtCrossing at actual count
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T5: paste-in past 500 in a single event records actual word count (AC12 T5)', () => {
+describe('T5: paste-in past 500 in a single event records actual word count', () => {
   it('records wordCountAtCrossing === 750 when pasting in 750 words from 0', () => {
     // Initial state: count 0, threshold null (enforced by beforeEach)
     setInstantWordCountFromText(wordsText(750))
@@ -197,9 +197,9 @@ describe('T5: paste-in past 500 in a single event records actual word count (AC1
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T6 — clearActiveFlow resets thresholdCrossing to null (AC12 T6)
+// T6 — clearActiveFlow resets thresholdCrossing to null
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T6: clearActiveFlow resets thresholdCrossing to null (AC12 T6)', () => {
+describe('T6: clearActiveFlow resets thresholdCrossing to null', () => {
   it('resets thresholdCrossing to null after clearActiveFlow', () => {
     setInstantWordCountFromText(wordsText(600))
     expect(ephemeral$.thresholdCrossing.peek()).not.toBeNull()
@@ -220,9 +220,9 @@ describe('T6: clearActiveFlow resets thresholdCrossing to null (AC12 T6)', () =>
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T7 — discardActiveFlowSession resets thresholdCrossing to null (AC12 T7)
+// T7 — discardActiveFlowSession resets thresholdCrossing to null
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T7: discardActiveFlowSession resets thresholdCrossing to null (AC12 T7)', () => {
+describe('T7: discardActiveFlowSession resets thresholdCrossing to null', () => {
   it('resets thresholdCrossing to null after discardActiveFlowSession', () => {
     setInstantWordCountFromText(wordsText(600))
     expect(ephemeral$.thresholdCrossing.peek()).not.toBeNull()
@@ -243,12 +243,12 @@ describe('T7: discardActiveFlowSession resets thresholdCrossing to null (AC12 T7
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// T8 — Threshold-crossing happens within the same synchronous tick as count update (AC12 T8)
-// Documents the no-async-gap invariant (NFR3).
+// T8 — Threshold-crossing happens within the same synchronous tick as count update
+// Documents the no-async-gap invariant.
 // If a future contributor introduces a setTimeout/microtask between count-set
 // and threshold-record, this test fails.
 // ─────────────────────────────────────────────────────────────────────────────
-describe('T8: threshold-crossing and count update happen in the same synchronous tick (AC12 T8 / NFR3)', () => {
+describe('T8: threshold-crossing and count update happen in the same synchronous tick', () => {
   it('instantWordCount and thresholdCrossing are both updated synchronously after setInstantWordCountFromText', () => {
     setInstantWordCountFromText(wordsText(500))
 
@@ -279,7 +279,7 @@ describe('T8: threshold-crossing and count update happen in the same synchronous
 // surfacedUnlockMilestones tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('surfacedUnlockMilestones — S1-S4 (AC 19)', () => {
+describe('surfacedUnlockMilestones — S1-S4', () => {
   // Reset the set before each test in this group for isolation.
   beforeEach(() => {
     ephemeral$.surfacedUnlockMilestones.set(new Set<number>())

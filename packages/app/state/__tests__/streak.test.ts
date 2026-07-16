@@ -82,7 +82,7 @@ function buildConsecutiveQualifyingDays(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Group A: Epic AC table-driven cases (AC 18 — 11 cases)
+// Group A: table-driven cases (11 cases)
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('computeStreakState — epic AC table', () => {
@@ -259,7 +259,7 @@ describe('computeStreakState — epic AC table', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Group B: Defensive cases (AC 19)
+// Group B: Defensive cases
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('computeStreakState — defensive cases', () => {
@@ -457,11 +457,11 @@ describe('computeStreakState — defensive cases', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Group C: Contracts — determinism, scale, output shape (AC 26, 27, 28)
+// Group C: Contracts — determinism, scale, output shape
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('computeStreakState — contracts (determinism, scale, shape)', () => {
-  it('determinism: same inputs twice → deeply-equal output (AC 26)', () => {
+  it('determinism: same inputs twice → deeply-equal output', () => {
     const { entries, flows } = buildConsecutiveQualifyingDays(T0_DATE, 12)
     const grace = [mkGrace('g1', shiftDay(T0_DATE, -50))]
     const a = computeStreakState(entries, flows, grace, T0_DATE, 'free')
@@ -469,7 +469,7 @@ describe('computeStreakState — contracts (determinism, scale, shape)', () => {
     expect(JSON.stringify(a)).toBe(JSON.stringify(b))
   })
 
-  it('scale smoke: 1000 consecutive qualifying days < 2s (AC 27)', () => {
+  it('scale smoke: 1000 consecutive qualifying days < 2s', () => {
     const { entries, flows } = buildConsecutiveQualifyingDays(T0_DATE, 1000)
     const t0 = performance.now()
     const state = computeStreakState(entries, flows, [], T0_DATE, 'free')
@@ -480,7 +480,7 @@ describe('computeStreakState — contracts (determinism, scale, shape)', () => {
     assertInvariants(state)
   })
 
-  it('output shape exhaustiveness: exactly the six declared fields (AC 28)', () => {
+  it('output shape exhaustiveness: exactly the six declared fields', () => {
     const state = computeStreakState([], [], [], T0_DATE, 'free')
     expect(Object.keys(state).sort()).toEqual(
       [

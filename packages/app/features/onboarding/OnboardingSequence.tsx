@@ -65,7 +65,7 @@ export function OnboardingSequence({
     [onDone, router]
   )
 
-  // Advance guard (AC7): the functional updater only steps forward when the
+  // Advance guard: the functional updater only steps forward when the
   // current screen still matches the one the tap originated from, so a stale /
   // rapid second tap can't leapfrog a screen.
   const advanceFrom = useCallback((from: number) => {
@@ -83,7 +83,7 @@ export function OnboardingSequence({
     onScreenChange?.(currentScreen)
   }, [currentScreen, onScreenChange])
 
-  // Focus management (AC5): move focus to the active screen's headline on the
+  // Focus management: move focus to the active screen's headline on the
   // first mount AND on every transition, so screen-reader users land on the
   // new heading. Web-only via getElementById (ExpandingLineButton/Text don't
   // forwardRef); on native this is a deliberate no-op — VoiceOver/TalkBack

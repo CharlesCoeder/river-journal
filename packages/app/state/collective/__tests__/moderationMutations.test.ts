@@ -558,7 +558,7 @@ describe('hook exports', () => {
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Source-grep guardrails — D7 boundary + NFR19 privacy
+// Source-grep guardrails — D7 boundary + privacy
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('source-grep guardrails', () => {
@@ -582,7 +582,7 @@ describe('source-grep guardrails', () => {
     }
   })
 
-  it('does NOT contain a console.* call with "note" or "reason" in the same expression (NFR19)', () => {
+  it('does NOT contain a console.* call with "note" or "reason" in the same expression', () => {
     expect(existsSync(MODULE_PATH)).toBe(true)
     const src = readFileSync(MODULE_PATH, 'utf8')
     expect(src).not.toMatch(/console\.(log|warn|error)\([^)]*(note|reason)/i)

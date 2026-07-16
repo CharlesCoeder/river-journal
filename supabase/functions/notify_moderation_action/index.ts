@@ -27,7 +27,7 @@
 //     raw payload.reason, which can carry a moderator's free-text note
 //     (suspend_user folds an optional custom note into `reason`); and the
 //     `data` payload carries no reason/reason_code — so no free text ever
-//     reaches the notification or any log field (NFR19).
+//     reaches the notification or any log field.
 
 import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
 import { logError, logInfo, redact } from '../_shared/logging.ts'
@@ -173,7 +173,7 @@ export function composeNotification(
 // existing composeMessage() templated string — built from action_type + safe
 // metadata (kind/duration_days) ONLY. The body MUST NEVER interpolate
 // payload.reason: suspend_user folds the moderator's optional free-text note
-// INTO `reason`, so echoing it would leak the private note (NFR19).
+// INTO `reason`, so echoing it would leak the private note.
 export function composeModerationPushCopy(
   payload: ModerationActionPayload,
 ): { title: string; body: string } {
@@ -409,7 +409,7 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
   // DeviceNotRegistered soft-delete) — never re-implemented here.
   const result = await fanOutExpoPush(client, messages)
 
-  // NFR19-safe: metadata only — never the composed title/body, reason, note,
+  // Privacy-safe: metadata only — never the composed title/body, reason, note,
   // or kind/duration_days as content (redact() strips them anyway as a backstop).
   logInfo('moderation.notify.run', {
     action_type: payload.action_type,

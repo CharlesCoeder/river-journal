@@ -474,7 +474,7 @@ Deno.test('handler returns a wrapped 500 error envelope (not an uncaught throw) 
 
 // ---------------------------------------------------------------------------
 // composeModerationPushCopy — action-aware title map + templated-reason-only
-// body (NFR19: never the raw `reason`, which can carry a moderator's free
+// body (never the raw `reason`, which can carry a moderator's free
 // text, since suspend_user folds an optional custom note into `reason`).
 // ---------------------------------------------------------------------------
 
@@ -900,7 +900,7 @@ Deno.test('handler soft-deletes a DeviceNotRegistered token through the reused f
   })
 })
 
-Deno.test('the seeded reason free-text marker appears in NO captured console.log/console.error line across a full enabled-and-sent run (NFR19 defense in depth beyond body/data)', async () => {
+Deno.test('the seeded reason free-text marker appears in NO captured console.log/console.error line across a full enabled-and-sent run (defense in depth beyond body/data)', async () => {
   await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
     const originalFetch = globalThis.fetch
     globalThis.fetch = (() => {

@@ -1,10 +1,10 @@
 /**
- * Story 3-11 — TDD red-phase unit tests for `state/collective/reactions.ts`.
+ * TDD red-phase unit tests for `state/collective/reactions.ts`.
  *
- * Red-phase contract: every test in this file MUST fail until Story 3-11
+ * Red-phase contract: every test in this file MUST fail until this work
  * creates `packages/app/state/collective/reactions.ts`.
  *
- * AC coverage (AC #5, #16, #18):
+ * Coverage:
  *   - t1: fetchPostReactions returns correct { counts, userReactions } shape
  *         from a mixed reaction set (some by current user, some by others,
  *         one with user_id: null).
@@ -71,7 +71,7 @@ beforeEach(() => {
 // collectiveReactionsKey shape
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / collectiveReactionsKey shape (AC #5)', () => {
+describe('collectiveReactionsKey shape', () => {
   it('exports collectiveReactionsKey as a function returning [collective, reactions, postId]', async () => {
     const mod = await import('../reactions')
     const key = mod.collectiveReactionsKey('post-abc')
@@ -91,7 +91,7 @@ describe('Story 3-11 / collectiveReactionsKey shape (AC #5)', () => {
 // t1 — fetchPostReactions returns correct shape from a mixed reaction set
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t1 — fetchPostReactions with mixed reactions (AC #5, #18)', () => {
+describe('t1 — fetchPostReactions with mixed reactions', () => {
   it('aggregates counts for all reactions and userReactions only for current user', async () => {
     // Three reactions:
     //   - heart by current user (id: 'rxn-1')
@@ -144,7 +144,7 @@ describe('Story 3-11 / t1 — fetchPostReactions with mixed reactions (AC #5, #1
 // t2 — Anonymized reactions (user_id IS NULL) counted but NOT in userReactions
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t2 — anonymized reactions excluded from userReactions (AC #5)', () => {
+describe('t2 — anonymized reactions excluded from userReactions', () => {
   it('anonymized reaction (user_id: null) increments counts but leaves userReactions null', async () => {
     const mockData = [{ id: 'rxn-anon', user_id: null, kind: 'wave', post_id: 'post-2' }]
     eqMock.mockResolvedValueOnce({ data: mockData, error: null })
@@ -179,7 +179,7 @@ describe('Story 3-11 / t2 — anonymized reactions excluded from userReactions (
 // t3 — Empty result yields all-zero counts and all-null userReactions
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t3 — empty result shape (AC #5)', () => {
+describe('t3 — empty result shape', () => {
   it('returns all-zero counts and all-null userReactions when data is []', async () => {
     eqMock.mockResolvedValueOnce({ data: [], error: null })
     selectMock.mockReturnValue({ eq: eqMock })
@@ -221,7 +221,7 @@ describe('Story 3-11 / t3 — empty result shape (AC #5)', () => {
 // t4 — Supabase error re-throws for TanStack Query retry contract
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t4 — Supabase error re-throws (AC #5)', () => {
+describe('t4 — Supabase error re-throws', () => {
   it('throws when Supabase returns a PostgrestError-shaped error', async () => {
     const error = {
       message: 'permission denied',
@@ -242,7 +242,7 @@ describe('Story 3-11 / t4 — Supabase error re-throws (AC #5)', () => {
 // t5 — Boundary rule (D7): reactions.ts must NOT import @legendapp/state
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t5 — Boundary rule D7 (AC #16)', () => {
+describe('t5 — Boundary rule D7', () => {
   it('reactions.ts exists on disk', () => {
     expect(existsSync(REACTIONS_PATH), 'reactions.ts must exist at ' + REACTIONS_PATH).toBe(true)
   })
@@ -255,10 +255,10 @@ describe('Story 3-11 / t5 — Boundary rule D7 (AC #16)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// usePostReactions hook config (AC #5)
+// usePostReactions hook config
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / usePostReactions hook config (AC #5)', () => {
+describe('usePostReactions hook config', () => {
   it('passes queryKey === collectiveReactionsKey(postId) to useQuery', async () => {
     const { usePostReactions, collectiveReactionsKey } = await import('../reactions')
     usePostReactions('post-hook-test', 'user-current')

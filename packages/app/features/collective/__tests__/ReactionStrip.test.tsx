@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-11 — TDD red-phase unit tests for `features/collective/ReactionStrip.tsx`.
+ * TDD red-phase unit tests for `features/collective/ReactionStrip.tsx`.
  *
- * Red-phase contract: every test MUST fail until Story 3-11's Task 4 creates
+ * Red-phase contract: every test MUST fail until the implementation task creates
  * `packages/app/features/collective/ReactionStrip.tsx`.
  *
- * AC coverage (AC #1–#4, #6–#8, #11–#15, #20):
+ * Coverage:
  *   - t1: Renders 5 icon buttons; zero counts hidden; non-zero counts visible.
  *   - t2: Tapping unreacted icon fires useToggleReaction.mutate with toggle:'add'
  *         and a valid UUID; optimistic aria-pressed="true" flip observed.
@@ -173,7 +173,7 @@ afterEach(() => {
 // t1 — 5 icon buttons render; zero counts hidden; non-zero counts visible
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t1 — ReactionStrip renders 5 icon buttons (AC #1, #3, #4)', () => {
+describe('t1 — ReactionStrip renders 5 icon buttons', () => {
   it('renders exactly 5 icon buttons when userId is provided', () => {
     render(React.createElement(ReactionStrip, { postId: 'post-1', userId: 'user-1' }))
     const buttons = screen.getAllByRole('button')
@@ -218,7 +218,7 @@ describe('Story 3-11 / t1 — ReactionStrip renders 5 icon buttons (AC #1, #3, #
 //      Optimistic aria-pressed="true" visible before mutation resolves
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t2 — tap unreacted icon fires toggle:add (AC #6)', () => {
+describe('t2 — tap unreacted icon fires toggle:add', () => {
   it('calls mutate with toggle:"add" and a valid UUID when tapping an unreacted icon', () => {
     usePostReactionsMockData.userReactions.heart = null
     render(React.createElement(ReactionStrip, { postId: 'post-2', userId: 'user-1' }))
@@ -249,7 +249,7 @@ describe('Story 3-11 / t2 — tap unreacted icon fires toggle:add (AC #6)', () =
 // t3 — Tapping reacted icon fires mutate with toggle:'remove' + existing id
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t3 — tap reacted icon fires toggle:remove (AC #7)', () => {
+describe('t3 — tap reacted icon fires toggle:remove', () => {
   it('calls mutate with toggle:"remove" and the existing reactionId when tapping a reacted icon', () => {
     usePostReactionsMockData.userReactions.heart = 'existing-rxn-id'
     usePostReactionsMockData.counts.heart = 1
@@ -279,7 +279,7 @@ describe('Story 3-11 / t3 — tap reacted icon fires toggle:remove (AC #7)', () 
 // t4 — When userId is null, the strip renders nothing
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t4 — anonymous viewer sees nothing (AC #1)', () => {
+describe('t4 — anonymous viewer sees nothing', () => {
   it('renders null when userId is null', () => {
     const { container } = render(
       React.createElement(ReactionStrip, { postId: 'post-4', userId: null })
@@ -298,7 +298,7 @@ describe('Story 3-11 / t4 — anonymous viewer sees nothing (AC #1)', () => {
 // t5 — disabled===true: all buttons aria-disabled="true"; mutation NOT called
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t5 — disabled mode (AC #13)', () => {
+describe('t5 — disabled mode', () => {
   it('all buttons have aria-disabled="true" when disabled prop is true', () => {
     render(
       React.createElement(ReactionStrip, { postId: 'post-5', userId: 'user-1', disabled: true })
@@ -333,7 +333,7 @@ describe('Story 3-11 / t5 — disabled mode (AC #13)', () => {
 // t6 — Keyboard activation: Space and Enter trigger mutation
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t6 — keyboard activation (AC #11)', () => {
+describe('t6 — keyboard activation', () => {
   it('Space key on a button triggers the mutation', () => {
     usePostReactionsMockData.userReactions.heart = null
     render(React.createElement(ReactionStrip, { postId: 'post-6', userId: 'user-1' }))
@@ -356,7 +356,7 @@ describe('Story 3-11 / t6 — keyboard activation (AC #11)', () => {
 // t7 — prefers-reduced-motion: no transition prop when reduced motion active
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t7 — prefers-reduced-motion compliance (AC #12)', () => {
+describe('t7 — prefers-reduced-motion compliance', () => {
   it('does not apply animation transition when useReducedMotion returns true', () => {
     reduceMotionValue = true
     render(React.createElement(ReactionStrip, { postId: 'post-7', userId: 'user-1' }))
@@ -388,7 +388,7 @@ describe('Story 3-11 / t7 — prefers-reduced-motion compliance (AC #12)', () =>
 // t8 — ZERO counts hidden; non-zero counts render as visible text
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / t8 — zero-count hiding invariant (AC #4)', () => {
+describe('t8 — zero-count hiding invariant', () => {
   it('no text element shows "0" when all counts are zero', () => {
     usePostReactionsMockData.counts = { heart: 0, sparkle: 0, flame: 0, leaf: 0, wave: 0 }
     render(React.createElement(ReactionStrip, { postId: 'post-8a', userId: 'user-1' }))
@@ -417,10 +417,10 @@ describe('Story 3-11 / t8 — zero-count hiding invariant (AC #4)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #20 — Cold-cache loading state renders strip with all counts hidden
+// Cold-cache loading state renders strip with all counts hidden
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-11 / AC #20 — cold-cache loading state (no spinner)', () => {
+describe('cold-cache loading state (no spinner)', () => {
   it('renders strip (not null) during loading, with all buttons and no counts', () => {
     usePostReactionsMockData = {
       counts: { heart: 0, sparkle: 0, flame: 0, leaf: 0, wave: 0 },

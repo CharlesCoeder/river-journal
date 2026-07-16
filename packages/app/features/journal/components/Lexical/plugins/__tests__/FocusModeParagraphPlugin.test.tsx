@@ -61,10 +61,10 @@ afterEach(() => {
 })
 
 // =============================================================================
-// Part A: computeFocusClasses — pure helper unit tests (AC 24)
+// Part A: computeFocusClasses — pure helper unit tests
 // =============================================================================
 
-describe('computeFocusClasses — pure helper (AC 24)', () => {
+describe('computeFocusClasses — pure helper', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // CH-0: computeFocusClasses is exported as a function
   // ───────────────────────────────────────────────────────────────────────────
@@ -155,10 +155,10 @@ describe('computeFocusClasses — pure helper (AC 24)', () => {
 })
 
 // =============================================================================
-// Part B: FocusModeParagraphPlugin component smoke tests (AC 24)
+// Part B: FocusModeParagraphPlugin component smoke tests
 // =============================================================================
 
-describe('FocusModeParagraphPlugin component — mount behavior (AC 24)', () => {
+describe('FocusModeParagraphPlugin component — mount behavior', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // PS-0: Module exports FocusModeParagraphPlugin as a function/component
   // ───────────────────────────────────────────────────────────────────────────

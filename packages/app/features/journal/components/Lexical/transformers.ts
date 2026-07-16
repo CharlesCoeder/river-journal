@@ -22,7 +22,7 @@ export const LINEBREAK_TRANSFORMER: TextMatchTransformer = {
 }
 
 /**
- * Makes SentenceNode (Story 2.11) export-transparent. A custom inline
+ * Makes SentenceNode export-transparent. A custom inline
  * ElementNode with no transformer is silently DROPPED by
  * $convertToMarkdownString — which would delete the user's text. This emits the
  * node's children's markdown with no wrapper syntax, so markdown round-trips

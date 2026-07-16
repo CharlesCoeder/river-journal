@@ -57,7 +57,7 @@ type RemoveContext = { snapshot: ModerationQueueItem[] | undefined }
 
 queryClient.setMutationDefaults(['moderation', 'remove'], {
   mutationFn: async (vars: RemovePostVars) => {
-    // PRIVACY (NFR19): custom_note free text is passed ONLY to the RPC — never
+    // PRIVACY: custom_note free text is passed ONLY to the RPC — never
     // to console/Sentry/any logger.
     const { error } = await supabase.rpc('remove_post', {
       target_post_id: vars.target_post_id,
@@ -125,7 +125,7 @@ queryClient.setMutationDefaults(['moderation', 'remove'], {
 
 queryClient.setMutationDefaults(['moderation', 'suspend'], {
   mutationFn: async (vars: SuspendUserVars) => {
-    // `kind` is fixed here — the RPC accepts only 'post_react'. PRIVACY (NFR19):
+    // `kind` is fixed here — the RPC accepts only 'post_react'. PRIVACY:
     // reason free text goes ONLY to the RPC.
     const { error } = await supabase.rpc('suspend_user', {
       target_user_id: vars.target_user_id,
@@ -155,7 +155,7 @@ queryClient.setMutationDefaults(['moderation', 'suspend'], {
 
 queryClient.setMutationDefaults(['moderation', 'note'], {
   mutationFn: async (vars: AddNoteVars) => {
-    // PRIVACY (NFR19): note free text is passed ONLY to the RPC.
+    // PRIVACY: note free text is passed ONLY to the RPC.
     const { error } = await supabase.rpc('add_moderation_note', {
       note: vars.note,
       target_post_id: vars.target_post_id,

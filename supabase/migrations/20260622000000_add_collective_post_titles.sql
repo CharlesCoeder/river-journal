@@ -1,7 +1,6 @@
--- Migration: Collective title-led forum — data-layer evolution (Story 3-15).
+-- Migration: Collective title-led forum — data-layer evolution.
 --
--- Phase 2 of the approved title-led redesign
--- (docs/_bmad-output/planning-artifacts/collective-title-led-redesign-architecture.md).
+-- Phase 2 of the approved title-led redesign architecture.
 --
 -- This single forward-only migration is the schema↔RPC half of the change. It:
 --   1. Adds a nullable `title` column + a polarised CHECK (required/non-blank/
@@ -35,7 +34,7 @@ ALTER TABLE collective_posts ADD CONSTRAINT collective_posts_title_chk CHECK (
 );
 
 -- ============================================================================
--- 2. CHECK self-test (AC 3) — runs on every `supabase db reset`.
+-- 2. CHECK self-test — runs on every `supabase db reset`.
 --
 -- No pgTAP harness exists in this repo (the only SQL "tests" are inline DO
 -- blocks — mirrors the verification idiom in 20260506000000:84-125). The six
@@ -130,7 +129,7 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- 3. collective_feed_page — REWRITE (AC 5–9 / architecture §6, D5, D6)
+-- 3. collective_feed_page — REWRITE (architecture §6, D5, D6)
 --
 -- Return shape changes (body dropped; title/excerpt/descendant_count/reactions
 -- added), so a plain CREATE OR REPLACE cannot alter the RETURNS TABLE — we
@@ -257,7 +256,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Preview branch — SIMPLIFIED (architecture D5 / AC 9).
+  -- Preview branch — SIMPLIFIED (architecture D5).
   --
   -- The old preview branch (20260506000006:101-150) returned one most-recent
   -- FULL-body row + up to 3 truncated teasers, with a UNION-ALL non-overlap
@@ -319,7 +318,7 @@ REVOKE EXECUTE ON FUNCTION collective_feed_page(TIMESTAMPTZ, INT) FROM PUBLIC;
 GRANT  EXECUTE ON FUNCTION collective_feed_page(TIMESTAMPTZ, INT) TO authenticated;
 
 -- ============================================================================
--- 4. collective_thread_root(post_id) — NEW (AC 10–11 / architecture §6)
+-- 4. collective_thread_root(post_id) — NEW (architecture §6)
 --
 -- The body source for the thread view now that the feed dropped body. Returns
 -- the SINGLE root row with full body + title + descendant_count + reactions +
@@ -392,7 +391,7 @@ BEGIN
     COALESCE((SELECT reactions FROM reaction_tally), '{}'::jsonb) AS reactions,
     (CASE WHEN v_full THEN 'full' ELSE 'preview' END)::TEXT AS mode
   FROM collective_posts cp
-  -- AC 11: zero rows when the root is moderator-removed OR does not exist
+  -- Zero rows when the root is moderator-removed OR does not exist
   -- (client renders not-found/removed). Self-deleted / anonymized roots ARE
   -- returned (client renders the tombstone), consistent with feed/thread.
   WHERE cp.id = collective_thread_root.post_id
@@ -404,7 +403,7 @@ REVOKE EXECUTE ON FUNCTION collective_thread_root(UUID) FROM PUBLIC;
 GRANT  EXECUTE ON FUNCTION collective_thread_root(UUID) TO authenticated;
 
 -- ============================================================================
--- 5. collective_thread_page — add `title` (AC 12)
+-- 5. collective_thread_page — add `title`
 --
 -- Return shape changes, so DROP + recreate (mirrors 20260507000001). Body of
 -- the function is otherwise identical to the descendant_count version in
@@ -524,7 +523,7 @@ REVOKE EXECUTE ON FUNCTION collective_thread_page(UUID, TIMESTAMPTZ, INT) FROM P
 GRANT  EXECUTE ON FUNCTION collective_thread_page(UUID, TIMESTAMPTZ, INT) TO authenticated;
 
 -- ============================================================================
--- 6. collective_your_posts_page — add `title` (AC 13)
+-- 6. collective_your_posts_page — add `title`
 --
 -- Return shape changes, so DROP + recreate (mirrors 20260507000000). Adds
 -- `title TEXT` (after parent_post_id), selects `cp.title` in own_posts (NULL

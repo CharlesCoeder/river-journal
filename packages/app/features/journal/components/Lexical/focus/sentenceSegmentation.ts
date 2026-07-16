@@ -1,7 +1,7 @@
 /**
  * sentenceSegmentation — pure, DOM-free helpers for per-sentence focus mode.
  *
- * These are the linchpin logic for Story 2.11. Keeping them pure (no Lexical DOM,
+ * These are the linchpin logic for per-sentence focus mode. Keeping them pure (no Lexical DOM,
  * no editor state) makes the tricky boundary rules exhaustively unit-testable —
  * this is where the "delay bug" fix lives (see `activeSentence`).
  *
@@ -39,7 +39,7 @@ function getSentenceSegmenter(): Intl.Segmenter {
 // "Dr. Smith went home." into "Dr. " + "Smith went home." (ICU sentence
 // suppression data is not exposed through the JS API). We layer a small curated
 // merge on top so common titles/abbreviations don't create false sentence
-// boundaries (AC 16). This intentionally errs toward NOT splitting on a known
+// boundaries. This intentionally errs toward NOT splitting on a known
 // abbreviation; unknown tokens segment normally.
 const ABBREVIATIONS = new Set<string>([
   // Personal / professional titles

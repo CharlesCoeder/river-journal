@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-12 — TDD red-phase unit tests for `addLocallyHiddenPost` helper in
+ * TDD red-phase unit tests for `addLocallyHiddenPost` helper in
  * `packages/app/state/store.ts`.
  *
- * Red-phase contract: every test MUST fail until Story 3-12's Task 1 adds
+ * Red-phase contract: every test MUST fail until Task 1 adds
  * `addLocallyHiddenPost` to `packages/app/state/store.ts`.
  *
- * AC coverage (AC #17):
+ * AC coverage:
  *   t1 — first call with new postId sets array to [postId]
  *   t2 — calling twice with same postId is idempotent (stays [postId])
  *   t3 — two distinct postIds accumulate in insertion order
@@ -99,10 +99,9 @@ afterEach(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — first call with a new postId → array becomes [postId]
-// AC #17 t1
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / addLocallyHiddenPost t1 — first call sets array (AC #17)', () => {
+describe('addLocallyHiddenPost t1 — first call sets array', () => {
   it('addLocallyHiddenPost is exported from state/store', () => {
     expect(typeof addLocallyHiddenPost).toBe('function')
   })
@@ -124,10 +123,9 @@ describe('Story 3-12 / addLocallyHiddenPost t1 — first call sets array (AC #17
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — calling twice with same postId is idempotent (duplicate guard)
-// AC #17 t2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / addLocallyHiddenPost t2 — idempotent on duplicate (AC #17)', () => {
+describe('addLocallyHiddenPost t2 — idempotent on duplicate', () => {
   it('calling twice with same postId keeps array as [postId] (no duplicate)', () => {
     addLocallyHiddenPost('post-gamma')
     addLocallyHiddenPost('post-gamma')
@@ -148,10 +146,9 @@ describe('Story 3-12 / addLocallyHiddenPost t2 — idempotent on duplicate (AC #
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — two distinct postIds accumulate in insertion order
-// AC #17 t3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / addLocallyHiddenPost t3 — multiple distinct ids in order (AC #17)', () => {
+describe('addLocallyHiddenPost t3 — multiple distinct ids in order', () => {
   it('adding two distinct ids produces ["a","b"] in insertion order', () => {
     addLocallyHiddenPost('a')
     addLocallyHiddenPost('b')
@@ -182,10 +179,9 @@ describe('Story 3-12 / addLocallyHiddenPost t3 — multiple distinct ids in orde
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — profile not yet initialized: ensureProfile runs without throwing
-// AC #17 t4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / addLocallyHiddenPost t4 — initializes safely without profile (AC #17)', () => {
+describe('addLocallyHiddenPost t4 — initializes safely without profile', () => {
   it('does not throw when called with a valid postId', () => {
     expect(() => {
       addLocallyHiddenPost('safe-call-post')

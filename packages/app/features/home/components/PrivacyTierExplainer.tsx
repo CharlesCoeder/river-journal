@@ -143,7 +143,7 @@ export function PrivacyTierExplainer({
   selectedMode?: EncryptionMode | null
   onModeSelect?: (mode: EncryptionMode) => void
   showLearnMore?: boolean
-  // Story 4.7 — pass navigation handler when Privacy Center screen exists
+  // Pass a navigation handler when the Privacy Center screen exists
   privacyCenterLink?: () => void
 }) {
   const [learnMoreOpen, setLearnMoreOpen] = useState(false)

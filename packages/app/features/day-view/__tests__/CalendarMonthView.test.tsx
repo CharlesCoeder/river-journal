@@ -205,7 +205,7 @@ afterEach(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Grid render — 42 cells (AC 11)
+// Grid render — 42 cells
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Calendar month grid renders 42 date cells', () => {
   it('renders exactly 42 cells for a known month', () => {
@@ -222,7 +222,7 @@ describe('Calendar month grid renders 42 date cells', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Month header — prev/next controls and month label (AC 9, AC 23)
+// Month header — prev/next controls and month label
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Month header renders navigation controls and accessible month label', () => {
   it('renders a "Previous month" button', () => {
@@ -248,7 +248,7 @@ describe('Month header renders navigation controls and accessible month label', 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Day-of-week header row (AC 10)
+// Day-of-week header row
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Day-of-week header row is rendered as presentational text', () => {
   it('renders the 7 single-letter day headers S M T W T F S', () => {
@@ -264,7 +264,7 @@ describe('Day-of-week header row is rendered as presentational text', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Empty month — microcopy (AC 14)
+// Empty month — microcopy
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Empty month displays calm microcopy below the grid', () => {
   it('shows "No entries this month." when the month has no entries', () => {
@@ -287,7 +287,7 @@ describe('Empty month displays calm microcopy below the grid', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Cell aria-labels (AC 22)
+// Cell aria-labels
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Date cells have correct aria-labels for entry state', () => {
   it('in-month cells with no entry have aria-label matching "no entries"', () => {
@@ -328,7 +328,7 @@ describe('Date cells have correct aria-labels for entry state', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Spillover cells are disabled (AC 11, 17)
+// Spillover cells are disabled
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Prior/next-month spillover cells are disabled', () => {
   it('spillover cells have the disabled attribute', () => {
@@ -356,7 +356,7 @@ describe('Prior/next-month spillover cells are disabled', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tap entry cell → opens inline reader (AC 15)
+// Tap entry cell → opens inline reader
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Tapping a date cell that has an entry opens the read-only reader inline', () => {
   beforeEach(() => {
@@ -410,7 +410,7 @@ describe('Tapping a date cell that has an entry opens the read-only reader inlin
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tap empty in-month cell → "Nothing on [date]" + Begin writing (AC 16)
+// Tap empty in-month cell → "Nothing on [date]" + Begin writing
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Tapping an empty date cell shows the writing invitation', () => {
   it('shows "Nothing on [date]." text when an empty cell is tapped', () => {
@@ -449,7 +449,7 @@ describe('Tapping an empty date cell shows the writing invitation', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Month navigation — prev/next buttons change the month (AC 19)
+// Month navigation — prev/next buttons change the month
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Month navigation buttons change the displayed month', () => {
   it('clicking Previous month changes the label from April 2026 to March 2026', () => {
@@ -480,7 +480,7 @@ describe('Month navigation buttons change the displayed month', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reader resets on month change (AC 18)
+// Reader resets on month change
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Open reader closes automatically when navigating to a different month', () => {
   it('reader is removed from DOM after clicking Next month', () => {
@@ -505,7 +505,7 @@ describe('Open reader closes automatically when navigating to a different month'
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Today's cell has a border ring (AC 12, 24)
+// Today's cell has a border ring
 // ─────────────────────────────────────────────────────────────────────────────
 describe("Today's date cell is visually distinguished with a border ring", () => {
   it('the today cell has a data-today="true" attribute or borderWidth style', () => {
@@ -515,7 +515,7 @@ describe("Today's date cell is visually distinguished with a border ring", () =>
     // The dev is expected to mark today's cell with data-today or a testable attribute
     const todayCell = screen.getByRole('button', { name: /April 15, no entries/ })
     // Assert either data-today attribute OR that it is stylistically distinct
-    // (The component should expose data-today="true" for testability per story AC 12)
+    // (The component should expose data-today="true" for testability)
     const hasTodayMarker =
       todayCell.getAttribute('data-today') === 'true' ||
       todayCell.getAttribute('borderwidth') === '1' ||
@@ -536,7 +536,7 @@ describe("Today's date cell is visually distinguished with a border ring", () =>
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Keyboard arrow navigation (AC 21)
+// Keyboard arrow navigation
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Keyboard arrow keys move focus between date cells', () => {
   it('ArrowRight on a cell moves focus to the next cell', () => {
@@ -574,7 +574,7 @@ describe('Keyboard arrow keys move focus between date cells', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Default initialMonth falls back to current month (AC 6)
+// Default initialMonth falls back to current month
 // ─────────────────────────────────────────────────────────────────────────────
 describe('CalendarMonthView defaults to the current month when no initialMonth is provided', () => {
   it('renders the current month label when initialMonth is omitted', () => {

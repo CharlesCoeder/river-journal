@@ -287,7 +287,7 @@ const resolveWebTrustKey = async (
   }
 
   if (verification.status === 'network_error') {
-    // Network error after retry: discard unwrapped key, DON'T clear trust data (AC 12)
+    // Network error after retry: discard unwrapped key, DON'T clear trust data
     return { hasLocalE2EKey: false, error: null }
   }
 
@@ -987,7 +987,7 @@ export const dismissTrustBrowserPrompt = (): void => {
 }
 
 /**
- * M1 (AC#6): Retry fetching the managed encryption key from Supabase.
+ * M1: Retry fetching the managed encryption key from Supabase.
  * Useful when the initial fetch failed due to a transient network error.
  */
 export const retryFetchManagedKey = async (): Promise<boolean> => {

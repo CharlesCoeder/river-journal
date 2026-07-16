@@ -57,7 +57,7 @@ afterEach(cleanup)
 // ─────────────────────────────────────────────────────────────────────────────
 // U1 — Renders the copy
 // ─────────────────────────────────────────────────────────────────────────────
-describe('UnlockNotification — U1: renders unlock copy (AC 17)', () => {
+describe('UnlockNotification — U1: renders unlock copy', () => {
   it('U1: renders "You\'ve earned an unlock — choose a theme."', () => {
     render(React.createElement(UnlockNotification, { onChooseTheme: () => {} }))
     expect(screen.getByText("You've earned an unlock — choose a theme.")).toBeTruthy()
@@ -67,7 +67,7 @@ describe('UnlockNotification — U1: renders unlock copy (AC 17)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // U2 — Renders the "Choose theme" button
 // ─────────────────────────────────────────────────────────────────────────────
-describe('UnlockNotification — U2: renders Choose theme button (AC 17)', () => {
+describe('UnlockNotification — U2: renders Choose theme button', () => {
   it('U2: renders a button with accessible name "Choose theme"', () => {
     render(React.createElement(UnlockNotification, { onChooseTheme: () => {} }))
     // ExpandingLineButton renders as <button>; text content is the accessible name.
@@ -79,7 +79,7 @@ describe('UnlockNotification — U2: renders Choose theme button (AC 17)', () =>
 // ─────────────────────────────────────────────────────────────────────────────
 // U3 — onChooseTheme is called on press
 // ─────────────────────────────────────────────────────────────────────────────
-describe('UnlockNotification — U3: onChooseTheme callback fires on press (AC 17)', () => {
+describe('UnlockNotification — U3: onChooseTheme callback fires on press', () => {
   it('U3: calls onChooseTheme exactly once when the Choose theme button is pressed', () => {
     const onChooseTheme = vi.fn()
     render(React.createElement(UnlockNotification, { onChooseTheme }))

@@ -149,10 +149,10 @@ function dispatchKey(
 }
 
 // ===========================================================================
-// Suite 1 — Cmd/Ctrl+N opens editor (AC 6)
+// Suite 1 — Cmd/Ctrl+N opens editor
 // ===========================================================================
 
-describe('Cmd/Ctrl+N opens editor from any non-journal route (AC 6)', () => {
+describe('Cmd/Ctrl+N opens editor from any non-journal route', () => {
   it('Cmd+N calls router.push("/journal") and preventDefault()', () => {
     renderHook()
     const event = dispatchKey('n', { metaKey: true })
@@ -176,10 +176,10 @@ describe('Cmd/Ctrl+N opens editor from any non-journal route (AC 6)', () => {
 })
 
 // ===========================================================================
-// Suite 2 — Cmd/Ctrl+, opens Preferences (AC 7)
+// Suite 2 — Cmd/Ctrl+, opens Preferences
 // ===========================================================================
 
-describe('Cmd/Ctrl+, opens Preferences from any non-settings route (AC 7)', () => {
+describe('Cmd/Ctrl+, opens Preferences from any non-settings route', () => {
   it('Cmd+, calls router.push("/settings") and preventDefault()', () => {
     renderHook()
     const event = dispatchKey(',', { metaKey: true })
@@ -203,10 +203,10 @@ describe('Cmd/Ctrl+, opens Preferences from any non-settings route (AC 7)', () =
 })
 
 // ===========================================================================
-// Suite 3 — Esc exits editor to home (AC 5)
+// Suite 3 — Esc exits editor to home
 // ===========================================================================
 
-describe('Esc on /journal calls hidePersistentEditor then routes to / (AC 5)', () => {
+describe('Esc on /journal calls hidePersistentEditor then routes to /', () => {
   it('Esc on /journal calls hidePersistentEditor and router.push("/")', () => {
     __currentPathname = '/journal'
     renderHook()
@@ -237,10 +237,10 @@ describe('Esc on /journal calls hidePersistentEditor then routes to / (AC 5)', (
 })
 
 // ===========================================================================
-// Suite 4 — Editable-target suppression contract (AC 7)
+// Suite 4 — Editable-target suppression contract
 // ===========================================================================
 
-describe('Esc does NOT fire when target is an editable element (AC 7)', () => {
+describe('Esc does NOT fire when target is an editable element', () => {
   it('Esc from inside an <input> does not call hidePersistentEditor', () => {
     __currentPathname = '/journal'
     const { container } = renderHook()
@@ -318,10 +318,10 @@ describe('Esc does NOT fire when target is an editable element (AC 7)', () => {
 })
 
 // ===========================================================================
-// Suite 5 — IME composition suppression (AC 7)
+// Suite 5 — IME composition suppression
 // ===========================================================================
 
-describe('shortcuts do NOT fire during IME composition (AC 7)', () => {
+describe('shortcuts do NOT fire during IME composition', () => {
   it('Esc with isComposing=true does not call hidePersistentEditor', () => {
     __currentPathname = '/journal'
     renderHook()
@@ -344,10 +344,10 @@ describe('shortcuts do NOT fire during IME composition (AC 7)', () => {
 })
 
 // ===========================================================================
-// Suite 6 — defaultPrevented suppression (AC 7)
+// Suite 6 — defaultPrevented suppression
 // ===========================================================================
 
-describe('shortcuts do NOT fire when event.defaultPrevented is already true (AC 7)', () => {
+describe('shortcuts do NOT fire when event.defaultPrevented is already true', () => {
   it('Esc with defaultPrevented=true does not call hidePersistentEditor', () => {
     __currentPathname = '/journal'
     renderHook()
@@ -363,10 +363,10 @@ describe('shortcuts do NOT fire when event.defaultPrevented is already true (AC 
 })
 
 // ===========================================================================
-// Suite 7 — Modal-open check: Esc defers to modal (AC 8)
+// Suite 7 — Modal-open check: Esc defers to modal
 // ===========================================================================
 
-describe('Esc does NOT fire when a modal is open (AC 8)', () => {
+describe('Esc does NOT fire when a modal is open', () => {
   function addOpenDialog() {
     const dialog = document.createElement('div')
     dialog.setAttribute('role', 'dialog')
@@ -395,7 +395,7 @@ describe('Esc does NOT fire when a modal is open (AC 8)', () => {
     expect(mockHidePersistentEditor).toHaveBeenCalledTimes(1)
   })
 
-  it('Esc does NOT preventDefault when a modal is open (AC 8)', () => {
+  it('Esc does NOT preventDefault when a modal is open', () => {
     __currentPathname = '/journal'
     renderHook()
     addOpenDialog()

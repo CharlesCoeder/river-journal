@@ -1,9 +1,9 @@
--- t13: Story 3-5 -- collective_your_posts_page RPC regression suite.
+-- t13: collective_your_posts_page RPC regression suite.
 --
 -- Red phase: FAILS because the RPC `collective_your_posts_page` does not
--- exist yet (Story 3-5 lands the migration that creates it).
+-- exist yet (a later migration creates it).
 --
--- Coverage map (AC #4, #5, #6, #7, #8, #20):
+-- Coverage map:
 --   1.  Auth assertion fires (SQLSTATE 42501) when auth.uid() IS NULL.
 --   2.  Returns own posts only (auth.uid() filter).
 --   3.  Excludes is_removed = TRUE rows (moderator-removed).
@@ -15,16 +15,16 @@
 --   6.  reaction_count aggregation is COUNT(*) over collective_reactions.
 --   7.  descendant_count recursive aggregation (reply-of-reply counted).
 --   8.  descendant_count outer cap via LEAST(..., 99).
---   9.  tenure_tier is always NULL in this story (sentinel for FR68
+--   9.  tenure_tier is always NULL in this story (sentinel for the tenure-tier
 --       follow-up; forces explicit re-evaluation when tier population lands).
 --   10. mode is always 'full'.
 --   11. Cursor pagination with monotonic created_at: 25 posts, two pages.
 --   12. page_size clamp: 0 -> 1 row (floor); 999 -> at most 50 rows (ceiling).
 --   13. SECURITY DEFINER + search_path pinned via proconfig.
 --
--- Note on the descendant cap (#8): we use the LIGHT construction -- seed a
+-- Note on the descendant cap: we use the LIGHT construction -- seed a
 -- handful of descendants and assert LEAST() outer-caps semantics, rather
--- than seeding 100+ rows (option (b) per AC #20).
+-- than seeding 100+ rows (the lighter of the two seeding options).
 
 BEGIN;
 \i _helpers.psql
@@ -46,7 +46,7 @@ BEGIN
       GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE;
       IF v_state = '42501' THEN v_denied := TRUE; END IF;
   END;
-  PERFORM tap_ok(v_denied, 'unauthenticated collective_your_posts_page raises SQLSTATE 42501 (AC #4)');
+  PERFORM tap_ok(v_denied, 'unauthenticated collective_your_posts_page raises SQLSTATE 42501');
 END $$;
 
 -- ==========================================================================
@@ -74,8 +74,8 @@ BEGIN
   SELECT COUNT(*) INTO v_count_a FROM collective_your_posts_page(NULL, 50);
   SELECT COUNT(*) INTO v_only_a FROM collective_your_posts_page(NULL, 50) WHERE user_id = v_user_a;
 
-  PERFORM tap_ok(v_count_a = 2, 'user A sees exactly their 2 posts (AC #7 own-posts filter)');
-  PERFORM tap_ok(v_count_a = v_only_a, 'every returned row has user_id = auth.uid() (AC #7)');
+  PERFORM tap_ok(v_count_a = 2, 'user A sees exactly their 2 posts');
+  PERFORM tap_ok(v_count_a = v_only_a, 'every returned row has user_id = auth.uid()');
 END $$;
 
 -- ==========================================================================
@@ -93,13 +93,13 @@ BEGIN
   INSERT INTO collective_posts (id, user_id, title, body, is_removed) VALUES (v_removed, v_user, 'Removed', 'removed', TRUE);
 
   SELECT COUNT(*) INTO v_visible FROM collective_your_posts_page(NULL, 50) WHERE id = v_removed;
-  PERFORM tap_ok(v_visible = 0, 'is_removed = TRUE posts are excluded (AC #7)');
+  PERFORM tap_ok(v_visible = 0, 'is_removed = TRUE posts are excluded');
 END $$;
 
 -- ==========================================================================
 -- 4. is_user_deleted = TRUE: included AND body returned verbatim.
 --    Regression sentinel: data layer must NEVER substitute [deleted] for
---    own-posts body. UI redaction belongs in Story 3-14.
+--    own-posts body. UI redaction belongs at a later layer.
 -- ==========================================================================
 DO $$
 DECLARE
@@ -117,10 +117,10 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_id;
 
-  PERFORM tap_ok(v_flag = TRUE, 'is_user_deleted=TRUE post is included with flag intact (AC #7)');
+  PERFORM tap_ok(v_flag = TRUE, 'is_user_deleted=TRUE post is included with flag intact');
   PERFORM tap_ok(
     v_body = 'my-original-body-please-dont-redact',
-    'body is returned verbatim, not redacted to [deleted] (AC #20 sentinel)'
+    'body is returned verbatim, not redacted to [deleted]'
   );
 END $$;
 
@@ -151,7 +151,7 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_a_post;
 
-  PERFORM tap_ok(v_dcount = 1, 'descendant_count counts cross-author replies (AC #7, #20)');
+  PERFORM tap_ok(v_dcount = 1, 'descendant_count counts cross-author replies');
 END $$;
 
 -- ==========================================================================
@@ -191,7 +191,7 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_post;
 
-  PERFORM tap_ok(v_rcount = 3, 'reaction_count aggregates COUNT(*) over collective_reactions (AC #7, #20)');
+  PERFORM tap_ok(v_rcount = 3, 'reaction_count aggregates COUNT(*) over collective_reactions');
 END $$;
 
 -- ==========================================================================
@@ -215,11 +215,11 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE id = v_top;
 
-  PERFORM tap_ok(v_dcount = 2, 'descendant_count walks the recursive CTE (AC #7, #20)');
+  PERFORM tap_ok(v_dcount = 2, 'descendant_count walks the recursive CTE');
 END $$;
 
 -- ==========================================================================
--- 8. tenure_tier is always NULL (FR68 follow-up sentinel).
+-- 8. tenure_tier is always NULL (tenure-tier follow-up sentinel).
 -- ==========================================================================
 DO $$
 DECLARE
@@ -234,7 +234,7 @@ BEGIN
   FROM collective_your_posts_page(NULL, 50)
   WHERE tenure_tier IS NOT NULL;
 
-  PERFORM tap_ok(v_non_null = 0, 'tenure_tier is always NULL in this story (AC #20 sentinel for FR68)');
+  PERFORM tap_ok(v_non_null = 0, 'tenure_tier is always NULL in this story');
 END $$;
 
 -- ==========================================================================
@@ -254,7 +254,7 @@ BEGIN
   SELECT COUNT(*) INTO v_total FROM collective_your_posts_page(NULL, 50);
   SELECT COUNT(*) INTO v_full FROM collective_your_posts_page(NULL, 50) WHERE mode = 'full';
 
-  PERFORM tap_ok(v_total = v_full AND v_total >= 2, 'every row has mode = ''full'' (AC #20)');
+  PERFORM tap_ok(v_total = v_full AND v_total >= 2, 'every row has mode = ''full''');
 END $$;
 
 -- ==========================================================================
@@ -277,12 +277,12 @@ BEGIN
   END LOOP;
 
   SELECT COUNT(*) INTO v_first FROM collective_your_posts_page(NULL, 20);
-  PERFORM tap_ok(v_first = 20, 'first page returns 20 of 25 (AC #7 page_size)');
+  PERFORM tap_ok(v_first = 20, 'first page returns 20 of 25');
 
   -- Cursor = last created_at of the first page.
   SELECT MIN(created_at) INTO v_cursor FROM collective_your_posts_page(NULL, 20);
   SELECT COUNT(*) INTO v_second FROM collective_your_posts_page(v_cursor, 20);
-  PERFORM tap_ok(v_second = 5, 'second page returns the remaining 5 with monotonic cursor (AC #6, #20)');
+  PERFORM tap_ok(v_second = 5, 'second page returns the remaining 5 with monotonic cursor');
 END $$;
 
 -- ==========================================================================
@@ -305,8 +305,8 @@ BEGIN
   SELECT COUNT(*) INTO v_floor FROM collective_your_posts_page(NULL, 0);
   SELECT COUNT(*) INTO v_ceiling FROM collective_your_posts_page(NULL, 999);
 
-  PERFORM tap_ok(v_floor = 1, 'page_size = 0 clamps up to 1 (AC #5)');
-  PERFORM tap_ok(v_ceiling = 50, 'page_size = 999 clamps down to 50 (AC #5)');
+  PERFORM tap_ok(v_floor = 1, 'page_size = 0 clamps up to 1');
+  PERFORM tap_ok(v_ceiling = 50, 'page_size = 999 clamps down to 50');
 END $$;
 
 -- ==========================================================================
@@ -329,7 +329,7 @@ BEGIN
     );
   END IF;
 
-  PERFORM tap_ok(v_has_pin, 'collective_your_posts_page has SET search_path pinned (AC #2, #20)');
+  PERFORM tap_ok(v_has_pin, 'collective_your_posts_page has SET search_path pinned');
 END $$;
 
 SELECT * FROM tap_emit();

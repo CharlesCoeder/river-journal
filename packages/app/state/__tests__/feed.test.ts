@@ -342,7 +342,7 @@ describe('useFeed() useInfiniteQuery config', () => {
       throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
-    expect(src, 'maxPages: 5 (NFR31 100-post bound)').toMatch(/maxPages\s*:\s*5\b/)
+    expect(src, 'maxPages: 5 (100-post bound)').toMatch(/maxPages\s*:\s*5\b/)
     expect(src, 'refetchInterval: 30_000').toMatch(/refetchInterval\s*:\s*30[_]?000\b/)
     expect(src, 'staleTime: 25_000').toMatch(/staleTime\s*:\s*25[_]?000\b/)
     expect(src, 'refetchOnWindowFocus: true').toMatch(/refetchOnWindowFocus\s*:\s*true\b/)
@@ -367,10 +367,10 @@ describe('useFeed() useInfiniteQuery config', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Memory bound — maxPages × PAGE_SIZE = 100 (NFR31)
+// Memory bound — maxPages × PAGE_SIZE = 100
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('memory bound NFR31', () => {
+describe('memory bound', () => {
   it('PAGE_SIZE * 5 === 100 (the documented memory ceiling)', async () => {
     const { PAGE_SIZE } = await importFeed()
     expect(PAGE_SIZE * 5).toBe(100)

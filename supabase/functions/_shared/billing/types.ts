@@ -6,7 +6,7 @@
 // (stripe.ts / apple.ts / google.ts) and the subscription_validate_receipt
 // handler all import, so the edge and each provider stay in lockstep.
 //
-// PCI / NFR13 invariant: `raw_metadata` (persisted to
+// PCI invariant: `raw_metadata` (persisted to
 // subscription_receipts.raw_receipt) holds provider-issued identifiers and
 // metadata only — NEVER card numbers, CVVs, or full PAN data. Provider receipts
 // do not carry these; nothing here ever echoes card data into a response or log.

@@ -3,8 +3,6 @@
 // ALL tests MUST FAIL before implementation of
 // packages/app/features/disclosure/ThreePostureDisclosure.tsx
 //
-// Story 3-6 ACs covered: 9, 10, 11, 12, 13, 16, 24
-//
 // The wrapper is isolated: @my/ui ThreePostureDisclosure primitive is fully mocked.
 
 import React from 'react'
@@ -126,10 +124,10 @@ function makeWrapperProps(
 }
 
 // =============================================================================
-// AC #11: Acknowledgment write in first-time mode
+// Acknowledgment write in first-time mode
 // =============================================================================
 
-describe('AC11 — first-time mode: writes acknowledged_at and calls onClose', () => {
+describe('first-time mode: writes acknowledged_at and calls onClose', () => {
   it('writes a non-empty ISO string to store$.profile.preferences.disclosures.collective_post_v1.acknowledged_at on acknowledge', () => {
     const onClose = vi.fn()
     render(
@@ -190,10 +188,10 @@ describe('AC11 — first-time mode: writes acknowledged_at and calls onClose', (
 })
 
 // =============================================================================
-// AC #12: Review mode — no write, onClose only
+// Review mode — no write, onClose only
 // =============================================================================
 
-describe('AC12 — review mode: no acknowledgment write, calls onClose', () => {
+describe('review mode: no acknowledgment write, calls onClose', () => {
   it('does NOT write acknowledged_at when review close button is pressed', () => {
     // Seed a pre-existing acknowledged_at so we can check it is unchanged
     const seedTimestamp = '2026-01-01T00:00:00.000Z'
@@ -229,10 +227,10 @@ describe('AC12 — review mode: no acknowledgment write, calls onClose', () => {
 })
 
 // =============================================================================
-// AC #16: Wrapper passes primitive the correct props shape
+// Wrapper passes primitive the correct props shape
 // =============================================================================
 
-describe('AC16 — wrapper-to-primitive prop forwarding', () => {
+describe('wrapper-to-primitive prop forwarding', () => {
   it('passes boundary, mode, and open to the primitive', () => {
     render(
       React.createElement(
@@ -252,10 +250,10 @@ describe('AC16 — wrapper-to-primitive prop forwarding', () => {
 })
 
 // =============================================================================
-// AC #9 / #10: Wrapper API surface — component renders without crashing
+// Wrapper API surface — component renders without crashing
 // =============================================================================
 
-describe('AC9/AC10 — wrapper component exists and renders', () => {
+describe('wrapper component exists and renders', () => {
   it('renders without crashing with required props', () => {
     expect(() =>
       render(React.createElement(ThreePostureDisclosure, makeWrapperProps()))

@@ -119,7 +119,7 @@ function BoundaryADialog({
   //
   // On RN, setAccessibilityFocus() via AccessibilityInfo is deferred — this story's
   // primary surface is web (PostComposer is web-first per Epic 3 D6/D14). The RN focus
-  // path will be added in Story 3.9 or a follow-up when the native composer ships.
+  // path will be added in a follow-up when the native composer ships.
   useEffect(() => {
     if (open && typeof document !== 'undefined') {
       requestAnimationFrame(() => {

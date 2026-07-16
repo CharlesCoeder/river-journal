@@ -427,7 +427,7 @@ describe('source-grep guardrails', () => {
     expect(src).not.toMatch(/@legendapp\/state/)
   })
 
-  it('does NOT contain a console.* call with "note" in the same expression (NFR19)', () => {
+  it('does NOT contain a console.* call with "note" in the same expression', () => {
     expect(existsSync(DIALOG_PATH)).toBe(true)
     const src = readFileSync(DIALOG_PATH, 'utf8')
     expect(src).not.toMatch(/console\.(log|warn|error)\([^)]*note/i)

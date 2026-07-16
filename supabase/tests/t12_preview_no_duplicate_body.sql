@@ -1,7 +1,7 @@
 -- t12: The preview branch of collective_feed_page MUST NOT leak a full body.
 --
 -- History: this test originally guarded a UNION-overlap full-body leak in the
--- pre-3-15 feed preview (1 full row + 3 teasers). Story 3-15 (20260622000000)
+-- pre-3-15 feed preview (1 full row + 3 teasers). Migration 20260622000000
 -- rewrote the feed to DROP full `body` and emit only a server-truncated
 -- `excerpt` in both modes, so the UNION and its overlap guard are gone. This
 -- test is retained and repurposed as the feed-level "no full body in preview"
@@ -32,7 +32,7 @@ BEGIN
   PERFORM test_become(v_poster);
 
   -- Insert with controlled timestamps: P1 newest, P4 oldest. Every top-level
-  -- post needs a non-blank title (collective_posts_title_chk, Story 3-15).
+  -- post needs a non-blank title (collective_posts_title_chk).
   INSERT INTO collective_posts (id, user_id, title, body, created_at)
   VALUES
     (v_p4, v_poster, 'Title four', 'BODY-FOUR-FULL-LENGTH-CONTENT-THAT-WOULD-TRUNCATE.', NOW() - INTERVAL '4 minutes'),
