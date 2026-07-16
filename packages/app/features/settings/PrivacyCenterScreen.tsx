@@ -6,6 +6,7 @@ import { store$ } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
 import { ExportJournal } from './components/ExportJournal'
 import { ExportCollectivePosts } from './components/ExportCollectivePosts'
+import { BackupRestore } from './components/BackupRestore'
 import { DeleteAccountFlow } from './components/DeleteAccountFlow'
 import { ThreePostureDisclosure } from 'app/features/disclosure/ThreePostureDisclosure'
 
@@ -214,7 +215,7 @@ const STAGGER_MS = 100
 // Every section below is gated on `visibleCount >= n`; keep this equal to the
 // number of staggered sections so the last one actually reveals (a too-low
 // count would silently hide a section forever).
-const SECTION_COUNT = 5
+const SECTION_COUNT = 6
 
 export function PrivacyCenterScreen() {
   const router = useRouter()
@@ -487,6 +488,24 @@ export function PrivacyCenterScreen() {
                   <ExportJournal />
                   {isAuthenticated && <ExportCollectivePosts />}
                 </YStack>
+              </YStack>
+            )}
+
+            {/* 6. Encrypted Backup — export/restore a passphrase-encrypted copy
+                of the whole journal. Fully local; available to every user
+                (including anonymous/local-only), so its entry points are never
+                auth-gated. */}
+            {visibleCount >= 6 && (
+              <YStack
+                key="encrypted-backup"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
+                <SectionHeader>Encrypted Backup</SectionHeader>
+                <BackupRestore />
               </YStack>
             )}
           </AnimatePresence>

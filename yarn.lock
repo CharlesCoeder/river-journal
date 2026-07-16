@@ -14978,6 +14978,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-document-picker@npm:~14.0.8":
+  version: 14.0.8
+  resolution: "expo-document-picker@npm:14.0.8"
+  peerDependencies:
+    expo: "*"
+  checksum: 10/6bc2a41a87c840ac13d9bc872f5838e396b90eaeeeddcee19e88ca62614ec57c3517ab1f5725d4efc43470760e9c6b7035e7d35d6c600d246771a0cee93a45b1
+  languageName: node
+  linkType: hard
+
 "expo-eas-client@npm:~1.0.8":
   version: 1.0.8
   resolution: "expo-eas-client@npm:1.0.8"
@@ -18752,6 +18761,7 @@ __metadata:
     expo-crypto: "npm:~15.0.0"
     expo-dev-client: "npm:~6.0.20"
     expo-device: "npm:~8.0.10"
+    expo-document-picker: "npm:~14.0.8"
     expo-file-system: "npm:~19.0.21"
     expo-font: "npm:~14.0.10"
     expo-linear-gradient: "npm:~15.0.0"

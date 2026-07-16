@@ -46,6 +46,7 @@
           "faceIDPermission": "Use Face ID to unlock your journal with App Lock."
         }
       ],
+      "expo-document-picker",
       "@sentry/react-native/expo"
     ],
     "experiments": {
