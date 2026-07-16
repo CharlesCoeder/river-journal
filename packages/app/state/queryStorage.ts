@@ -50,7 +50,10 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+function tx<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T>
+): Promise<T> {
   return new Promise((resolve, reject) => {
     openDb()
       .then((db) => {

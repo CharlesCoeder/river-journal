@@ -28,7 +28,10 @@ export function SuspensionStatusSection({ userId }: { userId: string | null }) {
   const reason =
     suspension.reason != null && suspension.reason.trim() !== '' ? suspension.reason : null
   return (
-    <YStack testID="settings-suspension-status" gap="$3">
+    <YStack
+      testID="settings-suspension-status"
+      gap="$3"
+    >
       <Text
         fontFamily="$body"
         fontSize={11}
@@ -38,12 +41,22 @@ export function SuspensionStatusSection({ userId }: { userId: string | null }) {
       >
         Account Status
       </Text>
-      <Text fontFamily="$body" fontSize={14} color="$color" lineHeight={22}>
+      <Text
+        fontFamily="$body"
+        fontSize={14}
+        color="$color"
+        lineHeight={22}
+      >
         Your ability to post and react is paused until {humanDate(suspension.ends_at)}. You can
         still write and read.
       </Text>
       {reason ? (
-        <Text testID="settings-suspension-reason" fontFamily="$body" fontSize={13} color="$color8">
+        <Text
+          testID="settings-suspension-reason"
+          fontFamily="$body"
+          fontSize={13}
+          color="$color8"
+        >
           Reason: {reason}
         </Text>
       ) : null}

@@ -71,7 +71,9 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
   }
 
   async function handlePress(
-    e: { preventDefault?: () => void; metaKey?: boolean; ctrlKey?: boolean; button?: number } | undefined,
+    e:
+      | { preventDefault?: () => void; metaKey?: boolean; ctrlKey?: boolean; button?: number }
+      | undefined,
     item: (typeof WORD_LINK_ITEMS)[number]
   ) {
     // Suppress modifier clicks — let browser handle "open in new tab" natively
@@ -119,15 +121,17 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
       role="navigation"
       marginBottom={variant === 'browse' ? '$8' : 0}
     >
-      <XStack gap="$4" flexWrap="wrap" rowGap="$2">
+      <XStack
+        gap="$4"
+        flexWrap="wrap"
+        rowGap="$2"
+      >
         {WORD_LINK_ITEMS.map((item) => {
           const active = isActive(item)
 
           // Resolve visible label (separate from const label for auth items)
           const resolvedLabel: string =
-            item.key === 'log-in-out'
-              ? (isAuthenticated ? 'Log out' : 'Log in')
-              : item.label
+            item.key === 'log-in-out' ? (isAuthenticated ? 'Log out' : 'Log in') : item.label
 
           const color = active ? '$color' : '$color8'
 

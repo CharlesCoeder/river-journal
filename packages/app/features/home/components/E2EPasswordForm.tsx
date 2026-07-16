@@ -48,11 +48,21 @@ export function E2EPasswordForm({
           {title}
         </Text>
         <YStack gap="$1">
-          <Text fontFamily="$body" fontSize={14} color="$color8" lineHeight={22}>
+          <Text
+            fontFamily="$body"
+            fontSize={14}
+            color="$color8"
+            lineHeight={22}
+          >
             {description}
           </Text>
           {descriptionWarning && (
-            <Text fontFamily="$body" fontSize={14} color="$color" lineHeight={22}>
+            <Text
+              fontFamily="$body"
+              fontSize={14}
+              color="$color"
+              lineHeight={22}
+            >
               {descriptionWarning}
             </Text>
           )}
@@ -60,7 +70,10 @@ export function E2EPasswordForm({
       </YStack>
 
       {/* Input fields */}
-      <YStack gap="$6" maxWidth={384}>
+      <YStack
+        gap="$6"
+        maxWidth={384}
+      >
         <YStack gap="$2">
           <Text
             fontFamily="$body"
@@ -132,7 +145,11 @@ export function E2EPasswordForm({
         )}
 
         {errorMessage && (
-          <Text fontFamily="$body" fontSize={12} color="$red10">
+          <Text
+            fontFamily="$body"
+            fontSize={12}
+            color="$red10"
+          >
             {errorMessage}
           </Text>
         )}
@@ -158,8 +175,16 @@ export function E2EPasswordForm({
 
       {/* Hidden elements to preserve testIDs for integration tests */}
       <XStack display="none">
-        <Text testID="e2e-password-cancel" onPress={onCancel} />
-        {showBackButton && <Text testID="e2e-password-back" onPress={onBack} />}
+        <Text
+          testID="e2e-password-cancel"
+          onPress={onCancel}
+        />
+        {showBackButton && (
+          <Text
+            testID="e2e-password-back"
+            onPress={onBack}
+          />
+        )}
       </XStack>
     </YStack>
   )

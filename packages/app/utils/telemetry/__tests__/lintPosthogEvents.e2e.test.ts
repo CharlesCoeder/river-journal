@@ -90,7 +90,7 @@ describe('scripts/lint-posthog-events.mjs — unknown-event failure is explicit'
 })
 
 describe('scripts/lint-posthog-events.mjs — an unpermitted prop key for a known event also fails', () => {
-  it('fails when a captureEvent call passes a prop key not in that event\'s allowed props', () => {
+  it("fails when a captureEvent call passes a prop key not in that event's allowed props", () => {
     const fixturePath = plantFixture(
       'unpermittedProp.fixture.ts',
       `import { captureEvent } from '../../posthog'\n\ncaptureEvent('flow_started', { user_id: 'u1', tier: 'free', notAnAllowedProp: 'x' })\n`
@@ -121,10 +121,7 @@ describe('scripts/lint-posthog-events.mjs — content-key denylist reused from c
 
     const original = readFileSync(ALLOWLIST_PATH, 'utf-8')
     try {
-      const mutated = original.replace(
-        /(flow_started\s*:\s*\{[^}]*?props\s*:\s*\[)/,
-        `$1'note', `
-      )
+      const mutated = original.replace(/(flow_started\s*:\s*\{[^}]*?props\s*:\s*\[)/, `$1'note', `)
       expect(
         mutated,
         'expected to locate a flow_started allowlist entry to mutate for this test'

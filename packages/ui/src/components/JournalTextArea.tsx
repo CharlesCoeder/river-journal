@@ -128,7 +128,10 @@ export const JournalTextArea = forwardRef<any, JournalTextAreaProps>(
     }, [isTextAreaFocused])
 
     return (
-      <YStack flex={1} paddingBottom={keyboardHeight + keyboardPadding}>
+      <YStack
+        flex={1}
+        paddingBottom={keyboardHeight + keyboardPadding}
+      >
         <StyledJournalArea
           {...textAreaProps}
           ref={(textArea) => {

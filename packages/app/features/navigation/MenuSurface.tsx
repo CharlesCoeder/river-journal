@@ -128,22 +128,19 @@ export function MenuSurface() {
       {MENU_ITEMS.map((item, index) => {
         const isVisible = index <= revealedIndex
         const isAuthItem = item.route === '/auth'
-        const label = isAuthItem
-          ? isAuthenticated
-            ? 'Log out'
-            : 'Log in'
-          : item.label
-        const Icon = isAuthItem
-          ? isAuthenticated
-            ? LogOut
-            : LogIn
-          : item.icon
+        const label = isAuthItem ? (isAuthenticated ? 'Log out' : 'Log in') : item.label
+        const Icon = isAuthItem ? (isAuthenticated ? LogOut : LogIn) : item.icon
 
         return (
           <MenuRow
             key={item.key}
             label={label}
-            icon={<Icon size={20} color="$color9" />}
+            icon={
+              <Icon
+                size={20}
+                color="$color9"
+              />
+            }
             isVisible={isVisible}
             reduceMotion={reduceMotion}
             onPress={() => handlePress(item.route, isAuthenticated)}

@@ -124,7 +124,7 @@ describe('PostRow a11y label', () => {
 })
 
 describe('PostRow canBlock computation (passed through to FlagAffordance)', () => {
-  it('is false for the viewer\'s own post', () => {
+  it("is false for the viewer's own post", () => {
     render(
       React.createElement(PostRow, {
         post: buildPost({ user_id: 'user-abcdef12' }),

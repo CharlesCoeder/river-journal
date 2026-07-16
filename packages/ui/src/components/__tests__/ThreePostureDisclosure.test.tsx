@@ -32,7 +32,13 @@ vi.mock('../../hooks/useReducedMotion', () => ({
 vi.mock('tamagui', () => {
   const ReactModule = require('react')
 
-  const Dialog = ({ children, open, onOpenChange, dismissOnOverlayPress, disableEscapeKey }: any) => {
+  const Dialog = ({
+    children,
+    open,
+    onOpenChange,
+    dismissOnOverlayPress,
+    disableEscapeKey,
+  }: any) => {
     if (!open) return null
     return ReactModule.createElement(
       'div',
@@ -56,7 +62,8 @@ vi.mock('tamagui', () => {
     )
   }
 
-  Dialog.Portal = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Portal = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
 
   Dialog.Overlay = ({ onPress, ...rest }: any) =>
     ReactModule.createElement('div', {
@@ -145,9 +152,7 @@ vi.mock('../ExpandingLineButton', () => {
 // ─── Import under test ───────────────────────────────────────────────────────
 // This import WILL FAIL (module doesn't exist yet) until the primitive is implemented.
 // That failure IS the red-phase signal.
-import {
-  ThreePostureDisclosure,
-} from '../ThreePostureDisclosure'
+import { ThreePostureDisclosure } from '../ThreePostureDisclosure'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared props factory
@@ -260,7 +265,9 @@ describe('AC4 / AC12 — mode=review', () => {
 
   it('calls onRequestClose when the close button is pressed in review mode', () => {
     const onRequestClose = vi.fn()
-    render(React.createElement(ThreePostureDisclosure, makeProps({ mode: 'review', onRequestClose })))
+    render(
+      React.createElement(ThreePostureDisclosure, makeProps({ mode: 'review', onRequestClose }))
+    )
     const btn = screen.getByRole('button', { name: /close/i })
     fireEvent.click(btn)
     expect(onRequestClose).toHaveBeenCalledOnce()
@@ -308,10 +315,7 @@ describe('AC4 — tap-outside-dismiss behavior', () => {
   it('review mode: clicking dialog overlay DOES call onRequestClose', () => {
     const onRequestClose = vi.fn()
     render(
-      React.createElement(
-        ThreePostureDisclosure,
-        makeProps({ mode: 'review', onRequestClose })
-      )
+      React.createElement(ThreePostureDisclosure, makeProps({ mode: 'review', onRequestClose }))
     )
     // The Dialog root element should have dismissOnOverlayPress=true in review
     const dialog = screen.getByRole('dialog')

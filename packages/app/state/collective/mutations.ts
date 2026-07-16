@@ -233,10 +233,7 @@ queryClient.setMutationDefaults(['collective', 'react'], {
       // The caller passes the existing reaction's UUID as vars.id.
       // Deleting by PK avoids chaining multiple .eq() filters while
       // still being precise about which row to remove.
-      const { error } = await supabase
-        .from('collective_reactions')
-        .delete()
-        .eq('id', vars.id)
+      const { error } = await supabase.from('collective_reactions').delete().eq('id', vars.id)
       if (error) throw error
     }
   },
@@ -260,10 +257,7 @@ queryClient.setMutationDefaults(['collective', 'react'], {
       const optimistic: ReactionsCache = {
         counts: {
           ...reactionsSnapshot.counts,
-          [vars.kind]:
-            vars.toggle === 'add'
-              ? prevCount + 1
-              : Math.max(0, prevCount - 1),
+          [vars.kind]: vars.toggle === 'add' ? prevCount + 1 : Math.max(0, prevCount - 1),
         },
         userReactions: {
           ...reactionsSnapshot.userReactions,
@@ -395,9 +389,9 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     if (feedSnapshot) {
       queryClient.setQueryData<InfiniteData<FeedPage>>(collectiveFeedKey, {
         ...feedSnapshot,
-        pages: feedSnapshot.pages.map(page => ({
+        pages: feedSnapshot.pages.map((page) => ({
           ...page,
-          items: page.items.map(item =>
+          items: page.items.map((item) =>
             item.id === vars.post_id
               ? { ...item, is_user_deleted: true, user_deleted_at: deletedAt }
               : item
@@ -407,29 +401,26 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     }
 
     if (threadSnapshot) {
-      queryClient.setQueryData<InfiniteData<ThreadPageResult>>(
-        collectiveThreadKey(vars.post_id),
-        {
-          ...threadSnapshot,
-          pages: threadSnapshot.pages.map(page => ({
-            ...page,
-            items: page.items.map(item =>
-              item.id === vars.post_id
-                ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
-                : item
-            ),
-          })),
-        }
-      )
+      queryClient.setQueryData<InfiniteData<ThreadPageResult>>(collectiveThreadKey(vars.post_id), {
+        ...threadSnapshot,
+        pages: threadSnapshot.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item) =>
+            item.id === vars.post_id
+              ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
+              : item
+          ),
+        })),
+      })
     }
 
     for (const [key, snapshot] of yourPostsSnapshots) {
       if (!snapshot) continue
       queryClient.setQueryData<InfiniteData<YourPostsPage>>(key, {
         ...snapshot,
-        pages: snapshot.pages.map(page => ({
+        pages: snapshot.pages.map((page) => ({
           ...page,
-          items: page.items.map(item =>
+          items: page.items.map((item) =>
             item.id === vars.post_id
               ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
               : item
@@ -441,11 +432,7 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     return { feedSnapshot, threadSnapshot, yourPostsSnapshots }
   },
 
-  onError: (
-    _err: unknown,
-    vars: DeleteOwnPostVars,
-    ctx: DeleteOwnContext | undefined
-  ) => {
+  onError: (_err: unknown, vars: DeleteOwnPostVars, ctx: DeleteOwnContext | undefined) => {
     // Restore every snapshot that was non-undefined — never call setQueryData
     // with undefined (would clobber a fresher cache that arrived between
     // onMutate and onError). Mirrors the empty-cache safety pattern.

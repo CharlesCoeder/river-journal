@@ -185,11 +185,18 @@ describe('renderCollectivePostsMarkdown', () => {
 
   it('reflects different totals in the header for different inputs (not a static/hardcoded header)', async () => {
     const { renderCollectivePostsMarkdown } = await import('../exportCollectivePosts')
-    const oneRow = [makeRow({ id: 'top-1', parent_post_id: null, created_at: '2026-07-10T12:00:00.000Z' })]
+    const oneRow = [
+      makeRow({ id: 'top-1', parent_post_id: null, created_at: '2026-07-10T12:00:00.000Z' }),
+    ]
     const threeRows = [
       makeRow({ id: 'top-1', parent_post_id: null, created_at: '2026-07-10T12:00:00.000Z' }),
       makeRow({ id: 'top-2', parent_post_id: null, created_at: '2026-07-09T12:00:00.000Z' }),
-      makeRow({ id: 'reply-1', parent_post_id: 'top-1', title: null, created_at: '2026-07-08T12:00:00.000Z' }),
+      makeRow({
+        id: 'reply-1',
+        parent_post_id: 'top-1',
+        title: null,
+        created_at: '2026-07-08T12:00:00.000Z',
+      }),
     ]
     const mdOne = renderCollectivePostsMarkdown(oneRow, { exportedAt: '2026-07-15' })
     const mdThree = renderCollectivePostsMarkdown(threeRows, { exportedAt: '2026-07-15' })

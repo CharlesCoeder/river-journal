@@ -21,7 +21,15 @@
 
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import type { ComponentType } from 'react'
 
 // ---------------------------------------------------------------------------
@@ -29,10 +37,12 @@ import type { ComponentType } from 'react'
 // ---------------------------------------------------------------------------
 import { WordLinkNav as _WordLinkNav, WORD_LINK_ITEMS as _WORD_LINK_ITEMS } from '../WordLinkNav'
 
-const WordLinkNav = _WordLinkNav as ComponentType<{
-  variant: 'home' | 'browse'
-  currentRoute?: string
-}> | undefined
+const WordLinkNav = _WordLinkNav as
+  | ComponentType<{
+      variant: 'home' | 'browse'
+      currentRoute?: string
+    }>
+  | undefined
 
 const WORD_LINK_ITEMS = _WORD_LINK_ITEMS as
   | ReadonlyArray<{ key: string; label: string; route: string }>
@@ -296,7 +306,9 @@ describe('modifier clicks do NOT call preventDefault — let browser handle (AC 
     const mockPreventDefault = vi.fn()
     fireEvent.click(link, { metaKey: true, preventDefault: mockPreventDefault })
     // Give any async navigation a chance to fire
-    await act(async () => { await Promise.resolve() })
+    await act(async () => {
+      await Promise.resolve()
+    })
     expect(__pushSpy).not.toHaveBeenCalled()
     expect(mockPreventDefault).not.toHaveBeenCalled()
   })
@@ -306,7 +318,9 @@ describe('modifier clicks do NOT call preventDefault — let browser handle (AC 
     const link = screen.getByText(/past entries/i)
     const mockPreventDefault = vi.fn()
     fireEvent.click(link, { ctrlKey: true, preventDefault: mockPreventDefault })
-    await act(async () => { await Promise.resolve() })
+    await act(async () => {
+      await Promise.resolve()
+    })
     expect(__pushSpy).not.toHaveBeenCalled()
     expect(mockPreventDefault).not.toHaveBeenCalled()
   })
@@ -315,7 +329,9 @@ describe('modifier clicks do NOT call preventDefault — let browser handle (AC 
     renderNav('home')
     const link = screen.getByText(/past entries/i)
     fireEvent.click(link, { button: 1 })
-    await act(async () => { await Promise.resolve() })
+    await act(async () => {
+      await Promise.resolve()
+    })
     expect(__pushSpy).not.toHaveBeenCalled()
   })
 })
@@ -406,7 +422,9 @@ describe('press-flood guard: second tap within ~400ms is ignored (AC 12)', () =>
     const link = screen.getByText(/past entries/i)
     fireEvent.click(link)
     fireEvent.click(link)
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -414,7 +432,9 @@ describe('press-flood guard: second tap within ~400ms is ignored (AC 12)', () =>
     renderNav('home')
     fireEvent.click(screen.getByText(/past entries/i))
     fireEvent.click(screen.getByText(/collective/i))
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -422,9 +442,13 @@ describe('press-flood guard: second tap within ~400ms is ignored (AC 12)', () =>
     renderNav('home')
     const link = screen.getByText(/past entries/i)
     fireEvent.click(link)
-    await act(async () => { vi.advanceTimersByTime(400) })
+    await act(async () => {
+      vi.advanceTimersByTime(400)
+    })
     fireEvent.click(link)
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(2)
   })
 })
@@ -441,9 +465,7 @@ describe('container has <nav> element with aria-label="Primary navigation" (AC 1
 
   it('nav has aria-label or accessibilityLabel of "Primary navigation"', () => {
     renderNav('home')
-    expect(
-      screen.getByRole('navigation', { name: /primary navigation/i })
-    ).toBeTruthy()
+    expect(screen.getByRole('navigation', { name: /primary navigation/i })).toBeTruthy()
   })
 })
 

@@ -18,13 +18,12 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onChangeText, disabled, fontStyle, backgroundColor, ...rest } = props as any
+    const { testID, onPress, onChangeText, disabled, fontStyle, backgroundColor, ...rest } =
+      props as any
     return {
       ...(testID ? { 'data-testid': testID } : {}),
       ...(onPress ? { onClick: onPress } : {}),
-      ...(onChangeText
-        ? { onChange: (e: any) => onChangeText(e.target.value) }
-        : {}),
+      ...(onChangeText ? { onChange: (e: any) => onChangeText(e.target.value) } : {}),
       ...(disabled ? { disabled } : {}),
       ...(fontStyle ? { 'data-font-style': fontStyle } : {}),
       ...(backgroundColor ? { 'data-background-color': backgroundColor } : {}),

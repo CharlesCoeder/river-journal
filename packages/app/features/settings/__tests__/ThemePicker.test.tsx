@@ -75,7 +75,14 @@ vi.mock('app/state/types', () => ({
 // the partial store$ mock above). Tests in this file don't exercise unlock-token
 // behavior — that surface is covered by ThemePicker.unlock.test.tsx.
 vi.mock('app/state/streak', () => ({
-  useUnlockedThemes: () => ['ink', 'night', 'forest-morning', 'forest-night', 'leather', 'fireside'],
+  useUnlockedThemes: () => [
+    'ink',
+    'night',
+    'forest-morning',
+    'forest-night',
+    'leather',
+    'fireside',
+  ],
   getThemePickerTier: () => 'free',
 }))
 

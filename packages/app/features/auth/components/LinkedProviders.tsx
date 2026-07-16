@@ -17,7 +17,11 @@ import { AddPasswordForm } from './AddPasswordForm'
 
 function GoogleLogo({ size = 16 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+    >
       <Path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
         fill="#4285F4"
@@ -60,13 +64,26 @@ function ProviderRow({
         alignItems="center"
         justifyContent="space-between"
       >
-        <XStack gap="$3" alignItems="center" flex={1}>
+        <XStack
+          gap="$3"
+          alignItems="center"
+          flex={1}
+        >
           {icon}
           <YStack gap="$1">
-            <Text fontSize="$5" fontFamily="$body" fontWeight={isConnected ? '600' : '400'} color={isConnected ? '$color' : '$color9'}>
+            <Text
+              fontSize="$5"
+              fontFamily="$body"
+              fontWeight={isConnected ? '600' : '400'}
+              color={isConnected ? '$color' : '$color9'}
+            >
               {label}
             </Text>
-            <Text fontSize="$2" fontFamily="$body" color="$color8">
+            <Text
+              fontSize="$2"
+              fontFamily="$body"
+              color="$color8"
+            >
               {status}
             </Text>
           </YStack>
@@ -102,15 +119,8 @@ function ProviderRow({
 }
 
 export function LinkedProviders() {
-  const {
-    hasPassword,
-    isGoogleLinked,
-    isLoading,
-    isLinkingGoogle,
-    error,
-    linkGoogle,
-    refresh,
-  } = useIdentityLinking()
+  const { hasPassword, isGoogleLinked, isLoading, isLinkingGoogle, error, linkGoogle, refresh } =
+    useIdentityLinking()
 
   const [showPasswordForm, setShowPasswordForm] = useState(false)
 
@@ -130,7 +140,10 @@ export function LinkedProviders() {
   }
 
   return (
-    <YStack gap="$3" width="100%">
+    <YStack
+      gap="$3"
+      width="100%"
+    >
       <Text
         fontSize="$2"
         fontFamily="$body"
@@ -142,7 +155,12 @@ export function LinkedProviders() {
       </Text>
 
       <ProviderRow
-        icon={<Mail size={16} color={isLoading ? '$color8' : hasPassword ? '$color' : '$color8'} />}
+        icon={
+          <Mail
+            size={16}
+            color={isLoading ? '$color8' : hasPassword ? '$color' : '$color8'}
+          />
+        }
         label="Email / Password"
         status={isLoading ? 'Checking…' : hasPassword ? 'Password is set' : 'No password set'}
         isConnected={!isLoading && hasPassword}
@@ -155,12 +173,26 @@ export function LinkedProviders() {
         label="Google"
         status={isLoading ? 'Checking…' : isGoogleLinked ? 'Account linked' : 'Not connected'}
         isConnected={!isLoading && isGoogleLinked}
-        actionLabel={isLoading ? undefined : isLinkingGoogle ? 'Connecting…' : isGoogleLinked ? undefined : 'Connect'}
-        onAction={isLoading || isLinkingGoogle ? undefined : isGoogleLinked ? undefined : linkGoogle}
+        actionLabel={
+          isLoading
+            ? undefined
+            : isLinkingGoogle
+              ? 'Connecting…'
+              : isGoogleLinked
+                ? undefined
+                : 'Connect'
+        }
+        onAction={
+          isLoading || isLinkingGoogle ? undefined : isGoogleLinked ? undefined : linkGoogle
+        }
       />
 
       {error && (
-        <Text fontSize="$2" color="$red10" fontFamily="$body">
+        <Text
+          fontSize="$2"
+          color="$red10"
+          fontFamily="$body"
+        >
           {error}
         </Text>
       )}

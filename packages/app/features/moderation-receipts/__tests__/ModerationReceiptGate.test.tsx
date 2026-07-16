@@ -54,7 +54,8 @@ const acknowledgeReceiptMock = vi.fn()
 vi.mock('../acknowledgment', () => ({
   hasAcknowledgedReceipt: (id: string) => hasAcknowledgedReceiptMock(id),
   acknowledgeReceipt: (id: string, now?: string) => acknowledgeReceiptMock(id, now),
-  removedPostReceiptId: (postId: string, removedAt: string) => `removed_post:${postId}:${removedAt}`,
+  removedPostReceiptId: (postId: string, removedAt: string) =>
+    `removed_post:${postId}:${removedAt}`,
   suspensionReceiptId: (id: string) => `suspension:${id}`,
 }))
 
@@ -65,7 +66,11 @@ vi.mock('../ModerationReceiptDialog', () => ({
     dialogPropsLog.push(props)
     return React.createElement(
       'div',
-      { 'data-testid': 'receipt-dialog', 'data-receipt-kind': props.receipt?.kind, 'data-receipt-id': props.receipt?.id },
+      {
+        'data-testid': 'receipt-dialog',
+        'data-receipt-kind': props.receipt?.kind,
+        'data-receipt-id': props.receipt?.id,
+      },
       React.createElement(
         'button',
         { onClick: props.onAcknowledge, 'data-testid': 'dialog-dismiss' },
@@ -296,11 +301,15 @@ describe('onAcknowledge — writes via the shared receiptId builders and advance
     })
 
     const { rerender } = render(<ModerationReceiptGate />)
-    expect(screen.getByTestId('receipt-dialog').getAttribute('data-receipt-kind')).toBe('suspension')
+    expect(screen.getByTestId('receipt-dialog').getAttribute('data-receipt-kind')).toBe(
+      'suspension'
+    )
 
     fireEvent.click(screen.getByTestId('dialog-dismiss'))
     rerender(<ModerationReceiptGate />)
 
-    expect(screen.getByTestId('receipt-dialog').getAttribute('data-receipt-kind')).toBe('removed_post')
+    expect(screen.getByTestId('receipt-dialog').getAttribute('data-receipt-kind')).toBe(
+      'removed_post'
+    )
   })
 })

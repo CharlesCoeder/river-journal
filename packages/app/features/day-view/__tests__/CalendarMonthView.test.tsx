@@ -9,29 +9,26 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 // ─────────────────────────────────────────────────────────────────────────────
 // vi.hoisted() — spies and mutable state for mock factories
 // ─────────────────────────────────────────────────────────────────────────────
-const {
-  pushSpy,
-  mockEntriesThisMonth,
-  mockTodayString,
-  mockEntriesByMonthObservable,
-} = vi.hoisted(() => {
-  // Mutable state boxes — factories close over these so mutations are live per-test.
-  const mockEntriesThisMonth = { value: [] as any[] }
-  const mockTodayString = { value: '2026-04-15' }
+const { pushSpy, mockEntriesThisMonth, mockTodayString, mockEntriesByMonthObservable } = vi.hoisted(
+  () => {
+    // Mutable state boxes — factories close over these so mutations are live per-test.
+    const mockEntriesThisMonth = { value: [] as any[] }
+    const mockTodayString = { value: '2026-04-15' }
 
-  // Stable observable identity — use$ mock checks reference equality.
-  const mockEntriesByMonthObservable = {
-    get: () => mockEntriesThisMonth.value,
-    peek: () => mockEntriesThisMonth.value,
-  }
+    // Stable observable identity — use$ mock checks reference equality.
+    const mockEntriesByMonthObservable = {
+      get: () => mockEntriesThisMonth.value,
+      peek: () => mockEntriesThisMonth.value,
+    }
 
-  return {
-    pushSpy: vi.fn(),
-    mockEntriesThisMonth,
-    mockTodayString,
-    mockEntriesByMonthObservable,
+    return {
+      pushSpy: vi.fn(),
+      mockEntriesThisMonth,
+      mockTodayString,
+      mockEntriesByMonthObservable,
+    }
   }
-})
+)
 
 // ─── @tamagui/lucide-icons ───────────────────────────────────────────────────
 vi.mock('@tamagui/lucide-icons', () => ({
@@ -71,7 +68,14 @@ vi.mock('@my/ui', async () => {
     return Component
   }
 
-  const Button = ({ children, onPress, disabled, 'aria-label': ariaLabel, testID, ...props }: any) =>
+  const Button = ({
+    children,
+    onPress,
+    disabled,
+    'aria-label': ariaLabel,
+    testID,
+    ...props
+  }: any) =>
     ReactModule.createElement(
       'button',
       {
@@ -89,12 +93,17 @@ vi.mock('@my/ui', async () => {
     )
 
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     YStack: passthrough('div'),
     XStack: passthrough('div'),
     View: passthrough('div'),
     Text: ({ children, 'aria-live': ariaLive, ...props }: any) =>
-      ReactModule.createElement('span', { ...mapProps({ 'aria-live': ariaLive, ...props }), 'aria-live': ariaLive }, children),
+      ReactModule.createElement(
+        'span',
+        { ...mapProps({ 'aria-live': ariaLive, ...props }), 'aria-live': ariaLive },
+        children
+      ),
     Button,
     ScrollView: passthrough('div'),
     ExpandingLineButton,
@@ -498,7 +507,7 @@ describe('Open reader closes automatically when navigating to a different month'
 // ─────────────────────────────────────────────────────────────────────────────
 // Today's cell has a border ring (AC 12, 24)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Today\'s date cell is visually distinguished with a border ring', () => {
+describe("Today's date cell is visually distinguished with a border ring", () => {
   it('the today cell has a data-today="true" attribute or borderWidth style', () => {
     mockTodayString.value = '2026-04-15'
     mockEntriesThisMonth.value = []

@@ -54,68 +54,86 @@ export function YourPostRow({ post }: YourPostRowProps) {
       cursor="pointer"
       data-testid="pressable-wrapper"
     >
-        <XStack justifyContent="space-between" alignItems="center">
-          {/* Wrap AuthorByline in View for flexShrink — AuthorBylineProps does not extend ViewProps
+      <XStack
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        {/* Wrap AuthorByline in View for flexShrink — AuthorBylineProps does not extend ViewProps
               and does not accept flexShrink directly (AC #8). */}
-          <View flexShrink={1}>
-            <AuthorByline
-              displayName={displayName}
-              postedAt={post.created_at}
-              tenureTier={post.tenure_tier ?? undefined}
-              deletedDisplay={post.is_user_deleted}
-            />
-          </View>
-          {/* NO FlagAffordance — AC #14: this is a record view, not an action surface */}
-        </XStack>
+        <View flexShrink={1}>
+          <AuthorByline
+            displayName={displayName}
+            postedAt={post.created_at}
+            tenureTier={post.tenure_tier ?? undefined}
+            deletedDisplay={post.is_user_deleted}
+          />
+        </View>
+        {/* NO FlagAffordance — AC #14: this is a record view, not an action surface */}
+      </XStack>
 
-        {/* Body area: match on is_user_deleted flag, NOT body string (AC #10).
+      {/* Body area: match on is_user_deleted flag, NOT body string (AC #10).
             Self-deleted: render muted [deleted] placeholder in the body slot.
             Non-deleted: render the actual journal body text. */}
-        {post.is_user_deleted ? (
-          <Text
-            fontFamily="$journal"
-            fontSize="$4"
-            color="$color9"
-            testID="body-deleted-placeholder"
-          >
-            [deleted]
-          </Text>
-        ) : (
-          <Text fontFamily="$journal" fontSize="$4">
-            {post.body}
-          </Text>
-        )}
+      {post.is_user_deleted ? (
+        <Text
+          fontFamily="$journal"
+          fontSize="$4"
+          color="$color9"
+          testID="body-deleted-placeholder"
+        >
+          [deleted]
+        </Text>
+      ) : (
+        <Text
+          fontFamily="$journal"
+          fontSize="$4"
+        >
+          {post.body}
+        </Text>
+      )}
 
-        {/* Self-deletion date marker: only when user_deleted_at is non-null (AC #11) */}
-        {post.is_user_deleted && deletionDateDisplay !== null ? (
-          <Text fontSize="$1" color="$color9">
-            you deleted this on {deletionDateDisplay}
-          </Text>
-        ) : null}
+      {/* Self-deletion date marker: only when user_deleted_at is non-null (AC #11) */}
+      {post.is_user_deleted && deletionDateDisplay !== null ? (
+        <Text
+          fontSize="$1"
+          color="$color9"
+        >
+          you deleted this on {deletionDateDisplay}
+        </Text>
+      ) : null}
 
-        {/* Engagement metadata row (AC #12)
+      {/* Engagement metadata row (AC #12)
             - Self-deleted: suppresses reaction count (reactions deleted transactionally per Story 3-1),
               shows replies-only count (replies survive self-delete per Reddit pattern).
               AC #37: stale reaction_count post-delete is masked by this suppression branch —
               the optimistic update in useDeleteOwnPost does NOT decrement reaction_count,
               but it is invisible because this branch only renders reply count.
             - Non-deleted: show both reaction count and reply count (zeroes rendered — record view). */}
-        {post.is_user_deleted ? (
-          <XStack gap="$2">
-            <Text fontSize="$1" color="$color9">
-              {post.descendant_count} {post.descendant_count === 1 ? 'reply' : 'replies'}
-            </Text>
-          </XStack>
-        ) : (
-          <XStack gap="$2">
-            <Text fontSize="$1" color="$color9">
-              {post.reaction_count} {post.reaction_count === 1 ? 'reaction' : 'reactions'}
-            </Text>
-            <Text fontSize="$1" color="$color9">
-              {post.descendant_count} {post.descendant_count === 1 ? 'reply' : 'replies'}
-            </Text>
-          </XStack>
-        )}
+      {post.is_user_deleted ? (
+        <XStack gap="$2">
+          <Text
+            fontSize="$1"
+            color="$color9"
+          >
+            {post.descendant_count} {post.descendant_count === 1 ? 'reply' : 'replies'}
+          </Text>
+        </XStack>
+      ) : (
+        <XStack gap="$2">
+          <Text
+            fontSize="$1"
+            color="$color9"
+          >
+            {post.reaction_count} {post.reaction_count === 1 ? 'reaction' : 'reactions'}
+          </Text>
+          <Text
+            fontSize="$1"
+            color="$color9"
+          >
+            {post.descendant_count} {post.descendant_count === 1 ? 'reply' : 'replies'}
+          </Text>
+        </XStack>
+      )}
     </View>
   )
 }

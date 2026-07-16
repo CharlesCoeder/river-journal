@@ -751,7 +751,10 @@ describe('Cleanup-failure sub-line — additive to the existing terminal state, 
 
     const subline = await waitFor(() => screen.getByText(CLEANUP_FAILED_COPY))
     const statusRegion = subline.closest('[role="status"]')
-    expect(statusRegion, 'cleanup-failure copy must live inside a role="status" region').toBeTruthy()
+    expect(
+      statusRegion,
+      'cleanup-failure copy must live inside a role="status" region'
+    ).toBeTruthy()
     expect(statusRegion?.getAttribute('aria-live')).toBe('polite')
   })
 

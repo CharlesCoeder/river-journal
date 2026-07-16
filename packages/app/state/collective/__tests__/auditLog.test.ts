@@ -60,6 +60,7 @@ function makeQueryChain(result: { data: unknown; error: unknown }) {
   for (const method of ['select', 'order', 'limit', 'lt', 'eq']) {
     chain[method] = vi.fn(() => chain)
   }
+  // biome-ignore lint/suspicious/noThenProperty: the mock must be awaitable to stand in for a thenable Supabase query builder
   ;(chain as unknown as { then: unknown }).then = (
     resolve: (v: typeof result) => unknown,
     reject: (e: unknown) => unknown
@@ -169,7 +170,7 @@ describe('fetchAuditLogPage() query shape', () => {
     }
   }
 
-  it('slices to PAGE_SIZE items and sets nextCursor to the last VISIBLE row\'s created_at when PAGE_SIZE + 1 rows come back', async () => {
+  it("slices to PAGE_SIZE items and sets nextCursor to the last VISIBLE row's created_at when PAGE_SIZE + 1 rows come back", async () => {
     const { supabase } = await import('../../../utils/supabase')
     // Newest-first: row 0 is newest, row 20 is oldest (the look-ahead row).
     const rows = Array.from({ length: 21 }, (_, i) =>
@@ -204,7 +205,7 @@ describe('fetchAuditLogPage() query shape', () => {
     expect(page.nextCursor).toBeNull()
   })
 
-  it('boundary hazard: when the sliced-off look-ahead row TIES the last visible row\'s created_at, nextCursor still equals that shared timestamp (documents the strictly-less-than tie-drop the implementation comments must warn about)', async () => {
+  it("boundary hazard: when the sliced-off look-ahead row TIES the last visible row's created_at, nextCursor still equals that shared timestamp (documents the strictly-less-than tie-drop the implementation comments must warn about)", async () => {
     const { supabase } = await import('../../../utils/supabase')
     const tieAt = '2026-07-01T00:00:30.000Z'
     const rows = Array.from({ length: 21 }, (_, i) => {

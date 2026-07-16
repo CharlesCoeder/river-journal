@@ -101,7 +101,11 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
   }
 
   return (
-    <XStack gap="$2" role="group" aria-label="Reactions">
+    <XStack
+      gap="$2"
+      role="group"
+      aria-label="Reactions"
+    >
       {REACTIONS.map(({ kind, Icon, label }) => {
         const isReacted = userReactions[kind] !== null
         const count = counts[kind] ?? 0
@@ -144,9 +148,15 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
                   }
             }
           >
-            <Icon size={16} color={iconColor} />
+            <Icon
+              size={16}
+              color={iconColor}
+            />
             {count > 0 ? (
-              <Text fontSize="$1" color="$color9">
+              <Text
+                fontSize="$1"
+                color="$color9"
+              >
                 {count}
               </Text>
             ) : null}

@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react'
+import type React from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button, ExpandingLineButton, XStack, YStack, Text, View, useReducedMotion } from '@my/ui'
 import { ChevronLeft, ChevronRight } from '@tamagui/lucide-icons'
 import { use$ } from '@legendapp/state/react'
@@ -232,12 +233,19 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
   // ── Determine what to render below the grid ──────────────────────────────
   const openEntry = openEntryDate ? entryByDate[openEntryDate] : null
   const showReader = openEntryDate !== null && !!openEntry
-  const showEmptyAffordance = openEntryDate !== null && !openEntry && !!grid.find(c => c.date === openEntryDate && c.inMonth)
+  const showEmptyAffordance =
+    openEntryDate !== null &&
+    !openEntry &&
+    !!grid.find((c) => c.date === openEntryDate && c.inMonth)
 
   return (
     <YStack>
       {/* Month header */}
-      <XStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+      <XStack
+        justifyContent="space-between"
+        alignItems="center"
+        marginBottom="$4"
+      >
         <Button
           unstyled
           aria-label="Previous month"
@@ -304,8 +312,8 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
                 justifyContent="center"
                 disabled={!cell.inMonth}
                 aria-label={ariaLabel}
-                {...(cell.date === focusedDate ? { 'aria-current': 'date' } as any : {})}
-                {...(isToday ? { 'data-today': 'true' } as any : {})}
+                {...(cell.date === focusedDate ? ({ 'aria-current': 'date' } as any) : {})}
+                {...(isToday ? ({ 'data-today': 'true' } as any) : {})}
                 {...({ 'data-calendar-cell': idx } as any)}
                 onPress={() => handleCellPress(cell)}
                 onKeyDown={(e: any) => handleCellKeyDown(e, idx)}
@@ -358,7 +366,11 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
           transition={reduceMotion ? '100ms' : 'designEnter'}
           enterStyle={{ opacity: 0, y: 10 }}
         >
-          <XStack justifyContent="space-between" alignItems="center" marginBottom="$3">
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            marginBottom="$3"
+          >
             <Text
               fontFamily="$journalItalic"
               fontStyle="italic"

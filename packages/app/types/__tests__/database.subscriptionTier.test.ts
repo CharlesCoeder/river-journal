@@ -24,6 +24,10 @@ import { Constants } from '../database'
 
 describe('database.ts Constants.public.Enums.subscription_tier', () => {
   it('lists all three subscription tiers as a runtime array', () => {
-    expect(Constants.public.Enums.subscription_tier).toEqual(['free', 'paid_monthly', 'paid_yearly'])
+    expect(Constants.public.Enums.subscription_tier).toEqual([
+      'free',
+      'paid_monthly',
+      'paid_yearly',
+    ])
   })
 })

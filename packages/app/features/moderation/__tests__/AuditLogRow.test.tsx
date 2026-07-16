@@ -164,14 +164,23 @@ afterEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('action-type label mapping', () => {
   it('maps remove_post to "Removed post"', () => {
-    render(<AuditLogRow item={makeItem({ action_type: 'remove_post' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ action_type: 'remove_post' })}
+        currentUserId={null}
+      />
+    )
     expect(screen.getByText('Removed post')).not.toBeNull()
   })
 
   it('maps suspend_user to "Suspended user"', () => {
     render(
       <AuditLogRow
-        item={makeItem({ action_type: 'suspend_user', target_post_id: null, target_user_id: 'user-abc12345' })}
+        item={makeItem({
+          action_type: 'suspend_user',
+          target_post_id: null,
+          target_user_id: 'user-abc12345',
+        })}
         currentUserId={null}
       />
     )
@@ -179,17 +188,32 @@ describe('action-type label mapping', () => {
   })
 
   it('maps add_note to "Added note"', () => {
-    render(<AuditLogRow item={makeItem({ action_type: 'add_note' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ action_type: 'add_note' })}
+        currentUserId={null}
+      />
+    )
     expect(screen.getByText('Added note')).not.toBeNull()
   })
 
   it('maps reinstate to "Reinstated post"', () => {
-    render(<AuditLogRow item={makeItem({ action_type: 'reinstate' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ action_type: 'reinstate' })}
+        currentUserId={null}
+      />
+    )
     expect(screen.getByText('Reinstated post')).not.toBeNull()
   })
 
   it('falls back to the raw code for an unrecognized action_type', () => {
-    render(<AuditLogRow item={makeItem({ action_type: 'future_action_code' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ action_type: 'future_action_code' })}
+        currentUserId={null}
+      />
+    )
     expect(screen.getByText('future_action_code')).not.toBeNull()
   })
 })
@@ -197,18 +221,33 @@ describe('action-type label mapping', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('actor display', () => {
   it('renders the first 8 characters of actor_user_id when it does not match currentUserId', () => {
-    render(<AuditLogRow item={makeItem({ actor_user_id: 'zzzzzzzz9999' })} currentUserId="someone-else" />)
+    render(
+      <AuditLogRow
+        item={makeItem({ actor_user_id: 'zzzzzzzz9999' })}
+        currentUserId="someone-else"
+      />
+    )
     expect(screen.getByText(/zzzzzzzz/)).not.toBeNull()
   })
 
   it('renders "You" when actor_user_id equals currentUserId', () => {
-    render(<AuditLogRow item={makeItem({ actor_user_id: 'me-abc12345' })} currentUserId="me-abc12345" />)
+    render(
+      <AuditLogRow
+        item={makeItem({ actor_user_id: 'me-abc12345' })}
+        currentUserId="me-abc12345"
+      />
+    )
     expect(screen.getByText('You')).not.toBeNull()
   })
 
   it('renders "[deleted moderator]" when actor_user_id is null, and never crashes', () => {
     expect(() =>
-      render(<AuditLogRow item={makeItem({ actor_user_id: null })} currentUserId="anyone" />)
+      render(
+        <AuditLogRow
+          item={makeItem({ actor_user_id: null })}
+          currentUserId="anyone"
+        />
+      )
     ).not.toThrow()
     expect(screen.getByText('[deleted moderator]')).not.toBeNull()
   })
@@ -263,17 +302,32 @@ describe('target linkout label', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('reason + note rendering', () => {
   it('renders the reason when non-null', () => {
-    render(<AuditLogRow item={makeItem({ reason: 'harassment' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ reason: 'harassment' })}
+        currentUserId={null}
+      />
+    )
     expect(screen.getByText(/harassment/)).not.toBeNull()
   })
 
   it('renders the note when non-null', () => {
-    render(<AuditLogRow item={makeItem({ note: 'left a note for the record' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ note: 'left a note for the record' })}
+        currentUserId={null}
+      />
+    )
     expect(screen.getByText('left a note for the record')).not.toBeNull()
   })
 
   it('omits the note line entirely when note is null', () => {
-    render(<AuditLogRow item={makeItem({ note: null })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ note: null })}
+        currentUserId={null}
+      />
+    )
     expect(screen.queryByText(/^note:/i)).toBeNull()
   })
 })
@@ -282,13 +336,23 @@ describe('reason + note rendering', () => {
 describe('timestamp — relative label with the exact instant preserved', () => {
   it('renders the relative time label produced by timeAgoCasual', () => {
     const createdAt = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-    render(<AuditLogRow item={makeItem({ created_at: createdAt })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ created_at: createdAt })}
+        currentUserId={null}
+      />
+    )
     expect(screen.getByText(timeAgoCasual(createdAt))).not.toBeNull()
   })
 
   it('preserves the exact absolute ISO instant on the timestamp element (title or aria-label), never only the relative label', () => {
     const createdAt = '2026-07-01T08:15:30.000Z'
-    render(<AuditLogRow item={makeItem({ created_at: createdAt })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ created_at: createdAt })}
+        currentUserId={null}
+      />
+    )
     const el = document.querySelector('[data-testid="audit-row-timestamp"]')
     expect(el).not.toBeNull()
     const preserved = el?.getAttribute('title') ?? el?.getAttribute('aria-label')
@@ -299,15 +363,32 @@ describe('timestamp — relative label with the exact instant preserved', () => 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('expand toggle + inline panel — post-referencing row', () => {
   it('is collapsed by default: aria-expanded="false" and no panel content', () => {
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345' })}
+        currentUserId={null}
+      />
+    )
     const toggle = screen.getByTestId('audit-row-expand-toggle')
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
     expect(document.querySelector('[data-testid="audit-row-panel"]')).toBeNull()
   })
 
   it('clicking the toggle sets aria-expanded="true" and opens the panel', () => {
-    mockPostDetailData = { post_id: 'post-abc12345', title: 'A post', body: 'Body text', is_removed: false, is_user_deleted: false, author_user_id: 'author-abc12345' }
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345' })} currentUserId={null} />)
+    mockPostDetailData = {
+      post_id: 'post-abc12345',
+      title: 'A post',
+      body: 'Body text',
+      is_removed: false,
+      is_user_deleted: false,
+      author_user_id: 'author-abc12345',
+    }
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345' })}
+        currentUserId={null}
+      />
+    )
 
     const toggle = screen.getByTestId('audit-row-expand-toggle')
     fireEvent.click(toggle)
@@ -317,7 +398,12 @@ describe('expand toggle + inline panel — post-referencing row', () => {
   })
 
   it('expanding a post-referencing row enables the post-detail hook with the target_post_id', () => {
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345' })}
+        currentUserId={null}
+      />
+    )
     fireEvent.click(screen.getByTestId('audit-row-expand-toggle'))
 
     const lastCall = usePostAdminDetailMock.mock.calls.at(-1)!
@@ -326,7 +412,12 @@ describe('expand toggle + inline panel — post-referencing row', () => {
   })
 
   it('expanding a post-referencing row enables the target-history hook keyed by target_post_id', () => {
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345', target_user_id: null })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345', target_user_id: null })}
+        currentUserId={null}
+      />
+    )
     fireEvent.click(screen.getByTestId('audit-row-expand-toggle'))
 
     const lastCall = useTargetModerationHistoryMock.mock.calls.at(-1)!
@@ -334,7 +425,12 @@ describe('expand toggle + inline panel — post-referencing row', () => {
   })
 
   it('the post-detail hook is NOT enabled before the row is expanded', () => {
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345' })}
+        currentUserId={null}
+      />
+    )
     const lastCall = usePostAdminDetailMock.mock.calls.at(-1)!
     expect(lastCall[1]).toBe(false)
   })
@@ -343,7 +439,12 @@ describe('expand toggle + inline panel — post-referencing row', () => {
     mockPostDetailData = null
     mockPostDetailIsLoading = false
     mockPostDetailIsError = false
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345' })}
+        currentUserId={null}
+      />
+    )
     fireEvent.click(screen.getByTestId('audit-row-expand-toggle'))
 
     expect(screen.getByText('Post no longer available.')).not.toBeNull()
@@ -351,7 +452,12 @@ describe('expand toggle + inline panel — post-referencing row', () => {
 
   it('renders a calm inline loading indicator while the panel data is loading', () => {
     mockPostDetailIsLoading = true
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345' })}
+        currentUserId={null}
+      />
+    )
     fireEvent.click(screen.getByTestId('audit-row-expand-toggle'))
 
     expect(document.body.textContent).toMatch(/loading/i)
@@ -359,20 +465,38 @@ describe('expand toggle + inline panel — post-referencing row', () => {
 
   it('renders a calm inline error line (never a raw error/stack trace) when the panel data errors', () => {
     mockPostDetailIsError = true
-    render(<AuditLogRow item={makeItem({ target_post_id: 'post-abc12345' })} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={makeItem({ target_post_id: 'post-abc12345' })}
+        currentUserId={null}
+      />
+    )
     fireEvent.click(screen.getByTestId('audit-row-expand-toggle'))
 
     expect(document.body.textContent).toMatch(/couldn.t|unavailable|error/i)
     expect(document.body.textContent).not.toMatch(/42501|SQLSTATE|at Object\.|\.ts:\d+/)
   })
 
-  it('the tapped row\'s own action appears in its rendered history list (not filtered out)', () => {
-    const tapped = makeItem({ id: 'tapped-action-id', target_post_id: 'post-abc12345', note: 'the tapped note' })
+  it("the tapped row's own action appears in its rendered history list (not filtered out)", () => {
+    const tapped = makeItem({
+      id: 'tapped-action-id',
+      target_post_id: 'post-abc12345',
+      note: 'the tapped note',
+    })
     mockHistoryData = [
       tapped,
-      makeItem({ id: 'earlier-action-id', target_post_id: 'post-abc12345', note: 'an earlier note' }),
+      makeItem({
+        id: 'earlier-action-id',
+        target_post_id: 'post-abc12345',
+        note: 'an earlier note',
+      }),
     ]
-    render(<AuditLogRow item={tapped} currentUserId={null} />)
+    render(
+      <AuditLogRow
+        item={tapped}
+        currentUserId={null}
+      />
+    )
     fireEvent.click(screen.getByTestId('audit-row-expand-toggle'))
 
     const panel = document.querySelector('[data-testid="audit-row-panel"]')
@@ -386,20 +510,41 @@ describe('expand toggle + inline panel — user-only row (suspend_user)', () => 
   it('offers an expand toggle even without a target_post_id', () => {
     render(
       <AuditLogRow
-        item={makeItem({ action_type: 'suspend_user', target_post_id: null, target_user_id: 'user-abc12345' })}
+        item={makeItem({
+          action_type: 'suspend_user',
+          target_post_id: null,
+          target_user_id: 'user-abc12345',
+        })}
         currentUserId={null}
       />
     )
     expect(screen.getByTestId('audit-row-expand-toggle')).not.toBeNull()
   })
 
-  it('shows the user\'s moderation history and renders NO post block when expanded', () => {
-    mockPostDetailData = { post_id: 'should-not-appear', title: 'Should not render', body: 'x', is_removed: false, is_user_deleted: false, author_user_id: 'a' }
-    mockHistoryData = [makeItem({ action_type: 'suspend_user', target_post_id: null, target_user_id: 'user-abc12345' })]
+  it("shows the user's moderation history and renders NO post block when expanded", () => {
+    mockPostDetailData = {
+      post_id: 'should-not-appear',
+      title: 'Should not render',
+      body: 'x',
+      is_removed: false,
+      is_user_deleted: false,
+      author_user_id: 'a',
+    }
+    mockHistoryData = [
+      makeItem({
+        action_type: 'suspend_user',
+        target_post_id: null,
+        target_user_id: 'user-abc12345',
+      }),
+    ]
 
     render(
       <AuditLogRow
-        item={makeItem({ action_type: 'suspend_user', target_post_id: null, target_user_id: 'user-abc12345' })}
+        item={makeItem({
+          action_type: 'suspend_user',
+          target_post_id: null,
+          target_user_id: 'user-abc12345',
+        })}
         currentUserId={null}
       />
     )
@@ -412,7 +557,11 @@ describe('expand toggle + inline panel — user-only row (suspend_user)', () => 
   it('enables the target-history hook keyed by target_user_id for a user-only row', () => {
     render(
       <AuditLogRow
-        item={makeItem({ action_type: 'suspend_user', target_post_id: null, target_user_id: 'user-abc12345' })}
+        item={makeItem({
+          action_type: 'suspend_user',
+          target_post_id: null,
+          target_user_id: 'user-abc12345',
+        })}
         currentUserId={null}
       />
     )

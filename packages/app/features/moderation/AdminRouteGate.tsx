@@ -42,13 +42,22 @@ export function NotAuthorized() {
       padding="$6"
       data-testid="admin-route-gate-not-authorized"
     >
-      <Text fontSize="$6" fontWeight="600">
+      <Text
+        fontSize="$6"
+        fontWeight="600"
+      >
         Not authorized
       </Text>
-      <Text opacity={0.7} textAlign="center">
+      <Text
+        opacity={0.7}
+        textAlign="center"
+      >
         You don't have access to this area.
       </Text>
-      <ExpandingLineButton accessibilityLabel="Return home" onPress={() => router.push('/')}>
+      <ExpandingLineButton
+        accessibilityLabel="Return home"
+        onPress={() => router.push('/')}
+      >
         Return home
       </ExpandingLineButton>
     </YStack>
@@ -61,7 +70,10 @@ export function AdminRouteGate({ children }: { children: ReactNode }) {
   // loading: session not yet resolved — neutral state, never admin content.
   if (isAdmin === undefined) {
     return (
-      <View flex={1} data-testid="admin-route-gate-loading" />
+      <View
+        flex={1}
+        data-testid="admin-route-gate-loading"
+      />
     )
   }
 

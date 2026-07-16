@@ -16,9 +16,7 @@ export function StreakChip({ dayCount, state = 'pending' }: StreakChipProps) {
   const color = state === 'active' ? '$color' : '$color8'
 
   const shouldAnimate =
-    prevRef.current !== undefined &&
-    dayCount !== undefined &&
-    dayCount > prevRef.current
+    prevRef.current !== undefined && dayCount !== undefined && dayCount > prevRef.current
 
   const transition = shouldAnimate ? (reducedMotion ? '100ms' : 'designEnter') : undefined
   const enterStyle = shouldAnimate ? { opacity: 0, scale: 0.92 } : undefined

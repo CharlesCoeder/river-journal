@@ -99,7 +99,7 @@ async function importFeed(): Promise<FeedModule> {
  * server-truncated `excerpt`, `descendant_count`, and a per-kind `reactions`
  * tally, and NO full `body`. Row 0 exercises the zero-reactions `{}` case.
  */
-function makeRows(count: number, mode: string = 'full') {
+function makeRows(count: number, mode = 'full') {
   const rows: Array<Record<string, unknown>> = []
   for (let i = 0; i < count; i++) {
     rows.push({
@@ -345,12 +345,8 @@ describe('useFeed() useInfiniteQuery config', () => {
     expect(src, 'maxPages: 5 (NFR31 100-post bound)').toMatch(/maxPages\s*:\s*5\b/)
     expect(src, 'refetchInterval: 30_000').toMatch(/refetchInterval\s*:\s*30[_]?000\b/)
     expect(src, 'staleTime: 25_000').toMatch(/staleTime\s*:\s*25[_]?000\b/)
-    expect(src, 'refetchOnWindowFocus: true').toMatch(
-      /refetchOnWindowFocus\s*:\s*true\b/
-    )
-    expect(src, 'queryKey: collectiveFeedKey').toMatch(
-      /queryKey\s*:\s*collectiveFeedKey\b/
-    )
+    expect(src, 'refetchOnWindowFocus: true').toMatch(/refetchOnWindowFocus\s*:\s*true\b/)
+    expect(src, 'queryKey: collectiveFeedKey').toMatch(/queryKey\s*:\s*collectiveFeedKey\b/)
     expect(src, 'initialPageParam: null').toMatch(/initialPageParam\s*:\s*null\b/)
     expect(src, 'getNextPageParam present').toMatch(/getNextPageParam\s*:/)
     // refetchIntervalInBackground must NOT be set to true.

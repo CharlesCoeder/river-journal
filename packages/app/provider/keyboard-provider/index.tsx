@@ -7,7 +7,10 @@ interface MobileKeyboardProviderProps {
 
 export function MobileKeyboardProvider({ children }: MobileKeyboardProviderProps) {
   return (
-    <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+    <KeyboardProvider
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       {children}
     </KeyboardProvider>
   )

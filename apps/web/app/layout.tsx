@@ -24,13 +24,20 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // You can use `suppressHydrationWarning` to avoid the warning about mismatched content during hydration in dev mode
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+    >
       <body>
         <SkipToContent />
         <NextTamaguiProvider>
           <PersistenceGate>
             <KeyboardShortcuts />
-            <main id="main-content" tabIndex={-1} style={{ display: 'contents' }}>
+            <main
+              id="main-content"
+              tabIndex={-1}
+              style={{ display: 'contents' }}
+            >
               {children}
             </main>
           </PersistenceGate>

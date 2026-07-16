@@ -444,10 +444,7 @@ describe('thread query invalidation transitivity', () => {
     // boundary-rule grep (AC #11) catches @legendapp/state imports, this
     // catches a more subtle "tried to import observe() from a different
     // legend subpath" mistake.
-    const src = readFileSync(
-      path.resolve(__dirname, '../collective/thread.ts'),
-      'utf8'
-    )
+    const src = readFileSync(path.resolve(__dirname, '../collective/thread.ts'), 'utf8')
     // observe() with parens — distinguish from harmless words like 'observed'.
     // The grep specifically looks for a top-level observe(...) invocation
     // pattern. (The boundary grep already ensures no import exists; this is

@@ -102,7 +102,11 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
   const [activeField, setActiveField] = useState<ColorField | null>(null)
 
   const colors: Record<ColorField, string> = { bg, text, stone }
-  const setters: Record<ColorField, (v: string) => void> = { bg: setBg, text: setText, stone: setStone }
+  const setters: Record<ColorField, (v: string) => void> = {
+    bg: setBg,
+    text: setText,
+    stone: setStone,
+  }
 
   const allValid = HEX_REGEX.test(bg) && HEX_REGEX.test(text) && HEX_REGEX.test(stone)
 
@@ -147,7 +151,11 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
       {/* Inline color picker — appears between inputs and preview */}
       {activeField && HEX_REGEX.test(colors[activeField]) && (
         <YStack gap="$2">
-          <Text fontFamily="$body" fontSize={12} color="$color8">
+          <Text
+            fontFamily="$body"
+            fontSize={12}
+            color="$color8"
+          >
             Editing {COLOR_LABELS[activeField].toLowerCase()}
           </Text>
           <InlineColorPicker
@@ -199,9 +207,22 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
 
       {/* Contrast advisory — non-blocking, creation surface only */}
       {lowContrast && (
-        <XStack testID="contrast-warning" alignItems="center" gap="$2">
-          <Circle testID="contrast-warning-dot" size={6} backgroundColor="$color8" />
-          <Text fontFamily="$body" fontSize={13} color="$color8" fontStyle="italic">
+        <XStack
+          testID="contrast-warning"
+          alignItems="center"
+          gap="$2"
+        >
+          <Circle
+            testID="contrast-warning-dot"
+            size={6}
+            backgroundColor="$color8"
+          />
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            color="$color8"
+            fontStyle="italic"
+          >
             This combination may be hard to read.
           </Text>
         </XStack>

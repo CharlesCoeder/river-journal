@@ -70,7 +70,7 @@ export function recordSessionOpen(now: number = Date.now()): void {
   // Same-tick guard: skip if called again within the same 60-second window.
   // Returning early leaves previousSessionAt intact, so a lapse detected on this
   // boot is not clobbered by a rapid re-entry (hot-reload, quick re-foreground).
-  if (previous !== null && (now - previous) < 60_000) {
+  if (previous !== null && now - previous < 60_000) {
     return
   }
 

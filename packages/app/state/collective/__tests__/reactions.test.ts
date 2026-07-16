@@ -81,7 +81,9 @@ describe('Story 3-11 / collectiveReactionsKey shape (AC #5)', () => {
   it('collectiveReactionsKey with a different postId returns a unique tuple', async () => {
     const mod = await import('../reactions')
     expect(mod.collectiveReactionsKey('post-xyz')).toEqual(['collective', 'reactions', 'post-xyz'])
-    expect(mod.collectiveReactionsKey('post-abc')).not.toEqual(mod.collectiveReactionsKey('post-xyz'))
+    expect(mod.collectiveReactionsKey('post-abc')).not.toEqual(
+      mod.collectiveReactionsKey('post-xyz')
+    )
   })
 })
 
@@ -98,9 +100,9 @@ describe('Story 3-11 / t1 — fetchPostReactions with mixed reactions (AC #5, #1
     //   - sparkle with user_id: null (id: 'rxn-4') → sparkle count = 1, NOT in userReactions
     const mockData = [
       { id: 'rxn-1', user_id: 'user-current', kind: 'heart', post_id: 'post-1' },
-      { id: 'rxn-2', user_id: 'user-other',   kind: 'heart', post_id: 'post-1' },
-      { id: 'rxn-3', user_id: 'user-other',   kind: 'flame', post_id: 'post-1' },
-      { id: 'rxn-4', user_id: null,            kind: 'sparkle', post_id: 'post-1' },
+      { id: 'rxn-2', user_id: 'user-other', kind: 'heart', post_id: 'post-1' },
+      { id: 'rxn-3', user_id: 'user-other', kind: 'flame', post_id: 'post-1' },
+      { id: 'rxn-4', user_id: null, kind: 'sparkle', post_id: 'post-1' },
     ]
     eqMock.mockResolvedValueOnce({ data: mockData, error: null })
     selectMock.mockReturnValue({ eq: eqMock })
@@ -144,9 +146,7 @@ describe('Story 3-11 / t1 — fetchPostReactions with mixed reactions (AC #5, #1
 
 describe('Story 3-11 / t2 — anonymized reactions excluded from userReactions (AC #5)', () => {
   it('anonymized reaction (user_id: null) increments counts but leaves userReactions null', async () => {
-    const mockData = [
-      { id: 'rxn-anon', user_id: null, kind: 'wave', post_id: 'post-2' },
-    ]
+    const mockData = [{ id: 'rxn-anon', user_id: null, kind: 'wave', post_id: 'post-2' }]
     eqMock.mockResolvedValueOnce({ data: mockData, error: null })
     selectMock.mockReturnValue({ eq: eqMock })
     fromMock.mockReturnValue({ select: selectMock })

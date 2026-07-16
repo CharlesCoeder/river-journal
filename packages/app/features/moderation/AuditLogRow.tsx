@@ -28,10 +28,7 @@
 import { useState } from 'react'
 import { View, Text, XStack, YStack } from '@my/ui'
 import type { AuditLogItem } from 'app/state/collective/auditLog'
-import {
-  usePostAdminDetail,
-  useTargetModerationHistory,
-} from 'app/state/collective/auditLog'
+import { usePostAdminDetail, useTargetModerationHistory } from 'app/state/collective/auditLog'
 import { timeAgoCasual } from 'app/features/collective/_shared'
 
 export interface AuditLogRowProps {
@@ -89,9 +86,7 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
         ? 'You'
         : item.actor_user_id.slice(0, 8)
 
-  const targetLabel = hasTarget
-    ? (item.target_post_id ?? item.target_user_id)!.slice(0, 8)
-    : '—'
+  const targetLabel = hasTarget ? (item.target_post_id ?? item.target_user_id)!.slice(0, 8) : '—'
 
   // Deletion-state precedence for the post block: is_user_deleted (content
   // self-delete) WINS over author_user_id === null (account deletion).
@@ -101,10 +96,24 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
   const bodyText = selfDeleted ? '[deleted]' : detail?.body
 
   return (
-    <View tag="article" role="article" paddingVertical="$5" gap="$3">
+    <View
+      tag="article"
+      role="article"
+      paddingVertical="$5"
+      gap="$3"
+    >
       {/* ─── Action · actor · target · time ────────────────────────────────── */}
-      <XStack alignItems="center" gap="$3" flexWrap="wrap">
-        <Text fontFamily="$body" fontSize="$3" color="$color12" fontWeight="600">
+      <XStack
+        alignItems="center"
+        gap="$3"
+        flexWrap="wrap"
+      >
+        <Text
+          fontFamily="$body"
+          fontSize="$3"
+          color="$color12"
+          fontWeight="600"
+        >
           {actionLabel(item.action_type)}
         </Text>
         <Text
@@ -141,12 +150,20 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
 
       {/* ─── Reason + note (rendered only when non-null) ────────────────────── */}
       {item.reason != null ? (
-        <Text fontFamily="$body" fontSize="$2" color="$color11">
+        <Text
+          fontFamily="$body"
+          fontSize="$2"
+          color="$color11"
+        >
           {item.reason}
         </Text>
       ) : null}
       {item.note != null ? (
-        <Text fontFamily="$body" fontSize="$2" color="$color10">
+        <Text
+          fontFamily="$body"
+          fontSize="$2"
+          color="$color10"
+        >
           {item.note}
         </Text>
       ) : null}
@@ -166,7 +183,11 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
             setExpanded((v) => !v)
           }}
         >
-          <Text fontFamily="$body" fontSize="$1" color="$color9">
+          <Text
+            fontFamily="$body"
+            fontSize="$1"
+            color="$color9"
+          >
             {expanded ? 'Hide detail' : 'Show detail'}
           </Text>
         </View>
@@ -174,19 +195,36 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
 
       {/* ─── Inline detail panel ────────────────────────────────────────────── */}
       {hasTarget && expanded ? (
-        <YStack data-testid="audit-row-panel" gap="$3" paddingLeft="$3" paddingTop="$2">
+        <YStack
+          data-testid="audit-row-panel"
+          gap="$3"
+          paddingLeft="$3"
+          paddingTop="$2"
+        >
           {/* Post current-state block (post-referencing rows only). */}
           {hasPost ? (
             detailLoading ? (
-              <Text fontFamily="$body" fontSize="$2" color="$color9">
+              <Text
+                fontFamily="$body"
+                fontSize="$2"
+                color="$color9"
+              >
                 Loading…
               </Text>
             ) : detailError ? (
-              <Text fontFamily="$body" fontSize="$2" color="$color9">
+              <Text
+                fontFamily="$body"
+                fontSize="$2"
+                color="$color9"
+              >
                 Couldn&apos;t load the post. Try again shortly.
               </Text>
             ) : detail == null ? (
-              <Text fontFamily="$body" fontSize="$2" color="$color9">
+              <Text
+                fontFamily="$body"
+                fontSize="$2"
+                color="$color9"
+              >
                 Post no longer available.
               </Text>
             ) : (
@@ -212,7 +250,11 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
                 >
                   {bodyText}
                 </Text>
-                <XStack alignItems="center" gap="$3" flexWrap="wrap">
+                <XStack
+                  alignItems="center"
+                  gap="$3"
+                  flexWrap="wrap"
+                >
                   <Text
                     fontFamily="$body"
                     fontSize="$1"
@@ -223,16 +265,28 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
                     {detailAuthor}
                   </Text>
                   {detail.is_removed ? (
-                    <Text fontFamily="$body" fontSize="$1" color="$color9">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$1"
+                      color="$color9"
+                    >
                       Removed
                     </Text>
                   ) : null}
                   {selfDeleted ? (
-                    <Text fontFamily="$body" fontSize="$1" color="$color9">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$1"
+                      color="$color9"
+                    >
                       Author self-deleted
                     </Text>
                   ) : accountDeleted ? (
-                    <Text fontFamily="$body" fontSize="$1" color="$color9">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$1"
+                      color="$color9"
+                    >
                       Author deleted account
                     </Text>
                   ) : null}
@@ -253,31 +307,62 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
               {hasPost ? "This post's actions" : "This user's actions"}
             </Text>
             {historyLoading ? (
-              <Text fontFamily="$body" fontSize="$2" color="$color9">
+              <Text
+                fontFamily="$body"
+                fontSize="$2"
+                color="$color9"
+              >
                 Loading…
               </Text>
             ) : historyError ? (
-              <Text fontFamily="$body" fontSize="$2" color="$color9">
+              <Text
+                fontFamily="$body"
+                fontSize="$2"
+                color="$color9"
+              >
                 Couldn&apos;t load the history. Try again shortly.
               </Text>
             ) : (
               (history ?? []).map((h) => (
-                <YStack key={h.id} gap="$1">
-                  <XStack gap="$2" alignItems="center" flexWrap="wrap">
-                    <Text fontFamily="$body" fontSize="$2" color="$color11">
+                <YStack
+                  key={h.id}
+                  gap="$1"
+                >
+                  <XStack
+                    gap="$2"
+                    alignItems="center"
+                    flexWrap="wrap"
+                  >
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$2"
+                      color="$color11"
+                    >
                       {actionLabel(h.action_type)}
                     </Text>
-                    <Text fontFamily="$body" fontSize="$1" color="$color9">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$1"
+                      color="$color9"
+                    >
                       {timeAgoCasual(h.created_at)}
                     </Text>
                   </XStack>
                   {h.reason != null ? (
-                    <Text fontFamily="$body" fontSize="$2" color="$color10">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$2"
+                      color="$color10"
+                    >
                       {h.reason}
                     </Text>
                   ) : null}
                   {h.note != null ? (
-                    <Text fontFamily="$body" fontSize="$2" color="$color10">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$2"
+                      color="$color10"
+                    >
                       {h.note}
                     </Text>
                   ) : null}

@@ -90,7 +90,9 @@ describe('EVENT_ALLOWLIST — the v2 success-metric + product event list is pres
 
   it('flow_completed never allows a raw word_count prop — only the bucketed word_count_bucket', async () => {
     const { EVENT_ALLOWLIST } = await import('../eventAllowlist')
-    const entry = (EVENT_ALLOWLIST as Record<string, { props: readonly string[] }>)['flow_completed']
+    const entry = (EVENT_ALLOWLIST as Record<string, { props: readonly string[] }>)[
+      'flow_completed'
+    ]
     expect(entry?.props).not.toContain('word_count')
     expect(entry?.props).not.toContain('wordCount')
     expect(entry?.props).toContain('word_count_bucket')

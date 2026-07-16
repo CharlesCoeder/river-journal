@@ -36,14 +36,16 @@ const ISADMIN_PATH = path.join(COLLECTIVE_DIR, 'isAdmin.ts')
 
 type AuthChangeCallback = (event: string, session: unknown) => void
 
-const { mockGetSession, mockOnAuthStateChange, mockUnsubscribe, authChangeCallbacks } = vi.hoisted(() => {
-  return {
-    mockGetSession: vi.fn(),
-    mockOnAuthStateChange: vi.fn(),
-    mockUnsubscribe: vi.fn(),
-    authChangeCallbacks: [] as AuthChangeCallback[],
+const { mockGetSession, mockOnAuthStateChange, mockUnsubscribe, authChangeCallbacks } = vi.hoisted(
+  () => {
+    return {
+      mockGetSession: vi.fn(),
+      mockOnAuthStateChange: vi.fn(),
+      mockUnsubscribe: vi.fn(),
+      authChangeCallbacks: [] as AuthChangeCallback[],
+    }
   }
-})
+)
 
 vi.mock('../../../utils/supabase', () => ({
   supabase: {

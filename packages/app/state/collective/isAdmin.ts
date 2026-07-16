@@ -55,6 +55,7 @@ export function useIsAdmin(): boolean | null | undefined {
       const { data } = await supabase.auth.getSession()
       return projectIsAdmin(data.session)
     },
+    // biome-ignore lint/style/useNumberNamespace: session query intentionally never refetches; the `Infinity` literal is asserted by isAdmin.test.ts
     staleTime: Infinity,
   })
 
@@ -62,10 +63,7 @@ export function useIsAdmin(): boolean | null | undefined {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      queryClient.setQueryData<boolean | null>(
-        SESSION_IS_ADMIN_KEY,
-        projectIsAdmin(session)
-      )
+      queryClient.setQueryData<boolean | null>(SESSION_IS_ADMIN_KEY, projectIsAdmin(session))
     })
 
     // Tear the subscription down on unmount so repeated mounts don't stack

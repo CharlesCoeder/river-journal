@@ -84,9 +84,7 @@ export type YourPostsPage = {
  * the LAST visible row's `created_at` as `nextCursor`. If we got back
  * `<= PAGE_SIZE` rows, this is the last page (`nextCursor: null`).
  */
-export async function fetchYourPostsPage(
-  cursor: string | null
-): Promise<YourPostsPage> {
+export async function fetchYourPostsPage(cursor: string | null): Promise<YourPostsPage> {
   const { data, error } = await supabase.rpc('collective_your_posts_page', {
     cursor,
     page_size: PAGE_SIZE + 1,

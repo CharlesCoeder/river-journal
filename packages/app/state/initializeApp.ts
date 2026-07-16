@@ -10,7 +10,13 @@ import { flows$ } from './flows'
 import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
 import { pushTokens$ } from './push_tokens'
-import { generateUUID, isSyncReady$, syncUserId$, orphanFlowsPending$, deviceState$ } from './syncConfig'
+import {
+  generateUUID,
+  isSyncReady$,
+  syncUserId$,
+  orphanFlowsPending$,
+  deviceState$,
+} from './syncConfig'
 import { initAuthListener } from '../utils/auth'
 import { isEncryptionReadyForSync$ } from './encryptionSetup'
 import { lapsed$, recordSessionOpen } from './lapsed'

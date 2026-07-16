@@ -61,7 +61,15 @@ vi.mock('@my/ui', async () => {
       'data-bg': backgroundColor ?? '',
       'data-animation': animation ?? '',
     })
-  const DialogContent = ({ children, backgroundColor, borderColor, borderWidth, maxWidth, width, animation }: any) =>
+  const DialogContent = ({
+    children,
+    backgroundColor,
+    borderColor,
+    borderWidth,
+    maxWidth,
+    width,
+    animation,
+  }: any) =>
     ReactModule.createElement(
       'div',
       {
@@ -112,8 +120,10 @@ vi.mock('@my/ui', async () => {
         onPress ? { onClick: onPress, role: 'link' } : {},
         children
       ),
-    XStack: ({ children }: any) => ReactModule.createElement('div', { 'data-stack': 'x' }, children),
-    YStack: ({ children }: any) => ReactModule.createElement('div', { 'data-stack': 'y' }, children),
+    XStack: ({ children }: any) =>
+      ReactModule.createElement('div', { 'data-stack': 'x' }, children),
+    YStack: ({ children }: any) =>
+      ReactModule.createElement('div', { 'data-stack': 'y' }, children),
     Dialog: DialogComponent,
     ExpandingLineButton: ({ children, onPress, disabled, size }: any) =>
       ReactModule.createElement(
@@ -280,7 +290,10 @@ describe('Removal receipt — never renders post content', () => {
     expect((receipt as Record<string, unknown>).body).toBeUndefined()
 
     const { container } = render(
-      <ModerationReceiptDialog receipt={receipt} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={receipt}
+        onAcknowledge={vi.fn()}
+      />
     )
     // Only date + templated reason + fixed copy should ever appear — nothing
     // resembling free-text post content.
@@ -292,14 +305,20 @@ describe('Removal receipt — never renders post content', () => {
 describe('Suspension receipt copy', () => {
   it('states scope: "paused" + "post and react" language', () => {
     render(
-      <ModerationReceiptDialog receipt={suspensionReceipt()} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={suspensionReceipt()}
+        onAcknowledge={vi.fn()}
+      />
     )
     expect(screen.getByText(/paused/i)).toBeTruthy()
   })
 
   it('states "You can still write and read."', () => {
     render(
-      <ModerationReceiptDialog receipt={suspensionReceipt()} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={suspensionReceipt()}
+        onAcknowledge={vi.fn()}
+      />
     )
     expect(screen.getByText(/you can still write and read/i)).toBeTruthy()
   })
@@ -326,21 +345,30 @@ describe('Suspension receipt copy', () => {
 
   it('omits the "Reason:" line entirely when reason is null', () => {
     render(
-      <ModerationReceiptDialog receipt={suspensionReceipt({ reason: null })} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={suspensionReceipt({ reason: null })}
+        onAcknowledge={vi.fn()}
+      />
     )
     expect(screen.queryByText(/reason:/i)).toBeNull()
   })
 
   it('omits the "Reason:" line entirely when reason is a blank/whitespace string', () => {
     render(
-      <ModerationReceiptDialog receipt={suspensionReceipt({ reason: '   ' })} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={suspensionReceipt({ reason: '   ' })}
+        onAcknowledge={vi.fn()}
+      />
     )
     expect(screen.queryByText(/reason:/i)).toBeNull()
   })
 
   it('renders the "Reason:" line when reason is a non-blank string', () => {
     render(
-      <ModerationReceiptDialog receipt={suspensionReceipt({ reason: 'spam' })} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={suspensionReceipt({ reason: 'spam' })}
+        onAcknowledge={vi.fn()}
+      />
     )
     expect(screen.getByText(/reason:/i)).toBeTruthy()
   })
@@ -350,7 +378,10 @@ describe('Suspension receipt copy', () => {
 describe('Dismiss button — "Got it", not "Acknowledge"', () => {
   it('renders a button labeled "Got it" (or "OK") — never the literal word "Acknowledge"', () => {
     render(
-      <ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={vi.fn()}
+      />
     )
     const gotIt = screen.queryByRole('button', { name: /got it/i })
     const ok = screen.queryByRole('button', { name: /^ok$/i })
@@ -360,7 +391,10 @@ describe('Dismiss button — "Got it", not "Acknowledge"', () => {
 
   it('nowhere in the dialog does visible text read the literal word "Acknowledge"', () => {
     render(
-      <ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={vi.fn()} />
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={vi.fn()}
+      />
     )
     expect(screen.queryByText(/\backnowledge\b/i)).toBeNull()
   })
@@ -368,7 +402,10 @@ describe('Dismiss button — "Got it", not "Acknowledge"', () => {
   it('pressing the dismiss button calls onAcknowledge exactly once', () => {
     const onAcknowledge = vi.fn()
     render(
-      <ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={onAcknowledge} />
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={onAcknowledge}
+      />
     )
     const dismissBtn =
       screen.queryByRole('button', { name: /got it/i }) ??
@@ -380,7 +417,10 @@ describe('Dismiss button — "Got it", not "Acknowledge"', () => {
   it('works identically for a suspension receipt', () => {
     const onAcknowledge = vi.fn()
     render(
-      <ModerationReceiptDialog receipt={suspensionReceipt()} onAcknowledge={onAcknowledge} />
+      <ModerationReceiptDialog
+        receipt={suspensionReceipt()}
+        onAcknowledge={onAcknowledge}
+      />
     )
     const dismissBtn =
       screen.queryByRole('button', { name: /got it/i }) ??
@@ -393,22 +433,42 @@ describe('Dismiss button — "Got it", not "Acknowledge"', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('No appeal / dispute / contact-us affordance', () => {
   it('renders no "Appeal" control', () => {
-    render(<ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={vi.fn()} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={vi.fn()}
+      />
+    )
     expect(screen.queryByText(/appeal/i)).toBeNull()
   })
 
   it('renders no "Dispute" control', () => {
-    render(<ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={vi.fn()} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={vi.fn()}
+      />
+    )
     expect(screen.queryByText(/dispute/i)).toBeNull()
   })
 
   it('renders no "Contact us" control', () => {
-    render(<ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={vi.fn()} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={vi.fn()}
+      />
+    )
     expect(screen.queryByText(/contact us/i)).toBeNull()
   })
 
   it('renders no "Appeal" control on the suspension variant either', () => {
-    render(<ModerationReceiptDialog receipt={suspensionReceipt()} onAcknowledge={vi.fn()} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={suspensionReceipt()}
+        onAcknowledge={vi.fn()}
+      />
+    )
     expect(screen.queryByText(/appeal/i)).toBeNull()
   })
 })
@@ -416,12 +476,22 @@ describe('No appeal / dispute / contact-us affordance', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Community guidelines link', () => {
   it('renders a "community guidelines" affordance', () => {
-    render(<ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={vi.fn()} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={vi.fn()}
+      />
+    )
     expect(screen.getByText(/community guidelines/i)).toBeTruthy()
   })
 
   it('pressing it calls Linking.openURL with COMMUNITY_GUIDELINES_URL', () => {
-    render(<ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={vi.fn()} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={vi.fn()}
+      />
+    )
     const link = screen.getByText(/community guidelines/i)
     fireEvent.click(link)
     expect(openURLMock).toHaveBeenCalledWith(COMMUNITY_GUIDELINES_URL)
@@ -429,7 +499,12 @@ describe('Community guidelines link', () => {
 
   it('pressing the guidelines link does NOT itself acknowledge the receipt', () => {
     const onAcknowledge = vi.fn()
-    render(<ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={onAcknowledge} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={onAcknowledge}
+      />
+    )
     const link = screen.getByText(/community guidelines/i)
     fireEvent.click(link)
     expect(onAcknowledge).not.toHaveBeenCalled()
@@ -440,7 +515,12 @@ describe('Community guidelines link', () => {
 describe('No tap-outside / Esc dismiss', () => {
   it('pressing Escape on the dialog does NOT call onAcknowledge', () => {
     const onAcknowledge = vi.fn()
-    render(<ModerationReceiptDialog receipt={removalReceipt()} onAcknowledge={onAcknowledge} />)
+    render(
+      <ModerationReceiptDialog
+        receipt={removalReceipt()}
+        onAcknowledge={onAcknowledge}
+      />
+    )
     const dialog = screen.getByRole('dialog')
     fireEvent.keyDown(dialog, { key: 'Escape', code: 'Escape' })
     expect(onAcknowledge).not.toHaveBeenCalled()

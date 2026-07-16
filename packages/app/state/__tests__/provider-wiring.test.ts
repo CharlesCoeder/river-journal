@@ -54,7 +54,9 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
 
   it('imports queryStorage from app/state/queryStorage', () => {
     const src = providerSrc()
-    expect(src).toMatch(/import\s*\{[^}]*queryStorage[^}]*\}\s*from\s*['"]app\/state\/queryStorage['"]/)
+    expect(src).toMatch(
+      /import\s*\{[^}]*queryStorage[^}]*\}\s*from\s*['"]app\/state\/queryStorage['"]/
+    )
   })
 
   it('configures the persister with key QUERY_PERSIST_KEY === "rj-tq-cache" (AC #7)', async () => {
@@ -91,9 +93,14 @@ describe('Story 3-2 / Provider PersistQueryClientProvider wiring (AC #7)', () =>
     const persistCloseIdx = src.indexOf('</PersistQueryClientProvider>')
     const toastCloseIdx = src.indexOf('</ToastProvider>')
 
-    expect(persistOpenIdx, 'PersistQueryClientProvider open tag not found').toBeGreaterThanOrEqual(0)
+    expect(persistOpenIdx, 'PersistQueryClientProvider open tag not found').toBeGreaterThanOrEqual(
+      0
+    )
     expect(toastOpenIdx, 'ToastProvider open tag not found').toBeGreaterThanOrEqual(0)
-    expect(persistCloseIdx, 'PersistQueryClientProvider close tag not found').toBeGreaterThanOrEqual(0)
+    expect(
+      persistCloseIdx,
+      'PersistQueryClientProvider close tag not found'
+    ).toBeGreaterThanOrEqual(0)
     expect(toastCloseIdx, 'ToastProvider close tag not found').toBeGreaterThanOrEqual(0)
 
     // Persist opens before Toast opens; Persist closes after Toast closes.

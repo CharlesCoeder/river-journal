@@ -198,7 +198,9 @@ describe('encryption setup orchestration', () => {
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.isOpen.get()).toBe(false)
-    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo='))
+    expect(syncManagedKeyBytes$.get()).toEqual(
+      base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=')
+    )
   })
 
   it('E2E selection advances to the password step and keeps sync blocked', async () => {
@@ -250,7 +252,11 @@ describe('encryption setup orchestration', () => {
 
   it('loadCurrentEncryptionMode pre-caches managed key from initial query (no N+1)', async () => {
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
-      data: { mode: 'managed', salt: null, managedKeyB64: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=' },
+      data: {
+        mode: 'managed',
+        salt: null,
+        managedKeyB64: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=',
+      },
       error: null,
     })
 
@@ -258,7 +264,9 @@ describe('encryption setup orchestration', () => {
 
     expect(mode).toBe('managed')
     expect(mockFetchManagedEncryptionKey).not.toHaveBeenCalled()
-    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo='))
+    expect(syncManagedKeyBytes$.get()).toEqual(
+      base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=')
+    )
     expect(encryptionSetup$.currentMode.get()).toBe('managed')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
@@ -556,10 +564,11 @@ describe('encryption setup orchestration', () => {
   })
 
   it('deduplicates concurrent encryption-mode loads', async () => {
-    let resolveRead: ((value: { data: { mode: null; salt: null }; error: null }) => void) | null = null
+    let resolveRead: ((value: { data: { mode: null; salt: null }; error: null }) => void) | null =
+      null
     mockReadUserEncryptionSettings.mockImplementationOnce(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveRead = resolve
         })
     )
@@ -676,7 +685,9 @@ describe('encryption setup orchestration', () => {
 
     expect(result).toBe(true)
     expect(mockFetchManagedEncryptionKey).toHaveBeenCalledWith('user-1')
-    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo='))
+    expect(syncManagedKeyBytes$.get()).toEqual(
+      base64ToBytes('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=')
+    )
     expect(isEncryptionReadyForSync$.get()).toBe(true)
     expect(encryptionSetup$.error.get()).toBeNull()
   })
@@ -745,7 +756,10 @@ describe('encryption setup orchestration', () => {
     const result = await retryWithE2EPassword('wrongpassword')
 
     expect(result).toBe(false)
-    expect(encryptionSetup$.error.get()).toEqual({ message: 'Wrong password', code: 'invalid_password' })
+    expect(encryptionSetup$.error.get()).toEqual({
+      message: 'Wrong password',
+      code: 'invalid_password',
+    })
   })
 
   it('E2E mode pre-caches managed key for historical managed payloads', async () => {
@@ -762,7 +776,9 @@ describe('encryption setup orchestration', () => {
     const mode = await loadCurrentEncryptionMode()
 
     expect(mode).toBe('e2e')
-    expect(syncManagedKeyBytes$.get()).toEqual(base64ToBytes('u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7s='))
+    expect(syncManagedKeyBytes$.get()).toEqual(
+      base64ToBytes('u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7s=')
+    )
     expect(encryptionSetup$.currentMode.get()).toBe('e2e')
     expect(isEncryptionReadyForSync$.get()).toBe(true)
   })
@@ -777,7 +793,11 @@ describe('encryption setup orchestration', () => {
       hasLoadedMode: true,
     })
     mockUpsertUserEncryptionMode.mockResolvedValueOnce({
-      data: { mode: 'e2e', salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=', managedKeyB64: null },
+      data: {
+        mode: 'e2e',
+        salt: 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8=',
+        managedKeyB64: null,
+      },
       error: null,
     })
     mockReadUserEncryptionSettings.mockResolvedValueOnce({
@@ -891,7 +911,11 @@ describe('encryption setup orchestration', () => {
       expect(mockWrapAndStoreKey).toHaveBeenCalled()
       expect(mockHashDeviceToken).toHaveBeenCalledWith('test-token')
       expect(mockGetBrowserLabel).toHaveBeenCalled()
-      expect(mockRegisterTrustedBrowser).toHaveBeenCalledWith('user-1', 'hashed-token', 'Chrome 124 on macOS')
+      expect(mockRegisterTrustedBrowser).toHaveBeenCalledWith(
+        'user-1',
+        'hashed-token',
+        'Chrome 124 on macOS'
+      )
       expect(trustBrowserPrompt$.isVisible.get()).toBe(false)
       expect(trustBrowserResult$.success.get()).toBe(true)
       expect(trustBrowserResult$.persistGranted.get()).toBe(true)

@@ -33,10 +33,7 @@ export const syncDeviceTimezone = async (): Promise<void> => {
   if (store$.session.lastSyncedTimezone.peek() === tz) return
 
   try {
-    const { error } = await supabase
-      .from('users')
-      .update({ timezone: tz })
-      .eq('id', userId)
+    const { error } = await supabase.from('users').update({ timezone: tz }).eq('id', userId)
 
     if (error) {
       if (process.env.NODE_ENV === 'development') {

@@ -169,10 +169,7 @@ const setSyncEncryptionError = (message: string, code: string): never => {
 
 export const getManagedKeyBytes = async (
   userId?: string
-): Promise<
-  | { data: Uint8Array; error: null }
-  | { data: null; error: SyncEncryptionError }
-> => {
+): Promise<{ data: Uint8Array; error: null } | { data: null; error: SyncEncryptionError }> => {
   const cached = syncManagedKeyBytes$.peek()
   if (cached) return { data: cached as Uint8Array, error: null }
 
@@ -181,7 +178,7 @@ export const getManagedKeyBytes = async (
       data: null,
       error: toSyncEncryptionError(
         'Managed encryption key is unavailable because no authenticated user is present.',
-        'missing_sync_user',
+        'missing_sync_user'
       ),
     }
   }
@@ -418,7 +415,7 @@ export function localFlowToDb(value: Partial<Flow> & { id?: string }): Record<st
     if (!userId) {
       return setSyncEncryptionError(
         'Cannot upload flow content: no authenticated user available for encryption.',
-        'missing_sync_user',
+        'missing_sync_user'
       )
     }
     result.content = encryptFlowContentForDb(value.content, userId)
@@ -459,7 +456,9 @@ export function dbGraceDayToLocal(row: DbGraceDayRow): GraceDay {
   }
 }
 
-export function localGraceDayToDb(value: Partial<GraceDay> & { id?: string }): Record<string, unknown> {
+export function localGraceDayToDb(
+  value: Partial<GraceDay> & { id?: string }
+): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   if (value.id !== undefined) result.id = value.id
   if (value.userId !== undefined) result.user_id = value.userId

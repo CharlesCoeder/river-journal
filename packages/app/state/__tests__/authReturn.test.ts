@@ -39,7 +39,11 @@ vi.mock('../../utils/auth', () => ({
   recordAgeAttestation: (...args: unknown[]) => mockRecordAgeAttestation(...args),
 }))
 
-import { pendingCollectiveReturn$, pendingAgeAttestation$, flushPendingAgeAttestation } from '../authReturn'
+import {
+  pendingCollectiveReturn$,
+  pendingAgeAttestation$,
+  flushPendingAgeAttestation,
+} from '../authReturn'
 
 beforeEach(() => {
   vi.clearAllMocks()

@@ -291,7 +291,10 @@ describe('records the one-time 13+ attestation after successful signup', () => {
   })
 
   it('does NOT call recordAgeAttestation when signup returns an error', async () => {
-    mockSignUpWithEmail.mockResolvedValue({ user: null, error: 'An account with this email already exists.' })
+    mockSignUpWithEmail.mockResolvedValue({
+      user: null,
+      error: 'An account with this email already exists.',
+    })
     render(React.createElement(AuthScreen))
     goToSignupTab()
     fillSignupFields()

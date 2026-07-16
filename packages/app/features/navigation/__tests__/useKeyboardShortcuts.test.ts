@@ -418,7 +418,9 @@ describe('shortcut listener is registered on mount and removed on unmount', () =
   it('does NOT navigate after unmount', async () => {
     const { unmount } = renderHook()
     unmount()
-    await act(async () => { await Promise.resolve() })
+    await act(async () => {
+      await Promise.resolve()
+    })
     // Reset the spy so we can check it's clean
     __pushSpy.mockReset()
     dispatchKey('n', { metaKey: true })

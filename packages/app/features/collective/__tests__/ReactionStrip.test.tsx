@@ -35,7 +35,13 @@ const mutateSpy = vi.fn()
 // Default: empty/idle state (no counts, no userReactions).
 let usePostReactionsMockData = {
   counts: { heart: 0, sparkle: 0, flame: 0, leaf: 0, wave: 0 },
-  userReactions: { heart: null as string | null, sparkle: null as string | null, flame: null as string | null, leaf: null as string | null, wave: null as string | null },
+  userReactions: {
+    heart: null as string | null,
+    sparkle: null as string | null,
+    flame: null as string | null,
+    leaf: null as string | null,
+    wave: null as string | null,
+  },
   isLoading: false,
 }
 
@@ -72,7 +78,7 @@ vi.mock('@my/ui', async () => {
       // Also support keyboard events for button semantics
       mapped['onKeyDown'] = (e: any) => {
         if (e.key === ' ' || e.key === 'Enter') {
-          (props.onPress as () => void)?.()
+          ;(props.onPress as () => void)?.()
         }
       }
     }
@@ -97,12 +103,22 @@ vi.mock('@my/ui', async () => {
   return {
     Text: ({ children, fontSize, color, ...props }: any) =>
       ReactModule.createElement('span', mapProps(props), children),
-    View: ({ children, tag, onPress, 'aria-pressed': ariaPressed, 'aria-disabled': ariaDisabled, 'aria-label': ariaLabel, opacity, ...props }: any) => {
+    View: ({
+      children,
+      tag,
+      onPress,
+      'aria-pressed': ariaPressed,
+      'aria-disabled': ariaDisabled,
+      'aria-label': ariaLabel,
+      opacity,
+      ...props
+    }: any) => {
       const htmlProps: Record<string, unknown> = {}
       if (ariaPressed !== undefined) htmlProps['aria-pressed'] = String(ariaPressed)
       if (ariaDisabled !== undefined) htmlProps['aria-disabled'] = String(ariaDisabled)
       if (ariaLabel !== undefined) htmlProps['aria-label'] = ariaLabel
-      if (props['data-transition'] !== undefined) htmlProps['data-transition'] = props['data-transition']
+      if (props['data-transition'] !== undefined)
+        htmlProps['data-transition'] = props['data-transition']
       if (onPress) {
         htmlProps['onClick'] = onPress
         htmlProps['onKeyDown'] = (e: any) => {
@@ -113,7 +129,8 @@ vi.mock('@my/ui', async () => {
       }
       // Pass through data-transition from props
       if (props.transition !== undefined) htmlProps['data-transition'] = props.transition ?? 'none'
-      if (typeof props['data-transition'] === 'string') htmlProps['data-transition'] = props['data-transition']
+      if (typeof props['data-transition'] === 'string')
+        htmlProps['data-transition'] = props['data-transition']
       const elementTag = tag === 'button' ? 'button' : 'div'
       return ReactModule.createElement(elementTag, htmlProps, children)
     },
@@ -217,9 +234,7 @@ describe('Story 3-11 / t2 — tap unreacted icon fires toggle:add (AC #6)', () =
     expect(callArgs.post_id).toBe('post-2')
     expect(callArgs.user_id).toBe('user-1')
     // id should be a valid UUID v4 format
-    expect(callArgs.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    )
+    expect(callArgs.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
   })
 
   it('button has aria-pressed="false" before tap for an unreacted kind', () => {

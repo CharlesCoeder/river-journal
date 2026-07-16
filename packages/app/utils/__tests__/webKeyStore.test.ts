@@ -135,9 +135,7 @@ describe('webKeyStore', () => {
 
   describe('clearWebTrustData', () => {
     it('removes entry, subsequent loadWrappedKey returns null', async () => {
-      const { wrapAndStoreKey, loadWrappedKey, clearWebTrustData } = await import(
-        '../webKeyStore'
-      )
+      const { wrapAndStoreKey, loadWrappedKey, clearWebTrustData } = await import('../webKeyStore')
 
       await wrapAndStoreKey('user-clear', TEST_KEY)
       expect(await loadWrappedKey('user-clear')).not.toBeNull()
@@ -260,7 +258,10 @@ describe('webKeyStore', () => {
         transaction: vi.fn(() => {
           const store: Record<string, unknown> = {
             add: vi.fn(() => {
-              const req = { onsuccess: null as (() => void) | null, onerror: null as (() => void) | null }
+              const req = {
+                onsuccess: null as (() => void) | null,
+                onerror: null as (() => void) | null,
+              }
               setTimeout(() => req.onsuccess?.(), 0)
               return req
             }),

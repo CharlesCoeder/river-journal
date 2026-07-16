@@ -1489,7 +1489,7 @@ describe('t28 — canBlock computation (own post -> false, anonymized -> false, 
     expect(capturedFlagAffordanceProps.get('root')?.canBlock).toBe(true)
   })
 
-  it('reply: canBlock is false for the viewer\'s own reply', () => {
+  it("reply: canBlock is false for the viewer's own reply", () => {
     const root = buildRoot({ id: 'root', user_id: 'user-other' })
     const ownReply = buildPost({ id: 'reply-own', parent_post_id: 'root', user_id: 'user-abc' })
     mockRootData = root
@@ -1501,9 +1501,13 @@ describe('t28 — canBlock computation (own post -> false, anonymized -> false, 
     expect(capturedFlagAffordanceProps.get('reply-own')?.canBlock).toBe(false)
   })
 
-  it('reply: canBlock is true for another author\'s reply', () => {
+  it("reply: canBlock is true for another author's reply", () => {
     const root = buildRoot({ id: 'root', user_id: 'user-other' })
-    const otherReply = buildPost({ id: 'reply-other', parent_post_id: 'root', user_id: 'user-someone-else' })
+    const otherReply = buildPost({
+      id: 'reply-other',
+      parent_post_id: 'root',
+      user_id: 'user-someone-else',
+    })
     mockRootData = root
     mockThreadData = makeThreadData([otherReply])
     mockCurrentUserId = 'user-abc'
@@ -1513,7 +1517,7 @@ describe('t28 — canBlock computation (own post -> false, anonymized -> false, 
     expect(capturedFlagAffordanceProps.get('reply-other')?.canBlock).toBe(true)
   })
 
-  it('root: blockAuthorUserId passed to FlagAffordance equals the root post\'s user_id', () => {
+  it("root: blockAuthorUserId passed to FlagAffordance equals the root post's user_id", () => {
     const root = buildRoot({ id: 'root', user_id: 'user-other' })
     mockRootData = root
     mockThreadData = makeThreadData([])

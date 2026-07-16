@@ -44,8 +44,16 @@ const fetchNextPageMock = vi.fn()
 
 // ─── Controlled mock state — the row-level panel hooks (AuditLogRow renders
 // for real in this file, so its hook module needs stub coverage too). ─────
-const usePostAdminDetailMock = vi.fn((..._args: unknown[]) => ({ data: null, isLoading: false, isError: false }))
-const useTargetModerationHistoryMock = vi.fn((..._args: unknown[]) => ({ data: [], isLoading: false, isError: false }))
+const usePostAdminDetailMock = vi.fn((..._args: unknown[]) => ({
+  data: null,
+  isLoading: false,
+  isError: false,
+}))
+const useTargetModerationHistoryMock = vi.fn((..._args: unknown[]) => ({
+  data: [],
+  isLoading: false,
+  isError: false,
+}))
 
 vi.mock('app/state/collective/auditLog', () => ({
   useAuditLog: () => ({
@@ -215,7 +223,12 @@ describe('error resilience: a background refetch failure keeps the last-good lis
   it('renders the last-good list AND an ambient error strip when isError is true but data is populated', () => {
     mockIsError = true
     mockIsLoading = false
-    mockPages = [{ items: [makeAuditItem({ id: 'still-visible', note: 'still visible note' })], nextCursor: null }]
+    mockPages = [
+      {
+        items: [makeAuditItem({ id: 'still-visible', note: 'still visible note' })],
+        nextCursor: null,
+      },
+    ]
 
     render(<AuditLogScreen />)
 
@@ -253,7 +266,13 @@ describe('empty state', () => {
 describe('populated list', () => {
   it('renders one row per item, flattened across all loaded pages', () => {
     mockPages = [
-      { items: [makeAuditItem({ id: 'a1', note: 'first note' }), makeAuditItem({ id: 'a2', note: 'second note' })], nextCursor: 'cursor-1' },
+      {
+        items: [
+          makeAuditItem({ id: 'a1', note: 'first note' }),
+          makeAuditItem({ id: 'a2', note: 'second note' }),
+        ],
+        nextCursor: 'cursor-1',
+      },
       { items: [makeAuditItem({ id: 'a3', note: 'third note' })], nextCursor: null },
     ]
     render(<AuditLogScreen />)
@@ -264,13 +283,17 @@ describe('populated list', () => {
   })
 
   it('separates rows with a 1px divider (Separator)', () => {
-    mockPages = [{ items: [makeAuditItem({ id: 'a1' }), makeAuditItem({ id: 'a2' })], nextCursor: null }]
+    mockPages = [
+      { items: [makeAuditItem({ id: 'a1' }), makeAuditItem({ id: 'a2' })], nextCursor: null },
+    ]
     render(<AuditLogScreen />)
     expect(document.querySelectorAll('[data-testid="separator"]').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders "Charlie"-mapped actor identity as "You" for the current user\'s own actions', () => {
-    mockPages = [{ items: [makeAuditItem({ id: 'a1', actor_user_id: 'me-user-abc12345' })], nextCursor: null }]
+    mockPages = [
+      { items: [makeAuditItem({ id: 'a1', actor_user_id: 'me-user-abc12345' })], nextCursor: null },
+    ]
     render(<AuditLogScreen />)
     expect(screen.getByText('You')).not.toBeNull()
   })

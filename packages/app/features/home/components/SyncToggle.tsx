@@ -11,7 +11,13 @@ import {
   retryFetchManagedKey,
 } from 'app/state/encryptionSetup'
 
-type SyncDisplayStatus = 'off' | 'syncing' | 'e2e_needed' | 'e2e_incomplete' | 'managed_unavailable' | 'loading'
+type SyncDisplayStatus =
+  | 'off'
+  | 'syncing'
+  | 'e2e_needed'
+  | 'e2e_incomplete'
+  | 'managed_unavailable'
+  | 'loading'
 
 /**
  * SyncToggle — minimal text-based sync status display in the settings Data & Sync section.
@@ -77,7 +83,10 @@ export function SyncToggle() {
   }, [])
 
   return (
-    <YStack gap="$2" alignItems="flex-start">
+    <YStack
+      gap="$2"
+      alignItems="flex-start"
+    >
       {status === 'loading' && (
         <Text
           testID="sync-status-loading"
@@ -105,7 +114,11 @@ export function SyncToggle() {
           >
             Enable Cloud Sync
           </Text>
-          <Text fontFamily="$body" fontSize={13} color="$color8">
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            color="$color8"
+          >
             Entries remain on this device only.
           </Text>
         </>
@@ -127,7 +140,11 @@ export function SyncToggle() {
           >
             Cloud Sync Active
           </Text>
-          <Text fontFamily="$body" fontSize={13} color="$color8">
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            color="$color8"
+          >
             Everything is securely backed up and up to date.
           </Text>
         </>
@@ -143,7 +160,11 @@ export function SyncToggle() {
           >
             Cloud Sync Locked
           </Text>
-          <Text fontFamily="$body" fontSize={13} color="$color8">
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            color="$color8"
+          >
             Cannot sync until your password is entered.
           </Text>
           <Text
@@ -176,7 +197,11 @@ export function SyncToggle() {
           >
             Setup Incomplete
           </Text>
-          <Text fontFamily="$body" fontSize={13} color="$color8">
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            color="$color8"
+          >
             Encryption setup was started but not finished.
           </Text>
           <Text
@@ -209,7 +234,11 @@ export function SyncToggle() {
           >
             Sync Unavailable
           </Text>
-          <Text fontFamily="$body" fontSize={13} color="$color8">
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            color="$color8"
+          >
             We couldn't fetch your managed encryption key.
           </Text>
           <Text
@@ -235,7 +264,12 @@ export function SyncToggle() {
       )}
 
       {error && status !== 'managed_unavailable' && (
-        <Text fontFamily="$body" fontSize={13} color="$red10" marginTop="$1">
+        <Text
+          fontFamily="$body"
+          fontSize={13}
+          color="$red10"
+          marginTop="$1"
+        >
           {error.message}
         </Text>
       )}

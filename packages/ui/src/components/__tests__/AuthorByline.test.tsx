@@ -237,44 +237,52 @@ describe('Story 3-8 / AuthorByline t2 — tenure tier labels (AC #2, #3)', () =>
 describe('Story 3-8 / AuthorByline t3 — deletedDisplay suppresses tenure (AC #4)', () => {
   it('renders "[deleted]" in name slot when deletedDisplay===true', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    render(React.createElement(AuthorByline, {
-      displayName: 'Alice',
-      postedAt,
-      deletedDisplay: true,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Alice',
+        postedAt,
+        deletedDisplay: true,
+      })
+    )
     expect(screen.getByText(/\[deleted\]/)).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
   })
 
   it('does NOT render tenure label when deletedDisplay===true even if tenureTier===30', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    render(React.createElement(AuthorByline, {
-      displayName: 'Alice',
-      postedAt,
-      deletedDisplay: true,
-      tenureTier: 30,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Alice',
+        postedAt,
+        deletedDisplay: true,
+        tenureTier: 30,
+      })
+    )
     expect(screen.queryByText(/Day 30\+/)).toBeNull()
   })
 
   it('does NOT render tenure label when deletedDisplay===true even if tenureTier===365', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    render(React.createElement(AuthorByline, {
-      displayName: 'Bob',
-      postedAt,
-      deletedDisplay: true,
-      tenureTier: 365,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Bob',
+        postedAt,
+        deletedDisplay: true,
+        tenureTier: 365,
+      })
+    )
     expect(screen.queryByText(/Year\+/)).toBeNull()
   })
 
   it('retains the timestamp even when deletedDisplay===true', () => {
     const postedAt = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() // 3h ago
-    render(React.createElement(AuthorByline, {
-      displayName: 'Alice',
-      postedAt,
-      deletedDisplay: true,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Alice',
+        postedAt,
+        deletedDisplay: true,
+      })
+    )
     // Timestamp should still be visible in some form (h or "h ago" or date)
     const text = document.body.textContent ?? ''
     // Should contain time info — either "h", "d", or a date

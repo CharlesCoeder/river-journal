@@ -60,10 +60,7 @@ beforeEach(() => {
 
 describe('Story 3-8 / suspension.ts existence', () => {
   it('suspension.ts exists at the expected path', () => {
-    expect(
-      existsSync(SUSPENSION_PATH),
-      `suspension.ts must exist at ${SUSPENSION_PATH}`
-    ).toBe(true)
+    expect(existsSync(SUSPENSION_PATH), `suspension.ts must exist at ${SUSPENSION_PATH}`).toBe(true)
   })
 })
 
@@ -237,10 +234,9 @@ describe('Story 3-8 / t5 — useIsSuspended staleTime (AC #16)', () => {
 
 describe('Story 3-8 / t6 — currentUser.ts D7 compliance (AC #23)', () => {
   it('currentUser.ts exists at the expected path', () => {
-    expect(
-      existsSync(CURRENT_USER_PATH),
-      `currentUser.ts must exist at ${CURRENT_USER_PATH}`
-    ).toBe(true)
+    expect(existsSync(CURRENT_USER_PATH), `currentUser.ts must exist at ${CURRENT_USER_PATH}`).toBe(
+      true
+    )
   })
 
   it('currentUser.ts does NOT contain @legendapp/state import', () => {

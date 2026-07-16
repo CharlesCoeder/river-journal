@@ -36,8 +36,7 @@ export function KeyringPrompt() {
   useEffect(() => {
     if (persistResultError) {
       toast.show('Keychain storage failed', {
-        message:
-          "Could not save to keychain — you'll need to enter your password next time.",
+        message: "Could not save to keychain — you'll need to enter your password next time.",
         duration: 6000,
       })
       keyringPersistResult$.error.set(null)
@@ -59,32 +58,58 @@ export function KeyringPrompt() {
   if (!isVisible) return null
 
   return (
-    <Card padding="$4" backgroundColor="$color2" borderRadius="$4" borderWidth={1} borderColor="$color4" width="100%">
+    <Card
+      padding="$4"
+      backgroundColor="$color2"
+      borderRadius="$4"
+      borderWidth={1}
+      borderColor="$color4"
+      width="100%"
+    >
       <YStack gap="$3">
         <YStack gap="$1.5">
-          <Text fontSize="$4" fontFamily="$body" fontWeight="700">
+          <Text
+            fontSize="$4"
+            fontFamily="$body"
+            fontWeight="700"
+          >
             Store encryption key in keychain?
           </Text>
-          <Text fontSize="$3" fontFamily="$body" color="$color11">
-            Save your encryption key so you don't have to enter your password
-            every time you open the app on this device.
+          <Text
+            fontSize="$3"
+            fontFamily="$body"
+            color="$color11"
+          >
+            Save your encryption key so you don't have to enter your password every time you open
+            the app on this device.
           </Text>
         </YStack>
 
         <Separator />
 
         {isPersisting && (
-          <Text fontSize="$3" fontFamily="$body" color="$color11">
+          <Text
+            fontSize="$3"
+            fontFamily="$body"
+            color="$color11"
+          >
             Storing your key — please keep the app open until this completes…
           </Text>
         )}
 
         {persistError && (
           <YStack gap="$2">
-            <Text fontSize="$3" fontFamily="$body" color="$red10">
+            <Text
+              fontSize="$3"
+              fontFamily="$body"
+              color="$red10"
+            >
               {persistError.message}
             </Text>
-            <XStack gap="$3" justifyContent="flex-end">
+            <XStack
+              gap="$3"
+              justifyContent="flex-end"
+            >
               <Button
                 testID="keyring-dismiss"
                 variant="outlined"
@@ -107,7 +132,10 @@ export function KeyringPrompt() {
         )}
 
         {!isPersisting && !persistError && (
-          <XStack gap="$3" justifyContent="flex-end">
+          <XStack
+            gap="$3"
+            justifyContent="flex-end"
+          >
             <Button
               testID="keyring-decline"
               variant="outlined"

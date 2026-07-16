@@ -29,8 +29,10 @@ vi.mock('@my/ui', async () => {
       if (onPress) domProps['onClick'] = onPress
       return ReactModule.createElement('span', domProps, children)
     },
-    XStack: ({ children }: any) => ReactModule.createElement('div', { 'data-stack': 'x' }, children),
-    YStack: ({ children }: any) => ReactModule.createElement('div', { 'data-stack': 'y' }, children),
+    XStack: ({ children }: any) =>
+      ReactModule.createElement('div', { 'data-stack': 'x' }, children),
+    YStack: ({ children }: any) =>
+      ReactModule.createElement('div', { 'data-stack': 'y' }, children),
     ExpandingLineButton: ({ children, onPress }: any) =>
       ReactModule.createElement('button', { onClick: onPress }, children),
   }

@@ -139,9 +139,7 @@ describe('useMyActiveSuspension — own-SELECT query shape', () => {
     await opts.queryFn()
 
     expect(fromMock).toHaveBeenCalledWith('user_suspensions')
-    expect(chain.select).toHaveBeenCalledWith(
-      expect.stringContaining('ends_at')
-    )
+    expect(chain.select).toHaveBeenCalledWith(expect.stringContaining('ends_at'))
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'user-abc')
     expect(chain.order).toHaveBeenCalledWith('ends_at', { ascending: false })
     expect(chain.limit).toHaveBeenCalledWith(1)
@@ -516,8 +514,9 @@ describe('acknowledgeReceipt / hasAcknowledgedReceipt', () => {
     acknowledgeReceipt(receiptId, firstNow)
     acknowledgeReceipt(receiptId, secondNow)
 
-    const acknowledgedAt = (store$.profile as any).preferences?.moderationReceipts?.[receiptId]
-      ?.acknowledged_at?.get?.()
+    const acknowledgedAt = (store$.profile as any).preferences?.moderationReceipts?.[
+      receiptId
+    ]?.acknowledged_at?.get?.()
     expect(acknowledgedAt).toBe(firstNow)
     expect(acknowledgedAt).not.toBe(secondNow)
   })

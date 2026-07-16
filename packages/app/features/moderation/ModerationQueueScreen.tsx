@@ -15,10 +15,7 @@
 // never blank Charlie's screen mid-triage.
 
 import { YStack, View, Text, Separator, useReducedMotion } from '@my/ui'
-import {
-  useModerationQueue,
-  useLastModerationActionAt,
-} from 'app/state/collective/moderation'
+import { useModerationQueue, useLastModerationActionAt } from 'app/state/collective/moderation'
 import { ModerationQueueRow } from 'app/features/moderation/ModerationQueueRow'
 import { SkeletonRows, timeAgoCasual } from 'app/features/collective/_shared'
 
@@ -30,7 +27,14 @@ export default function ModerationQueueScreen() {
   // ─── Loading (initial only) — gated on isLoading, never isFetching/isError ──
   if (isLoading && data === undefined) {
     return (
-      <YStack data-testid="moderation-queue-screen" width="100%" maxWidth={720} marginHorizontal="auto" paddingHorizontal="$5" paddingVertical="$8">
+      <YStack
+        data-testid="moderation-queue-screen"
+        width="100%"
+        maxWidth={720}
+        marginHorizontal="auto"
+        paddingHorizontal="$5"
+        paddingVertical="$8"
+      >
         <SkeletonRows reducedMotion={reducedMotion} />
       </YStack>
     )
@@ -39,8 +43,20 @@ export default function ModerationQueueScreen() {
   // ─── Initial error (no cached data) — bare error line, no list ─────────────
   if (isError && data === undefined) {
     return (
-      <YStack data-testid="moderation-queue-screen" width="100%" maxWidth={720} marginHorizontal="auto" paddingHorizontal="$5" paddingVertical="$8">
-        <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
+      <YStack
+        data-testid="moderation-queue-screen"
+        width="100%"
+        maxWidth={720}
+        marginHorizontal="auto"
+        paddingHorizontal="$5"
+        paddingVertical="$8"
+      >
+        <Text
+          fontSize="$2"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$4"
+        >
           Couldn&apos;t load the queue. Try again shortly.
         </Text>
       </YStack>
@@ -65,24 +81,50 @@ export default function ModerationQueueScreen() {
       paddingVertical="$8"
     >
       {showErrorStrip ? (
-        <Text fontSize="$1" color="$color9" textAlign="center" paddingVertical="$2">
+        <Text
+          fontSize="$1"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$2"
+        >
           Couldn&apos;t refresh. Showing the last update.
         </Text>
       ) : null}
 
       {isEmpty ? (
         hasLastAction ? (
-          <YStack paddingVertical="$8" gap="$2" alignItems="center">
-            <Text fontFamily="$journal" fontSize="$6" color="$color10" fontStyle="italic">
+          <YStack
+            paddingVertical="$8"
+            gap="$2"
+            alignItems="center"
+          >
+            <Text
+              fontFamily="$journal"
+              fontSize="$6"
+              color="$color10"
+              fontStyle="italic"
+            >
               Queue clear.
             </Text>
-            <Text fontFamily="$body" fontSize="$1" color="$color9">
+            <Text
+              fontFamily="$body"
+              fontSize="$1"
+              color="$color9"
+            >
               Last action {timeAgoCasual(lastActionAt as string)}
             </Text>
           </YStack>
         ) : (
-          <YStack paddingVertical="$8" alignItems="center">
-            <Text fontFamily="$journal" fontSize="$6" color="$color10" fontStyle="italic">
+          <YStack
+            paddingVertical="$8"
+            alignItems="center"
+          >
+            <Text
+              fontFamily="$journal"
+              fontSize="$6"
+              color="$color10"
+              fontStyle="italic"
+            >
               No pending flags.
             </Text>
           </YStack>
@@ -92,7 +134,10 @@ export default function ModerationQueueScreen() {
           <View key={item.post_id}>
             <ModerationQueueRow item={item} />
             {index < items.length - 1 ? (
-              <Separator borderColor="$color3" borderBottomWidth={1} />
+              <Separator
+                borderColor="$color3"
+                borderBottomWidth={1}
+              />
             ) : null}
           </View>
         ))

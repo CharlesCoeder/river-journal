@@ -704,7 +704,10 @@ describe('Dialog lifecycle — clean reopen + no dead-ends', () => {
     const onOpenChange = vi.fn()
 
     render(
-      React.createElement(CancelSubscriptionFlow, baseProps({ provider: 'apple_iap', onOpenChange }))
+      React.createElement(
+        CancelSubscriptionFlow,
+        baseProps({ provider: 'apple_iap', onOpenChange })
+      )
     )
     fireEvent.click(screen.getByTestId('btn-confirm-cancel'))
     await waitFor(() => expect(screen.getByTestId('btn-done')).toBeTruthy())

@@ -164,26 +164,38 @@ export function ModerationReceiptDialog({ receipt, onAcknowledge }: ModerationRe
           borderWidth={1}
           animation={animationToken}
         >
-          <Dialog.Title fontSize="$5" fontFamily="$body">
+          <Dialog.Title
+            fontSize="$5"
+            fontFamily="$body"
+          >
             {title}
           </Dialog.Title>
 
           <YStack gap="$2">
             {receipt.kind === 'removed_post' ? (
-              <Text fontSize="$3" color="$color12">
+              <Text
+                fontSize="$3"
+                color="$color12"
+              >
                 {`A ${receipt.parent_post_id !== null ? 'reply' : 'post'} you made on ${humanDate(
                   receipt.created_at
                 )} was removed. Reason: ${reasonLabel(receipt.removed_reason)}.`}
               </Text>
             ) : (
               <>
-                <Text fontSize="$3" color="$color12">
+                <Text
+                  fontSize="$3"
+                  color="$color12"
+                >
                   {`Your ability to post and react has been paused until ${humanDate(
                     receipt.ends_at
                   )}. You can still write and read.`}
                 </Text>
                 {suspensionReason !== null ? (
-                  <Text fontSize="$3" color="$color11">
+                  <Text
+                    fontSize="$3"
+                    color="$color11"
+                  >
                     {`Reason: ${suspensionReason}`}
                   </Text>
                 ) : null}
@@ -203,8 +215,15 @@ export function ModerationReceiptDialog({ receipt, onAcknowledge }: ModerationRe
             View community guidelines
           </Text>
 
-          <XStack gap="$3" justifyContent="flex-end" marginTop="$3">
-            <ExpandingLineButton size="cta" onPress={onAcknowledge}>
+          <XStack
+            gap="$3"
+            justifyContent="flex-end"
+            marginTop="$3"
+          >
+            <ExpandingLineButton
+              size="cta"
+              onPress={onAcknowledge}
+            >
               Got it
             </ExpandingLineButton>
           </XStack>

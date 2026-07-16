@@ -79,63 +79,87 @@ export function CollectivePlaceholderScreen() {
               maxWidth={680}
               gap="$8"
             >
-          <YStack gap="$3">
-            <Text
-              fontFamily="$body"
-              fontSize={12}
-              color="$color8"
-              letterSpacing={1}
-              textTransform="uppercase"
-            >
-              A quieter place to share
-            </Text>
-            <Text
-              fontFamily="$journal"
-              fontSize={36}
-              color="$color"
-              lineHeight={44}
-            >
-              Collective is taking shape.
-            </Text>
-          </YStack>
+              <YStack gap="$3">
+                <Text
+                  fontFamily="$body"
+                  fontSize={12}
+                  color="$color8"
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                >
+                  A quieter place to share
+                </Text>
+                <Text
+                  fontFamily="$journal"
+                  fontSize={36}
+                  color="$color"
+                  lineHeight={44}
+                >
+                  Collective is taking shape.
+                </Text>
+              </YStack>
 
-          <YStack gap="$4">
-            <Text fontFamily="$body" fontSize="$5" color="$color" lineHeight={28}>
-              Your journal is private by default. Collective is a small, calm
-              space where you can choose to share a few words from your day —
-              and read what others have chosen to share, too.
-            </Text>
-            <Text fontFamily="$body" fontSize="$4" color="$color9" lineHeight={24}>
-              It’s here, working quietly behind the scenes. We’re still
-              softening the edges before opening it up. In the meantime, you
-              can keep writing — the rest of the journal is yours to use as
-              normal.
-            </Text>
-          </YStack>
+              <YStack gap="$4">
+                <Text
+                  fontFamily="$body"
+                  fontSize="$5"
+                  color="$color"
+                  lineHeight={28}
+                >
+                  Your journal is private by default. Collective is a small, calm space where you
+                  can choose to share a few words from your day — and read what others have chosen
+                  to share, too.
+                </Text>
+                <Text
+                  fontFamily="$body"
+                  fontSize="$4"
+                  color="$color9"
+                  lineHeight={24}
+                >
+                  It’s here, working quietly behind the scenes. We’re still softening the edges
+                  before opening it up. In the meantime, you can keep writing — the rest of the
+                  journal is yours to use as normal.
+                </Text>
+              </YStack>
 
-          <YStack gap="$3">
-            <Text
-              fontFamily="$body"
-              fontSize={12}
-              color="$color8"
-              letterSpacing={1}
-              textTransform="uppercase"
-            >
-              What it’ll feel like
-            </Text>
-            <YStack gap="$3">
-              {GLIMPSES.map((line) => (
-                <XStack key={line} gap="$3" alignItems="flex-start">
-                  <Text fontFamily="$body" fontSize="$4" color="$color8" minWidth={16}>
-                    •
-                  </Text>
-                  <Text fontFamily="$body" fontSize="$4" color="$color" lineHeight={24} flex={1}>
-                    {line}
-                  </Text>
-                </XStack>
-              ))}
-            </YStack>
-          </YStack>
+              <YStack gap="$3">
+                <Text
+                  fontFamily="$body"
+                  fontSize={12}
+                  color="$color8"
+                  letterSpacing={1}
+                  textTransform="uppercase"
+                >
+                  What it’ll feel like
+                </Text>
+                <YStack gap="$3">
+                  {GLIMPSES.map((line) => (
+                    <XStack
+                      key={line}
+                      gap="$3"
+                      alignItems="flex-start"
+                    >
+                      <Text
+                        fontFamily="$body"
+                        fontSize="$4"
+                        color="$color8"
+                        minWidth={16}
+                      >
+                        •
+                      </Text>
+                      <Text
+                        fontFamily="$body"
+                        fontSize="$4"
+                        color="$color"
+                        lineHeight={24}
+                        flex={1}
+                      >
+                        {line}
+                      </Text>
+                    </XStack>
+                  ))}
+                </YStack>
+              </YStack>
             </YStack>
           )}
         </AnimatePresence>

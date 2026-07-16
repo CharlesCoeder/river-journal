@@ -86,7 +86,16 @@ export interface FlagAffordanceProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelete, canFocus = false, onFocus, canBlock = false, blockAuthorUserId }: FlagAffordanceProps) {
+export function FlagAffordance({
+  postId,
+  reporterUserId,
+  canReport,
+  canSelfDelete,
+  canFocus = false,
+  onFocus,
+  canBlock = false,
+  blockAuthorUserId,
+}: FlagAffordanceProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -112,13 +121,14 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
   // cases get a specific label. (canFocus is a thread-navigation affordance, not
   // a primary action, so it does not by itself flip the label to "Post actions".)
   const primaryActionCount = Number(canReport) + Number(canSelfDelete) + Number(canBlock)
-  const triggerAriaLabel = primaryActionCount > 1
-    ? 'Post actions'
-    : canSelfDelete
-      ? 'Delete your post'
-      : canBlock
-        ? 'Block this user'
-        : 'Report this post'
+  const triggerAriaLabel =
+    primaryActionCount > 1
+      ? 'Post actions'
+      : canSelfDelete
+        ? 'Delete your post'
+        : canBlock
+          ? 'Block this user'
+          : 'Report this post'
 
   function handleFocus() {
     setMenuOpen(false)
@@ -195,7 +205,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
 
   return (
     <>
-      <Popover open={menuOpen} onOpenChange={setMenuOpen} placement="bottom-end">
+      <Popover
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        placement="bottom-end"
+      >
         <Popover.Trigger asChild>
           <View
             tag="button"
@@ -268,7 +282,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
         </Popover.Content>
       </Popover>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        modal
+      >
         <Dialog.Portal>
           <Dialog.Overlay
             key="overlay"
@@ -288,10 +306,16 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
             borderWidth={1}
             animation={animationToken}
           >
-            <Dialog.Title fontSize="$5" fontFamily="$body">
+            <Dialog.Title
+              fontSize="$5"
+              fontFamily="$body"
+            >
               Report this post
             </Dialog.Title>
-            <Dialog.Description fontSize="$2" color="$color11">
+            <Dialog.Description
+              fontSize="$2"
+              color="$color11"
+            >
               Reports are confidential. Reported posts disappear from your feed.
             </Dialog.Description>
 
@@ -302,9 +326,19 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
             >
               <YStack gap="$2">
                 {REPORT_REASONS.map(({ code, label }) => (
-                  <XStack key={code} alignItems="center" gap="$2">
-                    <RadioGroup.Item value={code} id={`reason-${code}`} />
-                    <Label htmlFor={`reason-${code}`} fontSize="$3">
+                  <XStack
+                    key={code}
+                    alignItems="center"
+                    gap="$2"
+                  >
+                    <RadioGroup.Item
+                      value={code}
+                      id={`reason-${code}`}
+                    />
+                    <Label
+                      htmlFor={`reason-${code}`}
+                      fontSize="$3"
+                    >
                       {label}
                     </Label>
                   </XStack>
@@ -314,7 +348,10 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
 
             {/* Disclosure microcopy — placeholder route; link deferred per AC #24 */}
             {/* TODO(post-3-12): link to /about/guidelines once that route lands */}
-            <Text fontSize="$1" color="$color9">
+            <Text
+              fontSize="$1"
+              color="$color9"
+            >
               Confirm this post violates the community guidelines.
             </Text>
 
@@ -329,10 +366,12 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
               borderColor="$color3"
             />
 
-            <XStack gap="$3" justifyContent="flex-end" marginTop="$3">
-              <ExpandingLineButton onPress={handleCancel}>
-                Cancel
-              </ExpandingLineButton>
+            <XStack
+              gap="$3"
+              justifyContent="flex-end"
+              marginTop="$3"
+            >
+              <ExpandingLineButton onPress={handleCancel}>Cancel</ExpandingLineButton>
               <ExpandingLineButton
                 onPress={handleSubmit}
                 disabled={submitDisabled}
@@ -343,7 +382,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog>
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} modal>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        modal
+      >
         <Dialog.Portal>
           <Dialog.Overlay
             key="delete-overlay"
@@ -363,20 +406,26 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
             borderWidth={1}
             animation={animationToken}
           >
-            <Dialog.Title fontSize="$5" fontFamily="$body">
+            <Dialog.Title
+              fontSize="$5"
+              fontFamily="$body"
+            >
               Delete this post?
             </Dialog.Title>
-            <Dialog.Description fontSize="$2" color="$color11">
+            <Dialog.Description
+              fontSize="$2"
+              color="$color11"
+            >
               {"The text will be replaced with '[deleted]'. Replies under it will remain visible."}
             </Dialog.Description>
 
-            <XStack gap="$3" justifyContent="flex-end" marginTop="$3">
-              <ExpandingLineButton onPress={handleDeleteCancel}>
-                Cancel
-              </ExpandingLineButton>
-              <ExpandingLineButton onPress={handleDeleteConfirm}>
-                Delete
-              </ExpandingLineButton>
+            <XStack
+              gap="$3"
+              justifyContent="flex-end"
+              marginTop="$3"
+            >
+              <ExpandingLineButton onPress={handleDeleteCancel}>Cancel</ExpandingLineButton>
+              <ExpandingLineButton onPress={handleDeleteConfirm}>Delete</ExpandingLineButton>
             </XStack>
           </Dialog.Content>
         </Dialog.Portal>

@@ -233,7 +233,11 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
     await queryClient.cancelQueries({ queryKey: ['collective'] })
     const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
-    const ctx = context as { feedSnapshot?: unknown; threadSnapshot?: unknown; reactionsSnapshot?: unknown }
+    const ctx = context as {
+      feedSnapshot?: unknown
+      threadSnapshot?: unknown
+      reactionsSnapshot?: unknown
+    }
     expect(ctx.feedSnapshot).toBeDefined()
   })
 })
@@ -375,7 +379,9 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
     const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     // Verify optimistic update was applied
-    const afterOptimistic = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
+    const afterOptimistic = queryClient.getQueryData<ReactionsCache>(
+      collectiveReactionsKey(POST_ID)
+    )
     expect(afterOptimistic!.counts.heart).toBe(4)
 
     // Simulate error — should rollback
@@ -678,7 +684,13 @@ describe('Story 3-15 / delete_own feed-cache update omits body (AC #27c)', () =>
     // thread cache holds `ThreadPost` (which has `body`). The runtime object
     // carries a `body` field, so this faithfully simulates a seeded thread row.
     const threadData = {
-      pages: [{ items: [makePost({ id: POST_ID, parent_post_id: 'root' })], mode: 'full', nextCursor: null }],
+      pages: [
+        {
+          items: [makePost({ id: POST_ID, parent_post_id: 'root' })],
+          mode: 'full',
+          nextCursor: null,
+        },
+      ],
       pageParams: [null],
     } as unknown as InfiniteData<ThreadPageResult>
     queryClient.setQueryData(collectiveThreadKey(POST_ID), threadData)
@@ -698,8 +710,8 @@ describe('Story 3-15 / delete_own feed-cache update omits body (AC #27c)', () =>
     expect(threadRow.body).toBe('[deleted]')
     expect(threadRow.is_user_deleted).toBe(true)
 
-    const yourRow = queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)!.pages[0]!
-      .items[0]!
+    const yourRow =
+      queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)!.pages[0]!.items[0]!
     expect(yourRow.body).toBe('[deleted]')
     expect(yourRow.is_user_deleted).toBe(true)
   })

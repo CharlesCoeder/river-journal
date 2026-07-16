@@ -11,9 +11,7 @@ expect.extend({
     return {
       pass: isDisabled,
       message: () =>
-        isDisabled
-          ? `expected element not to be disabled`
-          : `expected element to be disabled`,
+        isDisabled ? `expected element not to be disabled` : `expected element to be disabled`,
     }
   },
 })

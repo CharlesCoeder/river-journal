@@ -52,6 +52,7 @@ function yieldToEventLoop(): Promise<void> {
 
 /** Sanitize a custom separator: strip control chars (including newlines), cap at 80 chars. */
 export function sanitizeSeparator(text: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentionally strips ASCII control chars (incl. newlines)
   return text.replace(/[\x00-\x1f]/g, '').slice(0, 80)
 }
 
@@ -388,17 +389,25 @@ export async function exportJournalSingleFileChunked(
 /**
  * Derive the list of months that have entries, sorted newest-first.
  */
-export function getAvailableMonths(
-  entries: DailyEntryView[]
-): { key: string; label: string }[] {
+export function getAvailableMonths(entries: DailyEntryView[]): { key: string; label: string }[] {
   const monthSet = new Set<string>()
   for (const entry of entries) {
     monthSet.add(entry.entryDate.slice(0, 7))
   }
 
   const MONTH_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ]
 
   return Array.from(monthSet)
@@ -407,6 +416,6 @@ export function getAvailableMonths(
       // `key` is always 'YYYY-MM' (built via entryDate.slice(0, 7)), so the
       // split yields both parts — `month!` is always valid.
       const [year, month] = key.split('-')
-      return { key, label: `${MONTH_NAMES[parseInt(month!, 10) - 1]} ${year}` }
+      return { key, label: `${MONTH_NAMES[Number.parseInt(month!, 10) - 1]} ${year}` }
     })
 }

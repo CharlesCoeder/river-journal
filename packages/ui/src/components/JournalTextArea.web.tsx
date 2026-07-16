@@ -57,6 +57,12 @@ type JournalTextAreaProps = GetProps<typeof StyledJournalArea> & {
 // We use forwardRef to allow passing a ref to the underlying TextArea.
 export const JournalTextArea = forwardRef<any, JournalTextAreaProps>(
   ({ keyboardPadding, minHeight = 150, ...textAreaProps }, ref) => {
-    return <StyledJournalArea {...textAreaProps} ref={ref} minHeight={minHeight} />
+    return (
+      <StyledJournalArea
+        {...textAreaProps}
+        ref={ref}
+        minHeight={minHeight}
+      />
+    )
   }
 )

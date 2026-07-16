@@ -26,8 +26,12 @@ const serifWeight = {
   5: '500',
 }
 
-const sansLineHeight = { sizeLineHeight: (size: number) => Math.round(size * 1.4 + (size >= 12 ? 6 : 4)) }
-const serifLineHeight = { sizeLineHeight: (size: number) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)) }
+const sansLineHeight = {
+  sizeLineHeight: (size: number) => Math.round(size * 1.4 + (size >= 12 ? 6 : 4)),
+}
+const serifLineHeight = {
+  sizeLineHeight: (size: number) => Math.round(size * 1.5 + (size >= 12 ? 8 : 6)),
+}
 
 // =================================================================
 // Default pairing: Outfit + Newsreader

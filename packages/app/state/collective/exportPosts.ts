@@ -104,9 +104,7 @@ export async function fetchExportPostsPage(
   const items = hasMore ? rows.slice(0, PAGE_SIZE) : rows
   // hasMore ⇒ rows.length > PAGE_SIZE, so index PAGE_SIZE-1 is always present.
   const lastVisible = hasMore ? rows[PAGE_SIZE - 1]! : null
-  const nextCursor = lastVisible
-    ? { createdAt: lastVisible.created_at, id: lastVisible.id }
-    : null
+  const nextCursor = lastVisible ? { createdAt: lastVisible.created_at, id: lastVisible.id } : null
   return { items, nextCursor }
 }
 

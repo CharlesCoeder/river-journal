@@ -20,7 +20,7 @@
 // below is for symmetry with CollectiveFeedScreen. A moderator-removal marker
 // UI is intentionally NOT implemented here — it requires RPC widening to include
 // removed rows + moderation_actions JOIN (Epic 5 / Story 5.8). Deferred per
-// sprint-epic-3-deferred-decisions.md. (AC #42)
+// internal notes. (AC #42)
 
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -62,8 +62,7 @@ export default function YourPostsScreen() {
   // Flatten pages, apply defensive is_removed filter (defense-in-depth; RPC already filters)
   // No local-hide filter — users cannot locally-hide their own posts via FlagAffordance (AC #4)
   const allPosts = useMemo(
-    () =>
-      yourPosts.data?.pages.flatMap((p) => p.items).filter((p) => !p.is_removed) ?? [],
+    () => yourPosts.data?.pages.flatMap((p) => p.items).filter((p) => !p.is_removed) ?? [],
     [yourPosts.data]
   )
 
@@ -86,7 +85,12 @@ export default function YourPostsScreen() {
     return (
       <YStack>
         <View onPress={() => yourPosts.refetch()}>
-          <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
+          <Text
+            fontSize="$2"
+            color="$color9"
+            textAlign="center"
+            paddingVertical="$4"
+          >
             Couldn&apos;t load your posts. Pull to retry.
           </Text>
         </View>
@@ -111,85 +115,101 @@ export default function YourPostsScreen() {
   return (
     <AnimatePresence>
       {mounted && (
-    <YStack
-      key="collective-your-posts-body"
-      transition="designEnter"
-      enterStyle={{ opacity: 0, y: 10 }}
-      opacity={1}
-      y={0}
-      width="100%"
-      maxWidth={720}
-      marginHorizontal="auto"
-    >
-      {/* Error with cached data — show refresh error strip (highest precedence) */}
-      {showErrorStrip ? (
-        <Text fontSize="$1" color="$color9" textAlign="center" paddingVertical="$2">
-          Couldn&apos;t refresh. Showing cached posts.
-        </Text>
-      ) : null}
+        <YStack
+          key="collective-your-posts-body"
+          transition="designEnter"
+          enterStyle={{ opacity: 0, y: 10 }}
+          opacity={1}
+          y={0}
+          width="100%"
+          maxWidth={720}
+          marginHorizontal="auto"
+        >
+          {/* Error with cached data — show refresh error strip (highest precedence) */}
+          {showErrorStrip ? (
+            <Text
+              fontSize="$1"
+              color="$color9"
+              textAlign="center"
+              paddingVertical="$2"
+            >
+              Couldn&apos;t refresh. Showing cached posts.
+            </Text>
+          ) : null}
 
-      {/* Offline microcopy — only when error strip is not shown and timestamp is valid.
+          {/* Offline microcopy — only when error strip is not shown and timestamp is valid.
           Note: text does not repeat "Offline" since test fixtures use post bodies
           containing "offline" — only one element must match /Offline/i per assertion.
           The phrase "last synced" uniquely identifies this strip. */}
-      {showOfflineStrip ? (
-        <Text fontSize="$1" color="$color9" paddingVertical="$2" textAlign="center">
-          Last synced {formatTimeAgo(yourPosts.dataUpdatedAt)}
-        </Text>
-      ) : null}
-
-      {/* Empty state */}
-      {showEmptyState ? (
-        <YStack>
-          <Text
-            fontFamily="$journal"
-            fontSize="$5"
-            color="$color11"
-            textAlign="center"
-            marginTop="$8"
-          >
-            You haven&apos;t posted yet.
-          </Text>
-          <Text
-            fontSize="$2"
-            color="$color9"
-            textAlign="center"
-            marginTop="$2"
-          >
-            Cross 500 today and share something with the Collective.
-          </Text>
-          {feedMode === 'full' ? (
-            <ExpandingLineButton onPress={() => router.push('/collective/compose')}>
-              Compose
-            </ExpandingLineButton>
-          ) : (
-            <ExpandingLineButton onPress={() => router.push('/')}>
-              Begin writing
-            </ExpandingLineButton>
-          )}
-        </YStack>
-      ) : null}
-
-      {/* Post list */}
-      {allPosts.map((post, index) => (
-        <View key={post.id}>
-          <YourPostRow post={post} currentUserId={currentUserId} />
-          {index < allPosts.length - 1 ? (
-            <Separator borderColor="$color3" borderBottomWidth={1} />
+          {showOfflineStrip ? (
+            <Text
+              fontSize="$1"
+              color="$color9"
+              paddingVertical="$2"
+              textAlign="center"
+            >
+              Last synced {formatTimeAgo(yourPosts.dataUpdatedAt)}
+            </Text>
           ) : null}
-        </View>
-      ))}
 
-      {/* Load more pagination trigger */}
-      {yourPosts.hasNextPage ? (
-        <ExpandingLineButton
-          onPress={() => yourPosts.fetchNextPage()}
-          disabled={yourPosts.isFetchingNextPage}
-        >
-          Load more
-        </ExpandingLineButton>
-      ) : null}
-    </YStack>
+          {/* Empty state */}
+          {showEmptyState ? (
+            <YStack>
+              <Text
+                fontFamily="$journal"
+                fontSize="$5"
+                color="$color11"
+                textAlign="center"
+                marginTop="$8"
+              >
+                You haven&apos;t posted yet.
+              </Text>
+              <Text
+                fontSize="$2"
+                color="$color9"
+                textAlign="center"
+                marginTop="$2"
+              >
+                Cross 500 today and share something with the Collective.
+              </Text>
+              {feedMode === 'full' ? (
+                <ExpandingLineButton onPress={() => router.push('/collective/compose')}>
+                  Compose
+                </ExpandingLineButton>
+              ) : (
+                <ExpandingLineButton onPress={() => router.push('/')}>
+                  Begin writing
+                </ExpandingLineButton>
+              )}
+            </YStack>
+          ) : null}
+
+          {/* Post list */}
+          {allPosts.map((post, index) => (
+            <View key={post.id}>
+              <YourPostRow
+                post={post}
+                currentUserId={currentUserId}
+              />
+              {index < allPosts.length - 1 ? (
+                <Separator
+                  borderColor="$color3"
+                  borderBottomWidth={1}
+                />
+              ) : null}
+            </View>
+          ))}
+
+          {/* Load more pagination trigger */}
+          {yourPosts.hasNextPage ? (
+            <ExpandingLineButton
+              onPress={() => yourPosts.fetchNextPage()}
+              disabled={yourPosts.isFetchingNextPage}
+            >
+              Load more
+            </ExpandingLineButton>
+          ) : null}
+        </YStack>
       )}
     </AnimatePresence>
   )

@@ -22,8 +22,7 @@ import { AuditLogRow } from 'app/features/moderation/AuditLogRow'
 import { SkeletonRows } from 'app/features/collective/_shared'
 
 export default function AuditLogScreen() {
-  const { data, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useAuditLog()
+  const { data, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage } = useAuditLog()
   const currentUserId = useCurrentUserId()
   const reducedMotion = useReducedMotion()
 
@@ -54,7 +53,12 @@ export default function AuditLogScreen() {
         paddingHorizontal="$5"
         paddingVertical="$8"
       >
-        <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
+        <Text
+          fontSize="$2"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$4"
+        >
           Couldn&apos;t load the audit log. Try again shortly.
         </Text>
       </YStack>
@@ -76,14 +80,27 @@ export default function AuditLogScreen() {
       paddingVertical="$8"
     >
       {showErrorStrip ? (
-        <Text fontSize="$1" color="$color9" textAlign="center" paddingVertical="$2">
+        <Text
+          fontSize="$1"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$2"
+        >
           Couldn&apos;t refresh. Showing the last update.
         </Text>
       ) : null}
 
       {isEmpty ? (
-        <YStack paddingVertical="$8" alignItems="center">
-          <Text fontFamily="$journal" fontSize="$6" color="$color10" fontStyle="italic">
+        <YStack
+          paddingVertical="$8"
+          alignItems="center"
+        >
+          <Text
+            fontFamily="$journal"
+            fontSize="$6"
+            color="$color10"
+            fontStyle="italic"
+          >
             No moderation actions yet.
           </Text>
         </YStack>
@@ -91,9 +108,15 @@ export default function AuditLogScreen() {
         <>
           {items.map((item, index) => (
             <View key={item.id}>
-              <AuditLogRow item={item} currentUserId={currentUserId} />
+              <AuditLogRow
+                item={item}
+                currentUserId={currentUserId}
+              />
               {index < items.length - 1 ? (
-                <Separator borderColor="$color3" borderBottomWidth={1} />
+                <Separator
+                  borderColor="$color3"
+                  borderBottomWidth={1}
+                />
               ) : null}
             </View>
           ))}
@@ -112,7 +135,11 @@ export default function AuditLogScreen() {
                 if (!isFetchingNextPage) fetchNextPage()
               }}
             >
-              <Text fontFamily="$body" fontSize="$2" color="$color10">
+              <Text
+                fontFamily="$body"
+                fontSize="$2"
+                color="$color10"
+              >
                 {isFetchingNextPage ? 'Loading…' : 'Load more'}
               </Text>
             </View>

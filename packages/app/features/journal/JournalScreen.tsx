@@ -140,7 +140,10 @@ export function JournalScreen() {
               $lg={{ height: '$12' }}
               onLayout={handleHeaderLayout}
             />
-            <Editor focusMode={focusMode} focusGranularity={focusGranularity} />
+            <Editor
+              focusMode={focusMode}
+              focusGranularity={focusGranularity}
+            />
           </YStack>
         )}
       </AnimatePresence>
@@ -175,7 +178,10 @@ export function JournalScreen() {
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <XStack alignItems="center" gap="$3">
+                <XStack
+                  alignItems="center"
+                  gap="$3"
+                >
                   <ExpandingLineButton
                     size="default"
                     onPress={() => setFocusMode(!focusMode)}

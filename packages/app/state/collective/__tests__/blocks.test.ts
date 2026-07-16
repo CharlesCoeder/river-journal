@@ -57,9 +57,8 @@ vi.mock('app/utils/supabase', () => ({
 // ─── Partial @tanstack/react-query mock — useQuery spied, everything else real ─
 const useQueryMock = vi.fn()
 vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-query')>(
-    '@tanstack/react-query'
-  )
+  const actual =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
   return {
     ...actual,
     useQuery: (opts: unknown) => useQueryMock(opts),
@@ -190,7 +189,11 @@ describe('useBlockUser mutationFn — 23505 idempotency swallow is constraint-sc
     const blockDefaults = queryClient.getMutationDefaults(['collective', 'block'])
     insertMock.mockResolvedValueOnce({
       data: null,
-      error: { code: '23505', constraint: 'user_blocks_blocker_blocked_key', message: 'duplicate key' },
+      error: {
+        code: '23505',
+        constraint: 'user_blocks_blocker_blocked_key',
+        message: 'duplicate key',
+      },
     })
 
     await expect(
@@ -205,7 +208,11 @@ describe('useBlockUser mutationFn — 23505 idempotency swallow is constraint-sc
     const blockDefaults = queryClient.getMutationDefaults(['collective', 'block'])
     insertMock.mockResolvedValueOnce({
       data: null,
-      error: { code: '23505', constraint: 'some_other_unique_constraint', message: 'duplicate key' },
+      error: {
+        code: '23505',
+        constraint: 'some_other_unique_constraint',
+        message: 'duplicate key',
+      },
     })
 
     await expect(
@@ -260,10 +267,9 @@ describe('useBlockUser onMutate — no-optimistic contract', () => {
     const blockDefaults = queryClient.getMutationDefaults(['collective', 'block'])
     expect(blockDefaults?.onMutate).toBeDefined()
 
-    const result = await (blockDefaults!.onMutate as (vars: unknown, ctx: unknown) => Promise<unknown>)(
-      { blocker_user_id: 'b1', blocked_user_id: 'b2' },
-      MUTATION_FN_CONTEXT
-    )
+    const result = await (
+      blockDefaults!.onMutate as (vars: unknown, ctx: unknown) => Promise<unknown>
+    )({ blocker_user_id: 'b1', blocked_user_id: 'b2' }, MUTATION_FN_CONTEXT)
 
     expect(result).toBeNull()
   })
@@ -294,7 +300,9 @@ describe('useBlockUser onSettled — invalidates the ["collective"] prefix', () 
       MUTATION_FN_CONTEXT
     )
 
-    expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['collective'] }))
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ['collective'] })
+    )
     invalidateSpy.mockRestore()
   })
 })
@@ -319,7 +327,9 @@ describe('useUnblockUser mutationFn — DELETE by row id', () => {
     deleteEqMock.mockResolvedValueOnce({ error: null })
 
     await expect(
-      (unblockDefaults!.mutationFn as (vars: unknown) => Promise<unknown>)({ id: 'row-already-gone' })
+      (unblockDefaults!.mutationFn as (vars: unknown) => Promise<unknown>)({
+        id: 'row-already-gone',
+      })
     ).resolves.not.toThrow()
   })
 
@@ -355,7 +365,9 @@ describe('useUnblockUser onMutate / onSettled', () => {
       MUTATION_FN_CONTEXT
     )
 
-    expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['collective'] }))
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ['collective'] })
+    )
     invalidateSpy.mockRestore()
   })
 })

@@ -92,7 +92,10 @@ export const entries$ = observable<Record<string, Entry>>(
             // eslint-disable-next-line no-console
             console.log(
               `📥 [entries] list response: ${value.length} rows from Supabase (local has ${localEntryIds.length} entries)`,
-              { serverIds: value.map((r: any) => r.id?.slice(0, 8)), localIds: localEntryIds.map(id => id.slice(0, 8)) }
+              {
+                serverIds: value.map((r: any) => r.id?.slice(0, 8)),
+                localIds: localEntryIds.map((id) => id.slice(0, 8)),
+              }
             )
           }
           return value.map((row: any) => dbEntryToLocal(row))

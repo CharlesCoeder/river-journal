@@ -82,7 +82,8 @@ vi.mock('@my/ui', async () => {
       return ReactModule.createElement(tag, domProps, children)
     }
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     YStack: passthrough('div'),
     View: passthrough('div'),
     Text: passthrough('span'),

@@ -128,7 +128,9 @@ describe('captureEvent — an event absent from the allowlist is a no-op that ne
     vi.stubEnv('NODE_ENV', 'production')
     const { captureEvent } = await import('../posthog')
 
-    expect(() => captureEvent('some_event_nobody_added_to_the_allowlist' as any, {} as any)).not.toThrow()
+    expect(() =>
+      captureEvent('some_event_nobody_added_to_the_allowlist' as any, {} as any)
+    ).not.toThrow()
     expect(posthogCaptureMock).not.toHaveBeenCalled()
   })
 

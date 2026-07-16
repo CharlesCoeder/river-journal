@@ -29,13 +29,7 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const {
-      testID,
-      onPress,
-      'aria-label': ariaLabel,
-      'aria-pressed': ariaPressed,
-      ...rest
-    } = props
+    const { testID, onPress, 'aria-label': ariaLabel, 'aria-pressed': ariaPressed, ...rest } = props
     return {
       ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
@@ -63,15 +57,18 @@ vi.mock('@my/ui', async () => {
     if (!open) return null
     return ReactModule.createElement('div', { role: 'dialog' }, children)
   }
-  Dialog.Portal = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Portal = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
   Dialog.Overlay = () => null
   Dialog.Content = ({ children }: any) => ReactModule.createElement('div', {}, children)
   Dialog.Title = ({ children }: any) => ReactModule.createElement('h2', {}, children)
   Dialog.Description = ({ children }: any) => ReactModule.createElement('p', {}, children)
-  Dialog.Close = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Close = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
 
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     ScrollView: passthrough('div'),
     YStack: passthrough('div'),
     XStack: passthrough('div'),
@@ -135,8 +132,7 @@ vi.mock('app/state/date-utils', () => ({
 
 // ─── CalendarMonthView stub — keeps toggle tests focused on toggle behavior ──
 vi.mock('../CalendarMonthView', () => ({
-  CalendarMonthView: () =>
-    React.createElement('div', { 'data-testid': 'calendar-stub' }),
+  CalendarMonthView: () => React.createElement('div', { 'data-testid': 'calendar-stub' }),
 }))
 
 // ─── DeleteFlowDialog stub ───────────────────────────────────────────────────
@@ -232,13 +228,17 @@ describe('Tapping Calendar toggle switches to calendar mode', () => {
   it('"Calendar" button has aria-pressed="true" after tapping Calendar', () => {
     renderDayView()
     clickCalendarToggle()
-    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe(
+      'true'
+    )
   })
 
   it('"Linear" button has aria-pressed="false" after tapping Calendar', () => {
     renderDayView()
     clickCalendarToggle()
-    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe(
+      'false'
+    )
   })
 
   it('linear-mode empty state is NOT in the DOM after switching to calendar', () => {
@@ -265,14 +265,18 @@ describe('Tapping Linear toggle returns to linear mode', () => {
     renderDayView()
     clickCalendarToggle()
     clickLinearToggle()
-    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe(
+      'true'
+    )
   })
 
   it('"Calendar" button has aria-pressed="false" after toggling back to Linear', () => {
     renderDayView()
     clickCalendarToggle()
     clickLinearToggle()
-    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe(
+      'false'
+    )
   })
 })
 

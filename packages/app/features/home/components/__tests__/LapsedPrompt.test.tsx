@@ -9,7 +9,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 // ─── @my/ui mock ─────────────────────────────────────────────────────────────
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
-  const Text = ({ children, onPress, testID, accessibilityRole, accessibilityLabel, ...props }: any) =>
+  const Text = ({
+    children,
+    onPress,
+    testID,
+    accessibilityRole,
+    accessibilityLabel,
+    ...props
+  }: any) =>
     ReactModule.createElement(
       'span',
       {

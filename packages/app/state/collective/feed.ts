@@ -84,8 +84,7 @@ export async function fetchFeedPage(cursor: string | null): Promise<FeedPage> {
   // drift is theoretically possible. Anything other than 'preview' / 'full'
   // collapses to 'full'.
   const rawMode = (data[0] as { mode?: unknown }).mode
-  const mode: 'preview' | 'full' =
-    rawMode === 'preview' || rawMode === 'full' ? rawMode : 'full'
+  const mode: 'preview' | 'full' = rawMode === 'preview' || rawMode === 'full' ? rawMode : 'full'
 
   // +1 has-more pattern: slice down to PAGE_SIZE; cursor is last sliced row.
   let items: Post[]

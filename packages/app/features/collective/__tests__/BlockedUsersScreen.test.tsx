@@ -72,7 +72,10 @@ vi.mock('@my/ui', async () => {
   const DialogPortal = ({ children }: any) =>
     ReactModule.createElement('div', { 'data-dialog-portal': 'true' }, children)
   const DialogOverlay = ({ animation }: any) =>
-    ReactModule.createElement('div', { 'data-dialog-overlay': 'true', 'data-animation': animation ?? '' })
+    ReactModule.createElement('div', {
+      'data-dialog-overlay': 'true',
+      'data-animation': animation ?? '',
+    })
   const DialogContent = ({ children, animation }: any) =>
     ReactModule.createElement(
       'div',
@@ -101,8 +104,7 @@ vi.mock('@my/ui', async () => {
   return {
     AnimatePresence: ({ children }: any) => children,
 
-    Text: ({ children, ...props }: any) =>
-      ReactModule.createElement('span', {}, children),
+    Text: ({ children, ...props }: any) => ReactModule.createElement('span', {}, children),
 
     View: ({ children, tag, onPress, role, 'aria-label': ariaLabel, ...props }: any) => {
       const htmlTag = tag === 'article' ? 'article' : 'div'
@@ -114,13 +116,16 @@ vi.mock('@my/ui', async () => {
     },
 
     XStack: ({ children, ...props }: any) =>
-      ReactModule.createElement('div', { 'data-stack': 'x', 'data-testid': props['data-testid'] }, children),
+      ReactModule.createElement(
+        'div',
+        { 'data-stack': 'x', 'data-testid': props['data-testid'] },
+        children
+      ),
 
     YStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'y' }, children),
 
-    Separator: (_props: any) =>
-      ReactModule.createElement('hr', { 'data-testid': 'separator' }),
+    Separator: (_props: any) => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
 
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>
       ReactModule.createElement(
@@ -129,7 +134,8 @@ vi.mock('@my/ui', async () => {
           onClick: onPress,
           disabled: !!disabled,
           'aria-disabled': disabled ? 'true' : 'false',
-          'data-testid': props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
+          'data-testid':
+            props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
         },
         children
       ),
@@ -142,12 +148,14 @@ vi.mock('@my/ui', async () => {
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-function makeBlockRow(overrides: Partial<{
-  id: string
-  blocker_user_id: string
-  blocked_user_id: string
-  created_at: string
-}> = {}) {
+function makeBlockRow(
+  overrides: Partial<{
+    id: string
+    blocker_user_id: string
+    blocked_user_id: string
+    created_at: string
+  }> = {}
+) {
   return {
     id: 'row-default',
     blocker_user_id: 'user-abc123',
@@ -191,15 +199,15 @@ describe('t1 — list renders anonymized ids and blocked-at dates', () => {
   })
 
   it('does not render more of the id than the 8-char slice anywhere in the row', () => {
-    mockData = [makeBlockRow({ id: 'row-1', blocked_user_id: 'deadbeef-9999-9999-9999-999999999999' })]
+    mockData = [
+      makeBlockRow({ id: 'row-1', blocked_user_id: 'deadbeef-9999-9999-9999-999999999999' }),
+    ]
     render(React.createElement(BlockedUsersScreen))
     expect(document.body.textContent).not.toContain('deadbeef-9999-9999-9999-999999999999')
   })
 
   it('renders a blocked-at date derived from created_at', () => {
-    mockData = [
-      makeBlockRow({ id: 'row-1', created_at: '2026-05-07T00:00:00.000Z' }),
-    ]
+    mockData = [makeBlockRow({ id: 'row-1', created_at: '2026-05-07T00:00:00.000Z' })]
     render(React.createElement(BlockedUsersScreen))
     // A human month name is the least-brittle signal that a formatted date rendered.
     const months =
@@ -252,7 +260,7 @@ describe('t2 — Unblock confirm flow', () => {
     expect(mutateUnblockSpy).not.toHaveBeenCalled()
   })
 
-  it('two distinct rows track independent pending-unblock state (confirming row A does not open row B\'s dialog)', () => {
+  it("two distinct rows track independent pending-unblock state (confirming row A does not open row B's dialog)", () => {
     mockData = [
       makeBlockRow({ id: 'row-a', blocked_user_id: 'aaaaaaaa-0000-0000-0000-000000000000' }),
       makeBlockRow({ id: 'row-b', blocked_user_id: 'bbbbbbbb-0000-0000-0000-000000000000' }),
@@ -279,11 +287,8 @@ describe('t2 — Unblock confirm flow', () => {
     expect(document.querySelector('[data-dialog-content]')).toBeTruthy()
   })
 
-  it('a second row\'s Unblock affordance is disabled while an unblock mutation is in flight (no stranded confirm dialog)', () => {
-    mockData = [
-      makeBlockRow({ id: 'row-a' }),
-      makeBlockRow({ id: 'row-b' }),
-    ]
+  it("a second row's Unblock affordance is disabled while an unblock mutation is in flight (no stranded confirm dialog)", () => {
+    mockData = [makeBlockRow({ id: 'row-a' }), makeBlockRow({ id: 'row-b' })]
     mockUnblockIsPending = true
     render(React.createElement(BlockedUsersScreen))
 

@@ -1,4 +1,4 @@
-'use dom';
+'use dom'
 
 /**
  * CollectiveLexicalEditor (native / Expo DOM WebView)
@@ -11,19 +11,23 @@
  * It does NOT import PersistentEditor and does NOT read/write ephemeral$.persistentEditor.*.
  */
 
-import React, { useEffect } from 'react';
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
-import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $convertToMarkdownString } from '@lexical/markdown';
-import { ALL_TRANSFORMERS } from 'app/features/journal/components/Lexical/transformers';
-import { createMobileLexicalConfig, injectFontCSS } from 'app/features/journal/components/Lexical/utils';
-import type { CollectiveLexicalEditorProps } from './CollectiveLexicalEditor.types';
+import type React from 'react'
+import { useEffect } from 'react'
+import { LexicalComposer } from '@lexical/react/LexicalComposer'
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
+import { ContentEditable } from '@lexical/react/LexicalContentEditable'
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
+import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin'
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { $convertToMarkdownString } from '@lexical/markdown'
+import { ALL_TRANSFORMERS } from 'app/features/journal/components/Lexical/transformers'
+import {
+  createMobileLexicalConfig,
+  injectFontCSS,
+} from 'app/features/journal/components/Lexical/utils'
+import type { CollectiveLexicalEditorProps } from './CollectiveLexicalEditor.types'
 // NOTE: FocusModeParagraphPlugin is deliberately NOT imported here.
 // The composer is a short-form surface; focus mode is a journal-only behavior.
 // NOTE: LexicalSync is deliberately NOT imported here — it syncs to the journal's
@@ -34,23 +38,23 @@ import type { CollectiveLexicalEditorProps } from './CollectiveLexicalEditor.typ
 function LexicalContextProbe({
   probeRef,
 }: {
-  probeRef?: React.MutableRefObject<unknown>;
+  probeRef?: React.MutableRefObject<unknown>
 }): null {
-  const [editor] = useLexicalComposerContext();
+  const [editor] = useLexicalComposerContext()
   if (probeRef) {
-    probeRef.current = editor;
+    probeRef.current = editor
   }
-  return null;
+  return null
 }
 
 // ─── FontInjector ─────────────────────────────────────────────────────────────
 
 function FontInjector(): null {
   useEffect(() => {
-    const cleanup = injectFontCSS();
-    return cleanup;
-  }, []);
-  return null;
+    const cleanup = injectFontCSS()
+    return cleanup
+  }, [])
+  return null
 }
 
 // ─── CollectiveLexicalEditor (native) ────────────────────────────────────────
@@ -60,7 +64,7 @@ function CollectiveLexicalEditor({
   minHeight = 300,
   __contextProbeRef,
 }: CollectiveLexicalEditorProps) {
-  const initialConfig = createMobileLexicalConfig();
+  const initialConfig = createMobileLexicalConfig()
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
@@ -128,21 +132,19 @@ function CollectiveLexicalEditor({
         <OnChangePlugin
           onChange={(editorState) => {
             editorState.read(() => {
-              const markdown = $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true);
-              onContentChange(markdown);
-            });
+              const markdown = $convertToMarkdownString(ALL_TRANSFORMERS, undefined, true)
+              onContentChange(markdown)
+            })
           }}
         />
 
         <FontInjector />
 
         {/* Test-only probe: only activates when __contextProbeRef is set. */}
-        {__contextProbeRef && (
-          <LexicalContextProbe probeRef={__contextProbeRef} />
-        )}
+        {__contextProbeRef && <LexicalContextProbe probeRef={__contextProbeRef} />}
       </div>
     </LexicalComposer>
-  );
+  )
 }
 
-export default CollectiveLexicalEditor;
+export default CollectiveLexicalEditor

@@ -54,15 +54,11 @@ describe('— new shared TS files exist', () => {
   })
 
   it('packages/app/utils/telemetry/posthog.native.ts exists (mobile init)', () => {
-    expect(existsSync(path.join(ROOT, 'packages/app/utils/telemetry/posthog.native.ts'))).toBe(
-      true
-    )
+    expect(existsSync(path.join(ROOT, 'packages/app/utils/telemetry/posthog.native.ts'))).toBe(true)
   })
 
   it('packages/app/utils/telemetry/eventAllowlist.ts exists (SDK-free single source of truth)', () => {
-    expect(existsSync(path.join(ROOT, 'packages/app/utils/telemetry/eventAllowlist.ts'))).toBe(
-      true
-    )
+    expect(existsSync(path.join(ROOT, 'packages/app/utils/telemetry/eventAllowlist.ts'))).toBe(true)
   })
 })
 

@@ -25,16 +25,34 @@ const DATA_HANDLING_CONTENT = [
 
 export function DataHandlingSection() {
   return (
-    <YStack testID="data-handling-section" gap="$3">
-      <Text fontSize="$6" fontFamily="$body" fontWeight="600">
+    <YStack
+      testID="data-handling-section"
+      gap="$3"
+    >
+      <Text
+        fontSize="$6"
+        fontFamily="$body"
+        fontWeight="600"
+      >
         What we can and cannot access
       </Text>
       {DATA_HANDLING_CONTENT.map((item) => (
-        <YStack key={item.label} gap="$1">
-          <Text fontSize="$4" fontFamily="$body" fontWeight="600">
+        <YStack
+          key={item.label}
+          gap="$1"
+        >
+          <Text
+            fontSize="$4"
+            fontFamily="$body"
+            fontWeight="600"
+          >
             {item.label}
           </Text>
-          <Text fontSize="$3" fontFamily="$body" color="$color11">
+          <Text
+            fontSize="$3"
+            fontFamily="$body"
+            color="$color11"
+          >
             {item.detail}
           </Text>
         </YStack>

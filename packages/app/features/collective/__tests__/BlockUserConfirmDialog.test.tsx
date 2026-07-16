@@ -51,7 +51,10 @@ vi.mock('@my/ui', async () => {
   const DialogPortal = ({ children }: any) =>
     ReactModule.createElement('div', { 'data-dialog-portal': 'true' }, children)
   const DialogOverlay = ({ animation }: any) =>
-    ReactModule.createElement('div', { 'data-dialog-overlay': 'true', 'data-animation': animation ?? '' })
+    ReactModule.createElement('div', {
+      'data-dialog-overlay': 'true',
+      'data-animation': animation ?? '',
+    })
   const DialogContent = ({ children, animation }: any) =>
     ReactModule.createElement(
       'div',
@@ -79,8 +82,10 @@ vi.mock('@my/ui', async () => {
 
   return {
     Text: ({ children }: any) => ReactModule.createElement('span', {}, children),
-    XStack: ({ children }: any) => ReactModule.createElement('div', { 'data-stack': 'x' }, children),
-    YStack: ({ children }: any) => ReactModule.createElement('div', { 'data-stack': 'y' }, children),
+    XStack: ({ children }: any) =>
+      ReactModule.createElement('div', { 'data-stack': 'x' }, children),
+    YStack: ({ children }: any) =>
+      ReactModule.createElement('div', { 'data-stack': 'y' }, children),
     Dialog: DialogComponent,
     ExpandingLineButton: ({ children, onPress, disabled }: any) =>
       ReactModule.createElement(

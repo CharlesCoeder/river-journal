@@ -39,8 +39,8 @@ describe('useLapsedPrompt — first-time user gate (AC2, AC6)', () => {
       dismissedAt: null,
       hasOpenedBefore: false,
     })
-    const { result } = renderHook(() =>
-      useLapsedPrompt(T0) // now is far beyond the previous session
+    const { result } = renderHook(
+      () => useLapsedPrompt(T0) // now is far beyond the previous session
     )
     expect(result.current.shouldShow).toBe(false)
   })
@@ -112,7 +112,12 @@ describe('useLapsedPrompt — lapsed, dismissed in prior window (AC2, AC6)', () 
     const previousSessionAt = T0 - 9 * DAY_MS // prior session → now - 9d > threshold → lapsed
     const lastSessionAt = T0 - 1000 // current session opened this boot
     // oldDismissal < lastSessionAt → dismissal belongs to a prior window, not this one
-    lapsed$.set({ lastSessionAt, previousSessionAt, dismissedAt: oldDismissal, hasOpenedBefore: true })
+    lapsed$.set({
+      lastSessionAt,
+      previousSessionAt,
+      dismissedAt: oldDismissal,
+      hasOpenedBefore: true,
+    })
     const { result } = renderHook(() => useLapsedPrompt(T0))
     expect(result.current.shouldShow).toBe(true)
   })

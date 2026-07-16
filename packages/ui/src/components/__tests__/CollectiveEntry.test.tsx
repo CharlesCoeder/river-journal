@@ -186,24 +186,18 @@ describe('CollectiveEntry has no internal router dependency (AC3 package boundar
     // The fact that this test file has NO vi.mock('solito/navigation') and the
     // import above succeeds without error is the proof. We additionally read the
     // module source as a belt-and-suspenders check.
-    const fs = await import('fs')
-    const path = await import('path')
-    const componentPath = path.resolve(
-      __dirname,
-      '../CollectiveEntry.tsx'
-    )
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const componentPath = path.resolve(__dirname, '../CollectiveEntry.tsx')
     const source = fs.readFileSync(componentPath, 'utf-8')
     expect(source).not.toContain('solito')
     expect(source).not.toContain('useRouter')
   })
 
   it('does not import from @my/ui (avoids circular dep — imports from tamagui directly)', async () => {
-    const fs = await import('fs')
-    const path = await import('path')
-    const componentPath = path.resolve(
-      __dirname,
-      '../CollectiveEntry.tsx'
-    )
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const componentPath = path.resolve(__dirname, '../CollectiveEntry.tsx')
     const source = fs.readFileSync(componentPath, 'utf-8')
     expect(source).not.toContain("from '@my/ui'")
   })

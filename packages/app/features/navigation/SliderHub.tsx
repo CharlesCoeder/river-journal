@@ -128,7 +128,10 @@ function SliderHubGesture({
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[{ flex: 1 }, animatedStyle]} accessible={false}>
+      <Animated.View
+        style={[{ flex: 1 }, animatedStyle]}
+        accessible={false}
+      >
         {children}
       </Animated.View>
     </GestureDetector>

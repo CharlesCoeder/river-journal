@@ -514,9 +514,13 @@ describe('GraceDay transforms', () => {
 
   it('output contains exactly the five local fields — no DB metadata leaks', () => {
     const local = dbGraceDayToLocal(fullDbRow)
-    expect(Object.keys(local).sort()).toEqual(
-      ['earnedAt', 'earnedForMilestone', 'id', 'usedForDate', 'userId']
-    )
+    expect(Object.keys(local).sort()).toEqual([
+      'earnedAt',
+      'earnedForMilestone',
+      'id',
+      'usedForDate',
+      'userId',
+    ])
   })
 
   it('strips is_deleted from the local shape', () => {
@@ -639,9 +643,14 @@ describe('PushToken transforms', () => {
 
   it('output contains exactly the six local fields — no DB metadata leaks', () => {
     const local = dbPushTokenToLocal(fullDbRow)
-    expect(Object.keys(local).sort()).toEqual(
-      ['deviceLabel', 'expoPushToken', 'id', 'lastUsedAt', 'platform', 'userId']
-    )
+    expect(Object.keys(local).sort()).toEqual([
+      'deviceLabel',
+      'expoPushToken',
+      'id',
+      'lastUsedAt',
+      'platform',
+      'userId',
+    ])
   })
 
   it('strips is_deleted from the local shape', () => {

@@ -16,21 +16,24 @@ export function GraceDayInventory() {
   const all = use$(graceDays$)
   const available = Object.values(all ?? {}).filter(
     (g): g is GraceDay =>
-      g != null &&
-      !(g as { is_deleted?: boolean }).is_deleted &&
-      g.usedForDate === null
+      g != null && !(g as { is_deleted?: boolean }).is_deleted && g.usedForDate === null
   )
   const count = available.length
   const text =
-    count === 0
-      ? 'No grace days yet.'
-      : `${count} grace ${count === 1 ? 'day' : 'days'} available.`
+    count === 0 ? 'No grace days yet.' : `${count} grace ${count === 1 ? 'day' : 'days'} available.`
   const color = count === 0 ? '$color8' : '$color'
 
   return (
-    <View role="status" aria-live="polite">
+    <View
+      role="status"
+      aria-live="polite"
+    >
       <YStack gap="$2">
-        <Text fontFamily="$body" fontSize="$3" color={color}>
+        <Text
+          fontFamily="$body"
+          fontSize="$3"
+          color={color}
+        >
           {text}
         </Text>
       </YStack>

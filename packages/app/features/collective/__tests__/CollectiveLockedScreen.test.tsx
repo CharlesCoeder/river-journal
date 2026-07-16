@@ -139,9 +139,7 @@ describe('CollectiveLockedScreen — sync gate', () => {
 describe('CollectiveLockedScreen — words gate', () => {
   it('renders the words headline, progress, and "Begin writing" when at zero', () => {
     const props = baseProps()
-    render(
-      React.createElement(CollectiveLockedScreen, { gate: 'words', wordsToday: 0, ...props })
-    )
+    render(React.createElement(CollectiveLockedScreen, { gate: 'words', wordsToday: 0, ...props }))
     expect(screen.getByText('A quiet room, just through here.')).not.toBeNull()
     expect(screen.getByText(/Write 500 words of your own today/i)).not.toBeNull()
     expect(screen.getByText('500 to go')).not.toBeNull()

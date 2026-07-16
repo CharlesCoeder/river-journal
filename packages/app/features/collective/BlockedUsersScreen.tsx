@@ -71,10 +71,7 @@ export default function BlockedUsersScreen() {
   // their session (and then the list) resolves. `currentUserId === null`
   // (signed out, resolved) is intentionally excluded — that case should show
   // the empty state, not spin forever.
-  if (
-    (blockedUsers.isLoading || currentUserId === undefined) &&
-    blockedUsers.data === undefined
-  ) {
+  if ((blockedUsers.isLoading || currentUserId === undefined) && blockedUsers.data === undefined) {
     return (
       <YStack>
         <SkeletonRows reducedMotion={reducedMotion} />

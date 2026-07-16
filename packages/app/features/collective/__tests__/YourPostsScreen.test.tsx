@@ -87,7 +87,8 @@ vi.mock('app/state/collective/currentUser', () => ({
 
 // ─── onlineManager mock ───────────────────────────────────────────────────────
 vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
+  const actual =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
   return {
     ...actual,
     onlineManager: {
@@ -157,8 +158,7 @@ vi.mock('@my/ui', async () => {
     YStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
 
-    Separator: (_props: any) =>
-      ReactModule.createElement('hr', { 'data-testid': 'separator' }),
+    Separator: (_props: any) => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
 
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>
       ReactModule.createElement(
@@ -167,7 +167,8 @@ vi.mock('@my/ui', async () => {
           onClick: onPress,
           disabled: !!disabled,
           'aria-disabled': disabled ? 'true' : 'false',
-          'data-testid': props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
+          'data-testid':
+            props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
         },
         children
       ),
@@ -185,26 +186,27 @@ vi.mock('@my/ui', async () => {
         },
         deletedDisplay ? '[deleted]' : displayName
       ),
-
   }
 })
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-function makeYourPost(overrides: Partial<{
-  id: string
-  user_id: string
-  parent_post_id: string | null
-  body: string
-  created_at: string
-  is_removed: boolean
-  is_user_deleted: boolean
-  user_deleted_at: string | null
-  reaction_count: number
-  descendant_count: number
-  tenure_tier: 30 | 100 | 365 | null
-  mode: 'full'
-}> = {}) {
+function makeYourPost(
+  overrides: Partial<{
+    id: string
+    user_id: string
+    parent_post_id: string | null
+    body: string
+    created_at: string
+    is_removed: boolean
+    is_user_deleted: boolean
+    user_deleted_at: string | null
+    reaction_count: number
+    descendant_count: number
+    tenure_tier: 30 | 100 | 365 | null
+    mode: 'full'
+  }> = {}
+) {
   return {
     id: 'your-post-default',
     user_id: 'user-abc123',
@@ -269,9 +271,21 @@ afterEach(() => {
 describe('t1 — renders posts in chronological order', () => {
   beforeEach(() => {
     mockYourPostsData = makeYourPostsData([
-      makeYourPost({ id: 'post-newest', body: 'Newest post.', created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() }),
-      makeYourPost({ id: 'post-middle', body: 'Middle post.', created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() }),
-      makeYourPost({ id: 'post-oldest', body: 'Oldest post.', created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }),
+      makeYourPost({
+        id: 'post-newest',
+        body: 'Newest post.',
+        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+      }),
+      makeYourPost({
+        id: 'post-middle',
+        body: 'Middle post.',
+        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      }),
+      makeYourPost({
+        id: 'post-oldest',
+        body: 'Oldest post.',
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      }),
     ])
     mockYourPostsIsLoading = false
   })

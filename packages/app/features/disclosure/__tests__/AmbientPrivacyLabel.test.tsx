@@ -47,7 +47,16 @@ vi.mock('tamagui', () => {
   const ReactModule = require('react')
 
   const passthrough = (defaultTag: string) => {
-    const C = ({ children, tag, accessibilityRole, role, accessibilityLabel, onPress, onClick, ...rest }: any) =>
+    const C = ({
+      children,
+      tag,
+      accessibilityRole,
+      role,
+      accessibilityLabel,
+      onPress,
+      onClick,
+      ...rest
+    }: any) =>
       ReactModule.createElement(
         tag ?? defaultTag,
         {

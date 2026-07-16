@@ -81,7 +81,10 @@ function DevGateOverride({
   const gate: CollectiveGateKey = !signedIn ? 'account' : !syncEnabled ? 'sync' : 'words'
 
   return (
-    <View flex={1} data-testid={`collective-access-dev-${gate}`}>
+    <View
+      flex={1}
+      data-testid={`collective-access-dev-${gate}`}
+    >
       <CollectiveLockedScreen
         gate={gate}
         // Illustrative partial progress for the words-state screenshot.
@@ -152,7 +155,10 @@ export function CollectiveAccessGate() {
   // ─── unauthenticated: the account gate ────────────────────────────────────
   if (status === 'unauthenticated') {
     return (
-      <View flex={1} data-testid="collective-access-unauthenticated">
+      <View
+        flex={1}
+        data-testid="collective-access-unauthenticated"
+      >
         <CollectiveLockedScreen
           gate="account"
           glimpse={[...SAMPLE_GLIMPSE]}
@@ -168,7 +174,10 @@ export function CollectiveAccessGate() {
   // ─── sync-disabled: the sync gate ─────────────────────────────────────────
   if (status === 'sync-disabled') {
     return (
-      <View flex={1} data-testid="collective-access-sync-disabled">
+      <View
+        flex={1}
+        data-testid="collective-access-sync-disabled"
+      >
         <CollectiveLockedScreen
           gate="sync"
           glimpse={[...SAMPLE_GLIMPSE]}

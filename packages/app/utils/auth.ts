@@ -9,8 +9,17 @@ import { supabase } from './supabase'
 import { store$ } from '../state/store'
 import { batch } from '@legendapp/state'
 import { deviceState$ } from '../state/syncConfig'
-import { loadCurrentEncryptionMode, resetEncryptionSetupState, encryptionSetup$ } from '../state/encryptionSetup'
-import { hasWebTrustCapability, getStoredDeviceToken, hashDeviceToken, clearWebTrustData } from './webKeyStore'
+import {
+  loadCurrentEncryptionMode,
+  resetEncryptionSetupState,
+  encryptionSetup$,
+} from '../state/encryptionSetup'
+import {
+  hasWebTrustCapability,
+  getStoredDeviceToken,
+  hashDeviceToken,
+  clearWebTrustData,
+} from './webKeyStore'
 import { deleteTrustedBrowserByHash } from './userEncryption'
 import { clearStoredMasterKey } from './encryptionKeyStore'
 import { queryClient, QUERY_PERSIST_KEY } from '../state/queryClient'

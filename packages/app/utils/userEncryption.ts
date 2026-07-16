@@ -77,7 +77,10 @@ function verifyMasterKeyAgainstVerifier(masterKey: Uint8Array, verifier: string)
  */
 async function fetchEncryptionVerifier(
   userId: string
-): Promise<{ verifier: string | null; error: null } | { verifier: null; error: EncryptionSettingsError['error'] }> {
+): Promise<
+  | { verifier: string | null; error: null }
+  | { verifier: null; error: EncryptionSettingsError['error'] }
+> {
   const { data, error } = await supabase
     .from('users')
     .select('encryption_key_verifier')
@@ -211,7 +214,10 @@ export async function upsertUserEncryptionMode(input: {
 export async function startE2EEncryptionBootstrap(_input: {
   userId: string
   password: string
-}): Promise<{ error: null; masterKey: Uint8Array } | { error: EncryptionSettingsError['error']; masterKey: null }> {
+}): Promise<
+  | { error: null; masterKey: Uint8Array }
+  | { error: EncryptionSettingsError['error']; masterKey: null }
+> {
   const input = _input
 
   if (!input.password.trim()) {
@@ -302,7 +308,10 @@ export async function validateE2EMasterKeyForUser(input: {
   masterKey: Uint8Array
   invalidKeyMessage?: string
   invalidKeyCode?: string
-}): Promise<{ error: null; didVerify: boolean } | { error: EncryptionSettingsError['error']; didVerify: boolean }> {
+}): Promise<
+  | { error: null; didVerify: boolean }
+  | { error: EncryptionSettingsError['error']; didVerify: boolean }
+> {
   const { data, error } = await supabase.from('flows').select('id, content').limit(50)
 
   if (error) {
@@ -312,7 +321,7 @@ export async function validateE2EMasterKeyForUser(input: {
     }
   }
 
-  const encryptedFlow = ((data ?? []) as FlowVerificationRow[]).find(flow =>
+  const encryptedFlow = ((data ?? []) as FlowVerificationRow[]).find((flow) =>
     isEncryptedFlowPayload(flow.content)
   )
 
@@ -355,7 +364,10 @@ export async function unlockE2EEncryptionOnDevice(input: {
   userId: string
   password: string
   salt: string
-}): Promise<{ error: null; masterKey: Uint8Array } | { error: EncryptionSettingsError['error']; masterKey: null }> {
+}): Promise<
+  | { error: null; masterKey: Uint8Array }
+  | { error: EncryptionSettingsError['error']; masterKey: null }
+> {
   if (!input.password.trim()) {
     return {
       error: toEncryptionError('Encryption password is required.', 'missing_password').error,
@@ -454,7 +466,7 @@ export async function bootstrapManagedEncryption(input: {
       }
     }
 
-    const winningKey = Array.isArray(data) ? data[0]?.out_key ?? null : null
+    const winningKey = Array.isArray(data) ? (data[0]?.out_key ?? null) : null
 
     if (!winningKey) {
       return {
@@ -488,8 +500,7 @@ export async function bootstrapManagedEncryption(input: {
 export async function fetchManagedEncryptionKey(
   userId: string
 ): Promise<
-  | { data: string; error: null }
-  | { data: null; error: EncryptionSettingsError['error'] }
+  { data: string; error: null } | { data: null; error: EncryptionSettingsError['error'] }
 > {
   const { data, error } = await supabase
     .from('users')
@@ -594,10 +605,7 @@ export async function registerTrustedBrowser(
           'max_trusted_browsers'
         )
       }
-      return toEncryptionError(
-        error.message,
-        error.code ?? 'trusted_browser_register_failed'
-      )
+      return toEncryptionError(error.message, error.code ?? 'trusted_browser_register_failed')
     }
 
     return { error: null }
@@ -646,16 +654,10 @@ export async function verifyTrustedBrowser(
 export async function revokeTrustedBrowser(
   browserId: string
 ): Promise<{ error: null } | { error: EncryptionSettingsError['error'] }> {
-  const { error } = await supabase
-    .from('trusted_browsers')
-    .delete()
-    .eq('id', browserId)
+  const { error } = await supabase.from('trusted_browsers').delete().eq('id', browserId)
 
   if (error) {
-    return toEncryptionError(
-      error.message,
-      error.code ?? 'trusted_browser_revoke_failed'
-    )
+    return toEncryptionError(error.message, error.code ?? 'trusted_browser_revoke_failed')
   }
 
   return { error: null }
@@ -707,12 +709,8 @@ export async function deleteTrustedBrowserByHash(
     .eq('device_token_hash', deviceTokenHash)
 
   if (error) {
-    return toEncryptionError(
-      error.message,
-      error.code ?? 'trusted_browser_delete_failed'
-    )
+    return toEncryptionError(error.message, error.code ?? 'trusted_browser_delete_failed')
   }
 
   return { error: null }
 }
-

@@ -1,5 +1,10 @@
 import { bytesToBase64, base64ToBytes } from './encryption'
-import { loadWrappedKey, getStoredDeviceToken, clearWebTrustData, hasWebTrustCapability } from './webKeyStore'
+import {
+  loadWrappedKey,
+  getStoredDeviceToken,
+  clearWebTrustData,
+  hasWebTrustCapability,
+} from './webKeyStore'
 
 const inMemoryMasterKeyCache = new Map<string, Uint8Array>()
 const TAURI_SET_ENCRYPTION_KEY_COMMAND = 'set_encryption_key'
@@ -116,8 +121,7 @@ const withKeychainTimeout = async <T>(
 const toKeyStoreError = (error: unknown, fallbackMessage: string, fallbackCode: string) => {
   if (error instanceof EncryptionKeyStoreError) return error
 
-  const message =
-    error instanceof Error && error.message ? error.message : fallbackMessage
+  const message = error instanceof Error && error.message ? error.message : fallbackMessage
 
   return new EncryptionKeyStoreError(message, fallbackCode)
 }
@@ -296,4 +300,3 @@ export async function hasPlatformKeyring(): Promise<boolean> {
     return false
   }
 }
-

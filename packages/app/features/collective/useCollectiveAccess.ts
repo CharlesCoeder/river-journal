@@ -32,11 +32,7 @@ import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 
-export type CollectiveAccessStatus =
-  | 'loading'
-  | 'unauthenticated'
-  | 'sync-disabled'
-  | 'granted'
+export type CollectiveAccessStatus = 'loading' | 'unauthenticated' | 'sync-disabled' | 'granted'
 
 export interface CollectiveAccessState {
   status: CollectiveAccessStatus

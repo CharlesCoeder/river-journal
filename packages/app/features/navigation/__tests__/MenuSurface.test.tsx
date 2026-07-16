@@ -161,7 +161,11 @@ vi.mock('app/state/persistConfig', () => ({
 // ---------------------------------------------------------------------------
 let __pushSpy = vi.fn()
 vi.mock('solito/navigation', () => ({
-  useRouter: () => ({ push: (...args: unknown[]) => __pushSpy(...args), back: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({
+    push: (...args: unknown[]) => __pushSpy(...args),
+    back: vi.fn(),
+    replace: vi.fn(),
+  }),
   usePathname: () => '/',
   useLink: () => ({}),
   useParams: () => ({}),
@@ -299,7 +303,9 @@ describe('press-flood guard: rapid taps on a menu item enqueue at most one navig
     const item = screen.getByText(/past entries/i)
     fireEvent.click(item)
     fireEvent.click(item)
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -307,7 +313,9 @@ describe('press-flood guard: rapid taps on a menu item enqueue at most one navig
     renderMenu()
     fireEvent.click(screen.getByText(/past entries/i))
     fireEvent.click(screen.getByText(/collective/i))
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -315,9 +323,13 @@ describe('press-flood guard: rapid taps on a menu item enqueue at most one navig
     renderMenu()
     const item = screen.getByText(/past entries/i)
     fireEvent.click(item)
-    await act(async () => { vi.advanceTimersByTime(400) })
+    await act(async () => {
+      vi.advanceTimersByTime(400)
+    })
     fireEvent.click(item)
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(2)
   })
 })
@@ -333,7 +345,9 @@ describe('stagger animation completes immediately when any item is pressed', () 
   it('all items are visible immediately after a press during the stagger sequence (AC 13)', async () => {
     renderMenu()
     // 50ms: item 0 (0ms) revealed; items 1-5 (100-500ms) not yet
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     fireEvent.click(screen.getByText(/past entries/i))
     const hidden = screen.getByRole('menu').querySelectorAll('[data-hidden="true"]')
     expect(hidden.length).toBe(0)
@@ -341,10 +355,14 @@ describe('stagger animation completes immediately when any item is pressed', () 
 
   it('no further DOM changes occur after press clears all pending stagger timeouts (AC 13)', async () => {
     const { container } = renderMenu()
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     fireEvent.click(screen.getByText(/past entries/i))
     const snapshot = container.innerHTML
-    await act(async () => { vi.advanceTimersByTime(1000) })
+    await act(async () => {
+      vi.advanceTimersByTime(1000)
+    })
     expect(container.innerHTML).toBe(snapshot)
   })
 })
@@ -429,7 +447,11 @@ describe('MENU_ITEMS is a frozen / readonly array that preserves the locked orde
     // At runtime a frozen array throws; a readonly tuple silently no-ops.
     // @ts-expect-error — intentional mutation attempt to verify runtime guard
     const mutate = () => MENU_ITEMS!.push({ key: 'hack', label: 'Hack', route: '/hack' } as never)
-    try { mutate() } catch (_) { /* expected for Object.freeze */ }
+    try {
+      mutate()
+    } catch (_) {
+      /* expected for Object.freeze */
+    }
     expect(MENU_ITEMS).toHaveLength(5)
   })
 })
@@ -507,7 +529,9 @@ describe('auth-flip race: navigation fires exactly once when auth state changes 
     mockIsAuthenticated = false
     if (MenuSurface) rerender(React.createElement(MenuSurface))
 
-    await act(async () => { vi.advanceTimersByTime(200) })
+    await act(async () => {
+      vi.advanceTimersByTime(200)
+    })
 
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })

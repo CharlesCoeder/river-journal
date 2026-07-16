@@ -37,7 +37,11 @@ export interface AmbientPrivacyLabelProps {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function AmbientPrivacyLabel({ boundary, provider, onPress: onPressProp }: AmbientPrivacyLabelProps) {
+export function AmbientPrivacyLabel({
+  boundary,
+  provider,
+  onPress: onPressProp,
+}: AmbientPrivacyLabelProps) {
   // Local state: controls review-mode disclosure open/close.
   // When onPressProp is provided (e.g. by PostComposer managing its own disclosure
   // state), the label delegates to it and suppresses its own internal review disclosure.

@@ -116,7 +116,8 @@ vi.mock('@my/ui', async () => {
     if (!open) return null
     return ReactModule.createElement('div', { role: 'dialog', 'aria-modal': 'true' }, children)
   }
-  Dialog.Portal = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Portal = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
   Dialog.Overlay = () => null
   Dialog.Content = ({ children }: any) =>
     ReactModule.createElement('div', { 'data-testid': 'dialog-content' }, children)
@@ -128,7 +129,8 @@ vi.mock('@my/ui', async () => {
     ReactModule.createElement(ReactModule.Fragment, null, children)
 
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     YStack: passthrough('div'),
     XStack: passthrough('div'),
     View: passthrough('div'),

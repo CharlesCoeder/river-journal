@@ -278,7 +278,7 @@ describe('fetchAllExportPosts', () => {
     expect(progressCalls).toEqual([2, 3])
   })
 
-  it('does not cap the number of pages fetched (unlike the UI hook\'s maxPages budget) — covers every post across many pages', async () => {
+  it("does not cap the number of pages fetched (unlike the UI hook's maxPages budget) — covers every post across many pages", async () => {
     const totalPages = 8
     const fetchPage = vi.fn().mockImplementation(async (cursor: string | null) => {
       const pageIndex = cursor === null ? 0 : Number(cursor)

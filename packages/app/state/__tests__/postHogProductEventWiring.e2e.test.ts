@@ -121,11 +121,14 @@ describe('recordThresholdCrossingIfNeeded — emits flow_500_crossed exactly onc
 })
 
 describe('flow_started — wired at the "Begin Writing" CTA', () => {
-  it('HomeScreen.tsx calls captureEvent(\'flow_started\', ...) from handleBeginFlow', () => {
+  it("HomeScreen.tsx calls captureEvent('flow_started', ...) from handleBeginFlow", () => {
     const file = readText('packages/app/features/home/HomeScreen.tsx')
     expect(file).toContain("captureEvent('flow_started'")
 
-    const handlerBody = file.slice(file.indexOf('const handleBeginFlow'), file.indexOf('const handleBeginFlow') + 400)
+    const handlerBody = file.slice(
+      file.indexOf('const handleBeginFlow'),
+      file.indexOf('const handleBeginFlow') + 400
+    )
     expect(handlerBody).toContain('captureEvent(')
   })
 })

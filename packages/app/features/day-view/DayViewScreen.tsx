@@ -1,4 +1,12 @@
-import { AnimatePresence, ExpandingLineButton, YStack, XStack, Text, ScrollView, View } from '@my/ui'
+import {
+  AnimatePresence,
+  ExpandingLineButton,
+  YStack,
+  XStack,
+  Text,
+  ScrollView,
+  View,
+} from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useEffect, useState } from 'react'
 import { use$ } from '@legendapp/state/react'
@@ -136,9 +144,14 @@ export function DayViewScreen() {
         {viewMode === 'calendar' && <CalendarMonthView />}
 
         {/* Linear mode — entry list (preserved verbatim) */}
-        {viewMode === 'linear' && (
-          (!allEntries || allEntries.length === 0) ? (
-            <YStack flex={1} alignItems="center" justifyContent="center" paddingVertical={96}>
+        {viewMode === 'linear' &&
+          (!allEntries || allEntries.length === 0 ? (
+            <YStack
+              flex={1}
+              alignItems="center"
+              justifyContent="center"
+              paddingVertical={96}
+            >
               <Text
                 fontFamily="$journal"
                 fontSize={20}
@@ -151,65 +164,83 @@ export function DayViewScreen() {
           ) : (
             <YStack gap={64}>
               <AnimatePresence>
-                {allEntries.map((entry, index) => (
-                  (index < visibleCount || index >= MAX_STAGGER) && (
-                    <XStack
-                      key={entry.id}
-                      transition="designEnter"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      opacity={1}
-                      y={0}
-                      flexDirection="column"
-                      gap="$3"
-                      $md={{ flexDirection: 'row', gap: '$8' }}
-                      $lg={{ gap: '$12' }}
-                    >
-                      {/* Date column */}
-                      <YStack $md={{ width: 128 }} flexShrink={0} paddingTop={4}>
-                        <Text
-                          fontFamily="$body"
-                          fontSize={14}
-                          color="$color8"
-                          letterSpacing={0.5}
+                {allEntries.map(
+                  (entry, index) =>
+                    (index < visibleCount || index >= MAX_STAGGER) && (
+                      <XStack
+                        key={entry.id}
+                        transition="designEnter"
+                        enterStyle={{ opacity: 0, y: 10 }}
+                        opacity={1}
+                        y={0}
+                        flexDirection="column"
+                        gap="$3"
+                        $md={{ flexDirection: 'row', gap: '$8' }}
+                        $lg={{ gap: '$12' }}
+                      >
+                        {/* Date column */}
+                        <YStack
+                          $md={{ width: 128 }}
+                          flexShrink={0}
+                          paddingTop={4}
                         >
-                          {formatDate(entry.entryDate)}
-                        </Text>
-                        <Text
-                          fontFamily="$body"
-                          fontSize={12}
-                          color="$color7"
-                          marginTop="$1"
-                        >
-                          {entry.totalWords} words
-                        </Text>
-                      </YStack>
+                          <Text
+                            fontFamily="$body"
+                            fontSize={14}
+                            color="$color8"
+                            letterSpacing={0.5}
+                          >
+                            {formatDate(entry.entryDate)}
+                          </Text>
+                          <Text
+                            fontFamily="$body"
+                            fontSize={12}
+                            color="$color7"
+                            marginTop="$1"
+                          >
+                            {entry.totalWords} words
+                          </Text>
+                        </YStack>
 
-                      {/* Text column */}
-                      <YStack flex={1}>
-                        {entry.flows
-                          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                          .map((flow: Flow, fIndex: number) => (
-                            <YStack key={flow.id} group onLongPress={() => setDeleteTarget(flow)}>
-                              {fIndex > 0 && <View height={1} backgroundColor="$color3" marginVertical="$4" width={40} />}
-                              <Text
-                                fontFamily="$journal"
-                                fontSize={20}
-                                $md={{ fontSize: 24, lineHeight: 38 }}
-                                color="$color"
-                                lineHeight={32}
+                        {/* Text column */}
+                        <YStack flex={1}>
+                          {entry.flows
+                            .sort(
+                              (a, b) =>
+                                new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                            )
+                            .map((flow: Flow, fIndex: number) => (
+                              <YStack
+                                key={flow.id}
+                                group
+                                onLongPress={() => setDeleteTarget(flow)}
                               >
-                                {flow.content}
-                              </Text>
-                            </YStack>
-                          ))}
-                      </YStack>
-                    </XStack>
-                  )
-                ))}
+                                {fIndex > 0 && (
+                                  <View
+                                    height={1}
+                                    backgroundColor="$color3"
+                                    marginVertical="$4"
+                                    width={40}
+                                  />
+                                )}
+                                <Text
+                                  fontFamily="$journal"
+                                  fontSize={20}
+                                  $md={{ fontSize: 24, lineHeight: 38 }}
+                                  color="$color"
+                                  lineHeight={32}
+                                >
+                                  {flow.content}
+                                </Text>
+                              </YStack>
+                            ))}
+                        </YStack>
+                      </XStack>
+                    )
+                )}
               </AnimatePresence>
             </YStack>
-          )
-        )}
+          ))}
       </YStack>
 
       <DeleteFlowDialog

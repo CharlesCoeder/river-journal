@@ -47,9 +47,7 @@ function makeEntry(
 
 describe('generateMarkdownForEntry', () => {
   it('formats a single-flow entry with frontmatter', () => {
-    const entry = makeEntry('2026-04-08', [
-      { time: '14:30', content: 'Hello **world**', words: 2 },
-    ])
+    const entry = makeEntry('2026-04-08', [{ time: '14:30', content: 'Hello **world**', words: 2 }])
     const md = generateMarkdownForEntry(entry)
     const expectedTime = localHHMM('2026-04-08T14:30:00.000Z')
 
@@ -85,9 +83,7 @@ describe('generateMarkdownForEntry', () => {
 
   it('preserves rich text formatting', () => {
     const content = '# Heading\n\n**bold** and *italic*\n\n> blockquote\n\n```\ncode\n```'
-    const entry = makeEntry('2026-01-01', [
-      { time: '08:00', content, words: 10 },
-    ])
+    const entry = makeEntry('2026-01-01', [{ time: '08:00', content, words: 10 }])
     const md = generateMarkdownForEntry(entry)
 
     expect(md).toContain('# Heading')
@@ -201,9 +197,7 @@ describe('exportJournal', () => {
 
   it('preserves markdown content in ZIP files', async () => {
     const entries = [
-      makeEntry('2026-04-08', [
-        { time: '14:30', content: 'Hello **world**', words: 2 },
-      ]),
+      makeEntry('2026-04-08', [{ time: '14:30', content: 'Hello **world**', words: 2 }]),
     ]
     const blob = exportJournal(entries)
     const buffer = await blob.arrayBuffer()
@@ -237,9 +231,7 @@ describe('exportJournal', () => {
 
 describe('exportJournalSingleFile', () => {
   it('produces a text/markdown blob', () => {
-    const entries = [
-      makeEntry('2026-04-08', [{ time: '10:00', content: 'Hello', words: 1 }]),
-    ]
+    const entries = [makeEntry('2026-04-08', [{ time: '10:00', content: 'Hello', words: 1 }])]
     const blob = exportJournalSingleFile(entries)
     expect(blob.type).toBe('text/markdown')
   })
@@ -282,9 +274,7 @@ describe('exportJournalSingleFile', () => {
   })
 
   it('does not include YAML frontmatter', async () => {
-    const entries = [
-      makeEntry('2026-04-08', [{ time: '10:00', content: 'Hello', words: 1 }]),
-    ]
+    const entries = [makeEntry('2026-04-08', [{ time: '10:00', content: 'Hello', words: 1 }])]
     // Even if showFrontmatter is explicitly true, single-file suppresses it
     const blob = exportJournalSingleFile(entries, { showFrontmatter: true })
     const text = await blob.text()
@@ -388,7 +378,7 @@ function makeOwnedEntry(
 }
 
 describe('filterExportableEntries (cross-user defense)', () => {
-  it('keeps the current user\'s entries and anonymous local entries', () => {
+  it("keeps the current user's entries and anonymous local entries", () => {
     const entries = [
       makeOwnedEntry('2026-07-01', 'user-B', [{ time: '10:00', content: 'mine', words: 1 }]),
       makeOwnedEntry('2026-07-02', null, [
@@ -401,7 +391,9 @@ describe('filterExportableEntries (cross-user defense)', () => {
 
   it('excludes entries owned by a different account entirely', () => {
     const entries = [
-      makeOwnedEntry('2026-07-01', 'user-A', [{ time: '10:00', content: 'previous user', words: 2 }]),
+      makeOwnedEntry('2026-07-01', 'user-A', [
+        { time: '10:00', content: 'previous user', words: 2 },
+      ]),
       makeOwnedEntry('2026-07-02', 'user-B', [{ time: '10:00', content: 'mine', words: 1 }]),
     ]
     const result = filterExportableEntries(entries, 'user-B')

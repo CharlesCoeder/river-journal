@@ -147,7 +147,8 @@ vi.mock('app/features/notifications/ReminderSettings', () => ({
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
-  const passthrough = (tag: string) =>
+  const passthrough =
+    (tag: string) =>
     ({ children, onPress, testID, ...props }: any) => {
       const domProps: Record<string, unknown> = {}
       if (testID) domProps['data-testid'] = testID
@@ -156,7 +157,8 @@ vi.mock('@my/ui', async () => {
     }
 
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     ScrollView: passthrough('div'),
     View: passthrough('div'),
     XStack: passthrough('div'),

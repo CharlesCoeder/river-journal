@@ -39,7 +39,10 @@ export function OrphanFlowsDialog() {
   const flowCount = pending?.flowCount ?? 0
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={() => {}}>
+    <AlertDialog
+      open={isOpen}
+      onOpenChange={() => {}}
+    >
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"
@@ -64,20 +67,35 @@ export function OrphanFlowsDialog() {
           width="90%"
         >
           <YStack gap="$4">
-            <AlertDialog.Title fontFamily="$body" fontSize="$6" fontWeight="700">
+            <AlertDialog.Title
+              fontFamily="$body"
+              fontSize="$6"
+              fontWeight="700"
+            >
               Sync local writing?
             </AlertDialog.Title>
 
-            <AlertDialog.Description fontFamily="$body" fontSize="$4" color="$color">
+            <AlertDialog.Description
+              fontFamily="$body"
+              fontSize="$4"
+              color="$color"
+            >
               You have {flowCount} local writing session{flowCount !== 1 ? 's' : ''}. Would you like
               to sync {flowCount !== 1 ? 'them' : 'it'} to your account?
             </AlertDialog.Description>
 
-            <Text fontFamily="$body" fontSize="$3" color="$color11">
+            <Text
+              fontFamily="$body"
+              fontSize="$3"
+              color="$color11"
+            >
               Local-only sessions stay on this device and are never uploaded.
             </Text>
 
-            <XStack gap="$3" justifyContent="flex-end">
+            <XStack
+              gap="$3"
+              justifyContent="flex-end"
+            >
               <AlertDialog.Cancel asChild>
                 <Button
                   variant="outlined"

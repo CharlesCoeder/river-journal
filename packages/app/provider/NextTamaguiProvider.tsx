@@ -17,8 +17,14 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
     const rnwStyle = StyleSheet.getSheet()
     return (
       <>
-        <link rel="stylesheet" href="/tamagui.generated.css" />
-        <style dangerouslySetInnerHTML={{ __html: rnwStyle.textContent }} id={rnwStyle.id} />
+        <link
+          rel="stylesheet"
+          href="/tamagui.generated.css"
+        />
+        <style
+          dangerouslySetInnerHTML={{ __html: rnwStyle.textContent }}
+          id={rnwStyle.id}
+        />
         <style
           dangerouslySetInnerHTML={{
             __html: config.getNewCSS(),
@@ -43,7 +49,10 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
   })
 
   return (
-    <NextThemeProvider skipNextHead defaultTheme="light">
+    <NextThemeProvider
+      skipNextHead
+      defaultTheme="light"
+    >
       <Provider>
         <SetHTMLBackgroundColor />
         {children}

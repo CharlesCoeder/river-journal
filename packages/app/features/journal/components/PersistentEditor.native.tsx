@@ -1,13 +1,19 @@
-import { View, StyleSheet, Animated } from 'react-native';
-import { useTheme } from '@my/ui';
-import { use$ } from '@legendapp/state/react';
-import { useEffect, useRef } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ephemeral$, store$, updateActiveFlowContent, recordThresholdCrossingIfNeeded, registerEditorContentFlush } from 'app/state/store';
-import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from 'app/state/types';
-import { useDebouncedCallback } from 'use-debounce';
-import LexicalEditor from './Lexical/LexicalEditor';
-import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types';
+import { View, StyleSheet, Animated } from 'react-native'
+import { useTheme } from '@my/ui'
+import { use$ } from '@legendapp/state/react'
+import { useEffect, useRef } from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import {
+  ephemeral$,
+  store$,
+  updateActiveFlowContent,
+  recordThresholdCrossingIfNeeded,
+  registerEditorContentFlush,
+} from 'app/state/store'
+import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from 'app/state/types'
+import { useDebouncedCallback } from 'use-debounce'
+import LexicalEditor from './Lexical/LexicalEditor'
+import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
 
 /**
  * Persistent Lexical editor that remains mounted at root layout level.
@@ -22,40 +28,44 @@ import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
  * measureInWindow, which returns incorrect coordinates on Android.
  */
 export const PersistentEditor = () => {
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
-  const persistentEditor = use$(ephemeral$.persistentEditor);
+  const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const persistentEditor = use$(ephemeral$.persistentEditor)
 
   // Animated value for fade-in effect
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING;
-  const families = FONT_PAIRING_FAMILIES[fontPairing];
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const fontPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING
+  const families = FONT_PAIRING_FAMILIES[fontPairing]
   // Focus mode — read where the native editor is instantiated (web reads these in
   // JournalScreen; PersistentEditor.native is the equivalent read site on native).
-  const focusMode = use$(store$.profile?.editor?.focusMode) ?? false;
-  const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph';
+  const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
+  const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph'
   const themeValues = {
     textColor: theme.color?.val ?? '#000000',
-    placeholderColor: theme.placeholderColor?.val ?? '#999999'
-  };
+    placeholderColor: theme.placeholderColor?.val ?? '#999999',
+  }
   const fontFamilies = {
     content: families.native,
-    placeholder: families.native
-  };
+    placeholder: families.native,
+  }
 
   // Debounced function to update Legend State from editor changes.
   // maxWait guarantees a checkpoint at least once per second of continuous
   // typing, so the store copy never lags arbitrarily far behind the editor.
-  const debouncedUpdateStore = useDebouncedCallback((markdown: string) => {
-    if (persistentEditor.readOnly) return;
-    updateActiveFlowContent(markdown);
-  }, 300, { maxWait: 1000 });
+  const debouncedUpdateStore = useDebouncedCallback(
+    (markdown: string) => {
+      if (persistentEditor.readOnly) return
+      updateActiveFlowContent(markdown)
+    },
+    300,
+    { maxWait: 1000 }
+  )
 
   // Expose the pending-write flush to save/hide/exit paths (in the store) so
   // they can checkpoint the last burst of typing before reading the store.
   useEffect(() => {
-    return registerEditorContentFlush(() => debouncedUpdateStore.flush());
-  }, [debouncedUpdateStore]);
+    return registerEditorContentFlush(() => debouncedUpdateStore.flush())
+  }, [debouncedUpdateStore])
 
   // Cancel any pending debounced writes once the editor is hidden. The real
   // flush happens synchronously in hidePersistentEditor() BEFORE the flow is
@@ -63,32 +73,32 @@ export const PersistentEditor = () => {
   // programmatic '' content clear) that must not overwrite the cleared activeFlow.
   useEffect(() => {
     if (!persistentEditor.isVisible) {
-      debouncedUpdateStore.cancel();
+      debouncedUpdateStore.cancel()
     }
-  }, [persistentEditor.isVisible, debouncedUpdateStore]);
+  }, [persistentEditor.isVisible, debouncedUpdateStore])
 
   // Handle content changes from the editor (debounced for persistence/sync)
   const handleContentChange = (markdown: string) => {
-    if (persistentEditor.readOnly) return;
-    debouncedUpdateStore(markdown);
-  };
+    if (persistentEditor.readOnly) return
+    debouncedUpdateStore(markdown)
+  }
 
   // Word count is computed inside the WebView and sent as a number,
   // bypassing both the 300ms debounce and full-content bridge serialization.
   const handleWordCountChange = (count: number) => {
-    ephemeral$.instantWordCount.set(count);
-    recordThresholdCrossingIfNeeded(count);
-  };
+    ephemeral$.instantWordCount.set(count)
+    recordThresholdCrossingIfNeeded(count)
+  }
 
   // Cast to universal props to handle platform differences.
   // `dom` is an Expo DOM-component prop (forwarded to the underlying WebView)
   // that is not part of the shared Lexical prop types.
   const UniversalLexicalEditor = LexicalEditor as React.FC<
     LexicalEditorUniversalProps & { dom?: Record<string, unknown> }
-  >;
+  >
 
   // Show when visible AND we know the header height (to prevent flash at top)
-  const shouldShow = persistentEditor.isVisible && persistentEditor.headerHeight > 0;
+  const shouldShow = persistentEditor.isVisible && persistentEditor.headerHeight > 0
 
   // Animate opacity when shouldShow changes
   useEffect(() => {
@@ -99,18 +109,18 @@ export const PersistentEditor = () => {
         duration: 250,
         delay: 50,
         // Small delay to let the screen transition start
-        useNativeDriver: true
-      }).start();
+        useNativeDriver: true,
+      }).start()
     } else {
       // Immediately hide (no animation needed for hiding)
-      fadeAnim.setValue(0);
+      fadeAnim.setValue(0)
     }
     // Cleanup animation on unmount
     return () => {
-      fadeAnim.stopAnimation();
-    };
-  }, [shouldShow, fadeAnim]);
-  const keyboardHeight = use$(ephemeral$.keyboardHeight);
+      fadeAnim.stopAnimation()
+    }
+  }, [shouldShow, fadeAnim])
+  const keyboardHeight = use$(ephemeral$.keyboardHeight)
 
   // Position below the header using safe area insets + header height.
   // This is inside a SafeAreaView at root layout level.
@@ -123,7 +133,7 @@ export const PersistentEditor = () => {
   // When hidden, move offscreen instead of relying on opacity alone —
   // Expo DOM WebViews render in a separate native layer and ignore
   // parent opacity on Android.
-  const bottomInset = keyboardHeight > 0 ? keyboardHeight : insets.bottom;
+  const bottomInset = keyboardHeight > 0 ? keyboardHeight : insets.bottom
   const containerStyle = {
     position: 'absolute' as const,
     top: shouldShow ? insets.top + persistentEditor.headerHeight : -9999,
@@ -132,22 +142,40 @@ export const PersistentEditor = () => {
     bottom: shouldShow ? persistentEditor.bottomBarHeight + bottomInset : undefined,
     height: shouldShow ? undefined : 0,
     zIndex: 100,
-    overflow: 'hidden' as const
-  };
-  return <Animated.View style={[containerStyle, {
-    opacity: fadeAnim,
-    pointerEvents: shouldShow ? 'auto' : 'none'
-  }]}>
+    overflow: 'hidden' as const,
+  }
+  return (
+    <Animated.View
+      style={[
+        containerStyle,
+        {
+          opacity: fadeAnim,
+          pointerEvents: shouldShow ? 'auto' : 'none',
+        },
+      ]}
+    >
       <View style={styles.editorWrapper}>
-        <UniversalLexicalEditor themeValues={themeValues} fontFamilies={fontFamilies} onContentChange={persistentEditor.readOnly ? undefined : handleContentChange} onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange} initialContent={persistentEditor.initialContent} contentRevision={persistentEditor.initialContentRevision} readOnly={persistentEditor.readOnly} focusMode={focusMode} focusGranularity={focusGranularity} dom={{
-        hideKeyboardAccessoryView: true
-      }} />
+        <UniversalLexicalEditor
+          themeValues={themeValues}
+          fontFamilies={fontFamilies}
+          onContentChange={persistentEditor.readOnly ? undefined : handleContentChange}
+          onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange}
+          initialContent={persistentEditor.initialContent}
+          contentRevision={persistentEditor.initialContentRevision}
+          readOnly={persistentEditor.readOnly}
+          focusMode={focusMode}
+          focusGranularity={focusGranularity}
+          dom={{
+            hideKeyboardAccessoryView: true,
+          }}
+        />
       </View>
-    </Animated.View>;
-};
+    </Animated.View>
+  )
+}
 const styles = StyleSheet.create({
   editorWrapper: {
     flex: 1,
-    width: '100%'
-  }
-});
+    width: '100%',
+  },
+})

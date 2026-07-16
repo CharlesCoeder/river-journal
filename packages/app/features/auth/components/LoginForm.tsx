@@ -52,7 +52,8 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
   const handlePasswordChange = useCallback(
     (value: string) => {
       actions.setPassword(value)
-      if (errors.password || errors.general) setErrors((prev) => ({ ...prev, password: undefined, general: undefined }))
+      if (errors.password || errors.general)
+        setErrors((prev) => ({ ...prev, password: undefined, general: undefined }))
     },
     [actions, errors.password, errors.general]
   )
@@ -60,13 +61,22 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
   const handleSubmit = useCallback(async () => {
     setErrors({})
     const emailError = validateEmail(email)
-    if (emailError) { setErrors({ email: emailError }); return }
-    if (!password) { setErrors({ password: 'Password is required' }); return }
+    if (emailError) {
+      setErrors({ email: emailError })
+      return
+    }
+    if (!password) {
+      setErrors({ password: 'Password is required' })
+      return
+    }
 
     setIsLoading(true)
     try {
       const { user, error } = await signInWithEmail(email, password)
-      if (error) { setErrors({ general: error }); return }
+      if (error) {
+        setErrors({ general: error })
+        return
+      }
       if (user) onSuccess?.()
     } finally {
       setIsLoading(false)
@@ -76,7 +86,10 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
   const canSubmit = !!email && !!password && !isLoading
 
   return (
-    <YStack gap="$5" width="100%">
+    <YStack
+      gap="$5"
+      width="100%"
+    >
       {/* Email */}
       <YStack>
         <DesignInput
@@ -89,7 +102,12 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
           onSubmitEditing={handleSubmit}
         />
         {errors.email && (
-          <Text fontSize={12} color="$color" fontFamily="$body" marginTop="$1">
+          <Text
+            fontSize={12}
+            color="$color"
+            fontFamily="$body"
+            marginTop="$1"
+          >
             {errors.email}
           </Text>
         )}
@@ -109,7 +127,12 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
           onSubmitEditing={handleSubmit}
         />
         {errors.password && (
-          <Text fontSize={12} color="$color" fontFamily="$body" marginTop="$1">
+          <Text
+            fontSize={12}
+            color="$color"
+            fontFamily="$body"
+            marginTop="$1"
+          >
             {errors.password}
           </Text>
         )}
@@ -117,7 +140,12 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
 
       {/* Error */}
       {errors.general && (
-        <Text fontSize={12} color="$color" fontFamily="$body" textAlign="center">
+        <Text
+          fontSize={12}
+          color="$color"
+          fontFamily="$body"
+          textAlign="center"
+        >
           {errors.general}
         </Text>
       )}
@@ -151,17 +179,35 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
       </XStack>
 
       {/* "or" divider */}
-      <XStack alignItems="center" gap="$3" width="100%" marginTop="$2">
-        <View flex={1} height={1} backgroundColor="$color3" />
-        <Text fontFamily="$body" fontSize={10} letterSpacing={3} textTransform="uppercase" color="$color7">
+      <XStack
+        alignItems="center"
+        gap="$3"
+        width="100%"
+        marginTop="$2"
+      >
+        <View
+          flex={1}
+          height={1}
+          backgroundColor="$color3"
+        />
+        <Text
+          fontFamily="$body"
+          fontSize={10}
+          letterSpacing={3}
+          textTransform="uppercase"
+          color="$color7"
+        >
           or
         </Text>
-        <View flex={1} height={1} backgroundColor="$color3" />
+        <View
+          flex={1}
+          height={1}
+          backgroundColor="$color3"
+        />
       </XStack>
 
       {/* Google OAuth */}
       <GoogleSignInButton onSuccess={onSuccess} />
-
     </YStack>
   )
 }

@@ -93,7 +93,10 @@ export function ThemePicker() {
   const tier: SubscriptionTier = getThemePickerTier()
 
   // Tokens earned minus tokens already spent
-  const availableTokens = Math.max(0, (streak?.unlockTokensEarned ?? 0) - unlockedFromProfile.length)
+  const availableTokens = Math.max(
+    0,
+    (streak?.unlockTokensEarned ?? 0) - unlockedFromProfile.length
+  )
 
   const isCustomSelected = currentTheme === 'custom'
 
@@ -144,7 +147,11 @@ export function ThemePicker() {
               gap="$2"
               paddingTop="$2"
             >
-              <Text fontFamily="$body" fontSize={13} color="$color8">
+              <Text
+                fontFamily="$body"
+                fontSize={13}
+                color="$color8"
+              >
                 Unlock {THEME_LABELS[name]}?
               </Text>
               <XStack gap="$3">

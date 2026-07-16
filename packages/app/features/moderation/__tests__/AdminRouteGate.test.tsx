@@ -32,7 +32,6 @@ const GATE_PATH = path.join(FEATURES_DIR, 'AdminRouteGate.tsx')
 
 const CHILD_TESTID = 'admin-route-gate-child-sentinel'
 
-// biome-ignore lint: test-only mutable mock state, reassigned per test
 let mockIsAdminValue: unknown = undefined
 
 const mockRouterPush = vi.fn()

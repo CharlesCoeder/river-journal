@@ -39,7 +39,12 @@ vi.mock('@my/ui', async () => {
 
     return ReactModule.createElement(
       'div',
-      { role: 'dialog', 'aria-modal': 'true', 'data-mode': props.mode, 'data-boundary': props.boundary },
+      {
+        role: 'dialog',
+        'aria-modal': 'true',
+        'data-mode': props.mode,
+        'data-boundary': props.boundary,
+      },
       // Acknowledge / close button
       ReactModule.createElement(
         'button',
@@ -127,7 +132,9 @@ function makeWrapperProps(
 describe('AC11 — first-time mode: writes acknowledged_at and calls onClose', () => {
   it('writes a non-empty ISO string to store$.profile.preferences.disclosures.collective_post_v1.acknowledged_at on acknowledge', () => {
     const onClose = vi.fn()
-    render(React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'first-time', onClose })))
+    render(
+      React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'first-time', onClose }))
+    )
 
     const btn = screen.getByRole('button', { name: /got it, post/i })
     fireEvent.click(btn)
@@ -145,7 +152,9 @@ describe('AC11 — first-time mode: writes acknowledged_at and calls onClose', (
 
   it('calls onClose exactly once after acknowledge', () => {
     const onClose = vi.fn()
-    render(React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'first-time', onClose })))
+    render(
+      React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'first-time', onClose }))
+    )
 
     const btn = screen.getByRole('button', { name: /got it, post/i })
     fireEvent.click(btn)
@@ -167,7 +176,9 @@ describe('AC11 — first-time mode: writes acknowledged_at and calls onClose', (
       }
     })
 
-    render(React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'first-time', onClose })))
+    render(
+      React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'first-time', onClose }))
+    )
 
     const btn = screen.getByRole('button', { name: /got it, post/i })
     fireEvent.click(btn)
@@ -201,7 +212,9 @@ describe('AC12 — review mode: no acknowledgment write, calls onClose', () => {
     })
 
     const onClose = vi.fn()
-    render(React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'review', onClose })))
+    render(
+      React.createElement(ThreePostureDisclosure, makeWrapperProps({ mode: 'review', onClose }))
+    )
 
     const btn = screen.getByRole('button', { name: /close/i })
     fireEvent.click(btn)

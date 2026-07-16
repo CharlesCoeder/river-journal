@@ -15,14 +15,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import {
-  AlertDialog,
-  Button,
-  ExpandingLineButton,
-  Text,
-  XStack,
-  YStack,
-} from '@my/ui'
+import { AlertDialog, Button, ExpandingLineButton, Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { useRouter } from 'solito/navigation'
 import { store$, deletePreviousUserData, previousAccountBanner$ } from 'app/state/store'
@@ -103,13 +96,28 @@ export function PreviousAccountBanner() {
       borderRadius="$4"
       backgroundColor="$color2"
     >
-      <Text fontFamily="$body" fontSize={11} textTransform="uppercase" letterSpacing={2} color="$color8">
+      <Text
+        fontFamily="$body"
+        fontSize={11}
+        textTransform="uppercase"
+        letterSpacing={2}
+        color="$color8"
+      >
         Previous Account on This Device
       </Text>
-      <Text fontFamily="$body" fontSize={14} color="$color" lineHeight={20}>
-        We found {summary} from a different account still stored on this device. Choose what you want to do:
+      <Text
+        fontFamily="$body"
+        fontSize={14}
+        color="$color"
+        lineHeight={20}
+      >
+        We found {summary} from a different account still stored on this device. Choose what you
+        want to do:
       </Text>
-      <YStack gap="$2" alignItems="flex-start">
+      <YStack
+        gap="$2"
+        alignItems="flex-start"
+      >
         <ExpandingLineButton
           size="default"
           disabled={busy}
@@ -136,7 +144,10 @@ export function PreviousAccountBanner() {
         </ExpandingLineButton>
       </YStack>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+      >
         <AlertDialog.Portal>
           <AlertDialog.Overlay
             key="overlay"
@@ -162,15 +173,30 @@ export function PreviousAccountBanner() {
             width="90%"
           >
             <YStack gap="$4">
-              <AlertDialog.Title fontFamily="$body" fontSize="$6" fontWeight="700">
+              <AlertDialog.Title
+                fontFamily="$body"
+                fontSize="$6"
+                fontWeight="700"
+              >
                 Delete previous account&apos;s data?
               </AlertDialog.Title>
-              <AlertDialog.Description fontFamily="$body" fontSize="$4" color="$color">
-                This will permanently remove {summary} from this device. The data will not be uploaded or transferred. This cannot be undone.
+              <AlertDialog.Description
+                fontFamily="$body"
+                fontSize="$4"
+                color="$color"
+              >
+                This will permanently remove {summary} from this device. The data will not be
+                uploaded or transferred. This cannot be undone.
               </AlertDialog.Description>
-              <XStack gap="$3" justifyContent="flex-end">
+              <XStack
+                gap="$3"
+                justifyContent="flex-end"
+              >
                 <AlertDialog.Cancel asChild>
-                  <Button variant="outlined" fontFamily="$body">
+                  <Button
+                    variant="outlined"
+                    fontFamily="$body"
+                  >
                     Cancel
                   </Button>
                 </AlertDialog.Cancel>

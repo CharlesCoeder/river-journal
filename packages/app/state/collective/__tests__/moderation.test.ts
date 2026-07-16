@@ -122,7 +122,12 @@ describe('fetchModerationQueue()', () => {
         latest_report_at: '2026-07-02T00:00:00.000Z',
         reports: [
           { id: 'r1', reason_code: 'spam', note: null, created_at: '2026-07-01T01:00:00.000Z' },
-          { id: 'r2', reason_code: 'spam', note: 'looks templated', created_at: '2026-07-02T00:00:00.000Z' },
+          {
+            id: 'r2',
+            reason_code: 'spam',
+            note: 'looks templated',
+            created_at: '2026-07-02T00:00:00.000Z',
+          },
         ],
       },
     ]
@@ -213,7 +218,7 @@ describe('useLastModerationActionAt() useQuery config', () => {
     expect(opts.queryKey).toEqual(lastModerationActionKey)
   })
 
-  it("queryFn reads moderation_actions ordered by created_at desc, limited to 1", async () => {
+  it('queryFn reads moderation_actions ordered by created_at desc, limited to 1', async () => {
     const { supabase } = await import('../../../utils/supabase')
     const chain = makeFromChain({ data: { created_at: '2026-07-05T10:00:00.000Z' }, error: null })
     ;(supabase.from as ReturnType<typeof vi.fn>).mockImplementation(chain.from)

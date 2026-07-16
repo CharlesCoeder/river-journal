@@ -229,7 +229,9 @@ describe('countUndecidedOrphans', () => {
     // These are already in the cloud and must not trigger the consent dialog.
     flows$!['f-from-supabase-1']!.set(makeFlow('f-from-supabase-1', { local_session_id: '' }))
     flows$!['f-from-supabase-2']!.set(makeFlow('f-from-supabase-2', { local_session_id: '' }))
-    entries$!['e-from-supabase']!.set(makeEntry('e-from-supabase', { local_session_id: '', user_id: 'user-123' }))
+    entries$!['e-from-supabase']!.set(
+      makeEntry('e-from-supabase', { local_session_id: '', user_id: 'user-123' })
+    )
     // One real local orphan
     flows$!['f-local']!.set(makeFlow('f-local'))
 
@@ -406,9 +408,7 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
   // is visible in one block.
   it('cloud-downloaded ghost flow (local_session_id: "") is neither counted nor excluded', () => {
     flows$!['f-ghost']!.set(makeFlow('f-ghost', { local_session_id: '' }))
-    entries$!['e-ghost']!.set(
-      makeEntry('e-ghost', { local_session_id: '', user_id: 'user-123' })
-    )
+    entries$!['e-ghost']!.set(makeEntry('e-ghost', { local_session_id: '', user_id: 'user-123' }))
 
     expect(countUndecidedOrphans()).toEqual({ flowCount: 0, entryCount: 0 })
 
@@ -574,15 +574,9 @@ describe('restoreExcludedEntries', () => {
   it('getLocallyExcludedEntries groups flows by entry and sums word counts', () => {
     entries$!['e1']!.set(makeEntry('e1', { sync_excluded: true, entryDate: '2026-03-01' }))
     entries$!['e2']!.set(makeEntry('e2', { sync_excluded: true, entryDate: '2026-03-05' }))
-    flows$!['f1']!.set(
-      makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 100 })
-    )
-    flows$!['f2']!.set(
-      makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 200 })
-    )
-    flows$!['f3']!.set(
-      makeFlow('f3', { dailyEntryId: 'e2', sync_excluded: true, wordCount: 50 })
-    )
+    flows$!['f1']!.set(makeFlow('f1', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 100 }))
+    flows$!['f2']!.set(makeFlow('f2', { dailyEntryId: 'e1', sync_excluded: true, wordCount: 200 }))
+    flows$!['f3']!.set(makeFlow('f3', { dailyEntryId: 'e2', sync_excluded: true, wordCount: 50 }))
 
     const summaries = getLocallyExcludedEntries()
 
@@ -595,9 +589,7 @@ describe('restoreExcludedEntries', () => {
   })
 
   it('getLocallyExcludedEntries skips flows whose parent entry was deleted', () => {
-    flows$!['f-orphan']!.set(
-      makeFlow('f-orphan', { dailyEntryId: 'missing', sync_excluded: true })
-    )
+    flows$!['f-orphan']!.set(makeFlow('f-orphan', { dailyEntryId: 'missing', sync_excluded: true }))
     expect(getLocallyExcludedEntries()).toHaveLength(0)
   })
 
@@ -764,7 +756,10 @@ describe('clearUserData ghost deletion prevention', () => {
 // ---------------------------------------------------------------------------
 
 describe('resolveOrphanFlows error handling', () => {
-  let resolveOrphanFlows: (adopt: boolean, overrides?: { adoptFn?: (userId: string) => void; excludeFn?: () => void }) => void
+  let resolveOrphanFlows: (
+    adopt: boolean,
+    overrides?: { adoptFn?: (userId: string) => void; excludeFn?: () => void }
+  ) => void
 
   beforeEach(async () => {
     const storeModule = await import('../store')
@@ -778,7 +773,9 @@ describe('resolveOrphanFlows error handling', () => {
   it('clears pending state and opens sync gate even if adoption throws', () => {
     orphanFlowsPending$.set({ flowCount: 1, entryCount: 1, userId: 'user-123' })
 
-    const throwingAdopt = () => { throw new Error('simulated failure') }
+    const throwingAdopt = () => {
+      throw new Error('simulated failure')
+    }
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     resolveOrphanFlows(true, { adoptFn: throwingAdopt })
@@ -841,9 +838,7 @@ describe('restoreExcludedEntries — cross-user defense', () => {
 
   it('still restores an anonymous (user_id === null) entry — null is the legitimate adoption path', () => {
     entries$!['e-anon']!.set(makeEntry('e-anon', { sync_excluded: true }))
-    flows$!['f-anon']!.set(
-      makeFlow('f-anon', { dailyEntryId: 'e-anon', sync_excluded: true })
-    )
+    flows$!['f-anon']!.set(makeFlow('f-anon', { dailyEntryId: 'e-anon', sync_excluded: true }))
 
     restoreExcludedEntries(['e-anon'], 'user-B')
 
@@ -944,7 +939,7 @@ describe('countPreviousUserData / deletePreviousUserData', () => {
     expect(countPreviousUserData('user-A')).toEqual({ entryCount: 2, flowCount: 1 })
   })
 
-  it('deletePreviousUserData removes only the targeted user\'s rows; leaves current user + anonymous intact', () => {
+  it("deletePreviousUserData removes only the targeted user's rows; leaves current user + anonymous intact", () => {
     entries$!['e-A']!.set(makeEntry('e-A', { user_id: 'user-A' }))
     entries$!['e-B']!.set(makeEntry('e-B', { user_id: 'user-B' }))
     entries$!['e-anon']!.set(makeEntry('e-anon'))
@@ -1081,4 +1076,3 @@ describe('previousAccountBanner$ derivation', () => {
     expect(banner?.previousUserId).toBe('user-B')
   })
 })
-

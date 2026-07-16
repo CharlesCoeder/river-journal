@@ -20,7 +20,10 @@ export const NativeToast = () => {
       scale={1}
       transition="quick"
     >
-      <YStack paddingVertical="$1.5" paddingHorizontal="$2">
+      <YStack
+        paddingVertical="$1.5"
+        paddingHorizontal="$2"
+      >
         <Toast.Title lineHeight={20}>{currentToast.title}</Toast.Title>
         {!!currentToast.message && <Toast.Description>{currentToast.message}</Toast.Description>}
       </YStack>

@@ -115,7 +115,7 @@ export function useKeyboardShortcuts(): void {
     {
       stopPropagation: false,
       enabled: typeof window !== 'undefined',
-    },
+    }
   )
 }
 

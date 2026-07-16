@@ -77,7 +77,10 @@ describe('features/moderation-receipts/** — mobile-exclusion import boundary',
       }
     }
 
-    expect(violations, `forbidden features/moderation/** imports found:\n${violations.join('\n')}`).toEqual([])
+    expect(
+      violations,
+      `forbidden features/moderation/** imports found:\n${violations.join('\n')}`
+    ).toEqual([])
   })
 
   it('reasonLabels.ts specifically does NOT import REMOVAL_REASONS from features/moderation/RemovePostDialog', () => {

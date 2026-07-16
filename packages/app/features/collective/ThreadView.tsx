@@ -711,62 +711,64 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   return (
     <AnimatePresence>
       {mounted && (
-    <YStack
-      key="collective-thread-body"
-      transition="designEnter"
-      enterStyle={{ opacity: 0, y: 10 }}
-      opacity={1}
-      y={0}
-      maxWidth={720}
-      marginHorizontal="auto"
-      width="100%"
-      paddingHorizontal="$5"
-      paddingVertical="$8"
-    >
-      {/* Back to the room (or to the full thread when focused on a subthread) */}
-      <View
-        role="button"
-        aria-label={
-          focusedFromRoot && focusedFromRoot !== postId ? 'Back to full thread' : 'Back to the room'
-        }
-        onPress={() =>
-          router.push(
-            focusedFromRoot && focusedFromRoot !== postId
-              ? `/collective/thread/${focusedFromRoot}`
-              : '/collective/dev'
-          )
-        }
-        cursor="pointer"
-        marginBottom="$9"
-      >
-        <XStack
-          alignItems="center"
-          gap="$2"
+        <YStack
+          key="collective-thread-body"
+          transition="designEnter"
+          enterStyle={{ opacity: 0, y: 10 }}
+          opacity={1}
+          y={0}
+          maxWidth={720}
+          marginHorizontal="auto"
+          width="100%"
+          paddingHorizontal="$5"
+          paddingVertical="$8"
         >
-          <ArrowLeft
-            size={16}
-            color="$color9"
-          />
-          <Text
-            fontSize="$2"
-            color="$color9"
-            fontFamily="$body"
+          {/* Back to the room (or to the full thread when focused on a subthread) */}
+          <View
+            role="button"
+            aria-label={
+              focusedFromRoot && focusedFromRoot !== postId
+                ? 'Back to full thread'
+                : 'Back to the room'
+            }
+            onPress={() =>
+              router.push(
+                focusedFromRoot && focusedFromRoot !== postId
+                  ? `/collective/thread/${focusedFromRoot}`
+                  : '/collective/dev'
+              )
+            }
+            cursor="pointer"
+            marginBottom="$9"
           >
-            {focusedFromRoot && focusedFromRoot !== postId
-              ? 'Back to full thread'
-              : 'Back to the room'}
-          </Text>
-        </XStack>
-      </View>
+            <XStack
+              alignItems="center"
+              gap="$2"
+            >
+              <ArrowLeft
+                size={16}
+                color="$color9"
+              />
+              <Text
+                fontSize="$2"
+                color="$color9"
+                fontFamily="$body"
+              >
+                {focusedFromRoot && focusedFromRoot !== postId
+                  ? 'Back to full thread'
+                  : 'Back to the room'}
+              </Text>
+            </XStack>
+          </View>
 
-      {/* Root letter at depth 0; its descendants rendered recursively via renderPost */}
-      <View
-        tag="ul"
-        role="tree"
-      >
-        {rootPost ? renderPost(rootPost, 0, true) : null}
-      </View>
-    </YStack>
+          {/* Root letter at depth 0; its descendants rendered recursively via renderPost */}
+          <View
+            tag="ul"
+            role="tree"
+          >
+            {rootPost ? renderPost(rootPost, 0, true) : null}
+          </View>
+        </YStack>
       )}
     </AnimatePresence>
   )
