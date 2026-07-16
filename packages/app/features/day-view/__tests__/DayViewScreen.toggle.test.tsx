@@ -53,6 +53,16 @@ vi.mock('@my/ui', async () => {
       children
     )
 
+  const Input = ({ testID, value, onChangeText, 'aria-label': ariaLabel }: any) =>
+    ReactModule.createElement('input', {
+      'data-testid': testID,
+      value,
+      role: 'textbox',
+      'aria-label': ariaLabel,
+      onChange: (e: any) => onChangeText?.(e.target.value),
+      type: 'text',
+    })
+
   const Dialog = ({ children, open }: any) => {
     if (!open) return null
     return ReactModule.createElement('div', { role: 'dialog' }, children)
@@ -76,6 +86,7 @@ vi.mock('@my/ui', async () => {
     Text: passthrough('span'),
     Dialog,
     ExpandingLineButton,
+    Input,
     useReducedMotion: () => false,
     isWeb: true,
   }
@@ -97,6 +108,9 @@ vi.mock('solito/navigation', () => ({
 // ─── app/state/store ─────────────────────────────────────────────────────────
 vi.mock('app/state/store', () => {
   const store$ = {
+    session: {
+      userId: { get: () => null, peek: () => null },
+    },
     views: {
       allEntriesSorted: () => mockEntriesSortedObservable,
       entriesByMonth: (_month: string) => ({
@@ -146,6 +160,12 @@ vi.mock('../components/DeleteFlowDialog', () => ({
 // ─── WordLinkNav stub ─────────────────────────────────────────────────────────
 vi.mock('app/features/navigation/WordLinkNav', () => ({
   WordLinkNav: () => React.createElement('nav', { 'data-testid': 'word-link-nav' }),
+}))
+
+// ─── Read-only Editor stub — the search region's inline reader imports it;
+// stubbed to avoid mounting Lexical in these toggle-focused tests. ───────────
+vi.mock('app/features/journal/components/Editor', () => ({
+  Editor: () => null,
 }))
 
 // ─── Import under test ───────────────────────────────────────────────────────

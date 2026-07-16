@@ -7,7 +7,12 @@ import { useRouter } from 'solito/navigation'
 import { store$ } from 'app/state/store'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import { Editor } from 'app/features/journal/components/Editor'
-import type { DailyEntryView, Flow } from 'app/state/types'
+import type { DailyEntryView } from 'app/state/types'
+import { joinFlowsForReader } from './joinFlowsForReader'
+
+// Re-exported so existing consumers/tests that import the reader-join helper
+// from this module keep working after it moved to a dependency-free module.
+export { joinFlowsForReader } from './joinFlowsForReader'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helpers (exported for unit tests)
@@ -47,18 +52,6 @@ export function cellAriaLabel(date: string, entry: DailyEntryView | undefined): 
   if (!entry) return `${monthDay}, no entries`
   const count = entry.flows.length
   return `${monthDay}, ${count} ${count === 1 ? 'entry' : 'entries'}`
-}
-
-/**
- * Joins flows chronologically with double-newline separators for display in the reader.
- * Uses .getTime() for Date subtraction to satisfy TypeScript.
- */
-export function joinFlowsForReader(flows: Flow[]): string {
-  if (flows.length === 0) return ''
-  return [...flows]
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .map((f) => f.content)
-    .join('\n\n')
 }
 
 /** A single cell in the 42-cell month grid. */
