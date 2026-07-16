@@ -120,7 +120,11 @@ export function OnboardingSkipButton({ onPress, label = 'Skip' }: OnboardingSkip
   return (
     <Text
       tag="button"
-      accessibilityLabel={label}
+      // Bare Tamagui Text primitive: pass web-native `aria-label` (like the
+      // section's `aria-labelledby` above) rather than RN `accessibilityLabel`,
+      // which Text does not map and would leak to the DOM as an unknown prop.
+      // Tamagui normalizes `aria-label` → accessibilityLabel on native.
+      aria-label={label}
       onPress={onPress}
       fontFamily="$body"
       fontSize="$4"
