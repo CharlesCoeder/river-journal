@@ -14,6 +14,11 @@ import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/ind
 // version sees no upgrade event and silently misses its store. Keep this list
 // the only place store names are declared.
 //
+// 13: added 'billing-receipt' table for the local-only app-open entitlement
+//     re-validation receipt (the `cs_...`/receipt id to re-POST on app open;
+//     see state/billing.ts). Never synced, never encrypted. Additive-only
+//     upgrade: the new object store is created and every existing table is left
+//     intact.
 // 12: added 'telemetry-consent' table for the local-only, per-device telemetry
 //     opt-in preference (default OFF; gates Sentry + PostHog init; see
 //     state/telemetryConsent.ts). Never synced. Additive-only upgrade: the new
@@ -36,7 +41,7 @@ import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/ind
 // query cache (separate domain from Legend-State; see queryStorage.ts).
 // 5: added 'grace-days' table (was 4: added 'lapsed-state').
 export const DB_NAME = 'RiverJournal'
-export const DB_VERSION = 12
+export const DB_VERSION = 13
 export const TABLE_NAMES = [
   'app-state',
   'flows',
@@ -50,6 +55,7 @@ export const TABLE_NAMES = [
   'push-tokens',
   'app-lock',
   'telemetry-consent',
+  'billing-receipt',
 ] as const
 
 export const persistPlugin = observablePersistIndexedDB({

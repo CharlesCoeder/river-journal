@@ -237,3 +237,50 @@ describe('boot wiring — call-site placement inside initializePersistence()', (
     expect(SOURCE).not.toMatch(/await\s+resumePendingAccountCleanupIfNeeded\s*\(/)
   })
 })
+
+describe('persistence store registration — every persisted store is a declared IndexedDB object store', () => {
+  const INIT_SOURCE = readFileSync(path.resolve(__dirname, '../initializeApp.ts'), 'utf8')
+  const PERSIST_CONFIG_SOURCE = readFileSync(path.resolve(__dirname, '../persistConfig.ts'), 'utf8')
+
+  // The web IndexedDB schema source-of-truth: TABLE_NAMES in persistConfig.ts.
+  // A store persisted via configurePersistence but absent here is never created
+  // in onupgradeneeded, so the first transaction against it throws
+  // "'<name>' is not a known object store name" on a fresh DB.
+  function declaredTableNames(): Set<string> {
+    const block = PERSIST_CONFIG_SOURCE.match(/TABLE_NAMES\s*=\s*\[([\s\S]*?)\]\s*as const/)
+    expect(block, 'TABLE_NAMES array literal not found in persistConfig.ts').not.toBeNull()
+    const names = [...block![1].matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]!)
+    return new Set(names)
+  }
+
+  // Every store name persisted directly in initializeApp.ts via
+  // configurePersistence({ persist: { name: '...' } }) (matches single- and
+  // multi-line call shapes).
+  function persistedStoreNames(): string[] {
+    return [...INIT_SOURCE.matchAll(/persist:\s*\{\s*name:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]!)
+  }
+
+  it('"billing-receipt" is registered in persistConfig TABLE_NAMES and DB_VERSION is bumped past 12', () => {
+    expect(declaredTableNames().has('billing-receipt')).toBe(true)
+
+    const versionMatch = PERSIST_CONFIG_SOURCE.match(/DB_VERSION\s*=\s*(\d+)/)
+    expect(versionMatch, 'DB_VERSION constant not found').not.toBeNull()
+    expect(Number(versionMatch![1])).toBeGreaterThan(12)
+  })
+
+  it('every store persisted in initializeApp.ts is declared in TABLE_NAMES', () => {
+    const declared = declaredTableNames()
+    const persisted = persistedStoreNames()
+
+    // Sanity-guard against a refactor that changes the call shape and silently
+    // makes this scan (and therefore the invariant below) vacuous.
+    expect(persisted.length).toBeGreaterThanOrEqual(6)
+    expect(persisted).toContain('billing-receipt')
+
+    const unregistered = persisted.filter((name) => !declared.has(name))
+    expect(
+      unregistered,
+      `persisted stores missing from persistConfig TABLE_NAMES: ${unregistered.join(', ')}`
+    ).toEqual([])
+  })
+})
