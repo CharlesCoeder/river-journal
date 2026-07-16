@@ -3,6 +3,9 @@
   "organizeImports": {
     "enabled": false
   },
+  "files": {
+    "ignore": ["**/src-tauri/target/**", "**/tsconfig.*.json"]
+  },
   "linter": {
     "enabled": true,
     "ignore": [
@@ -18,7 +21,8 @@
       "**/package.json",
       ".codesandbox",
       "tsconfig.base.json",
-      "supabase/functions/**"
+      "supabase/functions/**",
+      "**/src-tauri/target/**"
     ],
 
     "rules": {

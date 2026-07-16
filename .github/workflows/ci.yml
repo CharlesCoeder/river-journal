@@ -1,0 +1,96 @@
+# CI — the required merge gate for every pull request.
+#
+# Runs the full install/build/typecheck/test/lint/boundary suite on every PR
+# and on push to main (for status history). Every check here is already green
+# on a clean checkout; keep it that way (a CI job that lands red teaches
+# contributors to ignore CI).
+#
+# Toolchain versions are PINNED (Node 22, Yarn 4.5.0 via Corepack, Deno 2.9.2,
+# Biome/Supabase from the repo-pinned node_modules/.bin) so an upstream release
+# cannot turn a green baseline red for every future PR.
+#
+# NOTE: this workflow runs a single job named `ci`. That name is the required
+# status check in branch protection — DO NOT rename it without updating branch
+# protection (a rename blocks every PR on a check that never reports). See
+# docs/deployment-guide.md.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs for the same ref so pushes don't pile up runners.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Corepack MUST be enabled before any yarn call so the repo-pinned Yarn
+      # 4.5.0 (package.json#packageManager) is used — a stray Yarn 1 would make
+      # `--immutable` an unknown flag and fail the install.
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Verify Yarn version is Corepack-pinned 4.5.0
+        run: yarn --version | grep -qx '4.5.0'
+
+      # `yarn install --immutable` is the Berry (Yarn 4) frozen-install flag —
+      # the Yarn 1 lockfile flag would be rejected by Berry. postinstall runs
+      # `check-tamagui` + `yarn build`, so the shared-package build already
+      # happens during install; the explicit `yarn build` step below is a fast,
+      # visible re-run.
+      - name: Install (immutable)
+        run: yarn install --immutable
+
+      - name: Build (shared packages only)
+        run: yarn build
+
+      # Required because `yarn build` uses --skip-types and would otherwise let
+      # type regressions merge.
+      - name: Typecheck
+        run: yarn typecheck
+
+      # CI-safe Vitest invocation — excludes BOTH dev.test.ts (boots Next dev
+      # servers) and build.test.ts (rewrites the tree), single-threaded from the
+      # root config. Encoded in the `test:ci` package script.
+      - name: Test
+        run: yarn test:ci
+
+      - name: Format + lint (Biome)
+        run: node_modules/.bin/biome check .
+
+      - name: Lint PostHog event allowlist
+        run: yarn lint:posthog
+
+      - name: Lint Edge Function logging / encryption boundary
+        run: yarn lint:edge-logging
+
+      - name: Lint architectural boundaries
+        run: yarn lint:boundaries
+
+      # Edge Function (Deno) test suite — Deno 2 code that Vitest cannot run.
+      # Pinned to the locally-verified Deno version. Only read + env permissions
+      # are granted (the suites do not reach the network); no lockfile is
+      # committed, so the ephemeral checkout stays clean.
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.2
+
+      - name: Test Edge Functions (Deno)
+        run: deno test --allow-read --allow-env supabase/functions/
