@@ -166,6 +166,16 @@ function InAppReminderCard() {
   const anyPending = streakPending || repliesPending || moderationPending
   if (!anyPending) return null
 
+  // Enter/Space activates a role="button" row for keyboard users — bare Tamagui
+  // primitives (unlike ExpandingLineButton, which renders a real <button>) are
+  // not natively keyboard-operable.
+  const onActivateKey = (activate: () => void) => (e: any) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault?.()
+      activate()
+    }
+  }
+
   return (
     <YStack
       testID="in-app-reminder-card"
@@ -183,7 +193,9 @@ function InAppReminderCard() {
           testID="reminder-row-streak"
           cursor="pointer"
           onPress={() => router.push('/journal')}
+          onKeyDown={onActivateKey(() => router.push('/journal'))}
           role="button"
+          tabIndex={0}
           aria-label="Finish today's writing"
         >
           <Text
@@ -201,7 +213,9 @@ function InAppReminderCard() {
           testID="reminder-row-replies"
           cursor="pointer"
           onPress={() => router.push('/collective')}
+          onKeyDown={onActivateKey(() => router.push('/collective'))}
           role="button"
+          tabIndex={0}
           aria-label="See new replies in the Collective"
         >
           <Text
@@ -219,7 +233,9 @@ function InAppReminderCard() {
           testID="reminder-row-moderation"
           cursor="pointer"
           onPress={() => router.push('/settings')}
+          onKeyDown={onActivateKey(() => router.push('/settings'))}
           role="button"
+          tabIndex={0}
           aria-label="Review a moderation update"
         >
           <Text
@@ -236,7 +252,9 @@ function InAppReminderCard() {
         testID="reminder-dismiss"
         cursor="pointer"
         onPress={() => ephemeral$.reminderCardDismissed.set(true)}
+        onKeyDown={onActivateKey(() => ephemeral$.reminderCardDismissed.set(true))}
         role="button"
+        tabIndex={0}
         aria-label="Dismiss reminders"
         fontFamily="$body"
         fontSize={13}

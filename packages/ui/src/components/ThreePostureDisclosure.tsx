@@ -207,6 +207,13 @@ function BoundaryADialog({
           <TextAny
             tag="a"
             role="link"
+            tabIndex={0}
+            onKeyDown={(e: any) => {
+              if (e.key === 'Enter') {
+                e.preventDefault?.()
+                onViewGuidelines?.()
+              }
+            }}
             fontFamily="$body"
             fontSize="$3"
             color="$stone"

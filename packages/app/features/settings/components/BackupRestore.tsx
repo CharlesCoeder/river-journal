@@ -63,6 +63,13 @@ function EntryPoint({
       color="$color"
       cursor="pointer"
       role="button"
+      tabIndex={0}
+      onKeyDown={(e: any) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault?.()
+          onPress()
+        }
+      }}
       hoverStyle={{ opacity: 0.7 }}
       focusStyle={{ opacity: 0.7 }}
       onPress={onPress}
@@ -96,6 +103,13 @@ function ActionText({
       alignSelf="flex-start"
       cursor="pointer"
       role="button"
+      tabIndex={0}
+      onKeyDown={(e: any) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault?.()
+          onPress()
+        }
+      }}
       hoverStyle={{ opacity: 0.7 }}
       focusStyle={{ opacity: 0.7 }}
       onPress={onPress}

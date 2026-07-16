@@ -197,6 +197,13 @@ function PostureLine({
         ? {
             onPress,
             role: 'button' as const,
+            tabIndex: 0,
+            onKeyDown: (e: any) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault?.()
+                onPress?.()
+              }
+            },
             cursor: 'pointer',
             hoverStyle: { opacity: 0.8 },
           }
