@@ -29,6 +29,7 @@ import { AmbientPrivacyLabel } from 'app/features/disclosure/AmbientPrivacyLabel
 import { useCreatePost, createPostWithId } from 'app/state/collective/mutations'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { store$ } from 'app/state/store'
+import { captureEvent } from 'app/utils/telemetry/posthog'
 import { useRouter } from 'solito/navigation'
 import CollectiveLexicalEditor from './CollectiveLexicalEditor'
 
@@ -177,6 +178,11 @@ export default function PostComposer({
           user_id: currentUserId!,
         })
       )
+      // Confirmed success — emit metadata only (never the letter body/title).
+      captureEvent('collective_post_submitted', {
+        user_id: currentUserId!,
+        tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+      })
       // Success: drop the draft and close the composer.
       setTitle('')
       setBody('')
@@ -205,6 +211,11 @@ export default function PostComposer({
           user_id: currentUserId!,
         })
       )
+      // Confirmed success — emit metadata only (never the reply body).
+      captureEvent('collective_post_submitted', {
+        user_id: currentUserId!,
+        tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+      })
       setBody('')
       onSubmitted?.()
     } catch {

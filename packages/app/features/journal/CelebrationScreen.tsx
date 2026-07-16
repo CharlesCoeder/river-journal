@@ -41,6 +41,7 @@ import {
   markUnlockSurfaced,
 } from 'app/state/store'
 import { MILESTONES } from 'app/state/streak'
+import { captureEvent } from 'app/utils/telemetry/posthog'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import { chooseCelebrationVariant } from './celebrationVariant'
 import { UnlockNotification } from 'app/features/streak/UnlockNotification'
@@ -110,6 +111,12 @@ export function CelebrationScreen() {
       setShowCelebration(true)
       if (showUnlock && latestEarnedMilestone !== null) {
         markUnlockSurfaced(latestEarnedMilestone)
+        // Fires once per newly-earned milestone, in lockstep with surfacing it.
+        captureEvent('streak_unlock_earned', {
+          user_id: store$.session?.userId?.peek?.() ?? null,
+          tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+          milestone: latestEarnedMilestone,
+        })
       }
       // Focus management (AC 12): focus first interactive element on mount (web only)
       // On native, RN View lacks .focus(); TODO(native a11y focus): use

@@ -34,8 +34,8 @@
  *     subscription stays available.
  *
  * On every successful terminal (Stripe done OR native-action reached OR the
- * mismatch fallback), `onCancelled()` fires exactly once to drive the Billing
- * surface's receipt-query refetch.
+ * mismatch fallback), the `onCancelled` callback fires exactly once to drive the
+ * Billing surface's receipt-query refetch.
  *
  * This flow NEVER writes an early downgrade to the client store — the tier flip
  * to free at period end is exclusively server-owned. Telemetry is server-owned
@@ -48,6 +48,8 @@ import { cancelSubscription } from 'app/utils/billing/subscriptionApi'
 import type { BillingProvider } from 'app/utils/billing/subscriptionApi'
 import { formatPeriodEnd } from 'app/utils/billing/formatPeriodEnd'
 import { resolveNativeStoreLink } from './nativeStoreLinks'
+import { store$ } from 'app/state/store'
+import { captureEvent } from 'app/utils/telemetry/posthog'
 
 // react-native's Linking, resolved via a deferred dynamic import rather than a
 // top-level `import { Linking } from 'react-native'` so the web bundle never
@@ -147,6 +149,12 @@ export function CancelSubscriptionFlow({
     if (inFlightRef.current) return
     inFlightRef.current = true
     setState('cancelling')
+    // Cancellation-intent metric (metadata only) at the moment the flow begins.
+    captureEvent('subscription_cancel_initiated', {
+      user_id: store$.session?.userId?.peek?.() ?? null,
+      provider,
+      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+    })
 
     try {
       const result = await cancelSubscription({ provider, subscription_id: subscriptionId })
@@ -160,6 +168,12 @@ export function CancelSubscriptionFlow({
           // on a blank native screen; land on the Done acknowledgment instead.
           setState('cancelled')
         }
+        // Confirmed terminal — emit exactly where onCancelled() fires once.
+        captureEvent('subscription_cancel_confirmed', {
+          user_id: store$.session?.userId?.peek?.() ?? null,
+          provider,
+          tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+        })
         // Drives the receipt-query refetch so Billing reflects the cancel, on
         // every successful terminal (including the native-action path).
         onCancelled()

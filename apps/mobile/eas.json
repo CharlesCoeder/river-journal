@@ -28,7 +28,10 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://bngglonhovkbfsbhghdu.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuZ2dsb25ob3ZrYmZzYmhnaGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTgwMDEsImV4cCI6MjA4NzQzNDAwMX0.KYbZJAJT3TxPAxOEW_-gi0M0bMendhJZz1hmn3oAzbc",
         "EXPO_PUBLIC_SENTRY_DSN": "https://placeholder@o0.ingest.sentry.io/0",
-        "EXPO_PUBLIC_SENTRY_ENABLED": "true"
+        "EXPO_PUBLIC_SENTRY_ENABLED": "true",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_placeholder",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://eu.posthog.com",
+        "EXPO_PUBLIC_POSTHOG_ENABLED": "true"
       },
       "android": {
         "buildType": "apk"
@@ -44,7 +47,10 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://bngglonhovkbfsbhghdu.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuZ2dsb25ob3ZrYmZzYmhnaGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTgwMDEsImV4cCI6MjA4NzQzNDAwMX0.KYbZJAJT3TxPAxOEW_-gi0M0bMendhJZz1hmn3oAzbc",
         "EXPO_PUBLIC_SENTRY_DSN": "https://placeholder@o0.ingest.sentry.io/0",
-        "EXPO_PUBLIC_SENTRY_ENABLED": "true"
+        "EXPO_PUBLIC_SENTRY_ENABLED": "true",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_placeholder",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://eu.posthog.com",
+        "EXPO_PUBLIC_POSTHOG_ENABLED": "true"
       },
       "android": {
         "buildType": "app-bundle"

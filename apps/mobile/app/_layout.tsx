@@ -6,8 +6,13 @@ import 'app/state/collective/mutations'
 // startup is still captured. Kept AFTER the mutations eager import above (which
 // must run first) and before any providers mount. A no-op in local dev.
 import { initSentry } from 'app/utils/telemetry/sentry'
+import { initPostHog } from 'app/utils/telemetry/posthog'
 
 initSentry()
+// Product analytics — initialized right after crash telemetry, still before any
+// providers mount. A no-op under __DEV__ without opt-in. Kept AFTER the eager
+// mutations import above.
+initPostHog()
 
 import { useEffect } from 'react'
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native'

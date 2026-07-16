@@ -27,6 +27,7 @@
     "typecheck": "tsc -p packages/app/tsconfig.json --noEmit && tsc -p packages/ui/tsconfig.json --noEmit && tsc -p apps/mobile/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit && tsc -p apps/desktop/tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint:posthog": "node scripts/lint-posthog-events.mjs",
     "test:migrations": "supabase test db",
     "parity:db": "supabase start",
     "parity:reset": "supabase db reset",
