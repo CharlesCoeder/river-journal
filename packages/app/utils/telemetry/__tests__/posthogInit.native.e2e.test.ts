@@ -102,8 +102,8 @@ describe('initPostHog (mobile) — init wiring exists and is callable end-to-end
   })
 })
 
-describe('initPostHog (mobile) — EU host default + override', () => {
-  it('defaults host to https://eu.posthog.com when EXPO_PUBLIC_POSTHOG_HOST is unset', async () => {
+describe('initPostHog (mobile) — US host default + override', () => {
+  it('defaults host to https://us.i.posthog.com when EXPO_PUBLIC_POSTHOG_HOST is unset', async () => {
     vi.stubGlobal('__DEV__', false)
     process.env.EXPO_PUBLIC_POSTHOG_ENABLED = 'true'
     process.env.EXPO_PUBLIC_POSTHOG_KEY = 'phc_test_key_native'
@@ -113,7 +113,7 @@ describe('initPostHog (mobile) — EU host default + override', () => {
     initPostHog()
 
     const options = posthogConstructorMock.mock.calls[0]?.[1] as { host?: string } | undefined
-    expect(options?.host).toBe('https://eu.posthog.com')
+    expect(options?.host).toBe('https://us.i.posthog.com')
   })
 
   it('honors EXPO_PUBLIC_POSTHOG_HOST as an override', async () => {

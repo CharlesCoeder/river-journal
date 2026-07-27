@@ -10,7 +10,7 @@
  * singleton), so we hold a module-level `PostHog` instance.
  *
  * The pure validation + allowlist live in the SDK-free `eventAllowlist.ts`, so
- * this file only wires the native SDK, the EU host, the privacy-hardening
+ * this file only wires the native SDK, the US host, the privacy-hardening
  * config (autocapture OFF, session replay never enabled), and the runtime
  * enforcement nets. `posthog-react-native` pulls native-only modules, so this
  * file MUST NOT be imported from shared (no-extension) code — it loads only on
@@ -64,7 +64,7 @@ export function initPostHog(): void {
     return
   }
 
-  const host = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://eu.posthog.com'
+  const host = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
 
   // Privacy hardening (same rationale as the Sentry mobile replay exclusion): a
   // bare instance (no PostHogProvider) does NOT autocapture touches/lifecycle,

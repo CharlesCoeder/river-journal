@@ -42,12 +42,11 @@ import { logError } from './logging.ts'
  */
 export const SERVER_DISTINCT_ID = 'server'
 
-// EU-region ingestion-only host (the `i.` subdomain PostHog recommends for
-// server-side/capture-only traffic). NOT byte-identical to the client's host
-// (`https://eu.posthog.com`) — the client needs the full app/API host for
-// decide/flags traffic a server-only emitter never makes; the shared property
-// is the EU region, not the literal string. Override via POSTHOG_HOST.
-const DEFAULT_POSTHOG_HOST = 'https://eu.i.posthog.com'
+// US-region ingestion host (the `i.` subdomain PostHog recommends for
+// server-side/capture-only traffic). Override via POSTHOG_HOST — this default
+// must match the region of the project the POSTHOG_API_KEY belongs to, or the
+// capture endpoint silently rejects events.
+const DEFAULT_POSTHOG_HOST = 'https://us.i.posthog.com'
 
 // A short timeout so a slow/hung PostHog can never add meaningful latency to
 // the user-facing action the caller is completing.

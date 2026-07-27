@@ -8,7 +8,7 @@
  * `utils/telemetry/consent.ts`. It mirrors the `sentry.ts` split exactly: the
  * pure, SDK-free validation lives in `eventAllowlist.ts` (importable everywhere
  * and unit-testable without loading the SDK); here we only wire the `posthog-js`
- * SDK, the EU host, the privacy-hardening options, and the runtime enforcement
+ * SDK, the US host, the privacy-hardening options, and the runtime enforcement
  * nets. The native counterpart (`posthog.native.ts`) exposes the SAME surface
  * so call sites stay platform-agnostic.
  *
@@ -58,7 +58,7 @@ export function initPostHog(): void {
   if (!posthogEnabled()) return
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY as string
-  const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.posthog.com'
+  const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
 
   posthog.init(key, {
     api_host: apiHost,

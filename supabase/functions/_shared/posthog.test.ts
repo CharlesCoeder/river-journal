@@ -45,7 +45,7 @@
 //   validateEventProps strips unpermitted keys; (3)+(4) applyContentSafetyNets
 //   over the survivors. Gated on POSTHOG_API_KEY (via Deno.env.get, read
 //   defensively): unset -> no-op, deps.fetch is NEVER called. When configured,
-//   POSTs to `${Deno.env.get('POSTHOG_HOST') ?? 'https://eu.i.posthog.com'}/capture/`
+//   POSTs to `${Deno.env.get('POSTHOG_HOST') ?? 'https://us.i.posthog.com'}/capture/`
 //   with body `{ api_key, event, distinct_id, properties, timestamp }`
 //   (Content-Type: application/json). Fail-open: ANY error from deps.fetch
 //   (a rejected promise, a thrown error, a non-2xx response, or a stalled
@@ -237,7 +237,7 @@ Deno.test('emitServerEvent calls fetch exactly once when POSTHOG_API_KEY is set 
 // emitServerEvent -- POST shape (endpoint, body, headers).
 // ---------------------------------------------------------------------------
 
-Deno.test('emitServerEvent POSTs to the default EU ingestion-only host (https://eu.i.posthog.com/capture/) when POSTHOG_HOST is unset', async () => {
+Deno.test('emitServerEvent POSTs to the default US ingestion-only host (https://us.i.posthog.com/capture/) when POSTHOG_HOST is unset', async () => {
   await withPosthogApiKey('phc_test_server_key', async () => {
     await withPosthogHost(undefined, async () => {
       const { fetch: fetchDouble, calls } = capturingFetch()
@@ -247,7 +247,7 @@ Deno.test('emitServerEvent POSTs to the default EU ingestion-only host (https://
         { recipient_count: 1, sent_count: 1, failed_count: 0 },
         { fetch: fetchDouble },
       )
-      assertEquals(calls[0]?.url, 'https://eu.i.posthog.com/capture/')
+      assertEquals(calls[0]?.url, 'https://us.i.posthog.com/capture/')
     })
   })
 })

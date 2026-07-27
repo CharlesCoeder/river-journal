@@ -7,7 +7,7 @@
  * `sentry.ts` precedent: one shared module, thin per-app
  * `instrumentation-client.ts` call sites). This spec covers that shared
  * module directly — the full, platform-real workflow: init → the SDK is
- * configured against the EU host with autocapture/session-recording off →
+ * configured against the US host with autocapture/session-recording off →
  * a user signs in (identify) → a user signs out (reset) — all through the
  * actual exported functions, with only the `posthog-js` SDK boundary mocked
  * (this repo's convention of mocking only the true I/O/SDK boundary, as in
@@ -87,8 +87,8 @@ describe('initPostHog (web/desktop) — init wiring exists and is callable end-t
   })
 })
 
-describe('initPostHog (web/desktop) — EU host default + override', () => {
-  it('defaults api_host to https://eu.posthog.com when NEXT_PUBLIC_POSTHOG_HOST is unset', async () => {
+describe('initPostHog (web/desktop) — US host default + override', () => {
+  it('defaults api_host to https://us.i.posthog.com when NEXT_PUBLIC_POSTHOG_HOST is unset', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     process.env.NEXT_PUBLIC_POSTHOG_ENABLED = 'true'
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key_web'
@@ -98,7 +98,7 @@ describe('initPostHog (web/desktop) — EU host default + override', () => {
     initPostHog()
 
     const options = posthogInitMock.mock.calls[0]?.[1]
-    expect(options?.api_host).toBe('https://eu.posthog.com')
+    expect(options?.api_host).toBe('https://us.i.posthog.com')
   })
 
   it('honors NEXT_PUBLIC_POSTHOG_HOST as an override', async () => {

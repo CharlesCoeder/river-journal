@@ -694,7 +694,7 @@ function withPosthogApiKey(value: string | undefined, fn: () => Promise<void>): 
 }
 
 // Routes the stubbed global fetch by URL: an Expo push POST (exp.host) vs a
-// PostHog capture POST (any other URL, e.g. the default eu.i.posthog.com
+// PostHog capture POST (any other URL, e.g. the default us.i.posthog.com
 // /capture/ endpoint) -- a real delivery run now issues both, and the
 // pre-existing Expo-only stub in this file can't tell them apart.
 function withRoutedFetch(
