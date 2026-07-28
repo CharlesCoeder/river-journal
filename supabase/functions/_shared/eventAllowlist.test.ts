@@ -6,7 +6,7 @@
 // root vitest.config.mts glob (Deno 2 code: URL/npm:/jsr: imports, Deno.*
 // globals). This file is `deno test`-only.
 //
-// Contract pinned down here (per the acceptance criteria's "hand-synced
+// Contract pinned down here (per the spec's "hand-synced
 // MIRROR, byte-comparable" requirement -- this is NOT a re-derivation, it is
 // the same shape/behavior as `packages/app/utils/telemetry/eventAllowlist.ts`,
 // duplicated by hand into this Deno-importable, dependency-free module):
@@ -24,7 +24,7 @@
 //     client file's own content-key test).
 //
 // The client<->server deep-equality/drift guard (the parity test named in
-// the acceptance criteria) lives in Vitest, NOT here -- see
+// the spec) lives in Vitest, NOT here -- see
 // packages/app/utils/telemetry/__tests__/eventAllowlistServerParity.test.ts.
 // Both files are dependency-free and importable from Node, so placing the
 // cross-runtime comparison in Vitest (which can `import` this Deno-owned file
@@ -42,7 +42,7 @@ import { isContentKey } from './contentKeys.ts'
 // The exact 17-event -> permitted-props contract this mirror must expose.
 // Keys/values here are NOT invented for this test file -- they are the 15
 // pre-existing client events (unchanged) plus the two new delivery events
-// named explicitly in the acceptance criteria.
+// named explicitly in the spec.
 const EXPECTED_EVENT_PROPS: Record<string, readonly string[]> = {
   flow_started: ['user_id', 'tier'],
   flow_completed: ['user_id', 'tier', 'word_count_bucket'],

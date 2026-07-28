@@ -14,7 +14,7 @@
 --   C. the load-bearing non-blocking guarantee -- with pg_net FORCE-DROPPED
 --      inside this test's own transaction (so the guard's absent-path is
 --      exercised deterministically regardless of what the local Docker image
---      ships -- see the Dev Notes on why a bare "call remove_post and assert
+--      ships -- see the design notes on why a bare "call remove_post and assert
 --      success" would otherwise only ever prove the present-path), invoking
 --      remove_post and suspend_user as an admin still succeeds and their
 --      audit rows still commit. The trigger's guard (pg_extension existence

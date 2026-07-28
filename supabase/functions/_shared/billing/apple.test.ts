@@ -5,7 +5,7 @@
 // NOT wired into `yarn vitest` -- supabase/functions/** is excluded from the
 // root vitest.config.mts glob (Deno 2 code). This file is `deno test`-only.
 //
-// Contract pinned down here (inferred from the acceptance criteria -- not
+// Contract pinned down here (inferred from the spec -- not
 // verbatim named in the source spec):
 //   - validateAppleReceipt(rawReceipt: unknown, deps: AppleDeps):
 //     Promise<ReceiptValidationResult>. `rawReceipt` must be either a

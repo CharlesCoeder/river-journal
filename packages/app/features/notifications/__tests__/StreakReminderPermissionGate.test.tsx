@@ -13,7 +13,7 @@
  *   - Renders `null` on any non-native platform (`Platform.OS`), before any
  *     async permission/registration check fires.
  *   - Reads `store$.views.streak` reactively via `use$()` (whole
- *     function-shaped computed object, per Dev Notes) for `currentStreak`.
+ *     function-shaped computed object, per design notes) for `currentStreak`.
  *   - Reads the once-ever "seen" state via `hasSeenStreakPrompt()`
  *     (`../reminderPreferences`) and the live-token state via a non-reactive
  *     `pushTokens$.peek()` scan for the current user (`store$.session.userId`),

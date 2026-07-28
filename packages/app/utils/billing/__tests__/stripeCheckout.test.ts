@@ -105,7 +105,7 @@ describe('extractStripeSessionIdFromSuccessUrl — cs_... only, never sub_... (l
   })
 
   it('returns null (NEVER the value) when session_id is a sub_... Subscription id, not a cs_... Session id', () => {
-    // This is the single load-bearing guard from the Dev Notes pressure-test:
+    // This is the single load-bearing guard from the design notes pressure-test:
     // a sub_... id must never be handed to validateReceipt, because a Payment
     // Link's client_reference_id binding does not propagate to Subscription
     // metadata — sending a sub_... would silently drop the 7.2 ownership

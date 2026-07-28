@@ -24,7 +24,7 @@
  * ASSUMED CONTRACT (the story doesn't pin testIDs verbatim; chosen to mirror
  * `ReminderSettings`' `CategoryToggle` shape and `E2EPasswordForm`'s
  * two-field passcode pattern, both explicitly named as the UI-shape
- * templates in the Dev Notes):
+ * templates in the design notes):
  *   - Toggle: `accessibilityRole="switch"`, `accessibilityLabel="App Lock"`.
  *   - Interval options: `accessibilityRole="radio"`, testIDs
  *     `app-lock-interval-immediately` / `-1m` / `-5m`.
@@ -65,7 +65,7 @@ vi.mock('../../../utils/encryption', async (importOriginal) => {
 })
 
 // ─── app/utils/appLockAuth — the platform-split capability surface. Mocked
-// per Dev Notes: "Mock the auth surface — never the real native module." ───
+// per design notes: "Mock the auth surface — never the real native module." ───
 let mockCapability: { available: boolean; kind: 'biometric' | 'credential' | 'none' } = {
   available: true,
   kind: 'biometric',

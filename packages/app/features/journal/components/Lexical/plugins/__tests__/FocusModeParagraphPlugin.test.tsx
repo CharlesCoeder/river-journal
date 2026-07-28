@@ -5,7 +5,7 @@
 //     packages/app/features/journal/components/Lexical/plugins/FocusModeParagraphPlugin.tsx
 //   - computeFocusClasses helper does not yet exist
 //
-// Test strategy (per story Dev Notes — Testing Standards):
+// Test strategy (per story design notes — Testing Standards):
 //   Part A: Pure helper unit tests for `computeFocusClasses` (extracted logic).
 //   Part B: Component smoke tests asserting plugin mount behavior and Lexical wiring.
 //

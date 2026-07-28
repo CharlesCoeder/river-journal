@@ -35,7 +35,7 @@
  *     name matching /search/i, testID `search-affordance-button`, that
  *     reveals/focuses the input when activated.
  *   - The web/desktop focus-search keyboard shortcut is `/` (one of the two
- *     chords the Dev Notes explicitly suggest — "Mod+F or /"), registered
+ *     chords the design notes explicitly suggest — "Mod+F or /"), registered
  *     via `@tanstack/react-hotkeys` so it is NOT mocked here (real library).
  *   - The results region is a container with testID `search-results`;
  *     each matching day is a row with testID `search-result-row`,

@@ -79,7 +79,7 @@ BEGIN
 
   -- (5) operational sentinel: deleting the user's account removes their
   -- suspension row entirely (unlike moderation_actions' SET NULL — a deleted
-  -- account's suspensions carry no ongoing meaning per Dev Notes).
+  -- account's suspensions carry no ongoing meaning per design notes).
   DELETE FROM auth.users WHERE id = v_uid;
   SELECT count(*) INTO v_after_count FROM user_suspensions WHERE id = v_row_id;
   PERFORM tap_ok(v_after_count = 0, 'user_suspensions row is cascade-deleted when the account is deleted');

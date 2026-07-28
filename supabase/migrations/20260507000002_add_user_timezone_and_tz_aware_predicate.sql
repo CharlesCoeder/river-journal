@@ -2,9 +2,8 @@
 --
 -- Fixes the false-403 on collective_posts INSERT that fires for any user
 -- whose device-local "today" disagrees with UTC "today" — i.e. anyone east
--- of UTC for ~4-8 hours every night. See
--- docs/_bmad-output/implementation-artifacts/epic-3-followups.md
--- (entry: "Daily-500 RLS gate is timezone-broken", 2026-05-07).
+-- of UTC for ~4-8 hours every night (the daily-500 RLS gate was
+-- timezone-broken).
 --
 -- Two parts:
 --   1. Add users.timezone (IANA name, default 'UTC', validated against

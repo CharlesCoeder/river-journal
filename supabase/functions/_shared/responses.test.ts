@@ -83,7 +83,7 @@ Deno.test('err() never serializes a stack trace or Error.cause into the body', a
 // Error (the pattern already used at several call sites, e.g.
 // `err(thrown.message, { code: thrown.code, status })`), the body carries
 // ONLY { error, code? } — never the stack/cause the source Error object
-// still holds internally. This is a verify+lock test (Dev Notes: responses.ts
+// still holds internally. This is a verify+lock test (design notes: responses.ts
 // already implements this correctly) so it is expected to already be GREEN
 // pre-implementation; it guards against a future regression, not a gap in
 // today's code.

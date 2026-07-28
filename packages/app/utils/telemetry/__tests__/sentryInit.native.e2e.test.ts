@@ -3,7 +3,7 @@
  * Sentry init wrapper.
  *
  * Mirrors `sentryInit.web.e2e.test.ts` for `apps/mobile`, which consumes
- * `packages/app/utils/telemetry/sentry.native.ts`. Per the Dev Notes
+ * `packages/app/utils/telemetry/sentry.native.ts`. Per the design notes
  * ("Why factor the redactor out of sentry.native.ts"), the native SDK
  * itself is not test-loadable under Vitest, so `@sentry/react-native` is
  * mocked at the module boundary — the same pattern this repo already uses

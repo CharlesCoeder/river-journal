@@ -5,8 +5,7 @@
 -- is acceptable at Collective's MVP scale (small social server, ~100 posts/thread).
 -- Anti-cycle protection via Postgres 14+ CYCLE syntax.
 --
--- Deferred-decision resolution logged in internal notes
--- under "descendant_count source: Pattern B (recursive CTE)".
+-- Deferred-decision resolution: descendant_count source is Pattern B (recursive CTE).
 
 DROP FUNCTION IF EXISTS collective_thread_page(UUID, TIMESTAMPTZ, INT);
 

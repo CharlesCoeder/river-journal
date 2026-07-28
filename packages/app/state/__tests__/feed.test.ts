@@ -405,7 +405,7 @@ describe('observe() invalidation on streak transitions', () => {
     await drainMicrotasks()
     expect(spy).not.toHaveBeenCalled()
 
-    // Drive a transition. Per Dev Notes, the cleanest path is to drive the
+    // Drive a transition. Per design notes, the cleanest path is to drive the
     // upstream observables that the streak computed view derives from, but
     // since `observe()` reads `lastQualifyingDate.get()` directly, any actual
     // value change triggers the reaction. We mutate entries$/flows$ to force

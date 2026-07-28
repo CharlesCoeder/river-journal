@@ -18,7 +18,7 @@
  * committing to a concrete contract for the dev-story phase to implement
  * against): `validateEventProps(event, props)` is assumed to return
  * `{ sanitizedProps, strippedKeys, missingKeys }`. The word-count bucket
- * helper (Dev Notes: "colocated with the allowlist or in a small
+ * helper (design notes: "colocated with the allowlist or in a small
  * buckets.ts") is assumed to be exported from THIS module as
  * `getWordCountBucket(count)`. If the implementation lands under different
  * names, update these imports to match — the behavioral assertions below
@@ -37,7 +37,7 @@ import { isContentKey } from '../contentKeys'
 
 const MODULE_PATH = path.resolve(import.meta.dirname, '../eventAllowlist.ts')
 
-// The exact initial event → prop-key list from the acceptance criteria. Order-independent
+// The exact initial event → prop-key list from the spec. Order-independent
 // membership is what's asserted (extra events are fine — "extensible").
 const EXPECTED_EVENTS: Record<string, string[]> = {
   flow_started: ['user_id', 'tier'],

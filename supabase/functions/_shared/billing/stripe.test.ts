@@ -5,7 +5,7 @@
 // NOT wired into `yarn vitest` -- supabase/functions/** is excluded from the
 // root vitest.config.mts glob (Deno 2 code). This file is `deno test`-only.
 //
-// Contract pinned down here (inferred from the acceptance criteria -- not
+// Contract pinned down here (inferred from the spec -- not
 // verbatim named in the source spec):
 //   - validateStripeReceipt(rawReceipt: unknown, deps: StripeDeps):
 //     Promise<ReceiptValidationResult>. `rawReceipt` must be a non-empty
@@ -54,7 +54,7 @@
 //     { code: 'provider_timeout', fault: 'provider' }.
 //
 // Cancel-path contract (folded in alongside the validate-path contract above
-// -- inferred from the acceptance criteria, not verbatim named in the source
+// -- inferred from the spec, not verbatim named in the source
 // spec):
 //   - cancelStripeSubscriptionAtPeriodEnd(id: string, deps: { stripeClient:
 //     StripeClientSeam, timeoutMs?: number }): Promise<{ current_period_end:
@@ -90,7 +90,7 @@
 //     { code: 'provider_timeout', fault: 'provider' }, never a hang.
 //
 // Webhook verifier + authoritative-refresh contract (folded in alongside the
-// validate/cancel contracts above -- inferred from the acceptance criteria,
+// validate/cancel contracts above -- inferred from the spec,
 // not verbatim named in the source spec):
 //
 //   - verifyStripeWebhookSignature(rawBody: string, signatureHeader: string,

@@ -116,7 +116,7 @@ describe('— source map / symbolication scaffolding is wired into each build pi
   it('apps/web/next.config.js is wrapped with withSentryConfig and preserves existing headers()/transpilePackages/turbopack config', () => {
     const config = readText('apps/web/next.config.js')
     expect(config).toMatch(/withSentryConfig/)
-    // Preserve existing keys (Dev Notes: "preserve all existing keys").
+    // Preserve existing keys (design notes: "preserve all existing keys").
     expect(config).toContain('X-Frame-Options')
     expect(config).toContain('transpilePackages')
     expect(config).toContain('turbopack')

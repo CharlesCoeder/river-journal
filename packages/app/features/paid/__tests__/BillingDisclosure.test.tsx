@@ -67,7 +67,7 @@ describe('BillingDisclosure — web/desktop', () => {
   })
 
   it('renders "Purchase via Stripe" for the Tauri desktop runtime too (isWeb still true)', () => {
-    // Dev Notes: Tauri desktop uses the web renderer, so isWeb === true covers
+    // design notes: Tauri desktop uses the web renderer, so isWeb === true covers
     // both web and desktop — same disclosure copy, no separate desktop branch.
     mockIsWeb = true
     mockPlatformOS = 'web'

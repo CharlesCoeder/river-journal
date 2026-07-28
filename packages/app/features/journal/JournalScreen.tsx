@@ -40,7 +40,7 @@ export function JournalScreen() {
   const reduceMotion = useReducedMotion()
   useTrackKeyboardHeight()
 
-  // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
+  // Focus mode — read with ?? false (acceptable at consumer site per story design notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
   // Focus granularity — read with ?? 'paragraph' (UI-only preference)
   const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph'

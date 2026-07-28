@@ -4,7 +4,7 @@
  *
  * These tests exercise `redactEvent()` — the pure function that IS the body
  * of `beforeSend` on every platform (web/desktop/mobile share this one
- * module per the Dev Notes "single source of truth" rule) — against
+ * module per the design notes "single source of truth" rule) — against
  * realistic, full-shaped synthetic Sentry events. This is the closest thing
  * to an end-to-end user workflow this feature has: there is no UI, so the
  * "workflow" under test is the actual telemetry pipeline —

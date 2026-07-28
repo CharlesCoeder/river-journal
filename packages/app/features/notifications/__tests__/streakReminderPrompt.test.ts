@@ -24,7 +24,7 @@
  *   - hasLiveToken is false
  *   - permissionAlreadyGranted is false — this pure helper stays MODAL-ONLY;
  *     the "OS already granted, no live token" case is a silent-register edge
- *     handled by the gate's effect, not by this decision function (Dev Notes
+ *     handled by the gate's effect, not by this decision function (design notes
  *     "How the trigger chains off the CelebrationScreen handoff").
  *
  * Pure function — no observable reads, no I/O, mirrors the

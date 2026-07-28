@@ -10,7 +10,7 @@
 // root vitest.config.mts glob (Deno 2 code: URL/npm:/jsr: imports, Deno.*
 // globals). This file is `deno test`-only.
 //
-// Contract pinned down here (inferred from the acceptance criteria, mirroring
+// Contract pinned down here (inferred from the spec, mirroring
 // how subscription_cancel's test file pinned its own inferred contract):
 //
 //   handler(req: Request, deps: HandlerDeps = {}): Promise<Response>

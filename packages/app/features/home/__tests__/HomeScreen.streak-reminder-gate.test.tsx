@@ -6,7 +6,7 @@
 // ModerationReceiptGate / OrphanFlowsDialog / EncryptionModeDialog /
 // LapsedPrompt in HomeScreen.test.tsx). HomeScreen is where the
 // CelebrationScreen handoff routes back to after the user's first
-// >=500-word flow of the day (Dev Notes "How the trigger chains off the
+// >=500-word flow of the day (design notes "How the trigger chains off the
 // CelebrationScreen handoff"), so mounting the gate here — not in the
 // provider tree — lets it re-evaluate `store$.views.streak.currentStreak`
 // on every home landing without a broader per-route wrap.

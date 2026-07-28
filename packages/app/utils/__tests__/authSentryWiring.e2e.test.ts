@@ -2,7 +2,7 @@
  * authSentryWiring.e2e.test.ts — TDD RED-PHASE E2E spec for  * ("PII stripping on user context") of this story.
  *
  * "When Sentry captures user context, it uses the Supabase user_id
- * only — never email, display name, or any other PII." The Dev Notes
+ * only — never email, display name, or any other PII." The design notes
  * point this wiring at the existing `initAuthListener` in
  * `packages/app/utils/auth.ts`: "Wire it to auth state changes ... clear
  * the user on sign-out."

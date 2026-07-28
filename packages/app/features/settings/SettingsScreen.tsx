@@ -118,7 +118,7 @@ export function SettingsScreen() {
   const userId = use$(store$.session.userId)
   const syncEnabled = use$(store$.session.syncEnabled)
   const currentMode = use$(encryptionSetup$.currentMode)
-  // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
+  // Focus mode — read with ?? false (acceptable at consumer site per story design notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
   // Focus granularity — read with ?? 'paragraph' (UI-only preference; paragraph
   // is the correct default under all load conditions)

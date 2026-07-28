@@ -8,7 +8,7 @@
 // root vitest.config.mts glob (Deno 2 code: URL/npm:/jsr: imports, Deno.*
 // globals). This file is `deno test`-only.
 //
-// Contract pinned down here (inferred from the acceptance criteria -- not
+// Contract pinned down here (inferred from the spec -- not
 // verbatim named in the source spec, mirroring how subscription_validate_receipt's
 // test file pinned its own inferred contract):
 //

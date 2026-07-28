@@ -19,8 +19,7 @@
 // the collective_your_posts_page RPC. The defensive filter
 // below is for symmetry with CollectiveFeedScreen. A moderator-removal marker
 // UI is intentionally NOT implemented here — it requires RPC widening to include
-// removed rows + moderation_actions JOIN (the moderation feature). Deferred per
-// internal notes.
+// removed rows + a moderation_actions JOIN. Deferred by design.
 
 import { useEffect, useMemo, useState } from 'react'
 import {

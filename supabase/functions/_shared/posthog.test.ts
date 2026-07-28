@@ -7,14 +7,14 @@
 // root vitest.config.mts glob (Deno 2 code: URL/npm:/jsr: imports, Deno.*
 // globals). This file is `deno test`-only.
 //
-// Contract pinned down here (inferred from the acceptance criteria -- not
+// Contract pinned down here (inferred from the spec -- not
 // verbatim named in the source spec, mirroring how every other Deno test file
 // in this tree pins its own inferred contract):
 //
 //   export const SERVER_DISTINCT_ID: string -- the one documented non-user
 //   distinct id shared by every anonymized/aggregate server event
 //   (account_deleted, collective_reply_delivered,
-//   moderation_notification_delivered). Value 'server' per the Dev Notes'
+//   moderation_notification_delivered). Value 'server' per the design notes'
 //   suggested constant.
 //
 //   export function applyContentSafetyNets(props): Record<string, unknown> --

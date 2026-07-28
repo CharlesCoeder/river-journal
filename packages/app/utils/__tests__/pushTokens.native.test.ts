@@ -228,7 +228,7 @@ describe('requestAndRegisterPushToken — Tier 1 local dedupe', () => {
         lastUsedAt: '2020-01-01T00:00:00.000Z',
       },
     })
-    // Simulate the current authenticated user for the module (see Dev Notes:
+    // Simulate the current authenticated user for the module (see design notes:
     // registration reads the current user id from wherever the module wires
     // it — this repo's precedent is syncUserId$/getCurrentUserId; the test
     // asserts the OUTCOME (no duplicate row, lastUsedAt advanced) rather than

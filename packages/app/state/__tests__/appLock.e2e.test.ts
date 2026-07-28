@@ -15,7 +15,7 @@
  * implementation and PASS after.
  *
  * ASSUMED CONTRACT (some of this is pinned precisely by the story; the rest
- * is a reasonable inference from the Dev Notes and existing conventions —
+ * is a reasonable inference from the design notes and existing conventions —
  * flagged so the implementer can confirm or the QA suite can be adjusted):
  *   - `appLock$` observable + `setAppLockEnabled` / `setAutoLockInterval` /
  *     `setPasscode` / `clearPasscode` are exported from `state/appLock.ts`.
@@ -23,7 +23,7 @@
  *     `state/appLock.ts`.
  *   - `setPasscode` / `verifyPasscode` accept an optional second `overrides`
  *     argument — `{ deriveMasterKeyFromPassword? }` — mirroring the
- *     "injectable/override seam" the Dev Notes explicitly call for so the
+ *     "injectable/override seam" the design notes explicitly call for so the
  *     verifier round-trip test doesn't pay the real N=2^17 scrypt cost.
  *     ASSUMPTION: exact param name/shape; the implementer may need to align
  *     this file's call sites if a different seam shape is chosen.

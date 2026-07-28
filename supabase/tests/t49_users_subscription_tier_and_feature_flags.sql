@@ -26,7 +26,7 @@
 -- what test_seed_user() already produces) and then re-applies the migration's
 -- own idempotent UPDATE statement verbatim, proving that statement produces
 -- the expected shape. Do not read this as "new users get feature_flags for
--- free" — they deliberately do not (Dev Notes: consumers must treat an
+-- free" — they deliberately do not (design notes: consumers must treat an
 -- absent flag as false regardless).
 --
 -- Red phase: users.subscription_tier does not exist yet, so the very first

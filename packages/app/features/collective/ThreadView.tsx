@@ -52,7 +52,7 @@ import { timeAgoCasual } from './_shared'
 
 // ─── Depth cap ────────────────────────────────────────────────────────────────
 // Depth caps tuned for: mobile rail-stack readability, web content-density.
-// Revisit after dogfood feedback (deferred-decisions #2).
+// Revisit after dogfood feedback.
 const WEB_DEPTH_CAP = 6
 const MOBILE_DEPTH_CAP = 4
 

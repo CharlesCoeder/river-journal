@@ -3,7 +3,7 @@
  * Sentry init wrapper.
  *
  * `apps/web` and `apps/desktop` both consume the SAME
- * `packages/app/utils/telemetry/sentry.ts` module (Dev Notes: "single
+ * `packages/app/utils/telemetry/sentry.ts` module (design notes: "single
  * source of truth", thin per-app `instrumentation-client.ts` call sites).
  * This spec covers that shared module directly — it is the full,
  * platform-real workflow: init → an event is captured → `beforeSend` runs

@@ -8,7 +8,7 @@
  *   - packages/app/features/collective/YourPostRow.tsx
  *   - packages/app/features/collective/_shared.tsx (SkeletonRows + formatTimeAgo)
  *
- * Test plan (t1–t15) is authoritative per Dev Notes.
+ * Test plan (t1–t15) is authoritative per design notes.
  *
  * Coverage:
  *   t1  — posts render in chronological order
