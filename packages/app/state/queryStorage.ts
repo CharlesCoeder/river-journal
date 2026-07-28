@@ -8,7 +8,7 @@
  * Key namespace prefix: 'rj-tq:' — any callsite that writes here MUST include
  * the prefix in the key so a future grep catches stray persistence collisions.
  *
- * Resilience contract (AC #20):
+ * Resilience contract:
  *   - getItem returns `undefined` on any failure (never rejects).
  *   - setItem / removeItem swallow with `console.warn` (never reject).
  * The TanStack persister treats `getItem === undefined` as "no cache to
@@ -50,7 +50,10 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+function tx<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T>
+): Promise<T> {
   return new Promise((resolve, reject) => {
     openDb()
       .then((db) => {

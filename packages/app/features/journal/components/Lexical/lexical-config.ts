@@ -20,7 +20,7 @@ export const createBaseLexicalConfig = (): InitialConfigType => {
       CodeNode,
       CodeHighlightNode,
       LinkNode,
-      // Per-sentence focus mode (Story 2.11). Registered on BOTH web and native
+      // Per-sentence focus mode. Registered on BOTH web and native
       // (native spreads this base config via createMobileLexicalConfig). An
       // unregistered node throws on creation. The node only ever appears in the
       // tree when focus mode is ON with sentence granularity.

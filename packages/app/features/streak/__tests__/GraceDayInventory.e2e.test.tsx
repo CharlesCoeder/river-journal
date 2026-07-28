@@ -86,7 +86,13 @@ describe('GraceDayInventory — zero state: no grace days seeded', () => {
 describe('GraceDayInventory — one available grace day', () => {
   it('G2: renders "1 grace day available." (singular) when one unspent row is seeded', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('1 grace day available.')).toBeTruthy()
@@ -94,7 +100,13 @@ describe('GraceDayInventory — one available grace day', () => {
 
   it('G2: does NOT render "No grace days yet." when one is available', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.queryByText('No grace days yet.')).toBeNull()
@@ -107,9 +119,27 @@ describe('GraceDayInventory — one available grace day', () => {
 describe('GraceDayInventory — multiple available grace days', () => {
   it('G3: renders "3 grace days available." (plural) when three unspent rows are seeded', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null },
-      g2: { id: 'g2', userId: 'u1', earnedAt: '2026-05-02T00:00:00Z', earnedForMilestone: 14, usedForDate: null },
-      g3: { id: 'g3', userId: 'u1', earnedAt: '2026-05-03T00:00:00Z', earnedForMilestone: 30, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+      },
+      g2: {
+        id: 'g2',
+        userId: 'u1',
+        earnedAt: '2026-05-02T00:00:00Z',
+        earnedForMilestone: 14,
+        usedForDate: null,
+      },
+      g3: {
+        id: 'g3',
+        userId: 'u1',
+        earnedAt: '2026-05-03T00:00:00Z',
+        earnedForMilestone: 30,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('3 grace days available.')).toBeTruthy()
@@ -117,8 +147,20 @@ describe('GraceDayInventory — multiple available grace days', () => {
 
   it('G3: uses plural "days" not singular "day" for count > 1', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null },
-      g2: { id: 'g2', userId: 'u1', earnedAt: '2026-05-02T00:00:00Z', earnedForMilestone: 14, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+      },
+      g2: {
+        id: 'g2',
+        userId: 'u1',
+        earnedAt: '2026-05-02T00:00:00Z',
+        earnedForMilestone: 14,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.queryByText(/grace day available/)).toBeNull() // singular form absent
@@ -132,8 +174,20 @@ describe('GraceDayInventory — multiple available grace days', () => {
 describe('GraceDayInventory — spent grace days are filtered out', () => {
   it('G4: counts only unspent rows when some have usedForDate set', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-04-01T00:00:00Z', earnedForMilestone: 7, usedForDate: '2026-04-15' },
-      g2: { id: 'g2', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 14, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-04-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: '2026-04-15',
+      },
+      g2: {
+        id: 'g2',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 14,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('1 grace day available.')).toBeTruthy()
@@ -141,7 +195,13 @@ describe('GraceDayInventory — spent grace days are filtered out', () => {
 
   it('G4: renders zero state when all rows are spent', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-04-01T00:00:00Z', earnedForMilestone: 7, usedForDate: '2026-04-15' },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-04-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: '2026-04-15',
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('No grace days yet.')).toBeTruthy()
@@ -154,8 +214,21 @@ describe('GraceDayInventory — spent grace days are filtered out', () => {
 describe('GraceDayInventory — soft-deleted grace days are filtered out', () => {
   it('G5: excludes rows with is_deleted=true even when usedForDate is null', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null, is_deleted: true } as any,
-      g2: { id: 'g2', userId: 'u1', earnedAt: '2026-05-02T00:00:00Z', earnedForMilestone: 14, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+        is_deleted: true,
+      } as any,
+      g2: {
+        id: 'g2',
+        userId: 'u1',
+        earnedAt: '2026-05-02T00:00:00Z',
+        earnedForMilestone: 14,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('1 grace day available.')).toBeTruthy()
@@ -168,9 +241,28 @@ describe('GraceDayInventory — soft-deleted grace days are filtered out', () =>
 describe('GraceDayInventory — mixed row states: only undeleted+unspent count', () => {
   it('G6: counts exactly one available when one deleted, one spent, one available', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null, is_deleted: true } as any,
-      g2: { id: 'g2', userId: 'u1', earnedAt: '2026-05-02T00:00:00Z', earnedForMilestone: 14, usedForDate: '2026-05-03' },
-      g3: { id: 'g3', userId: 'u1', earnedAt: '2026-05-03T00:00:00Z', earnedForMilestone: 30, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+        is_deleted: true,
+      } as any,
+      g2: {
+        id: 'g2',
+        userId: 'u1',
+        earnedAt: '2026-05-02T00:00:00Z',
+        earnedForMilestone: 14,
+        usedForDate: '2026-05-03',
+      },
+      g3: {
+        id: 'g3',
+        userId: 'u1',
+        earnedAt: '2026-05-03T00:00:00Z',
+        earnedForMilestone: 30,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('1 grace day available.')).toBeTruthy()
@@ -178,8 +270,21 @@ describe('GraceDayInventory — mixed row states: only undeleted+unspent count',
 
   it('G6: renders zero state when all three rows are invalid (deleted or spent)', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null, is_deleted: true } as any,
-      g2: { id: 'g2', userId: 'u1', earnedAt: '2026-05-02T00:00:00Z', earnedForMilestone: 14, usedForDate: '2026-05-03' },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+        is_deleted: true,
+      } as any,
+      g2: {
+        id: 'g2',
+        userId: 'u1',
+        earnedAt: '2026-05-02T00:00:00Z',
+        earnedForMilestone: 14,
+        usedForDate: '2026-05-03',
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('No grace days yet.')).toBeTruthy()
@@ -217,7 +322,13 @@ describe('GraceDayInventory — accessibility: live region for screen readers', 
 
   it('G7: live region is present when rendering positive count', () => {
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('1 grace day available.')).toBeTruthy()
@@ -252,7 +363,13 @@ describe('GraceDayInventory — boundary: uses Legend-State, not TanStack Query'
     // If GraceDayInventory imported @tanstack/react-query, the module would
     // not resolve in this mock environment. Successful render confirms Legend-State path.
     graceDays$.set({
-      g1: { id: 'g1', userId: 'u1', earnedAt: '2026-05-01T00:00:00Z', earnedForMilestone: 7, usedForDate: null },
+      g1: {
+        id: 'g1',
+        userId: 'u1',
+        earnedAt: '2026-05-01T00:00:00Z',
+        earnedForMilestone: 7,
+        usedForDate: null,
+      },
     })
     render(React.createElement(GraceDayInventory))
     expect(screen.getByText('1 grace day available.')).toBeTruthy()

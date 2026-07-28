@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // SentenceNode markdown round-trip + history-merge + cross-mode cleanup.
-// Story 2.11 — AC 6, 17, 18, 20. This is the DATA-LOSS GATE: a custom inline
+// This is the DATA-LOSS GATE: a custom inline
 // ElementNode with no transformer is silently dropped by
 // $convertToMarkdownString. SENTENCE_TRANSFORMER must keep markdown identical.
 
@@ -98,7 +98,7 @@ function countSentenceNodes(editor: LexicalEditor): number {
 }
 
 // =============================================================================
-// AC 17 — markdown round-trip is byte-identical with sentence wrapping applied
+// markdown round-trip is byte-identical with sentence wrapping applied
 // =============================================================================
 
 const ROUND_TRIP_CASES: Record<string, string> = {
@@ -112,7 +112,7 @@ const ROUND_TRIP_CASES: Record<string, string> = {
   'line break': 'Line one.  \nLine two. Done.',
 }
 
-describe('SentenceNode markdown round-trip — data-loss gate (AC 6, 17)', () => {
+describe('SentenceNode markdown round-trip — data-loss gate', () => {
   for (const [name, md] of Object.entries(ROUND_TRIP_CASES)) {
     it(`[${name}] markdown is byte-identical after sentence wrapping`, () => {
       const editor = makeEditor()
@@ -138,10 +138,10 @@ describe('SentenceNode markdown round-trip — data-loss gate (AC 6, 17)', () =>
 })
 
 // =============================================================================
-// AC 18 — history merge: wrapping adds no undo step
+// history merge: wrapping adds no undo step
 // =============================================================================
 
-describe('SentenceNode wrapping is history-merged (AC 18)', () => {
+describe('SentenceNode wrapping is history-merged', () => {
   it('a single UNDO reverts the user text edit, not the wrapping step', () => {
     const editor = makeEditor()
     const historyState = createEmptyHistoryState()
@@ -175,10 +175,10 @@ describe('SentenceNode wrapping is history-merged (AC 18)', () => {
 })
 
 // =============================================================================
-// AC 20 — cross-mode cleanup: no SentenceNode survives unwrap
+// cross-mode cleanup: no SentenceNode survives unwrap
 // =============================================================================
 
-describe('Cross-mode cleanup leaves zero SentenceNodes (AC 20)', () => {
+describe('Cross-mode cleanup leaves zero SentenceNodes', () => {
   it('unwrap removes every SentenceNode and markdown is unchanged', () => {
     const editor = makeEditor()
     const md = 'First sentence. Second sentence.\n\nThird para here.'

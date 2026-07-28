@@ -3,7 +3,7 @@
  *
  * Pure-function client-side streak math + reactive wiring layer.
  * Architecture refs: D3 (client-authoritative streak math), D7 (boundary rule),
- * NFR20 (zero streak miscount — table-driven test surface is the contract).
+ * and the zero-streak-miscount guarantee (the table-driven test surface is the contract).
  *
  * Pure function section: NO observable reads, NO I/O, NO side effects.
  * Wiring section (below computeStreakState): attaches streak$ computed view to store$.
@@ -81,7 +81,7 @@ function toArray<T>(input: Record<string, T> | T[]): T[] {
  * @param flows Flow rows (array or keyed record).
  * @param graceDays Grace day rows (array or keyed record).
  * @param today 'YYYY-MM-DD' day key from `getTodayJournalDayString()` upstream.
- * @param tier - until Story 7.1 ships the subscription_tier enum, callers should pass 'free' literally
+ * @param tier - the caller's subscription tier; free-tier callers pass 'free' literally
  * @param chosenUnlocks Optional Model B forward-compat: caller-chosen theme picks for free tier.
  *
  * @returns StreakState — a snapshot view; inputs are not mutated.
@@ -235,11 +235,13 @@ export function computeStreakState(
  *          free: user-chosen unlocks via chosenUnlocks.
  */
 /**
- * Returns the subscription tier for the ThemePicker.
- * Returns 'free' today. Exported as a seam for test injection.
+ * Returns the subscription tier for the ThemePicker, read from the
+ * server-authoritative `store$.profile.subscription_tier` (null-safe: a null
+ * profile or a legacy profile without the field reads as 'free'). Exported as
+ * a plain seam so it stays test-injectable.
  */
 export function getThemePickerTier(): SubscriptionTier {
-  return 'free'
+  return store$.profile.subscription_tier.get() ?? 'free'
 }
 
 export function useUnlockedThemes(tier: SubscriptionTier): ThemeName[] {
@@ -277,7 +279,7 @@ export function useUnlockedThemes(tier: SubscriptionTier): ThemeName[] {
 store$.assign({
   views: {
     streak: () => {
-      // Cross-user defense (NFR20): scope the streak inputs to the current
+      // Cross-user defense: scope the streak inputs to the current
       // session user so a prior user's qualifying days on a shared device do
       // not contribute to the displayed streak.
       //   signed-in:  row.user_id === currentUserId

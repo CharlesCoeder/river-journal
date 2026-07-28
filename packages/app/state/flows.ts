@@ -43,11 +43,7 @@ export const flows$: Observable<Record<string, Flow>> = observable<Record<string
     // in Supabase (e.g., anonymous flows adopted after login). Without this,
     // Legend-State's default INSERT hits the PK constraint → 409 Conflict.
     create: (input: any) =>
-      supabase
-        .from('flows')
-        .upsert(input, { onConflict: 'id' })
-        .select()
-        .single(),
+      supabase.from('flows').upsert(input, { onConflict: 'id' }).select().single(),
 
     transform: {
       load: (value: any) => {
@@ -58,12 +54,18 @@ export const flows$: Observable<Record<string, Flow>> = observable<Record<string
             // eslint-disable-next-line no-console
             console.log(
               `📥 [flows] list response: ${value.length} rows from Supabase (local has ${localFlowIds.length} flows)`,
-              { serverIds: value.map((r: any) => r.id?.slice(0, 8)), localIds: localFlowIds.map(id => id.slice(0, 8)) }
+              {
+                serverIds: value.map((r: any) => r.id?.slice(0, 8)),
+                localIds: localFlowIds.map((id) => id.slice(0, 8)),
+              }
             )
           }
           return value
             .map((row: any) =>
-              mapDbFlowToLocalOrKeepExisting(row, row?.id ? flows$.peek()?.[row.id] ?? null : null)
+              mapDbFlowToLocalOrKeepExisting(
+                row,
+                row?.id ? (flows$.peek()?.[row.id] ?? null) : null
+              )
             )
             .filter((row: Flow | null): row is Flow => row !== null)
         }
@@ -74,7 +76,7 @@ export const flows$: Observable<Record<string, Flow>> = observable<Record<string
           }
           return mapDbFlowToLocalOrKeepExisting(
             value,
-            value?.id ? flows$.peek()?.[value.id] ?? null : null
+            value?.id ? (flows$.peek()?.[value.id] ?? null) : null
           )
         }
         return value

@@ -1,0 +1,220 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@std/assert@1": "1.0.19",
+    "jsr:@std/internal@^1.0.12": "1.0.14"
+  },
+  "jsr": {
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    }
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@babel/runtime@^7.24.6",
+        "npm:@biomejs/biome@^1.9.3",
+        "npm:@tamagui/cli@2.0.0-rc.16",
+        "npm:@tamagui/react-native-svg@2.0.0-rc.16",
+        "npm:@tamagui/react-native-web-lite@2.0.0-rc.16",
+        "npm:@tauri-apps/cli@^2.5.0",
+        "npm:@testing-library/dom@^10.4.0",
+        "npm:@testing-library/react-native@^13.3.3",
+        "npm:@testing-library/react@^16.2.0",
+        "npm:@vitejs/plugin-react@^5.1.4",
+        "npm:check-dependency-version-consistency@^4.1.0",
+        "npm:date-fns@^4.1.0",
+        "npm:eslint@^9.3.0",
+        "npm:fake-indexeddb@^6.2.5",
+        "npm:happy-dom@^20.6.1",
+        "npm:husky@^9.1.6",
+        "npm:prettier@^3.3.3",
+        "npm:supabase@^2.76.13",
+        "npm:turbo@^1.13.4",
+        "npm:typescript@~5.8.3",
+        "npm:ultra-runner@^3.10.5",
+        "npm:vercel@^54.21.1",
+        "npm:vitest@^2.1.1"
+      ]
+    },
+    "members": {
+      "apps/desktop": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@sentry/nextjs@10.65.0",
+            "npm:@tamagui/config@2.0.0-rc.16",
+            "npm:@tamagui/next-plugin@2.0.0-rc.16",
+            "npm:@tamagui/next-theme@2.0.0-rc.16",
+            "npm:@tauri-apps/cli@^2.5.0",
+            "npm:@types/node@^20.14.1",
+            "npm:app@0.0.0",
+            "npm:eslint-config-next@^16.1.1",
+            "npm:next@16.1.1",
+            "npm:posthog-js@1.402.3",
+            "npm:raf@^3.4.1",
+            "npm:react-dom@19.1.0",
+            "npm:react-native-web@0.21.2",
+            "npm:react-native@0.81.5",
+            "npm:react@19.1.0",
+            "npm:tamagui@2.0.0-rc.16",
+            "npm:tree-kill@^1.2.2",
+            "npm:vitest@^2.1.1"
+          ]
+        }
+      },
+      "apps/mobile": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@babel/core@^7.24.6",
+            "npm:@babel/runtime@^7.26.0",
+            "npm:@lexical/react@~0.33.1",
+            "npm:@my/ui@0.0.1",
+            "npm:@react-native-async-storage/async-storage@2.2.0",
+            "npm:@react-native-community/netinfo@11.5.2",
+            "npm:@react-navigation/bottom-tabs@^7.2.0",
+            "npm:@react-navigation/native-stack@^7.3.25",
+            "npm:@react-navigation/native@^7.0.14",
+            "npm:@sentry/react-native@8.18.0",
+            "npm:@tamagui/babel-plugin@2.0.0-rc.16",
+            "npm:@tamagui/lucide-icons@2.0.0-rc.16",
+            "npm:@types/react@~19.1.10",
+            "npm:app@0.0.0",
+            "npm:babel-plugin-module-resolver@^5.0.2",
+            "npm:burnt@~0.12.2",
+            "npm:expo-application@~7.0.8",
+            "npm:expo-auth-session@7.0",
+            "npm:expo-constants@~18.0.13",
+            "npm:expo-crypto@15.0",
+            "npm:expo-dev-client@~6.0.20",
+            "npm:expo-device@~8.0.10",
+            "npm:expo-document-picker@~14.0.8",
+            "npm:expo-file-system@~19.0.21",
+            "npm:expo-font@~14.0.10",
+            "npm:expo-linear-gradient@15.0",
+            "npm:expo-linking@~8.0.11",
+            "npm:expo-local-authentication@~17.0.8",
+            "npm:expo-notifications@~0.32.17",
+            "npm:expo-router@~6.0.21",
+            "npm:expo-secure-store@15.0",
+            "npm:expo-sharing@14.0",
+            "npm:expo-splash-screen@~31.0.13",
+            "npm:expo-status-bar@~3.0.9",
+            "npm:expo-updates@~29.0.16",
+            "npm:expo-web-browser@15.0",
+            "npm:expo@54",
+            "npm:lexical@~0.33.1",
+            "npm:metro-minify-terser@0.81",
+            "npm:posthog-react-native@4.56.3",
+            "npm:react-dom@19.1.0",
+            "npm:react-native-gesture-handler@2.28",
+            "npm:react-native-keyboard-controller@^1.18.5",
+            "npm:react-native-mmkv@^4.3.0",
+            "npm:react-native-nitro-modules@0.35",
+            "npm:react-native-quick-crypto@^1.0.16",
+            "npm:react-native-reanimated@~4.1.1",
+            "npm:react-native-safe-area-context@5.6",
+            "npm:react-native-screens@4.16",
+            "npm:react-native-svg@15.12.1",
+            "npm:react-native-web@0.21.2",
+            "npm:react-native-webview@13.15.0",
+            "npm:react-native-worklets@0.5.1",
+            "npm:react-native@0.81.5",
+            "npm:react@19.1.0",
+            "npm:reanimated-color-picker@^4.2.0",
+            "npm:typescript@~5.8.3",
+            "npm:use-debounce@^10.1.0"
+          ]
+        }
+      },
+      "apps/web": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@sentry/nextjs@10.65.0",
+            "npm:@tamagui/config@2.0.0-rc.16",
+            "npm:@tamagui/next-plugin@2.0.0-rc.16",
+            "npm:@tamagui/next-theme@2.0.0-rc.16",
+            "npm:@types/node@^20.14.1",
+            "npm:app@0.0.0",
+            "npm:eslint-config-next@^16.1.1",
+            "npm:next@16.1.1",
+            "npm:posthog-js@1.402.3",
+            "npm:raf@^3.4.1",
+            "npm:react-dom@19.1.0",
+            "npm:react-native-web@0.21.2",
+            "npm:react-native@0.81.5",
+            "npm:react@19.1.0",
+            "npm:tamagui@2.0.0-rc.16",
+            "npm:tree-kill@^1.2.2",
+            "npm:vitest@^2.1.1"
+          ]
+        }
+      },
+      "packages/app": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@legendapp/state@^3.0.0-beta.31",
+            "npm:@lexical/react@~0.33.1",
+            "npm:@my/ui@0.0.1",
+            "npm:@noble/ciphers@^2.1.1",
+            "npm:@noble/hashes@^2.0.1",
+            "npm:@react-navigation/native@^7.1.28",
+            "npm:@supabase/supabase-js@^2.93.1",
+            "npm:@tamagui/animations-react-native@2.0.0-rc.16",
+            "npm:@tamagui/colors@2.0.0-rc.16",
+            "npm:@tamagui/font-inter@2.0.0-rc.16",
+            "npm:@tamagui/lucide-icons@2.0.0-rc.16",
+            "npm:@tamagui/shorthands@2.0.0-rc.16",
+            "npm:@tamagui/themes@2.0.0-rc.16",
+            "npm:@tanstack/query-async-storage-persister@^5.62.0",
+            "npm:@tanstack/react-hotkeys@0.10.0",
+            "npm:@tanstack/react-query-devtools@^5.62.0",
+            "npm:@tanstack/react-query-persist-client@^5.62.0",
+            "npm:@tanstack/react-query@^5.62.0",
+            "npm:@tauri-apps/api@^2.5.0",
+            "npm:@types/react-native@0.73",
+            "npm:@types/react@~19.0.10",
+            "npm:@types/uuid@11",
+            "npm:@uiw/react-color-sketch@^2.9.6",
+            "npm:burnt@~0.12.2",
+            "npm:expo-constants@~18.0.13",
+            "npm:expo-linking@~8.0.11",
+            "npm:fflate@~0.8.2",
+            "npm:lexical@~0.33.1",
+            "npm:react-native-safe-area-context@5.6",
+            "npm:use-debounce@^10.0.5",
+            "npm:uuid@13"
+          ]
+        }
+      },
+      "packages/config": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@tamagui/animations-motion@2.0.0-rc.16",
+            "npm:@tamagui/animations-react-native@2.0.0-rc.16",
+            "npm:@tamagui/build@2.0.0-rc.16",
+            "npm:@tamagui/font-inter@2.0.0-rc.16",
+            "npm:@tamagui/shorthands@2.0.0-rc.16",
+            "npm:@tamagui/themes@2.0.0-rc.16",
+            "npm:tamagui@2.0.0-rc.16"
+          ]
+        }
+      },
+      "packages/ui": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@my/config@0.0.1",
+            "npm:@tamagui/build@2.0.0-rc.16",
+            "npm:@tamagui/toast@2.0.0-rc.16",
+            "npm:tamagui@2.0.0-rc.16"
+          ]
+        }
+      }
+    }
+  }
+}

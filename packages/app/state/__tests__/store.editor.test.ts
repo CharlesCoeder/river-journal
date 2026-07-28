@@ -55,13 +55,13 @@ afterEach(() => {
 })
 
 // =============================================================================
-// AC 20: setFocusMode action + default-OFF
+// setFocusMode action + default-OFF
 // =============================================================================
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FM-1: setFocusMode is exported from store.ts
 // ─────────────────────────────────────────────────────────────────────────────
-describe('FM-1: setFocusMode is a callable function (AC 20)', () => {
+describe('FM-1: setFocusMode is a callable function', () => {
   it('setFocusMode is exported from store as a function', () => {
     expect(typeof setFocusMode).toBe('function')
   })
@@ -70,7 +70,7 @@ describe('FM-1: setFocusMode is a callable function (AC 20)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // FM-2: setFocusMode(true) sets store$.profile.editor.focusMode to true
 // ─────────────────────────────────────────────────────────────────────────────
-describe('FM-2: setFocusMode(true) writes true to store$.profile.editor.focusMode (AC 20)', () => {
+describe('FM-2: setFocusMode(true) writes true to store$.profile.editor.focusMode', () => {
   it('sets editor.focusMode to true when called with true', () => {
     setFocusMode(true)
     expect(store$.profile.editor.focusMode.peek()).toBe(true)
@@ -86,7 +86,7 @@ describe('FM-2: setFocusMode(true) writes true to store$.profile.editor.focusMod
 // ─────────────────────────────────────────────────────────────────────────────
 // FM-3: setFocusMode(false) sets store$.profile.editor.focusMode to false
 // ─────────────────────────────────────────────────────────────────────────────
-describe('FM-3: setFocusMode(false) writes false to store$.profile.editor.focusMode (AC 20)', () => {
+describe('FM-3: setFocusMode(false) writes false to store$.profile.editor.focusMode', () => {
   it('sets editor.focusMode to false when called with false', () => {
     // First set to true, then toggle back
     setFocusMode(true)
@@ -107,7 +107,7 @@ describe('FM-3: setFocusMode(false) writes false to store$.profile.editor.focusM
 // The test calls setFocusMode(false) — which calls ensureProfile internally —
 // then verifies the resulting profile shape.
 // ─────────────────────────────────────────────────────────────────────────────
-describe('FM-4: Default profile has editor.focusMode === false (AC 20)', () => {
+describe('FM-4: Default profile has editor.focusMode === false', () => {
   it('newly ensured profile has editor.focusMode === false (default-OFF)', () => {
     // Trigger ensureProfile indirectly through the action
     setFocusMode(false)
@@ -126,7 +126,7 @@ describe('FM-4: Default profile has editor.focusMode === false (AC 20)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // FM-5: Round-trip toggle — true → false → true
 // ─────────────────────────────────────────────────────────────────────────────
-describe('FM-5: Round-trip toggle preserves exact boolean values (AC 20)', () => {
+describe('FM-5: Round-trip toggle preserves exact boolean values', () => {
   it('toggles correctly: true then false then true', () => {
     setFocusMode(true)
     expect(store$.profile.editor.focusMode.peek()).toBe(true)
@@ -140,16 +140,16 @@ describe('FM-5: Round-trip toggle preserves exact boolean values (AC 20)', () =>
 })
 
 // =============================================================================
-// Story 2.11 AC 22: setFocusGranularity action + default + legacy migration
+// setFocusGranularity action + default + legacy migration
 // =============================================================================
 
-describe('FG-1: setFocusGranularity is a callable function (AC 22)', () => {
+describe('FG-1: setFocusGranularity is a callable function', () => {
   it('setFocusGranularity is exported from store as a function', () => {
     expect(typeof setFocusGranularity).toBe('function')
   })
 })
 
-describe('FG-2: setFocusGranularity writes to store$.profile.editor.focusGranularity (AC 22)', () => {
+describe('FG-2: setFocusGranularity writes to store$.profile.editor.focusGranularity', () => {
   it('sets focusGranularity to "sentence" when called with "sentence"', () => {
     setFocusGranularity('sentence')
     expect(store$.profile.editor.focusGranularity.peek()).toBe('sentence')
@@ -171,7 +171,7 @@ describe('FG-2: setFocusGranularity writes to store$.profile.editor.focusGranula
   })
 })
 
-describe('FG-3: Default profile has editor.focusGranularity === "paragraph" (AC 22)', () => {
+describe('FG-3: Default profile has editor.focusGranularity === "paragraph"', () => {
   it('newly ensured profile defaults focusGranularity to "paragraph"', () => {
     // setFocusMode triggers ensureProfile, which creates the default profile.
     setFocusMode(false)
@@ -179,7 +179,7 @@ describe('FG-3: Default profile has editor.focusGranularity === "paragraph" (AC 
   })
 })
 
-describe('FG-4: Legacy profile missing focusGranularity is backfilled to "paragraph" (AC 22)', () => {
+describe('FG-4: Legacy profile missing focusGranularity is backfilled to "paragraph"', () => {
   it('ensureProfile backfills focusGranularity on a legacy editor sub-object', () => {
     // Simulate a profile persisted before focusGranularity existed.
     store$.profile.set({
@@ -201,13 +201,13 @@ describe('FG-4: Legacy profile missing focusGranularity is backfilled to "paragr
 })
 
 // =============================================================================
-// AC 21: hasReachedAutosaveCheckpoint helper
+// hasReachedAutosaveCheckpoint helper
 // =============================================================================
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CP-1: hasReachedAutosaveCheckpoint is exported from store.ts
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CP-1: hasReachedAutosaveCheckpoint is a callable function (AC 21)', () => {
+describe('CP-1: hasReachedAutosaveCheckpoint is a callable function', () => {
   it('hasReachedAutosaveCheckpoint is exported from store as a function', () => {
     expect(typeof hasReachedAutosaveCheckpoint).toBe('function')
   })
@@ -216,7 +216,7 @@ describe('CP-1: hasReachedAutosaveCheckpoint is a callable function (AC 21)', ()
 // ─────────────────────────────────────────────────────────────────────────────
 // CP-2: Returns false when store$.activeFlow is null
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CP-2: returns false when activeFlow is null (AC 21)', () => {
+describe('CP-2: returns false when activeFlow is null', () => {
   it('returns false when store$.activeFlow === null', () => {
     store$.activeFlow.set(null)
     expect(hasReachedAutosaveCheckpoint()).toBe(false)
@@ -226,7 +226,7 @@ describe('CP-2: returns false when activeFlow is null (AC 21)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // CP-3: Returns false when activeFlow.content is whitespace-only
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CP-3: returns false when activeFlow.content is whitespace-only (AC 21)', () => {
+describe('CP-3: returns false when activeFlow.content is whitespace-only', () => {
   it('returns false when content is a single space', () => {
     store$.activeFlow.set({ content: ' ', wordCount: 0 })
     expect(hasReachedAutosaveCheckpoint()).toBe(false)
@@ -247,7 +247,7 @@ describe('CP-3: returns false when activeFlow.content is whitespace-only (AC 21)
     expect(hasReachedAutosaveCheckpoint()).toBe(false)
   })
 
-  it('returns false for the exact AC21 whitespace fixture: content="   " wordCount=0', () => {
+  it('returns false for the exact whitespace fixture: content="   " wordCount=0', () => {
     store$.activeFlow.set({ content: '   ', wordCount: 0 })
     expect(hasReachedAutosaveCheckpoint()).toBe(false)
   })
@@ -256,8 +256,8 @@ describe('CP-3: returns false when activeFlow.content is whitespace-only (AC 21)
 // ─────────────────────────────────────────────────────────────────────────────
 // CP-4: Returns true when activeFlow.content has real text
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CP-4: returns true when activeFlow.content has real text (AC 21)', () => {
-  it('returns true for the exact AC21 real-content fixture: content="real words" wordCount=2', () => {
+describe('CP-4: returns true when activeFlow.content has real text', () => {
+  it('returns true for the exact real-content fixture: content="real words" wordCount=2', () => {
     store$.activeFlow.set({ content: 'real words', wordCount: 2 })
     expect(hasReachedAutosaveCheckpoint()).toBe(true)
   })
@@ -279,7 +279,7 @@ describe('CP-4: returns true when activeFlow.content has real text (AC 21)', () 
 // reference active?.id (which is always undefined on this type) — failing here
 // means the helper has incorrect type assumptions.
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CP-5: activeFlow type shape — content+wordCount only (AC 21 type-safety guard)', () => {
+describe('CP-5: activeFlow type shape — content+wordCount only (type-safety guard)', () => {
   it('activeFlow type has content and wordCount but no id', () => {
     // Set a valid activeFlow with the documented shape
     store$.activeFlow.set({ content: 'some text', wordCount: 2 })

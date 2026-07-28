@@ -5,7 +5,7 @@
 //     packages/app/features/journal/components/Lexical/plugins/FocusModeParagraphPlugin.tsx
 //   - computeFocusClasses helper does not yet exist
 //
-// Test strategy (per story Dev Notes — Testing Standards):
+// Test strategy (per story design notes — Testing Standards):
 //   Part A: Pure helper unit tests for `computeFocusClasses` (extracted logic).
 //   Part B: Component smoke tests asserting plugin mount behavior and Lexical wiring.
 //
@@ -61,10 +61,10 @@ afterEach(() => {
 })
 
 // =============================================================================
-// Part A: computeFocusClasses — pure helper unit tests (AC 24)
+// Part A: computeFocusClasses — pure helper unit tests
 // =============================================================================
 
-describe('computeFocusClasses — pure helper (AC 24)', () => {
+describe('computeFocusClasses — pure helper', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // CH-0: computeFocusClasses is exported as a function
   // ───────────────────────────────────────────────────────────────────────────
@@ -155,10 +155,10 @@ describe('computeFocusClasses — pure helper (AC 24)', () => {
 })
 
 // =============================================================================
-// Part B: FocusModeParagraphPlugin component smoke tests (AC 24)
+// Part B: FocusModeParagraphPlugin component smoke tests
 // =============================================================================
 
-describe('FocusModeParagraphPlugin component — mount behavior (AC 24)', () => {
+describe('FocusModeParagraphPlugin component — mount behavior', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // PS-0: Module exports FocusModeParagraphPlugin as a function/component
   // ───────────────────────────────────────────────────────────────────────────
@@ -168,19 +168,25 @@ describe('FocusModeParagraphPlugin component — mount behavior (AC 24)', () => 
 
   it('PS-0b: renders without throwing when focusMode=true, readOnly=false', () => {
     expect(() => {
-      render(React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: false }))
+      render(
+        React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: false })
+      )
     }).not.toThrow()
   })
 
   it('PS-0c: renders without throwing when focusMode=false', () => {
     expect(() => {
-      render(React.createElement(FocusModeParagraphPlugin as any, { focusMode: false, readOnly: false }))
+      render(
+        React.createElement(FocusModeParagraphPlugin as any, { focusMode: false, readOnly: false })
+      )
     }).not.toThrow()
   })
 
   it('PS-0d: renders without throwing when readOnly=true', () => {
     expect(() => {
-      render(React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: true }))
+      render(
+        React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: true })
+      )
     }).not.toThrow()
   })
 
@@ -212,7 +218,9 @@ describe('FocusModeParagraphPlugin component — mount behavior (AC 24)', () => 
       { registerUpdateListener: mockRegister, getElementByKey: vi.fn(() => null) },
     ])
 
-    render(React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: true }))
+    render(
+      React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: true })
+    )
 
     expect(mockRegister).not.toHaveBeenCalled()
   })
@@ -227,7 +235,9 @@ describe('FocusModeParagraphPlugin component — mount behavior (AC 24)', () => 
       { registerUpdateListener: mockRegister, getElementByKey: vi.fn(() => null) },
     ])
 
-    render(React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: false }))
+    render(
+      React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: false })
+    )
 
     expect(mockRegister).toHaveBeenCalled()
   })
@@ -241,7 +251,6 @@ describe('FocusModeParagraphPlugin component — mount behavior (AC 24)', () => 
 
     const getElementByKeySpy = vi.fn(() => null)
     let capturedListener: ((payload: any) => void) | null = null
-
     ;(useLexicalComposerContext as any).mockReturnValue([
       {
         registerUpdateListener: vi.fn((cb: any) => {
@@ -263,7 +272,9 @@ describe('FocusModeParagraphPlugin component — mount behavior (AC 24)', () => 
       anchor: { getNode: () => mockP1 },
     })
 
-    render(React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: false }))
+    render(
+      React.createElement(FocusModeParagraphPlugin as any, { focusMode: true, readOnly: false })
+    )
 
     if (capturedListener) {
       act(() => {

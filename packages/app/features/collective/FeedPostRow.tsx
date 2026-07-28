@@ -1,6 +1,6 @@
 // packages/app/features/collective/FeedPostRow.tsx
 //
-// Title-led feed row for the Collective "room" (title-led redesign, Story 3-16).
+// Title-led feed row for the Collective "room" (title-led redesign).
 // Boundary rule (D7): no Legend-State imports in this file.
 //
 // The feed is a scannable list of letter TITLES — not bodies. The feed RPC

@@ -51,13 +51,25 @@ export function KeyboardShortcutsSection() {
             alignItems="center"
             paddingVertical="$2"
           >
-            <Text fontFamily="$body" fontSize={15} color="$color">
+            <Text
+              fontFamily="$body"
+              fontSize={15}
+              color="$color"
+            >
               {row.label}
             </Text>
 
             {isRecording ? (
-              <XStack gap="$2" alignItems="center">
-                <Text fontFamily="$body" fontSize={13} color="$color7" fontStyle="italic">
+              <XStack
+                gap="$2"
+                alignItems="center"
+              >
+                <Text
+                  fontFamily="$body"
+                  fontSize={13}
+                  color="$color7"
+                  fontStyle="italic"
+                >
                   Press a key…
                 </Text>
                 <Text
@@ -74,7 +86,10 @@ export function KeyboardShortcutsSection() {
                 </Text>
               </XStack>
             ) : (
-              <XStack gap="$3" alignItems="center">
+              <XStack
+                gap="$3"
+                alignItems="center"
+              >
                 <Text
                   fontFamily="$body"
                   fontSize={12}

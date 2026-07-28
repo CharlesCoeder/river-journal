@@ -2,8 +2,6 @@
 // ALL tests MUST FAIL before implementation of
 // packages/app/features/disclosure/ThreePostureDisclosure.tsx
 // (or packages/app/features/disclosure/hasAcknowledged.ts)
-//
-// Story 3-6 AC covered: 15, 26
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -26,10 +24,10 @@ beforeEach(() => {
 })
 
 // =============================================================================
-// AC #26: hasAcknowledgedBoundaryA state cases
+// hasAcknowledgedBoundaryA state cases
 // =============================================================================
 
-describe('AC26 — hasAcknowledgedBoundaryA — returns false when unset', () => {
+describe('hasAcknowledgedBoundaryA — returns false when unset', () => {
   it('returns false when store$.profile is null (no profile)', () => {
     // profile is null from beforeEach reset
     expect(hasAcknowledgedBoundaryA()).toBe(false)
@@ -77,7 +75,7 @@ describe('AC26 — hasAcknowledgedBoundaryA — returns false when unset', () =>
   })
 })
 
-describe('AC26 — hasAcknowledgedBoundaryA — returns true when acknowledged_at is set', () => {
+describe('hasAcknowledgedBoundaryA — returns true when acknowledged_at is set', () => {
   it('returns true when acknowledged_at is a non-empty ISO string', () => {
     store$.profile.set({
       word_goal: 500,
@@ -120,7 +118,7 @@ describe('AC26 — hasAcknowledgedBoundaryA — returns true when acknowledged_a
   })
 })
 
-describe('AC26 — hasAcknowledgedBoundaryA — module export', () => {
+describe('hasAcknowledgedBoundaryA — module export', () => {
   it('is exported as a named function from the wrapper module', async () => {
     const mod = await import('../ThreePostureDisclosure')
     expect(typeof mod.hasAcknowledgedBoundaryA).toBe('function')

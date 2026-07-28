@@ -150,18 +150,32 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
   ])
 
   return (
-    <YStack gap="$3" width="100%">
-      <Text fontSize="$5" fontFamily="$body" fontWeight="600">
+    <YStack
+      gap="$3"
+      width="100%"
+    >
+      <Text
+        fontSize="$5"
+        fontFamily="$body"
+        fontWeight="600"
+      >
         {title}
       </Text>
 
       {/* Current Password — change mode only */}
       {mode === 'change' && (
         <YStack gap="$2">
-          <Text fontSize="$3" fontFamily="$body" color="$color11">
+          <Text
+            fontSize="$3"
+            fontFamily="$body"
+            color="$color11"
+          >
             Current Password
           </Text>
-          <XStack width="100%" position="relative">
+          <XStack
+            width="100%"
+            position="relative"
+          >
             <Input
               value={currentPassword}
               onChangeText={handleCurrentPasswordChange}
@@ -189,7 +203,11 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             />
           </XStack>
           {errors.currentPassword && (
-            <Text fontSize="$2" color="$red10" fontFamily="$body">
+            <Text
+              fontSize="$2"
+              color="$red10"
+              fontFamily="$body"
+            >
               {errors.currentPassword}
             </Text>
           )}
@@ -198,10 +216,17 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
 
       {/* New Password */}
       <YStack gap="$2">
-        <Text fontSize="$3" fontFamily="$body" color="$color11">
+        <Text
+          fontSize="$3"
+          fontFamily="$body"
+          color="$color11"
+        >
           New Password
         </Text>
-        <XStack width="100%" position="relative">
+        <XStack
+          width="100%"
+          position="relative"
+        >
           <Input
             value={password}
             onChangeText={handlePasswordChange}
@@ -229,11 +254,19 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
           />
         </XStack>
         {errors.password ? (
-          <Text fontSize="$2" color="$red10" fontFamily="$body">
+          <Text
+            fontSize="$2"
+            color="$red10"
+            fontFamily="$body"
+          >
             {errors.password}
           </Text>
         ) : (
-          <Text fontSize="$2" color="$color10" fontFamily="$body">
+          <Text
+            fontSize="$2"
+            color="$color10"
+            fontFamily="$body"
+          >
             Must be at least {MIN_PASSWORD_LENGTH} characters
           </Text>
         )}
@@ -241,10 +274,17 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
 
       {/* Confirm Password */}
       <YStack gap="$2">
-        <Text fontSize="$3" fontFamily="$body" color="$color11">
+        <Text
+          fontSize="$3"
+          fontFamily="$body"
+          color="$color11"
+        >
           Confirm Password
         </Text>
-        <XStack width="100%" position="relative">
+        <XStack
+          width="100%"
+          position="relative"
+        >
           <Input
             value={confirmPassword}
             onChangeText={handleConfirmPasswordChange}
@@ -273,7 +313,11 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
           />
         </XStack>
         {errors.confirmPassword && (
-          <Text fontSize="$2" color="$red10" fontFamily="$body">
+          <Text
+            fontSize="$2"
+            color="$red10"
+            fontFamily="$body"
+          >
             {errors.confirmPassword}
           </Text>
         )}
@@ -281,14 +325,28 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
 
       {/* General Error */}
       {errors.general && (
-        <Text fontSize="$3" color="$red10" fontFamily="$body" textAlign="center">
+        <Text
+          fontSize="$3"
+          color="$red10"
+          fontFamily="$body"
+          textAlign="center"
+        >
           {errors.general}
         </Text>
       )}
 
       {/* Actions */}
-      <XStack gap="$3" justifyContent="flex-end" marginTop="$2">
-        <Button size="$3" variant="outlined" onPress={onCancel} disabled={isLoading}>
+      <XStack
+        gap="$3"
+        justifyContent="flex-end"
+        marginTop="$2"
+      >
+        <Button
+          size="$3"
+          variant="outlined"
+          onPress={onCancel}
+          disabled={isLoading}
+        >
           <Text fontFamily="$body">Cancel</Text>
         </Button>
         <Button
@@ -300,9 +358,16 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
           pressStyle={{ backgroundColor: '$color8' }}
         >
           {isLoading ? (
-            <Spinner color="$color1" size="small" />
+            <Spinner
+              color="$color1"
+              size="small"
+            />
           ) : (
-            <Text fontFamily="$body" fontWeight="600" color="$color1">
+            <Text
+              fontFamily="$body"
+              fontWeight="600"
+              color="$color1"
+            >
               {title}
             </Text>
           )}

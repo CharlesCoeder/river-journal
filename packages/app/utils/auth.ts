@@ -9,13 +9,24 @@ import { supabase } from './supabase'
 import { store$ } from '../state/store'
 import { batch } from '@legendapp/state'
 import { deviceState$ } from '../state/syncConfig'
-import { loadCurrentEncryptionMode, resetEncryptionSetupState, encryptionSetup$ } from '../state/encryptionSetup'
-import { hasWebTrustCapability, getStoredDeviceToken, hashDeviceToken, clearWebTrustData } from './webKeyStore'
+import {
+  loadCurrentEncryptionMode,
+  resetEncryptionSetupState,
+  encryptionSetup$,
+} from '../state/encryptionSetup'
+import {
+  hasWebTrustCapability,
+  getStoredDeviceToken,
+  hashDeviceToken,
+  clearWebTrustData,
+} from './webKeyStore'
 import { deleteTrustedBrowserByHash } from './userEncryption'
 import { clearStoredMasterKey } from './encryptionKeyStore'
 import { queryClient, QUERY_PERSIST_KEY } from '../state/queryClient'
 import { queryStorage } from '../state/queryStorage'
 import { resetSyncCursors } from '../state/persistConfig'
+import { setSentryUser } from './telemetry/sentry'
+import { identifyPostHogUser } from './telemetry/posthog'
 
 /**
  * Common Supabase auth error codes mapped to user-friendly messages
@@ -95,6 +106,13 @@ const updateSessionState = (
       })
     }
   })
+
+  // Telemetry user context — Supabase user_id ONLY, never email/name/PII.
+  // Cleared on sign-out so a crash after sign-out is not misattributed. The
+  // same lifecycle drives product analytics (identify on sign-in, reset on
+  // sign-out) with the same user_id-only rule.
+  setSentryUser(session?.user?.id ?? null)
+  identifyPostHogUser(session?.user?.id ?? null)
 
   if (session?.user) {
     // Maintain device-state.lastAuthedUserId with WRITE-ONCE-PER-TRANSITION

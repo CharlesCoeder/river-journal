@@ -12,7 +12,14 @@ import { ALL_TRANSFORMERS } from './transformers'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
 
 // Import Legend State store and actions
-import { store$, ephemeral$, updateActiveFlowContent, setInstantWordCountFromText, calculateWordCount, registerEditorContentFlush } from '../../../../state/store'
+import {
+  store$,
+  ephemeral$,
+  updateActiveFlowContent,
+  setInstantWordCountFromText,
+  calculateWordCount,
+  registerEditorContentFlush,
+} from '../../../../state/store'
 
 /**
  * A non-rendering component that creates a robust, two-way, debounced
@@ -58,19 +65,23 @@ export function LexicalSync(): React.ReactElement {
   // Flow 2: Syncing from Lexical Editor --> Legend State
   // This uses Lexical's OnChangePlugin and debounces updates for performance.
   // ------------------------------------------------------------------
-  const debouncedUpdateStore = useDebouncedCallback((markdown: string) => {
-    // Set the ref to true BEFORE updating the store. This signals to our
-    // `useObserve` hook that this change is internal and should be ignored.
-    isSyncingFromState.current = true
+  const debouncedUpdateStore = useDebouncedCallback(
+    (markdown: string) => {
+      // Set the ref to true BEFORE updating the store. This signals to our
+      // `useObserve` hook that this change is internal and should be ignored.
+      isSyncingFromState.current = true
 
-    updateActiveFlowContent(markdown) // This function internally uses batch()
+      updateActiveFlowContent(markdown) // This function internally uses batch()
 
-    // Reset the flag in the next browser paint cycle. This safely ensures
-    // that any subsequent external changes to the store are captured.
-    requestAnimationFrame(() => {
-      isSyncingFromState.current = false
-    })
-  }, 300, { maxWait: 1000 }) // 300ms debounce; maxWait checkpoints continuous typing at least every 1s
+      // Reset the flag in the next browser paint cycle. This safely ensures
+      // that any subsequent external changes to the store are captured.
+      requestAnimationFrame(() => {
+        isSyncingFromState.current = false
+      })
+    },
+    300,
+    { maxWait: 1000 }
+  ) // 300ms debounce; maxWait checkpoints continuous typing at least every 1s
 
   // Expose the pending-write flush to save/hide/exit paths (in the store) so a
   // fast typist's final burst is checkpointed before the store is read/saved.

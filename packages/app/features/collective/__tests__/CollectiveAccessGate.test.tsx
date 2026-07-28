@@ -68,7 +68,8 @@ vi.mock('@my/ui', async () => {
     return out
   }
   return {
-    Text: ({ children, ...props }: any) => ReactModule.createElement('span', passA11y(props), children),
+    Text: ({ children, ...props }: any) =>
+      ReactModule.createElement('span', passA11y(props), children),
     XStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'x', ...passA11y(props) }, children),
     YStack: ({ children, ...props }: any) =>

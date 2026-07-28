@@ -14,7 +14,7 @@
  * - Newsreader serif body styling
  */
 
-import React from 'react'
+import type React from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -125,9 +125,7 @@ function CollectiveLexicalEditor({
 
         {/* Test-only probe: captures LexicalEditor instance for D14 isolation regression tests.
             Only activates when __contextProbeRef is set; production callers never set it. */}
-        {__contextProbeRef && (
-          <LexicalContextProbe probeRef={__contextProbeRef} />
-        )}
+        {__contextProbeRef && <LexicalContextProbe probeRef={__contextProbeRef} />}
       </div>
     </LexicalComposer>
   )

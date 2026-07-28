@@ -203,7 +203,10 @@ describe('startE2EEncryptionBootstrap', () => {
     // Server already has a salt+verifier (e.g. the settings load blipped and the
     // dialog reopened). The RPC returns the EXISTING salt, not ours.
     const existingSalt = 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
-    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', existingSalt)
+    const correctKey = await deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      existingSalt
+    )
     const existingVerifier = encryptFlowContent(KEY_VERIFIER_PLAINTEXT, correctKey)
 
     mockRpc.mockResolvedValueOnce({
@@ -224,7 +227,10 @@ describe('startE2EEncryptionBootstrap', () => {
 
   it('rejects a spurious re-bootstrap when the password is wrong', async () => {
     const existingSalt = 'V7Ywzw624E8kIp99sTidT8QPg/qet/T85LJgX4wvht8='
-    const correctKey = await deriveMasterKeyFromPassword('correct horse battery staple', existingSalt)
+    const correctKey = await deriveMasterKeyFromPassword(
+      'correct horse battery staple',
+      existingSalt
+    )
     const existingVerifier = encryptFlowContent(KEY_VERIFIER_PLAINTEXT, correctKey)
 
     mockRpc.mockResolvedValueOnce({
@@ -600,7 +606,6 @@ describe('registerTrustedBrowser', () => {
         user_id: 'user-1',
         device_token_hash: 'hash-abc',
         label: 'Chrome on Mac',
-
       })
     )
   })
@@ -719,7 +724,7 @@ describe('fetchTrustedBrowsers', () => {
         {
           id: 'b-1',
           label: 'Chrome on Mac',
-  
+
           created_at: '2025-01-01T00:00:00Z',
           last_used_at: '2025-06-01T00:00:00Z',
           device_token_hash: 'hash-1',
@@ -727,7 +732,7 @@ describe('fetchTrustedBrowsers', () => {
         {
           id: 'b-2',
           label: 'Firefox on Linux',
-  
+
           created_at: '2025-02-01T00:00:00Z',
           last_used_at: '2025-05-01T00:00:00Z',
           device_token_hash: 'hash-2',

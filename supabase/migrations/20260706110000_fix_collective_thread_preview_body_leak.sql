@@ -126,7 +126,7 @@ BEGIN
     COALESCE((SELECT reaction_tally.reactions FROM reaction_tally), '{}'::jsonb) AS reactions,
     (CASE WHEN v_full THEN 'full' ELSE 'preview' END)::TEXT AS mode
   FROM collective_posts cp
-  -- AC 11: zero rows when the root is moderator-removed OR does not exist
+  -- Zero rows when the root is moderator-removed OR does not exist
   -- (client renders not-found/removed). Self-deleted / anonymized roots ARE
   -- returned (client renders the tombstone), consistent with feed/thread.
   WHERE cp.id = collective_thread_root.post_id

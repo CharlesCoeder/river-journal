@@ -2,6 +2,12 @@
 // registers at module load. See: packages/app/state/collective/mutations.ts.
 import 'app/state/collective/mutations'
 
+// Telemetry is OPT-IN, so init does NOT run here: the consent flag is only
+// readable after persistence loads, which happens later than this module. The
+// consent-gated Sentry/PostHog init lives in app/state/initializeApp.ts, after
+// the persisted flag is awaited. A late opt-in re-runs init via
+// app/utils/telemetry/consent.ts — no restart.
+
 import { useEffect } from 'react'
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
@@ -17,6 +23,8 @@ import { store$ } from 'app/state/store'
 import { useTheme } from '@my/ui'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
 import { PersistentEditor } from 'app/features/journal/components/PersistentEditor'
+import { AppLockOverlay } from 'app/features/settings/AppLockOverlay.native'
+import { AppLockPrivacyCover } from 'app/features/settings/AppLockPrivacyCover.native'
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -67,29 +75,44 @@ function RootLayoutNav() {
   return (
     <PersistenceGate>
       <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <MobileKeyboardProvider>
-          <Provider>
-            <TamaguifiedReactNavigationThemeProvider>
-              <TamaguifiedSafeAreaView>
-                <SliderHub>
-                  <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="journal" options={{ animation: 'none' }} />
-                    <Stack.Screen name="auth" />
-                    <Stack.Screen name="privacy" />
-                    <Stack.Screen
-                      name="google-auth"
-                      options={{ animation: 'none' }}
-                    />
-                  </Stack>
-                </SliderHub>
-                <PersistentEditor />
-                <NativeToast />
-              </TamaguifiedSafeAreaView>
-            </TamaguifiedReactNavigationThemeProvider>
-          </Provider>
-        </MobileKeyboardProvider>
-      </SafeAreaProvider>
+        <SafeAreaProvider>
+          <MobileKeyboardProvider>
+            <Provider>
+              <TamaguifiedReactNavigationThemeProvider>
+                <TamaguifiedSafeAreaView>
+                  <SliderHub>
+                    {/*
+                    The moderation admin surface (features/moderation/**) is
+                    intentionally web + desktop only. Mobile must never contain an
+                    admin/ route subtree or import from features/moderation/** —
+                    it must not ship in publicly-distributed mobile binaries.
+                    Enforced by PR review until the CI grep lands.
+                  */}
+                    <Stack screenOptions={{ headerShown: false }}>
+                      <Stack.Screen
+                        name="journal"
+                        options={{ animation: 'none' }}
+                      />
+                      <Stack.Screen name="auth" />
+                      <Stack.Screen name="privacy" />
+                      <Stack.Screen
+                        name="google-auth"
+                        options={{ animation: 'none' }}
+                      />
+                    </Stack>
+                  </SliderHub>
+                  <PersistentEditor />
+                  <NativeToast />
+                  {/* App Lock — covers all routes. The privacy cover hides
+                  content from the OS app-switcher snapshot on `inactive`; the
+                  overlay gates the UI while locked. */}
+                  <AppLockPrivacyCover />
+                  <AppLockOverlay />
+                </TamaguifiedSafeAreaView>
+              </TamaguifiedReactNavigationThemeProvider>
+            </Provider>
+          </MobileKeyboardProvider>
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </PersistenceGate>
   )

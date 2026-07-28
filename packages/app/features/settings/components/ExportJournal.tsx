@@ -3,13 +3,15 @@ import { Circle, Input, Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import {
-  exportJournal,
-  exportJournalSingleFile,
+  exportJournalChunked,
+  exportJournalSingleFileChunked,
+  computeExportSummary,
   filterExportableEntries,
   getAvailableMonths,
   DEFAULT_EXPORT_OPTIONS,
 } from 'app/utils/exportJournal'
 import type { ExportOptions } from 'app/utils/exportJournal'
+import type { StreakState } from 'app/state/streak'
 import { downloadExport } from 'app/utils/downloadExport'
 
 type ExportMode = 'idle' | 'options' | 'select-months' | 'exporting' | 'done' | 'error'
@@ -105,6 +107,12 @@ function CheckboxRow({
 export function ExportJournal() {
   const allEntriesUnfiltered = use$(store$.views.allEntriesSorted())
   const currentUserId = use$(store$.session.userId)
+  // Longest streak comes from the wired, current-user-scoped streak view — the
+  // single source of truth (never recomputed inline). It matches the same
+  // per-identity scoping as filterExportableEntries, so the exported summary's
+  // streak lines up with the exported set's owner.
+  const streak = use$(store$.views.streak!) as unknown as StreakState | undefined
+  const longestStreak = streak?.longestStreak ?? 0
   // Cross-user defense: local data from a previous account survives sign-out
   // by design (the PreviousAccountBanner owns the delete/keep decision), so
   // export is restricted to the current identity's entries + anonymous local
@@ -117,6 +125,7 @@ export function ExportJournal() {
   const [mode, setMode] = useState<ExportMode>('idle')
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
   const [exportedCount, setExportedCount] = useState(0)
+  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 })
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS)
   const exportingRef = useRef(false)
@@ -158,27 +167,41 @@ export function ExportJournal() {
       if (exportingRef.current) return
       if (entries.length === 0) return
       exportingRef.current = true
+      setProgress({ done: 0, total: entries.length })
       setMode('exporting')
+      const startedAt = Date.now()
       try {
         const isZip = options.fileFormat === 'zip'
+        const onProgress = (done: number, total: number) => setProgress({ done, total })
         const blob = isZip
-          ? exportJournal(entries, options)
-          : exportJournalSingleFile(entries, options)
-        const filename = isZip
-          ? 'river-journal-export.zip'
-          : 'river-journal-export.md'
+          ? await exportJournalChunked(entries, options, longestStreak, onProgress)
+          : await exportJournalSingleFileChunked(entries, options, longestStreak, onProgress)
+        const filename = isZip ? 'river-journal-export.zip' : 'river-journal-export.md'
         await downloadExport(blob, filename)
         setExportedCount(entries.length)
+        // Metadata-only success log: counts + duration, never body/email/name.
+        const summary = computeExportSummary(entries, longestStreak)
+        console.log('[ExportJournal] export complete', {
+          entries: summary.totalEntries,
+          flows: summary.totalFlows,
+          words: summary.totalWords,
+          durationMs: Date.now() - startedAt,
+        })
         setMode('done')
       } catch (err) {
-        console.error('[ExportJournal] export failed:', err)
-        setErrorMessage(err instanceof Error ? err.message : String(err))
+        // Log only the error message (never the raw error object / stack), so a
+        // thrown value can't smuggle entry body content into the log.
+        console.error(
+          '[ExportJournal] export failed:',
+          err instanceof Error ? err.message : 'unknown error'
+        )
+        setErrorMessage('Something went wrong while preparing your export.')
         setMode('error')
       } finally {
         exportingRef.current = false
       }
     },
-    [options]
+    [options, longestStreak]
   )
 
   const handleExportAll = useCallback(() => {
@@ -186,9 +209,7 @@ export function ExportJournal() {
   }, [allEntries, runExport])
 
   const handleExportSelected = useCallback(() => {
-    const filtered = allEntries.filter((e) =>
-      selectedMonths.has(e.entryDate.slice(0, 7))
-    )
+    const filtered = allEntries.filter((e) => selectedMonths.has(e.entryDate.slice(0, 7)))
     runExport(filtered)
   }, [allEntries, selectedMonths, runExport])
 
@@ -206,10 +227,18 @@ export function ExportJournal() {
   if (!hasEntries) {
     return (
       <YStack gap="$2">
-        <Text fontFamily="$journal" fontSize={20} color="$color8">
+        <Text
+          fontFamily="$journal"
+          fontSize={20}
+          color="$color8"
+        >
           Export Journal
         </Text>
-        <Text fontFamily="$body" fontSize={13} color="$color8">
+        <Text
+          fontFamily="$body"
+          fontSize={13}
+          color="$color8"
+        >
           No journal entries to export.
         </Text>
       </YStack>
@@ -219,11 +248,20 @@ export function ExportJournal() {
   if (mode === 'exporting') {
     return (
       <YStack gap="$2">
-        <Text fontFamily="$journal" fontSize={20} color="$color">
+        <Text
+          fontFamily="$journal"
+          fontSize={20}
+          color="$color"
+        >
           Export Journal
         </Text>
-        <Text fontFamily="$body" fontSize={13} color="$color8">
-          Preparing export...
+        <Text
+          testID="export-progress"
+          fontFamily="$body"
+          fontSize={13}
+          color="$color8"
+        >
+          Exporting {progress.done} of {progress.total} entries…
         </Text>
       </YStack>
     )
@@ -232,10 +270,18 @@ export function ExportJournal() {
   if (mode === 'error') {
     return (
       <YStack gap="$2">
-        <Text fontFamily="$journal" fontSize={20} color="$color">
+        <Text
+          fontFamily="$journal"
+          fontSize={20}
+          color="$color"
+        >
           Export Journal
         </Text>
-        <Text fontFamily="$body" fontSize={13} color="$color8">
+        <Text
+          fontFamily="$body"
+          fontSize={13}
+          color="$color8"
+        >
           Export failed. Please try again.
         </Text>
         {errorMessage && (
@@ -270,10 +316,18 @@ export function ExportJournal() {
   if (mode === 'done') {
     return (
       <YStack gap="$2">
-        <Text fontFamily="$journal" fontSize={20} color="$color">
+        <Text
+          fontFamily="$journal"
+          fontSize={20}
+          color="$color"
+        >
           Export Journal
         </Text>
-        <Text fontFamily="$body" fontSize={13} color="$color8">
+        <Text
+          fontFamily="$body"
+          fontSize={13}
+          color="$color8"
+        >
           Exported {exportedCount} {exportedCount === 1 ? 'entry' : 'entries'}.
         </Text>
         <Text
@@ -300,8 +354,15 @@ export function ExportJournal() {
 
     return (
       <YStack gap="$3">
-        <XStack justifyContent="space-between" alignItems="center">
-          <Text fontFamily="$journal" fontSize={20} color="$color">
+        <XStack
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <Text
+            fontFamily="$journal"
+            fontSize={20}
+            color="$color"
+          >
             Select Months
           </Text>
           <Text
@@ -391,7 +452,11 @@ export function ExportJournal() {
         >
           Export Journal
         </Text>
-        <Text fontFamily="$body" fontSize={13} color="$color8">
+        <Text
+          fontFamily="$body"
+          fontSize={13}
+          color="$color8"
+        >
           Download your entries as Markdown files.
         </Text>
       </YStack>
@@ -404,8 +469,15 @@ export function ExportJournal() {
 
   return (
     <YStack gap="$2">
-      <XStack justifyContent="space-between" alignItems="center">
-        <Text fontFamily="$journal" fontSize={20} color="$color">
+      <XStack
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <Text
+          fontFamily="$journal"
+          fontSize={20}
+          color="$color"
+        >
           Export Journal
         </Text>
         <Text
@@ -453,8 +525,16 @@ export function ExportJournal() {
           onPress={() => setOption('showSeparators', !options.showSeparators)}
         />
         {options.showSeparators && (
-          <XStack alignItems="center" gap="$2" paddingLeft="$4">
-            <Text fontFamily="$body" fontSize={13} color="$color8">
+          <XStack
+            alignItems="center"
+            gap="$2"
+            paddingLeft="$4"
+          >
+            <Text
+              fontFamily="$body"
+              fontSize={13}
+              color="$color8"
+            >
               Separator:
             </Text>
             <Input
@@ -483,7 +563,11 @@ export function ExportJournal() {
       </YStack>
 
       {/* Export buttons */}
-      <XStack gap="$4" marginTop="$3" flexWrap="wrap">
+      <XStack
+        gap="$4"
+        marginTop="$3"
+        flexWrap="wrap"
+      >
         <Text
           testID="export-all"
           fontFamily="$body"

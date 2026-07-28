@@ -12,7 +12,7 @@
  *     Cross-day edge: if the user crosses local midnight between save and
  *     celebration mount, we never claim "first today" for a yesterday flow.
  *
- * Tie-break safety (AC 1): if multiple flows share the same timestamp
+ * Tie-break safety: if multiple flows share the same timestamp
  * (test-only — production-impossible at ms precision), the canonical "first"
  * is the one with the lexicographically smallest `id`. Production rule:
  * the just-saved flow must be the FIRST `wordCount >= 500` flow when

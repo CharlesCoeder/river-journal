@@ -9,7 +9,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 // ─── @my/ui mock ─────────────────────────────────────────────────────────────
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
-  const Text = ({ children, onPress, testID, accessibilityRole, accessibilityLabel, ...props }: any) =>
+  const Text = ({
+    children,
+    onPress,
+    testID,
+    accessibilityRole,
+    accessibilityLabel,
+    ...props
+  }: any) =>
     ReactModule.createElement(
       'span',
       {
@@ -41,9 +48,9 @@ afterEach(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Hidden state — renders null (AC4)
+// 1. Hidden state — renders null
 // ─────────────────────────────────────────────────────────────────────────────
-describe('LapsedPrompt — hidden when shouldShow is false (AC4)', () => {
+describe('LapsedPrompt — hidden when shouldShow is false', () => {
   it('renders nothing (no DOM node) when shouldShow is false', () => {
     lapsedMock.shouldShow = false
     render(React.createElement(LapsedPrompt))
@@ -52,9 +59,9 @@ describe('LapsedPrompt — hidden when shouldShow is false (AC4)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Visible state — copy and a11y (AC4, AC7, AC8)
+// 2. Visible state — copy and a11y
 // ─────────────────────────────────────────────────────────────────────────────
-describe('LapsedPrompt — visible when shouldShow is true (AC4, AC7, AC8)', () => {
+describe('LapsedPrompt — visible when shouldShow is true', () => {
   beforeEach(() => {
     lapsedMock.shouldShow = true
   })
@@ -64,13 +71,13 @@ describe('LapsedPrompt — visible when shouldShow is true (AC4, AC7, AC8)', () 
     expect(screen.getByText('Want to start again?')).toBeTruthy()
   })
 
-  it('has aria-label "Want to start again? Tap to dismiss." (AC8)', () => {
+  it('has aria-label "Want to start again? Tap to dismiss."', () => {
     render(React.createElement(LapsedPrompt))
     const prompt = screen.getByTestId('lapsed-prompt')
     expect(prompt.getAttribute('aria-label')).toBe('Want to start again? Tap to dismiss.')
   })
 
-  it('has role="button" (accessibilityRole="button") (AC8)', () => {
+  it('has role="button" (accessibilityRole="button")', () => {
     render(React.createElement(LapsedPrompt))
     const prompt = screen.getByTestId('lapsed-prompt')
     expect(prompt.getAttribute('role')).toBe('button')
@@ -78,9 +85,9 @@ describe('LapsedPrompt — visible when shouldShow is true (AC4, AC7, AC8)', () 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Dismiss on tap (AC5)
+// 3. Dismiss on tap
 // ─────────────────────────────────────────────────────────────────────────────
-describe('LapsedPrompt — dismiss on tap (AC5)', () => {
+describe('LapsedPrompt — dismiss on tap', () => {
   it('calls dismiss() when the prompt is tapped/clicked', () => {
     lapsedMock.shouldShow = true
     render(React.createElement(LapsedPrompt))

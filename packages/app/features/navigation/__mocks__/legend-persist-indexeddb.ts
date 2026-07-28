@@ -16,7 +16,7 @@
 class ObservablePersistIndexedDB {
   private tableData: Record<string, unknown> = {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // biome-ignore lint/complexity/noUselessConstructor: the 1-arg signature is load-bearing — the factory calls `new ObservablePersistIndexedDB(configuration)`
   constructor(_configuration?: unknown) {}
 
   async initialize(_configOptions?: unknown): Promise<void> {}

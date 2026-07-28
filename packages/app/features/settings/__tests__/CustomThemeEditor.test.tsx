@@ -18,13 +18,12 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onChangeText, disabled, fontStyle, backgroundColor, ...rest } = props as any
+    const { testID, onPress, onChangeText, disabled, fontStyle, backgroundColor, ...rest } =
+      props as any
     return {
       ...(testID ? { 'data-testid': testID } : {}),
       ...(onPress ? { onClick: onPress } : {}),
-      ...(onChangeText
-        ? { onChange: (e: any) => onChangeText(e.target.value) }
-        : {}),
+      ...(onChangeText ? { onChange: (e: any) => onChangeText(e.target.value) } : {}),
       ...(disabled ? { disabled } : {}),
       ...(fontStyle ? { 'data-font-style': fontStyle } : {}),
       ...(backgroundColor ? { 'data-background-color': backgroundColor } : {}),
@@ -118,13 +117,13 @@ describe('CustomThemeEditor', () => {
     const textInput = screen.getByTestId('color-input-text')
     fireEvent.change(textInput, { target: { value: '#E8E5E0' } })
     expect(screen.getByTestId('contrast-warning')).toBeTruthy()
-    // AC 1: exact copy, no numeric ratio
+    // Exact copy, no numeric ratio
     expect(screen.getByText('This combination may be hard to read.')).toBeTruthy()
     expect(screen.getByTestId('contrast-warning').textContent).not.toContain(':1')
-    // AC 2: italic styling on warning text
+    // Italic styling on warning text
     const warningText = screen.getByText('This combination may be hard to read.')
     expect(warningText.getAttribute('data-font-style')).toBe('italic')
-    // AC 10: dot element present
+    // Dot element present
     expect(screen.getByTestId('contrast-warning-dot')).toBeTruthy()
   })
 

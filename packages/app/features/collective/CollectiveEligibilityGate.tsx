@@ -77,9 +77,7 @@ export function CollectiveEligibilityGate({
       >
         <Text>Sign in to post.</Text>
         <XStack gap="$2">
-          <ExpandingLineButton onPress={() => router.push('/auth')}>
-            Sign in
-          </ExpandingLineButton>
+          <ExpandingLineButton onPress={() => router.push('/auth')}>Sign in</ExpandingLineButton>
           {cancelButton}
         </XStack>
       </YStack>
@@ -95,6 +93,19 @@ export function CollectiveEligibilityGate({
         data-testid="eligibility-gate-suspended"
       >
         <Text>Posting and reacting are paused for this account.</Text>
+        {/* Advisory link to the suspension detail (expiry + reason) in Settings.
+            Does not change gating — RLS remains authoritative. */}
+        <Text
+          testID="eligibility-gate-suspended-details-link"
+          role="link"
+          cursor="pointer"
+          color="$color11"
+          fontSize="$2"
+          hoverStyle={{ color: '$color' }}
+          onPress={() => router.push('/settings')}
+        >
+          View details in Settings
+        </Text>
         {cancelButton}
       </YStack>
     )
@@ -109,10 +120,12 @@ export function CollectiveEligibilityGate({
         data-testid="eligibility-gate-sync-disabled"
       >
         <Text fontSize="$5">Sync needs to be on to post.</Text>
-        <Text fontSize="$2" color="$color11">
-          The server checks your 500-word streak using only the word counts of your
-          encrypted entries. Your journal content itself stays encrypted end-to-end —
-          even we can't read it.
+        <Text
+          fontSize="$2"
+          color="$color11"
+        >
+          The server checks your 500-word streak using only the word counts of your encrypted
+          entries. Your journal content itself stays encrypted end-to-end — even we can't read it.
         </Text>
         <XStack gap="$2">
           <ExpandingLineButton onPress={() => router.push('/settings')}>
@@ -133,7 +146,10 @@ export function CollectiveEligibilityGate({
         data-testid="eligibility-gate-not-qualified"
       >
         <Text fontSize="$5">Write 500 words today to post to the Collective.</Text>
-        <Text fontSize="$2" color="$color11">
+        <Text
+          fontSize="$2"
+          color="$color11"
+        >
           Your streak in the Journal unlocks posting here.
         </Text>
         <XStack gap="$2">

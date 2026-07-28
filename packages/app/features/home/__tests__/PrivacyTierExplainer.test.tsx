@@ -146,9 +146,7 @@ describe('PrivacyTierExplainer', () => {
         'Your journal stays entirely on this device. Nothing is ever sent to our servers.'
       )
     ).toBeTruthy()
-    expect(
-      screen.getByText('In both sync modes')
-    ).toBeTruthy()
+    expect(screen.getByText('In both sync modes')).toBeTruthy()
     expect(
       screen.getByText(
         'Metadata (word counts, timestamps) is not encrypted and is visible to us. Only journal entry content is encrypted.'

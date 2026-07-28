@@ -1,5 +1,5 @@
 -- t10: Calling delete_my_post on an already-soft-deleted post raises the
--- same ambiguous SQLSTATE 42501. (Story 3.13 client treats this as success.)
+-- same ambiguous SQLSTATE 42501. (The client treats this as success.)
 --
 -- Red phase: FAILS because delete_my_post does not exist yet.
 

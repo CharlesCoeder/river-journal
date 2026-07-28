@@ -6,13 +6,13 @@
  * Renders nothing when shouldShow === false.
  * When visible: calm Newsreader serif body text, dismissible on tap.
  *
- * AC4: mounted as third child of inner YStack gap={96} on HomeScreen,
+ * Mounted as third child of inner YStack gap={96} on HomeScreen,
  * between the date block and the action XStack.
  *
- * AC7: NO modal, dialog, sheet, toast, badge, icon, or animation token.
+ * NO modal, dialog, sheet, toast, badge, icon, or animation token.
  * Pure typography only.
  *
- * AC8: accessibilityRole="button", accessibilityLabel includes dismissal affordance.
+ * accessibilityRole="button", accessibilityLabel includes dismissal affordance.
  */
 // Stub — renders nothing, so tests for the visible state will fail meaningfully.
 // Full implementation will replace this in the green phase.

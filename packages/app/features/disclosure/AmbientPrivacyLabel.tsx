@@ -5,10 +5,10 @@
  * Tapping re-opens the corresponding disclosure in `mode: 'review'` so users can
  * re-read the privacy copy without resetting their acknowledgment timestamp.
  *
- * Consumers (PostComposer, Story 3.9) mount this component ONLY after acknowledgment —
- * the label itself does NOT gate on acknowledgment state (AC #21).
+ * Consumers (PostComposer) mount this component ONLY after acknowledgment —
+ * the label itself does NOT gate on acknowledgment state.
  *
- * Imports: tamagui + the wrapper ThreePostureDisclosure. NO @tanstack/react-query (AC #22).
+ * Imports: tamagui + the wrapper ThreePostureDisclosure. NO @tanstack/react-query.
  */
 
 import React, { useState } from 'react'
@@ -37,7 +37,11 @@ export interface AmbientPrivacyLabelProps {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function AmbientPrivacyLabel({ boundary, provider, onPress: onPressProp }: AmbientPrivacyLabelProps) {
+export function AmbientPrivacyLabel({
+  boundary,
+  provider,
+  onPress: onPressProp,
+}: AmbientPrivacyLabelProps) {
   // Local state: controls review-mode disclosure open/close.
   // When onPressProp is provided (e.g. by PostComposer managing its own disclosure
   // state), the label delegates to it and suppresses its own internal review disclosure.

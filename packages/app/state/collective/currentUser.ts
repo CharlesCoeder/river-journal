@@ -30,6 +30,7 @@ export function useCurrentUserId(): string | null | undefined {
       const { data } = await supabase.auth.getSession()
       return data.session?.user.id ?? null
     },
+    // biome-ignore lint/style/useNumberNamespace: session query intentionally never refetches; kept as the `Infinity` literal to match its sibling session queries
     staleTime: Infinity,
   })
 
@@ -37,10 +38,7 @@ export function useCurrentUserId(): string | null | undefined {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      queryClient.setQueryData<string | null>(
-        SESSION_USER_ID_KEY,
-        session?.user.id ?? null
-      )
+      queryClient.setQueryData<string | null>(SESSION_USER_ID_KEY, session?.user.id ?? null)
     })
 
     return () => {

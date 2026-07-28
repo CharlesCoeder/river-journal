@@ -16,7 +16,7 @@ export interface EditorProps {
   initialContent?: string
   /** When true, dims all paragraphs except the one containing the cursor */
   focusMode?: boolean
-  /** Focus-mode granularity (Story 2.11) — 'sentence' dims non-active sentences */
+  /** Focus-mode granularity — 'sentence' dims non-active sentences */
   focusGranularity?: 'paragraph' | 'sentence'
 }
 

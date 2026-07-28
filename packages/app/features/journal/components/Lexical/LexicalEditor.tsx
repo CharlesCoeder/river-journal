@@ -67,7 +67,10 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <div className={className} style={{ position: 'relative', minHeight: '300px' }}>
+      <div
+        className={className}
+        style={{ position: 'relative', minHeight: '300px' }}
+      >
         <RichTextPlugin
           contentEditable={
             <div style={{ minHeight: '300px' }}>
@@ -120,10 +123,13 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
 
         {/* Focus mode plugin — dims non-active paragraphs when enabled */}
         {!readOnly && (
-          <FocusModeParagraphPlugin focusMode={focusMode} readOnly={readOnly} />
+          <FocusModeParagraphPlugin
+            focusMode={focusMode}
+            readOnly={readOnly}
+          />
         )}
 
-        {/* Per-sentence focus mode (Story 2.11) — structure + styling. No-ops
+        {/* Per-sentence focus mode — structure + styling. No-ops
             unless focusMode is ON and granularity is 'sentence'. */}
         {!readOnly && (
           <>

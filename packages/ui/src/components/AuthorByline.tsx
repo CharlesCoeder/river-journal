@@ -20,9 +20,9 @@ export const TENURE_TIER_LABEL = {
 
 export interface AuthorBylineProps {
   displayName: string
-  postedAt: string                   // ISO-8601 string from RPC `created_at`; formatted locally
+  postedAt: string // ISO-8601 string from RPC `created_at`; formatted locally
   tenureTier?: 30 | 100 | 365 | null // optional; from `your_posts` RPC only
-  deletedDisplay?: boolean           // when true, name slot renders "[deleted]"; tenure suppressed
+  deletedDisplay?: boolean // when true, name slot renders "[deleted]"; tenure suppressed
 }
 
 // ─── Relative time formatter ──────────────────────────────────────────────────
@@ -53,9 +53,7 @@ function formatPostedAt(iso: string): string {
   }
 
   // >= 7 days: short-date
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(
-    new Date(iso)
-  )
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(iso))
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -68,14 +66,12 @@ export function AuthorByline({
 }: AuthorBylineProps) {
   const nameSlot = deletedDisplay ? '[deleted]' : displayName
   const timeStr = formatPostedAt(postedAt)
-  const tenureLabel =
-    !deletedDisplay && tenureTier != null ? TENURE_TIER_LABEL[tenureTier] : null
+  const tenureLabel = !deletedDisplay && tenureTier != null ? TENURE_TIER_LABEL[tenureTier] : null
 
   // Build the a11y label that flattens to a single screen-reader announcement
-  const a11yLabel = [
-    `${nameSlot}, posted ${timeStr}`,
-    tenureLabel ? `, ${tenureLabel}` : '',
-  ].join('')
+  const a11yLabel = [`${nameSlot}, posted ${timeStr}`, tenureLabel ? `, ${tenureLabel}` : ''].join(
+    ''
+  )
 
   return (
     <XStack

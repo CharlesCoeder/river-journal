@@ -2,7 +2,7 @@
 -- capped at 4 rows (LIMIT 4), each carrying only a server-truncated `excerpt`
 -- (NOT a full `body`).
 --
--- Story 3-15 (20260622000000) rewrote the feed: it DROPPED full `body` from the
+-- Migration 20260622000000 rewrote the feed: it DROPPED full `body` from the
 -- return entirely and now emits `excerpt` in BOTH modes. The old preview shape
 -- (1 most-recent full-body row + up to 3 truncated teasers, guarded by a UNION
 -- non-overlap check) no longer exists — every preview row is an excerpt. Top-

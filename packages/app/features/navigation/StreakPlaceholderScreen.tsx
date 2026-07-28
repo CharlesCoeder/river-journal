@@ -22,8 +22,20 @@ export function StreakPlaceholderScreen() {
       $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
     >
       <WordLinkNav variant="browse" />
-      <YStack flex={1} alignItems="center" justifyContent="flex-start" gap="$6" paddingTop="$8">
-        <Text fontFamily="$body" fontSize="$5" color="$color">Your streak</Text>
+      <YStack
+        flex={1}
+        alignItems="center"
+        justifyContent="flex-start"
+        gap="$6"
+        paddingTop="$8"
+      >
+        <Text
+          fontFamily="$body"
+          fontSize="$5"
+          color="$color"
+        >
+          Your streak
+        </Text>
         <GraceDayInventory />
       </YStack>
     </YStack>

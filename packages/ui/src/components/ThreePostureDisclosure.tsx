@@ -119,7 +119,7 @@ function BoundaryADialog({
   //
   // On RN, setAccessibilityFocus() via AccessibilityInfo is deferred — this story's
   // primary surface is web (PostComposer is web-first per Epic 3 D6/D14). The RN focus
-  // path will be added in Story 3.9 or a follow-up when the native composer ships.
+  // path will be added in a follow-up when the native composer ships.
   useEffect(() => {
     if (open && typeof document !== 'undefined') {
       requestAnimationFrame(() => {
@@ -206,7 +206,14 @@ function BoundaryADialog({
               suppress the typecheck error while keeping the correct semantic tag. */}
           <TextAny
             tag="a"
-            accessibilityRole="link"
+            role="link"
+            tabIndex={0}
+            onKeyDown={(e: any) => {
+              if (e.key === 'Enter') {
+                e.preventDefault?.()
+                onViewGuidelines?.()
+              }
+            }}
             fontFamily="$body"
             fontSize="$3"
             color="$stone"

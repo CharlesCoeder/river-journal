@@ -4,7 +4,7 @@
  * MMKV instance (`'obsPersist'` in persistConfig.native.ts) so the two
  * persistence domains stay strictly disjoint and can be cleared independently.
  *
- * Resilience contract (AC #20): getItem returns `undefined` on failure;
+ * Resilience contract: getItem returns `undefined` on failure;
  * setItem / removeItem swallow with `console.warn`. The TanStack persister
  * treats `getItem === undefined` as "no cache to restore."
  */

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Node-transform idempotency + selection preservation (Story 2.11, AC 19).
+// Node-transform idempotency + selection preservation.
 
 import { describe, expect, it } from 'vitest'
 import {
@@ -51,7 +51,7 @@ function countSentenceNodes(editor: LexicalEditor): number {
   return count
 }
 
-describe('node transform idempotency (AC 19)', () => {
+describe('node transform idempotency', () => {
   it('running the transform twice on stable text produces an identical tree', () => {
     const editor = makeEditor()
     editor.update(
@@ -75,7 +75,7 @@ describe('node transform idempotency (AC 19)', () => {
   })
 })
 
-describe('selection preservation across re-partition (AC 19)', () => {
+describe('selection preservation across re-partition', () => {
   it('inserting a sentence boundary keeps the caret block-offset unchanged', () => {
     const editor = makeEditor()
 

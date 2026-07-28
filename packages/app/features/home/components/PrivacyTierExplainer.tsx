@@ -29,8 +29,7 @@ const TIER_CONTENT = {
 const LEARN_MORE_CONTENT = [
   {
     label: 'Local only (no sync)',
-    detail:
-      'Your journal stays entirely on this device. Nothing is ever sent to our servers.',
+    detail: 'Your journal stays entirely on this device. Nothing is ever sent to our servers.',
   },
   {
     label: 'Strict Privacy Mode',
@@ -78,22 +77,53 @@ function TierCard({
       cursor={interactive ? 'pointer' : 'default'}
     >
       <YStack gap="$2">
-        <XStack gap="$2" alignItems="center">
-          <Icon size={20} color={selected ? '$accentColor' : '$color11'} />
-          <Text fontSize="$4" fontFamily="$body" fontWeight="700">
+        <XStack
+          gap="$2"
+          alignItems="center"
+        >
+          <Icon
+            size={20}
+            color={selected ? '$accentColor' : '$color11'}
+          />
+          <Text
+            fontSize="$4"
+            fontFamily="$body"
+            fontWeight="700"
+          >
             {content.title}
           </Text>
         </XStack>
-        <Text fontSize="$2" fontFamily="$body" color="$color11" paddingLeft="$5">
+        <Text
+          fontSize="$2"
+          fontFamily="$body"
+          color="$color11"
+          paddingLeft="$5"
+        >
           {content.subtitle}
         </Text>
-        <YStack gap="$1" paddingLeft="$5">
+        <YStack
+          gap="$1"
+          paddingLeft="$5"
+        >
           {content.bullets.map((bullet) => (
-            <XStack key={bullet} gap="$2" alignItems="flex-start">
-              <Text fontSize="$3" fontFamily="$body" color={bulletColor}>
+            <XStack
+              key={bullet}
+              gap="$2"
+              alignItems="flex-start"
+            >
+              <Text
+                fontSize="$3"
+                fontFamily="$body"
+                color={bulletColor}
+              >
                 •
               </Text>
-              <Text fontSize="$3" fontFamily="$body" color={bulletColor} flexShrink={1}>
+              <Text
+                fontSize="$3"
+                fontFamily="$body"
+                color={bulletColor}
+                flexShrink={1}
+              >
                 {bullet}
               </Text>
             </XStack>
@@ -113,7 +143,7 @@ export function PrivacyTierExplainer({
   selectedMode?: EncryptionMode | null
   onModeSelect?: (mode: EncryptionMode) => void
   showLearnMore?: boolean
-  // Story 4.7 — pass navigation handler when Privacy Center screen exists
+  // Pass a navigation handler when the Privacy Center screen exists
   privacyCenterLink?: () => void
 }) {
   const [learnMoreOpen, setLearnMoreOpen] = useState(false)
@@ -145,7 +175,10 @@ export function PrivacyTierExplainer({
             onPress={() => setLearnMoreOpen((prev) => !prev)}
             alignSelf="flex-start"
           >
-            <Text fontFamily="$body" color="$color10">
+            <Text
+              fontFamily="$body"
+              color="$color10"
+            >
               {learnMoreOpen ? 'Show less' : 'Learn more'}
             </Text>
           </Button>
@@ -162,16 +195,31 @@ export function PrivacyTierExplainer({
                 gap="$3"
                 paddingTop="$2"
               >
-                <Text fontSize="$4" fontFamily="$body" fontWeight="600">
+                <Text
+                  fontSize="$4"
+                  fontFamily="$body"
+                  fontWeight="600"
+                >
                   How your data is handled
                 </Text>
 
                 {LEARN_MORE_CONTENT.map((item) => (
-                  <YStack key={item.label} gap="$1">
-                    <Text fontSize="$3" fontFamily="$body" fontWeight="600">
+                  <YStack
+                    key={item.label}
+                    gap="$1"
+                  >
+                    <Text
+                      fontSize="$3"
+                      fontFamily="$body"
+                      fontWeight="600"
+                    >
                       {item.label}
                     </Text>
-                    <Text fontSize="$3" fontFamily="$body" color="$color11">
+                    <Text
+                      fontSize="$3"
+                      fontFamily="$body"
+                      color="$color11"
+                    >
                       {item.detail}
                     </Text>
                   </YStack>

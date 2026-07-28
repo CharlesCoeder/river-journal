@@ -17,7 +17,11 @@ export const ThemeSwitcher = function ThemeSwitcher() {
   const currentTheme = use$(store$.profile.themeName) ?? 'ink'
 
   return (
-    <YStack gap="$3" alignItems="flex-start" maxWidth="100%">
+    <YStack
+      gap="$3"
+      alignItems="flex-start"
+      maxWidth="100%"
+    >
       {THEME_NAMES.map((name) => (
         <Text
           key={name}

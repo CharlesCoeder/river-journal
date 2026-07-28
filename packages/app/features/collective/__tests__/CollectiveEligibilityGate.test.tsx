@@ -40,26 +40,20 @@ vi.mock('solito/navigation', () => ({
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
   return {
-    Text: ({ children, ...props }: any) =>
-      ReactModule.createElement('span', props, children),
+    Text: ({ children, ...props }: any) => ReactModule.createElement('span', props, children),
     XStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'x', ...props }, children),
     YStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'y', ...props }, children),
     ExpandingLineButton: ({ children, onPress, ...props }: any) =>
-      ReactModule.createElement(
-        'button',
-        { onClick: onPress, ...props },
-        children
-      ),
+      ReactModule.createElement('button', { onClick: onPress, ...props }, children),
   }
 })
 
 import { CollectiveEligibilityGate } from '../CollectiveEligibilityGate'
 
 const CHILD_TESTID = 'gate-child'
-const Child = () =>
-  React.createElement('div', { 'data-testid': CHILD_TESTID }, 'EDITOR')
+const Child = () => React.createElement('div', { 'data-testid': CHILD_TESTID }, 'EDITOR')
 
 afterEach(() => {
   cleanup()
@@ -81,13 +75,7 @@ describe('CollectiveEligibilityGate — eligible branch (children render)', () =
   })
 
   it('renders children when eligible', () => {
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
     expect(screen.getByTestId(CHILD_TESTID)).not.toBeNull()
   })
 })
@@ -104,13 +92,7 @@ describe('CollectiveEligibilityGate — non-eligible branches do NOT render chil
   for (const s of statuses) {
     it(`status="${s}" does NOT render children`, () => {
       mockStatus = s
-      render(
-        React.createElement(
-          CollectiveEligibilityGate,
-          null,
-          React.createElement(Child)
-        )
-      )
+      render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
       expect(screen.queryByTestId(CHILD_TESTID)).toBeNull()
     })
   }
@@ -119,39 +101,19 @@ describe('CollectiveEligibilityGate — non-eligible branches do NOT render chil
 describe('CollectiveEligibilityGate — per-state copy + actions', () => {
   it('unauthenticated renders verbatim "Sign in to post."', () => {
     mockStatus = 'unauthenticated'
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
     expect(screen.getByText('Sign in to post.')).not.toBeNull()
   })
 
   it('suspended renders verbatim suspended copy', () => {
     mockStatus = 'suspended'
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
-    expect(
-      screen.getByText('Posting and reacting are paused for this account.')
-    ).not.toBeNull()
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
+    expect(screen.getByText('Posting and reacting are paused for this account.')).not.toBeNull()
   })
 
   it('sync-disabled renders golden privacy copy', () => {
     mockStatus = 'sync-disabled'
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
     expect(screen.getByText('Sync needs to be on to post.')).not.toBeNull()
     expect(
       screen.getByText(/encrypted entries\. Your journal content itself stays encrypted end-to-end/)
@@ -160,53 +122,27 @@ describe('CollectiveEligibilityGate — per-state copy + actions', () => {
 
   it('sync-disabled "Open Settings" button calls router.push("/settings")', () => {
     mockStatus = 'sync-disabled'
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
     fireEvent.click(screen.getByText('Open Settings'))
     expect(mockRouterPush).toHaveBeenCalledWith('/settings')
   })
 
   it('not-qualified renders the 500-words copy', () => {
     mockStatus = 'not-qualified'
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
-    expect(
-      screen.getByText('Write 500 words today to post to the Collective.')
-    ).not.toBeNull()
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
+    expect(screen.getByText('Write 500 words today to post to the Collective.')).not.toBeNull()
   })
 
   it('not-qualified "Open Journal" button calls router.push("/journal")', () => {
     mockStatus = 'not-qualified'
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
     fireEvent.click(screen.getByText('Open Journal'))
     expect(mockRouterPush).toHaveBeenCalledWith('/journal')
   })
 
   it('unauthenticated "Sign in" button calls router.push("/auth")', () => {
     mockStatus = 'unauthenticated'
-    render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        null,
-        React.createElement(Child)
-      )
-    )
+    render(React.createElement(CollectiveEligibilityGate, null, React.createElement(Child)))
     fireEvent.click(screen.getByText('Sign in'))
     expect(mockRouterPush).toHaveBeenCalledWith('/auth')
   })
@@ -226,10 +162,12 @@ describe('CollectiveEligibilityGate — compact variant Cancel affordance', () =
       mockStatus = s
       const onCancel = vi.fn()
       render(
-        React.createElement(
-          CollectiveEligibilityGate,
-          { variant: 'compact' as const, onCancel, children: React.createElement(Child) }
-        )
+        React.createElement(CollectiveEligibilityGate, {
+          variant: 'compact' as const,
+          onCancel,
+          // biome-ignore lint/correctness/noChildrenProp: children is a required prop of CollectiveEligibilityGateProps; the createElement children-arg form fails typecheck
+          children: React.createElement(Child),
+        })
       )
       const btn = screen.getByText('Cancel')
       expect(btn).not.toBeNull()
@@ -241,10 +179,11 @@ describe('CollectiveEligibilityGate — compact variant Cancel affordance', () =
   it('full variant: NO Cancel button rendered (back-button on the route handles dismissal)', () => {
     mockStatus = 'sync-disabled'
     render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        { variant: 'full' as const, children: React.createElement(Child) }
-      )
+      React.createElement(CollectiveEligibilityGate, {
+        variant: 'full' as const,
+        // biome-ignore lint/correctness/noChildrenProp: children is a required prop of CollectiveEligibilityGateProps; the createElement children-arg form fails typecheck
+        children: React.createElement(Child),
+      })
     )
     expect(screen.queryByText('Cancel')).toBeNull()
   })
@@ -252,10 +191,11 @@ describe('CollectiveEligibilityGate — compact variant Cancel affordance', () =
   it('compact without onCancel prop: NO Cancel button rendered', () => {
     mockStatus = 'sync-disabled'
     render(
-      React.createElement(
-        CollectiveEligibilityGate,
-        { variant: 'compact' as const, children: React.createElement(Child) }
-      )
+      React.createElement(CollectiveEligibilityGate, {
+        variant: 'compact' as const,
+        // biome-ignore lint/correctness/noChildrenProp: children is a required prop of CollectiveEligibilityGateProps; the createElement children-arg form fails typecheck
+        children: React.createElement(Child),
+      })
     )
     expect(screen.queryByText('Cancel')).toBeNull()
   })

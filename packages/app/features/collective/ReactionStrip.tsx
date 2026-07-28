@@ -12,6 +12,11 @@ import { useToggleReaction } from 'app/state/collective/mutations'
 import { usePostReactions } from 'app/state/collective/reactions'
 import type { ReactionKind } from 'app/state/collective/types'
 import { generateUUID } from 'app/utils/uuid'
+// Telemetry carve-out (mirrors PostComposer's store$ read): this is a metadata
+// capture call site, not observable state. store$ is the app store object, not
+// the @legendapp/state package the D7 boundary rule prohibits.
+import { store$ } from 'app/state/store'
+import { captureEvent } from 'app/utils/telemetry/posthog'
 
 // ─── Icon registry ────────────────────────────────────────────────────────────
 
@@ -78,6 +83,13 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
   function handlePress(kind: ReactionKind) {
     if (disabled) return
 
+    // Reaction metric — the reaction kind is an enum, never user content.
+    captureEvent('collective_reaction_toggled', {
+      user_id: userId!,
+      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+      reaction_kind: kind,
+    })
+
     const existingId = userReactions[kind]
     if (existingId !== null) {
       // toggle: remove
@@ -89,7 +101,11 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
   }
 
   return (
-    <XStack gap="$2" role="group" aria-label="Reactions">
+    <XStack
+      gap="$2"
+      role="group"
+      aria-label="Reactions"
+    >
       {REACTIONS.map(({ kind, Icon, label }) => {
         const isReacted = userReactions[kind] !== null
         const count = counts[kind] ?? 0
@@ -132,9 +148,15 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
                   }
             }
           >
-            <Icon size={16} color={iconColor} />
+            <Icon
+              size={16}
+              color={iconColor}
+            />
             {count > 0 ? (
-              <Text fontSize="$1" color="$color9">
+              <Text
+                fontSize="$1"
+                color="$color9"
+              >
                 {count}
               </Text>
             ) : null}

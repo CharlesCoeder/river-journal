@@ -10,14 +10,16 @@ import { cleanup, render, screen } from '@testing-library/react'
 // TODAY matches the frozen getTodayJournalDayString mock below.
 const TODAY = '2026-05-04'
 
-const makeStreakState = (overrides: Partial<{
-  currentStreak: number
-  lastQualifyingDate: string | null
-  longestStreak: number
-  unlockTokensEarned: number
-  unlockedThemes: string[]
-  nextUnlockMilestone: number
-}> = {}) => ({
+const makeStreakState = (
+  overrides: Partial<{
+    currentStreak: number
+    lastQualifyingDate: string | null
+    longestStreak: number
+    unlockTokensEarned: number
+    unlockedThemes: string[]
+    nextUnlockMilestone: number
+  }> = {}
+) => ({
   currentStreak: 0,
   lastQualifyingDate: null,
   longestStreak: 0,
@@ -76,7 +78,20 @@ vi.mock('@my/ui', async () => {
     return mapped
   }
 
-  const Text = ({ children, onPress, onHoverIn, onHoverOut, onPressIn, onPressOut, testID, accessibilityRole, accessibilityLabel, transition, x, ...props }: any) =>
+  const Text = ({
+    children,
+    onPress,
+    onHoverIn,
+    onHoverOut,
+    onPressIn,
+    onPressOut,
+    testID,
+    accessibilityRole,
+    accessibilityLabel,
+    transition,
+    x,
+    ...props
+  }: any) =>
     ReactModule.createElement(
       'span',
       {
@@ -163,10 +178,25 @@ vi.mock('app/features/home/components/KeyringPrompt', () => ({
   KeyringPrompt: () => React.createElement('div', { 'data-testid': 'keyring-prompt' }, null),
 }))
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
-  OrphanFlowsDialog: () => React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+  OrphanFlowsDialog: () =>
+    React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+}))
+vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
+  ModerationReceiptGate: () =>
+    React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
+}))
+vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
+  StreakReminderPermissionGate: () =>
+    React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
+}))
+
+vi.mock('app/features/notifications/InAppReminderGate', () => ({
+  InAppReminderGate: () =>
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
 }))
 vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
-  EncryptionModeDialog: () => React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
+  EncryptionModeDialog: () =>
+    React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
 }))
 vi.mock('app/features/navigation/WordLinkNav', () => ({
   WordLinkNav: () => React.createElement('nav', { 'data-testid': 'word-link-nav' }, null),
@@ -228,7 +258,7 @@ describe('HomeScreen — StreakChip receives live currentStreak from streak$ vie
 // ─────────────────────────────────────────────────────────────────────────────
 // SC2 — StreakChip receives state="active" when lastQualifyingDate equals today
 // ─────────────────────────────────────────────────────────────────────────────
-describe('HomeScreen — StreakChip state prop: active when today\'s 500 words crossed', () => {
+describe("HomeScreen — StreakChip state prop: active when today's 500 words crossed", () => {
   it('SC2: chip receives state="active" when lastQualifyingDate equals today', () => {
     use$ReturnValue = makeStreakState({ currentStreak: 5, lastQualifyingDate: TODAY })
     render(React.createElement(HomeScreen))

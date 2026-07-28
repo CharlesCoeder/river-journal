@@ -60,7 +60,7 @@ import { WordCounter } from '../WordCounter'
 afterEach(cleanup)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C1 — Renders count + correct unit ("word" vs "words") (AC11 C1)
+// C1 — Renders count + correct unit ("word" vs "words")
 // ─────────────────────────────────────────────────────────────────────────────
 describe('WordCounter renders count with correct singular/plural unit (C1)', () => {
   it('renders "0 words" when count={0}', () => {
@@ -90,7 +90,7 @@ describe('WordCounter renders count with correct singular/plural unit (C1)', () 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C2 — Color is $color8 (stone) when count < 450 (AC11 C2)
+// C2 — Color is $color8 (stone) when count < 450
 // ─────────────────────────────────────────────────────────────────────────────
 describe('WordCounter uses stone color ($color8) when count is below 450 (C2)', () => {
   it('has data-color="$color8" when count={0}', () => {
@@ -119,7 +119,7 @@ describe('WordCounter uses stone color ($color8) when count is below 450 (C2)', 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C3 — Color is $color (text) when count >= 450 (AC11 C3)
+// C3 — Color is $color (text) when count >= 450
 // ─────────────────────────────────────────────────────────────────────────────
 describe('WordCounter uses text color ($color) when count is at or above 450 (C3)', () => {
   it('has data-color="$color" when count={450} — exact threshold', () => {
@@ -148,7 +148,7 @@ describe('WordCounter uses text color ($color) when count is at or above 450 (C3
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C4 — Color reverts to stone when count drops back below 450 (AC11 C4)
+// C4 — Color reverts to stone when count drops back below 450
 // ─────────────────────────────────────────────────────────────────────────────
 describe('WordCounter color reverts to stone when count drops below 450 — pure function (C4)', () => {
   it('switches from $color to $color8 when count drops from 500 to 449', () => {
@@ -175,7 +175,7 @@ describe('WordCounter color reverts to stone when count drops below 450 — pure
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C5 — No animation/transition/enterStyle/exitStyle props (AC11 C5)
+// C5 — No animation/transition/enterStyle/exitStyle props
 // Mirrors StreakChip.test.tsx:30-34 pattern exactly.
 // ─────────────────────────────────────────────────────────────────────────────
 describe('WordCounter has no animation props — static Text by design (C5)', () => {
@@ -205,7 +205,7 @@ describe('WordCounter has no animation props — static Text by design (C5)', ()
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C6 — Accessibility props (AC11 C6)
+// C6 — Accessibility props
 // ─────────────────────────────────────────────────────────────────────────────
 describe('WordCounter accessibility attributes (C6)', () => {
   it('has aria-live="polite" on the rendered element', () => {

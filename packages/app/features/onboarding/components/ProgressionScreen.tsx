@@ -1,21 +1,20 @@
 import { ExpandingLineButton, XStack } from '@my/ui'
 import { OnboardingScreenLayout, OnboardingSkipButton } from './OnboardingScreenLayout'
 
-// Screen 3 — Progression. Primary CTA is Get started (completes the sequence
-// and drops the user to home). Skip also routes home but reports a distinct
-// reason so completion vs skip can be persisted separately downstream.
+// Screen 3 — Progression. Primary CTA is Continue (advances to the consent
+// screen, which is the final step). Skip routes home from here as elsewhere.
 
 export interface ProgressionScreenProps {
   headlineId: string
   transition: string
-  onGetStarted: () => void
+  onContinue: () => void
   onSkip: () => void
 }
 
 export function ProgressionScreen({
   headlineId,
   transition,
-  onGetStarted,
+  onContinue,
   onSkip,
 }: ProgressionScreenProps) {
   return (
@@ -32,10 +31,10 @@ export function ProgressionScreen({
       >
         <ExpandingLineButton
           size="cta"
-          onPress={onGetStarted}
-          accessibilityLabel="Get started"
+          onPress={onContinue}
+          accessibilityLabel="Continue"
         >
-          Get started
+          Continue
         </ExpandingLineButton>
         <OnboardingSkipButton onPress={onSkip} />
       </XStack>

@@ -29,6 +29,8 @@ import {
   setFocusMode,
   hasReachedAutosaveCheckpoint,
 } from 'app/state/store'
+import { captureEvent } from 'app/utils/telemetry/posthog'
+import { getWordCountBucket } from 'app/utils/telemetry/eventAllowlist'
 import { use$ } from '@legendapp/state/react'
 
 export function JournalScreen() {
@@ -38,9 +40,9 @@ export function JournalScreen() {
   const reduceMotion = useReducedMotion()
   useTrackKeyboardHeight()
 
-  // Focus mode — read with ?? false (acceptable at consumer site per story Dev Notes)
+  // Focus mode — read with ?? false (acceptable at consumer site per story design notes)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
-  // Focus granularity (Story 2.11) — read with ?? 'paragraph' (UI-only preference)
+  // Focus granularity — read with ?? 'paragraph' (UI-only preference)
   const focusGranularity = use$(store$.profile?.editor?.focusGranularity) ?? 'paragraph'
 
   const handleBackToHome = () => {
@@ -50,6 +52,14 @@ export function JournalScreen() {
 
   const handleSaveFlow = () => {
     saveActiveFlowSession()
+    // Completion metric — the raw word count is bucketed before it leaves the
+    // device; only the bucket string is ever emitted.
+    const savedWordCount = store$.lastSavedFlow?.peek?.()?.wordCount ?? 0
+    captureEvent('flow_completed', {
+      user_id: store$.session?.userId?.peek?.() ?? null,
+      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+      word_count_bucket: getWordCountBucket(savedWordCount),
+    })
     setShowExitConfirmDialog(false)
     hidePersistentEditor()
     router.replace('/journal/celebration')
@@ -130,7 +140,10 @@ export function JournalScreen() {
               $lg={{ height: '$12' }}
               onLayout={handleHeaderLayout}
             />
-            <Editor focusMode={focusMode} focusGranularity={focusGranularity} />
+            <Editor
+              focusMode={focusMode}
+              focusGranularity={focusGranularity}
+            />
           </YStack>
         )}
       </AnimatePresence>
@@ -165,7 +178,10 @@ export function JournalScreen() {
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <XStack alignItems="center" gap="$3">
+                <XStack
+                  alignItems="center"
+                  gap="$3"
+                >
                   <ExpandingLineButton
                     size="default"
                     onPress={() => setFocusMode(!focusMode)}

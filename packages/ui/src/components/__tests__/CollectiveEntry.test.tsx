@@ -47,9 +47,9 @@ import { CollectiveEntry } from '../CollectiveEntry'
 afterEach(cleanup)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Text rendering (AC3)
+// 1. Text rendering
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CollectiveEntry renders uppercase COLLECTIVE text (AC3)', () => {
+describe('CollectiveEntry renders uppercase COLLECTIVE text', () => {
   it('renders text "COLLECTIVE"', () => {
     render(React.createElement(CollectiveEntry, { onPress: vi.fn() }))
     expect(screen.getByText('COLLECTIVE')).toBeTruthy()
@@ -63,9 +63,9 @@ describe('CollectiveEntry renders uppercase COLLECTIVE text (AC3)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. onPress prop — required, invoked on press (AC3, AC7)
+// 2. onPress prop — required, invoked on press
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CollectiveEntry onPress invocation (AC3)', () => {
+describe('CollectiveEntry onPress invocation', () => {
   it('calls onPress when the element is pressed/clicked', () => {
     const onPressSpy = vi.fn()
     render(React.createElement(CollectiveEntry, { onPress: onPressSpy }))
@@ -96,9 +96,9 @@ describe('CollectiveEntry onPress invocation (AC3)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Accessibility — dim vs lit state (AC6)
+// 3. Accessibility — dim vs lit state
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CollectiveEntry accessibility — dim state (AC6)', () => {
+describe('CollectiveEntry accessibility — dim state', () => {
   it('has accessibilityLabel "Collective, locked" in default (dim) state', () => {
     render(React.createElement(CollectiveEntry, { onPress: vi.fn() }))
     const el = screen.getByText('COLLECTIVE')
@@ -111,7 +111,7 @@ describe('CollectiveEntry accessibility — dim state (AC6)', () => {
     expect(el.getAttribute('aria-label')).toBe('Collective, locked')
   })
 
-  it('has accessibilityRole="button" (interactive element) (AC6)', () => {
+  it('has accessibilityRole="button" (interactive element)', () => {
     render(React.createElement(CollectiveEntry, { onPress: vi.fn() }))
     const el = screen.getByText('COLLECTIVE')
     expect(el.getAttribute('role')).toBe('button')
@@ -123,11 +123,11 @@ describe('CollectiveEntry accessibility — dim state (AC6)', () => {
   })
 })
 
-describe('CollectiveEntry accessibility — lit state (AC6)', () => {
+describe('CollectiveEntry accessibility — lit state', () => {
   it('has accessibilityLabel "Collective" (no comma, no "locked") when state="lit"', () => {
     render(React.createElement(CollectiveEntry, { state: 'lit', onPress: vi.fn() }))
     const el = screen.getByText('COLLECTIVE')
-    // In lit state, "locked" qualifier is absent per AC6 spec
+    // In lit state, "locked" qualifier is absent per spec
     expect(el.getAttribute('aria-label')).toBe('Collective')
   })
 
@@ -145,9 +145,9 @@ describe('CollectiveEntry accessibility — lit state (AC6)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. No animation / transition props (AC5)
+// 4. No animation / transition props
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CollectiveEntry has no animation props — static by design (AC5)', () => {
+describe('CollectiveEntry has no animation props — static by design', () => {
   it('rendered element has no data-animation attribute', () => {
     render(React.createElement(CollectiveEntry, { onPress: vi.fn() }))
     const el = screen.getByText('COLLECTIVE')
@@ -174,9 +174,9 @@ describe('CollectiveEntry has no animation props — static by design (AC5)', ()
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. No router import — purely presentational component (AC3 package boundary)
+// 5. No router import — purely presentational component (package boundary)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('CollectiveEntry has no internal router dependency (AC3 package boundary)', () => {
+describe('CollectiveEntry has no internal router dependency (package boundary)', () => {
   it('does not import solito — no useRouter call — onPress is the sole navigation contract', async () => {
     // Verify that the CollectiveEntry module source does not reference solito.
     // This is a static assertion: if the import existed, our test environment
@@ -186,24 +186,18 @@ describe('CollectiveEntry has no internal router dependency (AC3 package boundar
     // The fact that this test file has NO vi.mock('solito/navigation') and the
     // import above succeeds without error is the proof. We additionally read the
     // module source as a belt-and-suspenders check.
-    const fs = await import('fs')
-    const path = await import('path')
-    const componentPath = path.resolve(
-      __dirname,
-      '../CollectiveEntry.tsx'
-    )
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const componentPath = path.resolve(__dirname, '../CollectiveEntry.tsx')
     const source = fs.readFileSync(componentPath, 'utf-8')
     expect(source).not.toContain('solito')
     expect(source).not.toContain('useRouter')
   })
 
   it('does not import from @my/ui (avoids circular dep — imports from tamagui directly)', async () => {
-    const fs = await import('fs')
-    const path = await import('path')
-    const componentPath = path.resolve(
-      __dirname,
-      '../CollectiveEntry.tsx'
-    )
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const componentPath = path.resolve(__dirname, '../CollectiveEntry.tsx')
     const source = fs.readFileSync(componentPath, 'utf-8')
     expect(source).not.toContain("from '@my/ui'")
   })

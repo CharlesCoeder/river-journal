@@ -28,7 +28,14 @@ export function NavigationShell({ currentRoute, children }: NavigationShellProps
   const showLabels = media.lg ?? false // 1024px+ (media keys are optional under the index signature)
 
   if (showSidebar) {
-    return <SidebarLayout currentRoute={currentRoute} showLabels={showLabels}>{children}</SidebarLayout>
+    return (
+      <SidebarLayout
+        currentRoute={currentRoute}
+        showLabels={showLabels}
+      >
+        {children}
+      </SidebarLayout>
+    )
   }
 
   return <BottomTabLayout currentRoute={currentRoute}>{children}</BottomTabLayout>
@@ -50,7 +57,10 @@ function SidebarLayout({
   const router = useRouter()
 
   return (
-    <XStack flex={1} minHeight="100vh">
+    <XStack
+      flex={1}
+      minHeight="100vh"
+    >
       {/* Sidebar */}
       <YStack
         width={showLabels ? 200 : 64}
@@ -78,9 +88,15 @@ function SidebarLayout({
                 padding="$2"
               >
                 {collapsed ? (
-                  <PanelLeft size={18} color="$color9" />
+                  <PanelLeft
+                    size={18}
+                    color="$color9"
+                  />
                 ) : (
-                  <PanelLeftClose size={18} color="$color9" />
+                  <PanelLeftClose
+                    size={18}
+                    color="$color9"
+                  />
                 )}
               </YStack>
             </XStack>
@@ -125,7 +141,10 @@ function SidebarLayout({
       </YStack>
 
       {/* Content */}
-      <YStack flex={1} backgroundColor="$background">
+      <YStack
+        flex={1}
+        backgroundColor="$background"
+      >
         {children}
       </YStack>
     </XStack>
@@ -144,11 +163,12 @@ function BottomTabLayout({
   const router = useRouter()
 
   return (
-    <YStack flex={1} minHeight="100vh">
+    <YStack
+      flex={1}
+      minHeight="100vh"
+    >
       {/* Content */}
-      <YStack flex={1}>
-        {children}
-      </YStack>
+      <YStack flex={1}>{children}</YStack>
 
       {/* Bottom tab bar */}
       <XStack
@@ -176,7 +196,10 @@ function BottomTabLayout({
               paddingHorizontal="$3"
               paddingVertical="$1"
             >
-              <Icon size={20} color={isActive ? '$color' : '$color9'} />
+              <Icon
+                size={20}
+                color={isActive ? '$color' : '$color9'}
+              />
               <Text
                 fontSize={11}
                 fontFamily="$body"

@@ -245,6 +245,111 @@ export type Database = {
           },
         ]
       }
+      moderation_actions: {
+        Row: {
+          action_type: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          note: string | null
+          reason: string | null
+          target_post_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          note?: string | null
+          reason?: string | null
+          target_post_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          note?: string | null
+          reason?: string | null
+          target_post_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'moderation_actions_actor_user_id_fkey'
+            columns: ['actor_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'moderation_actions_target_post_id_fkey'
+            columns: ['target_post_id']
+            isOneToOne: false
+            referencedRelation: 'collective_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'moderation_actions_target_user_id_fkey'
+            columns: ['target_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      subscription_receipts: {
+        Row: {
+          created_at: string
+          current_period_end: string
+          id: string
+          last_validated_at: string
+          provider: string
+          provider_subscription_id: string
+          raw_receipt: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end: string
+          id?: string
+          last_validated_at?: string
+          provider: string
+          provider_subscription_id: string
+          raw_receipt?: Json | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string
+          id?: string
+          last_validated_at?: string
+          provider?: string
+          provider_subscription_id?: string
+          raw_receipt?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'subscription_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       trusted_browsers: {
         Row: {
           created_at: string
@@ -274,6 +379,42 @@ export type Database = {
           {
             foreignKeyName: 'trusted_browsers_user_id_fkey'
             columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      user_blocks: {
+        Row: {
+          blocked_user_id: string
+          blocker_user_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_user_id: string
+          blocker_user_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_user_id?: string
+          blocker_user_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_blocks_blocker_user_id_fkey'
+            columns: ['blocker_user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'user_blocks_blocked_user_id_fkey'
+            columns: ['blocked_user_id']
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']
@@ -321,6 +462,88 @@ export type Database = {
           },
         ]
       }
+      user_push_tokens: {
+        Row: {
+          created_at: string
+          device_label: string | null
+          expo_push_token: string
+          id: string
+          is_deleted: boolean
+          last_used_at: string
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_label?: string | null
+          expo_push_token: string
+          id: string
+          is_deleted?: boolean
+          last_used_at?: string
+          platform: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_label?: string | null
+          expo_push_token?: string
+          id?: string
+          is_deleted?: boolean
+          last_used_at?: string
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_push_tokens_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      user_suspensions: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          kind: string
+          reason: string | null
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          kind: string
+          reason?: string | null
+          starts_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          kind?: string
+          reason?: string | null
+          starts_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_suspensions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       /**
        * users.preferences JSONB documented shape (client-known keys; server tolerates extra):
        *   {
@@ -331,6 +554,19 @@ export type Database = {
        *     }
        *     collective_show_tenure_tier?: boolean   // Default false; when true, AuthorByline displays tenure tier in feed/preview
        *     locallyHiddenPosts?: string[]   // post ids the local user has hidden via report
+       *     moderationReceipts?: { [receiptId: string]: { acknowledged_at: string } }   // in-app moderation receipt acks
+       *     reminders?: {                   // notification-reminder prefs (all fields optional)
+       *       streak?: {
+       *         enabled?: boolean
+       *         local_time?: string                 // 'HH:mm' local; default handled by the reminder-settings surface
+       *         last_local_offset_minutes?: number   // written by the reminder-settings surface; used by the streak cron
+       *         permissionLastDeniedAt?: string      // ISO; OS-deny cooldown
+       *         permissionPromptSeenAt?: string      // ISO; one-time in-app ask answered
+       *       }
+       *       replies?: { enabled?: boolean }        // reserved (reply notifications)
+       *       moderation?: { enabled?: boolean }     // reserved (moderation notifications)
+       *     }
+       *     feature_flags?: { external_billing_link_enabled?: boolean }   // UI-surface control only; server gates paid features via subscription_tier
        *     // ...other client-extensible keys (e.g. focusMode is local-only on UserProfile, NOT server-persisted today)
        *   }
        *
@@ -350,6 +586,7 @@ export type Database = {
           id: string
           managed_encryption_key: string | null
           preferences: Json
+          subscription_tier: Database['public']['Enums']['subscription_tier']
           timezone: string
           updated_at: string
         }
@@ -362,6 +599,7 @@ export type Database = {
           id: string
           managed_encryption_key?: string | null
           preferences?: Json
+          subscription_tier?: Database['public']['Enums']['subscription_tier']
           timezone?: string
           updated_at?: string
         }
@@ -374,6 +612,7 @@ export type Database = {
           id?: string
           managed_encryption_key?: string | null
           preferences?: Json
+          subscription_tier?: Database['public']['Enums']['subscription_tier']
           timezone?: string
           updated_at?: string
         }
@@ -384,6 +623,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_moderation_note: {
+        Args: { note: string; target_post_id?: string | null; target_user_id?: string | null }
+        Returns: undefined
+      }
       bootstrap_e2e_encryption: {
         Args: { p_salt: string; p_verifier: string }
         Returns: {
@@ -418,6 +661,74 @@ export type Database = {
           // Json) so the state layer gets a typed tally without a coercion shim.
           reactions: { [key: string]: number }
           mode: 'full' | 'preview'
+        }[]
+      }
+      collective_moderation_queue: {
+        Args: { page_size: number }
+        Returns: {
+          post_id: string
+          author_user_id: string | null
+          title: string | null
+          body: string
+          post_created_at: string
+          is_removed: boolean
+          removed_at: string | null
+          removed_reason: string | null
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          flag_count: number
+          // A queue row always has >= 1 pending report, so in practice these
+          // reflect the newest pending report and are non-null; typed nullable
+          // to stay total for the degenerate empty-reports shape.
+          latest_report_reason: string | null
+          latest_report_note: string | null
+          latest_report_at: string | null
+          // Pending reports for the post, newest first. Privacy: NEVER carries
+          // reporter_user_id (re-identification side-channel).
+          reports: { id: string; reason_code: string; note: string | null; created_at: string }[]
+        }[]
+      }
+      collective_export_page: {
+        Args: { cursor: string | null; cursor_id?: string | null; page_size?: number }
+        Returns: {
+          id: string
+          user_id: string
+          parent_post_id: string | null
+          title: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          is_user_deleted: boolean
+          user_deleted_at: string | null
+          removed_reason: string | null
+          removed_at: string | null
+          reaction_count: number
+          descendant_count: number
+        }[]
+      }
+      collective_my_removed_posts: {
+        Args: { max_rows?: number }
+        Returns: {
+          id: string
+          parent_post_id: string | null
+          created_at: string
+          removed_reason: string | null
+          removed_at: string
+        }[]
+      }
+      collective_post_admin_detail: {
+        Args: { target_post_id: string }
+        Returns: {
+          post_id: string
+          author_user_id: string | null
+          title: string | null
+          body: string
+          created_at: string
+          is_removed: boolean
+          removed_at: string | null
+          removed_reason: string | null
+          is_user_deleted: boolean
+          user_deleted_at: string | null
         }[]
       }
       collective_thread_page: {
@@ -475,10 +786,29 @@ export type Database = {
       delete_my_post: { Args: { post_id: string }; Returns: undefined }
       is_active_suspension: { Args: { uid: string; kind_param: string }; Returns: boolean }
       is_eligible_to_post: { Args: Record<string, never>; Returns: boolean }
+      reinstate_post: {
+        Args: { target_post_id: string; reason?: string | null }
+        Returns: undefined
+      }
+      remove_post: {
+        Args: { target_post_id: string; reason_code: string; custom_note?: string | null }
+        Returns: undefined
+      }
+      suspend_user: {
+        Args: {
+          target_user_id: string
+          kind: string
+          duration_days: number
+          reason?: string | null
+        }
+        Returns: undefined
+      }
+      unread_replies_for_user: { Args: { since: string }; Returns: number }
       user_has_password: { Args: never; Returns: boolean }
     }
     Enums: {
       encryption_mode: 'e2e' | 'managed'
+      subscription_tier: 'free' | 'paid_monthly' | 'paid_yearly'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -608,6 +938,7 @@ export const Constants = {
   public: {
     Enums: {
       encryption_mode: ['e2e', 'managed'],
+      subscription_tier: ['free', 'paid_monthly', 'paid_yearly'],
     },
   },
 } as const

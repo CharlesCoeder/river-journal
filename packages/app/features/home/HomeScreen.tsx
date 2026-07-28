@@ -1,7 +1,18 @@
-import { AnimatePresence, YStack, Text, XStack, ScrollView, View, useReducedMotion, StreakChip, CollectiveEntry } from '@my/ui'
+import {
+  AnimatePresence,
+  YStack,
+  Text,
+  XStack,
+  ScrollView,
+  View,
+  useReducedMotion,
+  StreakChip,
+  CollectiveEntry,
+} from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
+import { captureEvent } from 'app/utils/telemetry/posthog'
 import { isSyncReady$ } from 'app/state/syncConfig'
 import { pendingCollectiveReturn$ } from 'app/state/authReturn'
 import type { StreakState } from 'app/state/streak'
@@ -10,10 +21,17 @@ import { EncryptionModeDialog } from 'app/features/home/components/EncryptionMod
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
+import { ModerationReceiptGate } from 'app/features/moderation-receipts/ModerationReceiptGate'
+import { StreakReminderPermissionGate } from 'app/features/notifications/StreakReminderPermissionGate'
+import { InAppReminderGate } from 'app/features/notifications/InAppReminderGate'
+import { refreshReminderOffsetOnAppOpen } from 'app/features/notifications/reminderPreferences'
 import { useToday } from 'app/state/today'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
-import { COLLECTIVE_DEV_ROUTE, isCollectiveDevEnabled } from 'app/features/collective/isCollectiveDevEnabled'
+import {
+  COLLECTIVE_DEV_ROUTE,
+  isCollectiveDevEnabled,
+} from 'app/features/collective/isCollectiveDevEnabled'
 
 export function HomeScreen() {
   const router = useRouter()
@@ -29,6 +47,19 @@ export function HomeScreen() {
   const { shouldShow: showLapsed, dismiss: dismissLapsed } = useLapsedPrompt()
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const isSyncReady = use$(isSyncReady$)
+
+  // Keep the stored local UTC offset current once per app open, so a user who
+  // travelled or crossed a DST boundary between sessions still fires their
+  // streak reminder in their real local window. Guarded on an authenticated
+  // user; the helper is itself a null-safe no-op when reminders are disabled or
+  // the offset is unchanged. Home is the guaranteed post-auth landing surface on
+  // every platform, so it is the natural once-per-open mount point.
+  // Mount-once (empty dep list is deliberate): this is an app-open refresh, not
+  // a reaction to auth-state changes within a session.
+  useEffect(() => {
+    if (!isAuthenticated) return
+    refreshReminderOffsetOnAppOpen()
+  }, [])
 
   // Post-auth return-to-Collective forwarding. The account gate records a
   // persisted pending marker, then auth lands back on home (as always) so the
@@ -52,6 +83,11 @@ export function HomeScreen() {
   })
 
   const handleBeginFlow = () => {
+    // Session-begin metric — the reliable, deduped start point (metadata only).
+    captureEvent('flow_started', {
+      user_id: store$.session?.userId?.peek?.() ?? null,
+      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+    })
     if (showLapsed) dismissLapsed()
     router.push('/journal')
   }
@@ -89,7 +125,9 @@ export function HomeScreen() {
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
-        onScroll={() => { if (showLapsed) dismissLapsed() }}
+        onScroll={() => {
+          if (showLapsed) dismissLapsed()
+        }}
         scrollEventThrottle={1000}
         testID="home-scroll-view"
       >
@@ -186,6 +224,22 @@ export function HomeScreen() {
         <OrphanFlowsDialog />
       </ScrollView>
       <EncryptionModeDialog />
+      {/* Post-auth moderation receipts — self-gates on auth/queue, renders null
+          when there's nothing to show. Mounted here (the guaranteed post-auth
+          landing surface), not in the provider tree, so it never renders pre-auth. */}
+      <ModerationReceiptGate />
+      {/* First-streak-day push permission prompt — mobile only, once-ever.
+          Self-gates on platform/streak/seen/token/permission; renders null on
+          web/desktop and whenever the trigger condition is not met. Mounted
+          here (the post-CelebrationScreen-handoff landing surface) so it
+          re-evaluates on every home visit. */}
+      <StreakReminderPermissionGate />
+      {/* Web/desktop in-app reminder card — the parity backstop for OS push on
+          those platforms. Self-gates on platform (web/desktop only), auth, and
+          whether any reminder category is pending; renders null on mobile and
+          whenever nothing is pending. Mounted here so it re-evaluates on every
+          home landing. */}
+      <InAppReminderGate />
     </YStack>
   )
 }
@@ -238,7 +292,10 @@ function HomeStreakChipSlot() {
       top="$4"
       right="$4"
     >
-      <StreakChip dayCount={currentStreak} state={state} />
+      <StreakChip
+        dayCount={currentStreak}
+        state={state}
+      />
     </View>
   )
 }
@@ -251,4 +308,3 @@ function HomeCollectiveEntrySlot({ onPress }: { onPress: () => void }) {
     </View>
   )
 }
-

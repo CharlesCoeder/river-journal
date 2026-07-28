@@ -8,13 +8,13 @@
  *    microcopy + Visit, optional UnlockNotification, Done dismiss.
  *  - Quieter variant: word count only, auto-dismisses ~2s or on tap.
  *
- * Focus trap note (AC 13): this is a full-page route, not an overlay modal.
+ * Focus trap note: this is a full-page route, not an overlay modal.
  * There is no underlying page content for focus to leak into — the browser's
- * natural tab loop within the route body satisfies the intent of UX-DR52.
+ * natural tab loop within the route body satisfies the intent.
  * If CelebrationScreen is ever converted to a Tamagui Dialog overlay, add the
  * trap at that point — Tamagui's Dialog provides it built-in.
  *
- * Focus return on dismiss (AC 13): router.push(...) replaces the route;
+ * Focus return on dismiss: router.push(...) replaces the route;
  * the browser manages focus restoration as part of the page lifecycle.
  * No explicit previousFocus.focus() is needed for route-based navigation.
  */
@@ -41,6 +41,7 @@ import {
   markUnlockSurfaced,
 } from 'app/state/store'
 import { MILESTONES } from 'app/state/streak'
+import { captureEvent } from 'app/utils/telemetry/posthog'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import { chooseCelebrationVariant } from './celebrationVariant'
 import { UnlockNotification } from 'app/features/streak/UnlockNotification'
@@ -57,7 +58,7 @@ export function CelebrationScreen() {
   const [nudgeCollapsedHeight, setNudgeCollapsedHeight] = useState<number | 'auto'>('auto')
   const reduceMotion = useReducedMotion()
 
-  // Refs for focus management (AC 12)
+  // Refs for focus management
   const visitButtonRef = useRef<any>(null)
   const quieterRef = useRef<any>(null)
 
@@ -88,7 +89,7 @@ export function CelebrationScreen() {
 
   const surfaced = use$(ephemeral$.surfacedUnlockMilestones)
 
-  // Most recent earned milestone (MILESTONES is sorted ascending; AC 6 indexing logic)
+  // Most recent earned milestone (MILESTONES is sorted ascending; indexing logic)
   const latestEarnedMilestone = tokensEarned > 0 ? (MILESTONES[tokensEarned - 1] ?? null) : null
   const showUnlock =
     variant === 'handoff' && latestEarnedMilestone !== null && !surfaced.has(latestEarnedMilestone)
@@ -96,7 +97,7 @@ export function CelebrationScreen() {
   // Mount + celebration entrance effect.
   // CRITICAL — record-as-surfaced timing: mark surfaced inside the same setTimeout that
   // triggers the entrance animation (showCelebration). Do NOT mark in render (infinite loop)
-  // or on dismiss (re-prompts on next exit). "Surfaced once shown" is the rule. (AC 6)
+  // or on dismiss (re-prompts on next exit). "Surfaced once shown" is the rule.
   useEffect(() => {
     // Only wipe the active draft if we actually arrived here from a completed
     // save (lastSavedFlow present ⟺ saveActiveFlowSession committed the flow).
@@ -110,8 +111,14 @@ export function CelebrationScreen() {
       setShowCelebration(true)
       if (showUnlock && latestEarnedMilestone !== null) {
         markUnlockSurfaced(latestEarnedMilestone)
+        // Fires once per newly-earned milestone, in lockstep with surfacing it.
+        captureEvent('streak_unlock_earned', {
+          user_id: store$.session?.userId?.peek?.() ?? null,
+          tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+          milestone: latestEarnedMilestone,
+        })
       }
-      // Focus management (AC 12): focus first interactive element on mount (web only)
+      // Focus management: focus first interactive element on mount (web only)
       // On native, RN View lacks .focus(); TODO(native a11y focus): use
       // AccessibilityInfo.setAccessibilityFocus(findNodeHandle(ref.current)) when available.
       if (typeof window !== 'undefined') {
@@ -127,7 +134,7 @@ export function CelebrationScreen() {
     return () => clearTimeout(t)
   }, [showUnlock, latestEarnedMilestone]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-dismiss for quieter variant (AC 7)
+  // Auto-dismiss for quieter variant
   useEffect(() => {
     if (variant !== 'handoff') {
       const t = setTimeout(() => handleDismiss(), 2000)
@@ -171,12 +178,12 @@ export function CelebrationScreen() {
 
   const { wordCount, content } = lastSavedFlow
 
-  // AC 4 fallback: if variant is handoff but streak hasn't recomputed yet, render quieter.
+  // Fallback: if variant is handoff but streak hasn't recomputed yet, render quieter.
   // This handles the async subscription race on cold mount.
   const effectiveVariant = variant === 'handoff' && currentStreak >= 1 ? 'handoff' : variant
 
-  // Animation tokens (AC 5, AC 7, AC 15)
-  // Reduced motion: swap springs to '100ms' tween (≤200ms, AC 15).
+  // Animation tokens
+  // Reduced motion: swap springs to '100ms' tween (≤200ms).
   const outerTransition = reduceMotion
     ? '100ms'
     : effectiveVariant === 'handoff'
@@ -200,7 +207,7 @@ export function CelebrationScreen() {
         {mounted && (
           <YStack
             key="celebration-content"
-            // AC 11: dialog semantics on the outer variant-wrapping stack
+            // dialog semantics on the outer variant-wrapping stack
             tag="div"
             role="dialog"
             aria-modal={true}
@@ -221,7 +228,7 @@ export function CelebrationScreen() {
           >
             <AnimatePresence>
               {showCelebration && effectiveVariant === 'handoff' && (
-                // ─── Handoff variant (AC 4) ───────────────────────────────────
+                // ─── Handoff variant ───────────────────────────────────
                 <YStack
                   key="celebration-center"
                   transition={innerTransition as any}
@@ -231,7 +238,7 @@ export function CelebrationScreen() {
                   alignItems="center"
                   gap="$6"
                 >
-                  {/* Word count — serif $8; id for aria-labelledby (AC 11, AC 12) */}
+                  {/* Word count — serif $8; id for aria-labelledby */}
                   <Text
                     id="celebration-wordcount"
                     fontFamily="$journal"
@@ -264,7 +271,7 @@ export function CelebrationScreen() {
                     >
                       The Collective is open.
                     </Text>
-                    {/* Visit button — primary focus target on handoff mount (AC 12) */}
+                    {/* Visit button — primary focus target on handoff mount */}
                     <View ref={visitButtonRef}>
                       <ExpandingLineButton
                         size="default"
@@ -275,7 +282,7 @@ export function CelebrationScreen() {
                     </View>
                   </XStack>
 
-                  {/* UnlockNotification slot (AC 6) — handoff variant only */}
+                  {/* UnlockNotification slot — handoff variant only */}
                   {showUnlock && (
                     <UnlockNotification
                       onChooseTheme={handleChooseTheme}
@@ -283,7 +290,7 @@ export function CelebrationScreen() {
                     />
                   )}
 
-                  {/* Done dismiss button — no auto-dismiss on handoff (AC 4) */}
+                  {/* Done dismiss button — no auto-dismiss on handoff */}
                   <View marginTop={48}>
                     <ExpandingLineButton
                       size="default"
@@ -293,7 +300,7 @@ export function CelebrationScreen() {
                     </ExpandingLineButton>
                   </View>
 
-                  {/* Auth nudge — handoff variant only (AC 8) */}
+                  {/* Auth nudge — handoff variant only */}
                   {!isAuthenticated && (
                     <YStack
                       overflow={nudgeCollapsedHeight === 'auto' ? undefined : 'hidden'}
@@ -363,9 +370,9 @@ export function CelebrationScreen() {
               )}
 
               {showCelebration && effectiveVariant !== 'handoff' && (
-                // ─── Quieter variant (AC 7) ───────────────────────────────────
-                // Full-page route — no focus trap needed (AC 13). Browser tab loop
-                // within this route body satisfies UX-DR52's intent: there is no
+                // ─── Quieter variant ───────────────────────────────────
+                // Full-page route — no focus trap needed. Browser tab loop
+                // within this route body satisfies the intent: there is no
                 // underlying page content for focus to escape to.
                 <YStack
                   key="celebration-center-quieter"
@@ -376,7 +383,7 @@ export function CelebrationScreen() {
                   alignItems="center"
                   gap="$6"
                 >
-                  {/* Tap-to-dismiss wrapper (AC 7) */}
+                  {/* Tap-to-dismiss wrapper */}
                   <View
                     role="button"
                     aria-label="Dismiss"
@@ -388,7 +395,7 @@ export function CelebrationScreen() {
                     }}
                     ref={quieterRef}
                   >
-                    {/* Word count only — body sans; aria-live for screen reader announce (AC 14) */}
+                    {/* Word count only — body sans; aria-live for screen reader announce */}
                     <Text
                       fontFamily="$body"
                       fontSize={18}

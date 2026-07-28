@@ -38,7 +38,9 @@ describe('syncDeviceTimezone', () => {
     store$.session.lastSyncedTimezone.set(null)
     vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
       () =>
-        ({ resolvedOptions: () => ({ timeZone: 'America/New_York' }) }) as unknown as Intl.DateTimeFormat
+        ({
+          resolvedOptions: () => ({ timeZone: 'America/New_York' }),
+        }) as unknown as Intl.DateTimeFormat
     )
   })
 

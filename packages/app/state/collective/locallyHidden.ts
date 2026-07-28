@@ -1,12 +1,12 @@
 // packages/app/state/collective/locallyHidden.ts
 //
-// Boundary rule (D7) exception — Story 3-12
+// Boundary rule (D7) exception
 // ─────────────────────────────────────────────────────────────────────────────
 // This file is the SECOND documented narrow exception to the D7 boundary rule
 // (the first being feed.ts's single observe() block).
 //
 // Bridging Legend-State user preference into the TanStack-Query-driven feed
-// surface; this is the only boundary-cross in Story 3-12 and is structurally
+// surface; this is the only boundary-cross here and is structurally
 // additive (read-only, one-way).
 //
 // Rationale:

@@ -1,7 +1,7 @@
 /**
  * Local-only pending-return / pending-attestation markers.
  *
- * ASSUMED CONTRACT (see the account-gate feature's Dev Notes + "Project
+ * ASSUMED CONTRACT (see the account-gate feature's design notes + "Project
  * Structure Notes", which names `packages/app/state/authReturn.ts` as the
  * suggested new-file path if a Legend-State observable is chosen over a raw
  * localStorage key):
@@ -39,7 +39,11 @@ vi.mock('../../utils/auth', () => ({
   recordAgeAttestation: (...args: unknown[]) => mockRecordAgeAttestation(...args),
 }))
 
-import { pendingCollectiveReturn$, pendingAgeAttestation$, flushPendingAgeAttestation } from '../authReturn'
+import {
+  pendingCollectiveReturn$,
+  pendingAgeAttestation$,
+  flushPendingAgeAttestation,
+} from '../authReturn'
 
 beforeEach(() => {
   vi.clearAllMocks()

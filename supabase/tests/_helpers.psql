@@ -184,6 +184,25 @@ BEGIN
 END;
 $$;
 
+-- Switch to the authenticated role with a JWT-claim sub set to the given uid,
+-- AND an `is_admin: true` claim in request.jwt.claims. Modeled on
+-- test_become; the only difference is the extra claim, which is what admin-
+-- gated SECURITY DEFINER functions check via (auth.jwt() ->> 'is_admin').
+CREATE OR REPLACE FUNCTION test_become_admin(p_user UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  PERFORM set_config('role', 'authenticated', true);
+  PERFORM set_config('request.jwt.claim.sub', p_user::text, true);
+  PERFORM set_config(
+    'request.jwt.claims',
+    json_build_object('sub', p_user::text, 'role', 'authenticated', 'is_admin', true)::text,
+    true
+  );
+END;
+$$;
+
 -- TAP capture buffer.
 --
 -- pgTAP's ok()/is()/throws_ok()/etc. return the TAP line as text. When invoked

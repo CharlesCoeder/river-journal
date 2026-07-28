@@ -2,7 +2,7 @@
  * `recordAgeAttestation()` — one-time 13+ attestation write.
  *
  * Mirrors the idempotent best-effort `users` UPDATE pattern in
- * `state/timezoneSync.ts` (see Dev Notes), but writes `age_attested_at`
+ * `state/timezoneSync.ts` (see design notes), but writes `age_attested_at`
  * instead of `timezone`. Covers:
  *   - issues `update({ age_attested_at }).eq('id', userId).is('age_attested_at', null)`
  *   - resolves `userId` from `store$.session.userId.peek()` when no arg is given

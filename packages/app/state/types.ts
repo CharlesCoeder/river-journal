@@ -6,7 +6,7 @@
  * into a unified `AppState` interface.
  */
 
-import type { StreakState } from './streak'
+import type { StreakState, SubscriptionTier } from './streak'
 
 // =================================================================
 // 1. CORE INTERFACES
@@ -107,9 +107,10 @@ export interface UserProfile {
   editor?: {
     focusMode: boolean
     /**
-     * Focus-mode granularity (Story 2.11). Optional for back-compat with
-     * profiles persisted before this field existed; consumers read with
-     * `?? 'paragraph'`. `paragraph` (default) is byte-for-byte Story 2.6 behavior.
+     * Focus-mode granularity. Optional for back-compat with profiles
+     * persisted before this field existed; consumers read with
+     * `?? 'paragraph'`. `paragraph` (default) preserves the original
+     * byte-for-byte focus-mode behavior.
      */
     focusGranularity?: 'paragraph' | 'sentence'
   }
@@ -144,7 +145,63 @@ export interface UserProfile {
      * Optional at the type level for backward compat with persisted profiles created before this field was added.
      */
     locallyHiddenPosts?: string[]
+
+    /**
+     * Per-receipt acknowledgment timestamps for the in-app moderation receipt UX.
+     * Keyed by a stable composite receiptId — `removed_post:<postId>:<removed_at>`
+     * (the RAW removed_at from the RPC, so a re-removal after reinstatement yields
+     * a fresh key) and `suspension:<suspensionId>`. Server-synced via
+     * users.preferences, mirroring the disclosures precedent, so a receipt
+     * acknowledged on one device never re-surfaces on another. Optional for
+     * back-compat with profiles created before this field existed; consumers
+     * read null-safe.
+     */
+    moderationReceipts?: Record<string, { acknowledged_at: string }>
+
+    /**
+     * Notification-reminder preferences. All fields optional for back-compat
+     * with pre-existing profiles — consumers read null-safe, exactly like
+     * `moderationReceipts` / `disclosures`.
+     *
+     * The push-permission-prompt path only WRITES `streak.permissionPromptSeenAt`
+     * (the one-time in-app ask answered) and `streak.permissionLastDeniedAt` (the
+     * OS-deny cooldown). The rest of the shape is declared now so the
+     * reminder-settings surface has a stable contract; `streak.enabled` /
+     * `streak.local_time` / `streak.last_local_offset_minutes` are written by the
+     * reminder-settings surface, and `replies` / `moderation` are reserved for the
+     * reply- and moderation-notification categories.
+     */
+    reminders?: {
+      streak?: {
+        enabled?: boolean
+        local_time?: string // 'HH:mm' local; default handled by the reminder-settings surface
+        last_local_offset_minutes?: number // written by the reminder-settings surface; used by the streak cron
+        permissionLastDeniedAt?: string // ISO; OS-deny cooldown
+        permissionPromptSeenAt?: string // ISO; one-time in-app ask answered
+      }
+      replies?: { enabled?: boolean } // reserved for the reply-notification category
+      moderation?: { enabled?: boolean } // reserved for the moderation-notification category
+      repliesLastSeenAt?: string // ISO; the "since" bound the in-app reminder card advances once per open
+    }
+
+    /**
+     * UI-surface feature flags. Server-seeded (default false) and read only by
+     * the purchase/cancel surfaces; the server gates all paid features via
+     * subscription_tier, never via this flag. Optional for back-compat with
+     * profiles created before this field existed — consumers must treat an
+     * absent flag as false (defensive default).
+     */
+    feature_flags?: { external_billing_link_enabled?: boolean }
   }
+
+  /**
+   * The user's subscription tier. Server-written only — the client never sets
+   * this directly; it is reflected from the authoritative receipt-validation
+   * response (and app-open re-validation) via `applySubscriptionTierFromServer`.
+   * Optional at the type level for backward compat with persisted profiles
+   * created before this field existed; consumers read with `?? 'free'`.
+   */
+  subscription_tier?: SubscriptionTier
 
   sync: {
     word_goal: boolean
@@ -254,6 +311,24 @@ export interface GraceDay {
   earnedAt: string
   earnedForMilestone: number
   usedForDate: string | null
+}
+
+/**
+ * A registered device push token, used to fan out notifications to a user's
+ * mobile devices.
+ *
+ * camelCase per the v1 convention. `userId` is camelCase (not snake_case
+ * like Flow.user_id) because push tokens have NO anonymous-then-adopted
+ * lifecycle — rows are only ever created by an authenticated user (mirrors
+ * GraceDay). If a later story needs orphan adoption, switch to snake_case then.
+ */
+export interface PushToken {
+  id: string
+  userId: string
+  expoPushToken: string
+  platform: 'ios' | 'android'
+  deviceLabel: string | null
+  lastUsedAt: string
 }
 
 /**

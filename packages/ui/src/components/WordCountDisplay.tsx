@@ -10,7 +10,12 @@ export function WordCountDisplay({ currentCount }: WordCountDisplayProps) {
   const wordText = currentCount === 1 ? 'word' : 'words'
 
   return (
-    <Text fontSize="$3" fontFamily="$body" color="$color10" fontWeight="400">
+    <Text
+      fontSize="$3"
+      fontFamily="$body"
+      color="$color10"
+      fontWeight="400"
+    >
       {currentCount} {wordText}
     </Text>
   )

@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react'
+import type React from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button, ExpandingLineButton, XStack, YStack, Text, View, useReducedMotion } from '@my/ui'
 import { ChevronLeft, ChevronRight } from '@tamagui/lucide-icons'
 import { use$ } from '@legendapp/state/react'
@@ -6,7 +7,12 @@ import { useRouter } from 'solito/navigation'
 import { store$ } from 'app/state/store'
 import { getTodayJournalDayString } from 'app/state/date-utils'
 import { Editor } from 'app/features/journal/components/Editor'
-import type { DailyEntryView, Flow } from 'app/state/types'
+import type { DailyEntryView } from 'app/state/types'
+import { joinFlowsForReader } from './joinFlowsForReader'
+
+// Re-exported so existing consumers/tests that import the reader-join helper
+// from this module keep working after it moved to a dependency-free module.
+export { joinFlowsForReader } from './joinFlowsForReader'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helpers (exported for unit tests)
@@ -46,18 +52,6 @@ export function cellAriaLabel(date: string, entry: DailyEntryView | undefined): 
   if (!entry) return `${monthDay}, no entries`
   const count = entry.flows.length
   return `${monthDay}, ${count} ${count === 1 ? 'entry' : 'entries'}`
-}
-
-/**
- * Joins flows chronologically with double-newline separators for display in the reader.
- * Uses .getTime() for Date subtraction to satisfy TypeScript.
- */
-export function joinFlowsForReader(flows: Flow[]): string {
-  if (flows.length === 0) return ''
-  return [...flows]
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .map((f) => f.content)
-    .join('\n\n')
 }
 
 /** A single cell in the 42-cell month grid. */
@@ -232,12 +226,19 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
   // ── Determine what to render below the grid ──────────────────────────────
   const openEntry = openEntryDate ? entryByDate[openEntryDate] : null
   const showReader = openEntryDate !== null && !!openEntry
-  const showEmptyAffordance = openEntryDate !== null && !openEntry && !!grid.find(c => c.date === openEntryDate && c.inMonth)
+  const showEmptyAffordance =
+    openEntryDate !== null &&
+    !openEntry &&
+    !!grid.find((c) => c.date === openEntryDate && c.inMonth)
 
   return (
     <YStack>
       {/* Month header */}
-      <XStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+      <XStack
+        justifyContent="space-between"
+        alignItems="center"
+        marginBottom="$4"
+      >
         <Button
           unstyled
           aria-label="Previous month"
@@ -304,8 +305,8 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
                 justifyContent="center"
                 disabled={!cell.inMonth}
                 aria-label={ariaLabel}
-                {...(cell.date === focusedDate ? { 'aria-current': 'date' } as any : {})}
-                {...(isToday ? { 'data-today': 'true' } as any : {})}
+                {...(cell.date === focusedDate ? ({ 'aria-current': 'date' } as any) : {})}
+                {...(isToday ? ({ 'data-today': 'true' } as any) : {})}
                 {...({ 'data-calendar-cell': idx } as any)}
                 onPress={() => handleCellPress(cell)}
                 onKeyDown={(e: any) => handleCellKeyDown(e, idx)}
@@ -358,7 +359,11 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
           transition={reduceMotion ? '100ms' : 'designEnter'}
           enterStyle={{ opacity: 0, y: 10 }}
         >
-          <XStack justifyContent="space-between" alignItems="center" marginBottom="$3">
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            marginBottom="$3"
+          >
             <Text
               fontFamily="$journalItalic"
               fontStyle="italic"

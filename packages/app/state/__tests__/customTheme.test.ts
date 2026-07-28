@@ -4,7 +4,6 @@ vi.mock('../../utils/supabase', () => ({
   supabase: {},
 }))
 
-
 import {
   isDarkColor,
   setCustomTheme,

@@ -1,12 +1,11 @@
--- Story 3-10: Add descendant_count to collective_thread_page RPC (Pattern B).
+-- Add descendant_count to collective_thread_page RPC (Pattern B).
 --
 -- Pattern B: descendant_count computed per-row via recursive CTE at query time.
 -- Rationale: no schema migration needed; correctness is locally provable; perf
 -- is acceptable at Collective's MVP scale (small social server, ~100 posts/thread).
 -- Anti-cycle protection via Postgres 14+ CYCLE syntax.
 --
--- Deferred-decision resolution logged in sprint-epic-3-deferred-decisions.md
--- under "Story 3-10 descendant_count source: Pattern B (recursive CTE)".
+-- Deferred-decision resolution: descendant_count source is Pattern B (recursive CTE).
 
 DROP FUNCTION IF EXISTS collective_thread_page(UUID, TIMESTAMPTZ, INT);
 

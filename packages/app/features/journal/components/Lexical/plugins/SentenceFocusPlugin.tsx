@@ -1,5 +1,5 @@
 /**
- * SentenceFocusPlugin — the STYLING half of per-sentence focus mode (Story 2.11).
+ * SentenceFocusPlugin — the STYLING half of per-sentence focus mode.
  *
  * Mounted as a SIBLING of FocusModeParagraphPlugin (dev's choice, documented
  * here) so the proven paragraph-level logic is left completely untouched. The

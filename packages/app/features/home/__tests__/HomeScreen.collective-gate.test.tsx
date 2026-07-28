@@ -36,7 +36,8 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } = props
+    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } =
+      props
     return {
       ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
@@ -103,7 +104,8 @@ vi.mock('solito/navigation', () => ({
 // store$.views.* is stubbed with fresh observables too so no real
 // store/sync/supabase modules are ever touched.
 vi.mock('app/state/store', async () => {
-  const { observable } = await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
+  const { observable } =
+    await vi.importActual<typeof import('@legendapp/state')>('@legendapp/state')
   const isAuthenticated$ = observable(false)
   return {
     store$: {
@@ -132,11 +134,26 @@ vi.mock('app/features/home/components/KeyringPrompt', () => ({
 }))
 
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
-  OrphanFlowsDialog: () => React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+  OrphanFlowsDialog: () =>
+    React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+}))
+vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
+  ModerationReceiptGate: () =>
+    React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
+}))
+vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
+  StreakReminderPermissionGate: () =>
+    React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
+}))
+
+vi.mock('app/features/notifications/InAppReminderGate', () => ({
+  InAppReminderGate: () =>
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
 }))
 
 vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
-  EncryptionModeDialog: () => React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
+  EncryptionModeDialog: () =>
+    React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
 }))
 
 vi.mock('app/features/navigation/WordLinkNav', () => ({

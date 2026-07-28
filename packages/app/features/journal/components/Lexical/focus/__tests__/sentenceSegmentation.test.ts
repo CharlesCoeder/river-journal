@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Pure unit tests for the sentence-segmentation core (Story 2.11, AC 4, 12, 16).
+// Pure unit tests for the sentence-segmentation core.
 //
 // segmentSentences / activeSentence are fully pure (no Lexical, no DOM).
 // getBlockOffset is exercised against a real headless Lexical editor so the
@@ -11,10 +11,10 @@ import { createBaseLexicalConfig } from '../../lexical-config'
 import { segmentSentences, activeSentence, getBlockOffset } from '../sentenceSegmentation'
 
 // =============================================================================
-// segmentSentences (AC 16)
+// segmentSentences
 // =============================================================================
 
-describe('segmentSentences (AC 16)', () => {
+describe('segmentSentences', () => {
   it('empty string → []', () => {
     expect(segmentSentences('')).toEqual([])
   })
@@ -67,10 +67,10 @@ describe('segmentSentences (AC 16)', () => {
 })
 
 // =============================================================================
-// activeSentence (AC 4, 16)
+// activeSentence
 // =============================================================================
 
-describe('activeSentence (AC 4, 16)', () => {
+describe('activeSentence', () => {
   it('DELAY-BUG: dims on the space after a period — activeSentence("Hello world. ", 13) === null', () => {
     expect(activeSentence('Hello world. ', 13)).toBeNull()
   })
@@ -109,10 +109,10 @@ describe('activeSentence (AC 4, 16)', () => {
 })
 
 // =============================================================================
-// getBlockOffset (AC 12) — real headless Lexical editor, multi-TextNode block
+// getBlockOffset — real headless Lexical editor, multi-TextNode block
 // =============================================================================
 
-describe('getBlockOffset (AC 12)', () => {
+describe('getBlockOffset', () => {
   it('sums preceding TextNode sizes + anchorOffset across a mixed-format block', () => {
     const editor = createEditor({
       namespace: 'rj-test',

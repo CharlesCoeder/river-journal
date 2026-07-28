@@ -4,7 +4,7 @@
 //
 // Surface:
 //   - `yourPostsKey`         canonical query-key tuple
-//   - `PAGE_SIZE`            page-size constant (NFR31 budget regression sentinel)
+//   - `PAGE_SIZE`            page-size constant (budget regression sentinel)
 //   - `YourPost` / `YourPostsPage` row + page shapes
 //   - `fetchYourPostsPage()` pure async fetcher (look-ahead pagination)
 //   - `useYourPosts()`       useInfiniteQuery wrapper (calm-realtime cadence)
@@ -42,7 +42,7 @@ export const yourPostsKeyForUser = (userId: string) => [...yourPostsKey, userId]
  * Page size for the user's own posts pagination. The look-ahead idiom
  * requests `PAGE_SIZE + 1` rows on every page to detect "has more" without
  * a separate count query. Combined with `maxPages: 5` in `useYourPosts()`,
- * this caps in-memory rows at 100 (NFR31 budget).
+ * this caps in-memory rows at 100 (budget cap).
  */
 export const PAGE_SIZE = 20
 
@@ -57,7 +57,7 @@ export type YourPost = {
   id: string
   user_id: string
   parent_post_id: string | null
-  // Story 3-15: top-level own posts carry their title; reply-type own posts
+  // Top-level own posts carry their title; reply-type own posts
   // are NULL (guaranteed by the collective_posts_title_chk CHECK).
   title: string | null
   body: string
@@ -84,9 +84,7 @@ export type YourPostsPage = {
  * the LAST visible row's `created_at` as `nextCursor`. If we got back
  * `<= PAGE_SIZE` rows, this is the last page (`nextCursor: null`).
  */
-export async function fetchYourPostsPage(
-  cursor: string | null
-): Promise<YourPostsPage> {
+export async function fetchYourPostsPage(cursor: string | null): Promise<YourPostsPage> {
   const { data, error } = await supabase.rpc('collective_your_posts_page', {
     cursor,
     page_size: PAGE_SIZE + 1,
@@ -111,11 +109,11 @@ export async function fetchYourPostsPage(
  *   - string — enabled, keyed under `yourPostsKeyForUser(userId)`.
  *
  * Config rationale:
- *   - `maxPages: 5` × `PAGE_SIZE: 20` = 100 in-memory cap (NFR31).
+ *   - `maxPages: 5` × `PAGE_SIZE: 20` = 100 in-memory cap.
  *   - `staleTime: 25_000` < `refetchInterval: 30_000` — calm-realtime
  *     cadence (staleTime must be < refetchInterval for refetches to fire).
  *   - `gcTime` defaults to the global 24h — back-button-restore matters.
- *   - No mutationKey here; `useDeleteOwnPost` (Story 3.13) reaches this
+ *   - No mutationKey here; `useDeleteOwnPost` reaches this
  *     hook by invalidating the broader `['collective']` prefix.
  */
 export function useYourPosts(currentUserId: string | null | undefined) {

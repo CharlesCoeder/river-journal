@@ -1,6 +1,6 @@
 // packages/app/features/collective/CollectiveFeedScreen.tsx
 //
-// The Collective "room" — a title-led forum feed (title-led redesign, Story 3-16).
+// The Collective "room" — a title-led forum feed (title-led redesign).
 // Renders a scannable list of letter TITLES + metadata + a read-only reaction
 // tally; tapping a title opens the thread. Bodies are NOT shown in the list
 // (the feed RPC dropped `body`; see FeedPostRow).
@@ -94,7 +94,12 @@ export default function CollectiveFeedScreen() {
   if (feed.isError && feed.data === undefined) {
     return (
       <YStack>
-        <Text fontSize="$2" color="$color9" textAlign="center" paddingVertical="$4">
+        <Text
+          fontSize="$2"
+          color="$color9"
+          textAlign="center"
+          paddingVertical="$4"
+        >
           Couldn&apos;t load the feed. Pull to retry.
         </Text>
         <ExpandingLineButton onPress={() => feed.refetch()}>Retry</ExpandingLineButton>
@@ -117,7 +122,10 @@ export default function CollectiveFeedScreen() {
       // key={mode} ensures clean re-mount on mode flip (preview ↔ full)
       // flex={1} threads the screen's height down to the locked screen's own
       // ScrollView so the preview (words gate) scrolls on native.
-      <View key={mode} flex={1}>
+      <View
+        key={mode}
+        flex={1}
+      >
         <AnimatePresence>
           {mounted && (
             <View
@@ -166,8 +174,14 @@ export default function CollectiveFeedScreen() {
     // ambient scroll around routed screens, so the (potentially long, paginated)
     // letter list would otherwise overflow the viewport with no way to reach the
     // footer or "Load more". Mirrors the locked screen's wrapper.
-    <View key={mode} flex={1}>
-      <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }}>
+    <View
+      key={mode}
+      flex={1}
+    >
+      <ScrollView
+        flex={1}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
         <AnimatePresence>
           {mounted && (
             <YStack
@@ -235,7 +249,10 @@ export default function CollectiveFeedScreen() {
                   gap="$3"
                   flexShrink={0}
                 >
-                  <PenLine size={20} color="$color12" />
+                  <PenLine
+                    size={20}
+                    color="$color12"
+                  />
                   <Text
                     fontFamily="$journalItalic"
                     fontStyle="italic"
@@ -247,7 +264,11 @@ export default function CollectiveFeedScreen() {
                   </Text>
                 </XStack>
 
-                <XStack alignItems="center" gap="$5" flexShrink={0}>
+                <XStack
+                  alignItems="center"
+                  gap="$5"
+                  flexShrink={0}
+                >
                   <Text
                     fontFamily="$body"
                     fontSize="$1"
@@ -278,29 +299,70 @@ export default function CollectiveFeedScreen() {
 
               {/* Error with cached data — show refresh error strip (highest precedence) */}
               {showErrorStrip ? (
-                <Text fontSize="$1" color="$color9" textAlign="center" paddingVertical="$2">
+                <Text
+                  fontSize="$1"
+                  color="$color9"
+                  textAlign="center"
+                  paddingVertical="$2"
+                >
                   Couldn&apos;t refresh. Showing cached posts.
                 </Text>
               ) : null}
 
               {/* Offline microcopy — only when error strip is not shown and timestamp is valid */}
               {showOfflineStrip ? (
-                <Text fontSize="$1" color="$color9" paddingVertical="$2" textAlign="center">
+                <Text
+                  fontSize="$1"
+                  color="$color9"
+                  paddingVertical="$2"
+                  textAlign="center"
+                >
                   Offline · last synced {formatTimeAgo(feed.dataUpdatedAt)}
                 </Text>
               ) : null}
 
-              {/* Suspended user microcopy */}
+              {/* Suspended user microcopy + advisory link to the suspension
+                  detail (expiry + reason) in Settings. RLS stays authoritative. */}
               {isSuspended === true ? (
-                <Text fontSize="$2" color="$color11" textAlign="center" paddingVertical="$3">
-                  Posting and reacting are paused for this account.
-                </Text>
+                <YStack
+                  alignItems="center"
+                  paddingVertical="$3"
+                  gap="$1"
+                >
+                  <Text
+                    fontSize="$2"
+                    color="$color11"
+                    textAlign="center"
+                  >
+                    Posting and reacting are paused for this account.
+                  </Text>
+                  <Text
+                    testID="feed-suspended-details-link"
+                    role="link"
+                    cursor="pointer"
+                    fontSize="$2"
+                    color="$color11"
+                    textAlign="center"
+                    hoverStyle={{ color: '$color12' }}
+                    onPress={() => router.push('/settings')}
+                  >
+                    View details in Settings
+                  </Text>
+                </YStack>
               ) : null}
 
               {/* Empty state */}
               {showEmptyState ? (
-                <YStack paddingVertical="$8" gap="$5">
-                  <Text fontFamily="$journal" fontSize="$7" color="$color10" fontStyle="italic">
+                <YStack
+                  paddingVertical="$8"
+                  gap="$5"
+                >
+                  <Text
+                    fontFamily="$journal"
+                    fontSize="$7"
+                    color="$color10"
+                    fontStyle="italic"
+                  >
                     Quiet here. Be the first.
                   </Text>
                   <ExpandingLineButton onPress={() => router.push('/collective/compose')}>
@@ -318,7 +380,10 @@ export default function CollectiveFeedScreen() {
                     onOpen={(id) => router.push(`/collective/thread/${id}`)}
                   />
                   {index < allPosts.length - 1 ? (
-                    <Separator borderColor="$color3" borderBottomWidth={1} />
+                    <Separator
+                      borderColor="$color3"
+                      borderBottomWidth={1}
+                    />
                   ) : null}
                 </View>
               ))}

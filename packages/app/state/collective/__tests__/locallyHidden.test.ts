@@ -1,10 +1,10 @@
 /**
- * Story 3-12 — TDD red-phase unit tests for `state/collective/locallyHidden.ts`.
+ * TDD red-phase unit tests for `state/collective/locallyHidden.ts`.
  *
- * Red-phase contract: every test MUST fail until Story 3-12's Task 2 creates
+ * Red-phase contract: every test MUST fail until Task 2 creates
  * `packages/app/state/collective/locallyHidden.ts`.
  *
- * AC coverage (AC #16):
+ * Coverage:
  *   t1 — returns empty Set when preference array is undefined
  *   t2 — returns Set with all ids when preference is a populated array
  *   t3 — boundary-rule exception is documented in source (D7 exception comment)
@@ -61,10 +61,9 @@ afterEach(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — returns empty Set when preference is unset (undefined)
-// AC #16 t1
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / locallyHidden t1 — empty Set when preference is unset (AC #16)', () => {
+describe('locallyHidden t1 — empty Set when preference is unset', () => {
   it('returns a Set when locallyHiddenPosts is undefined', () => {
     mockLocallyHiddenValue = undefined
     const result = useLocallyHiddenPostIds()
@@ -87,10 +86,9 @@ describe('Story 3-12 / locallyHidden t1 — empty Set when preference is unset (
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — returns Set with all ids when preference is populated array
-// AC #16 t2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / locallyHidden t2 — Set populated from array (AC #16)', () => {
+describe('locallyHidden t2 — Set populated from array', () => {
   it('Set contains all ids from the array', () => {
     mockLocallyHiddenValue = ['p1', 'p2', 'p3']
     const result = useLocallyHiddenPostIds()
@@ -122,10 +120,9 @@ describe('Story 3-12 / locallyHidden t2 — Set populated from array (AC #16)', 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — boundary-rule exception is documented in source
-// AC #16 t3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / locallyHidden t3 — D7 boundary exception documented (AC #16)', () => {
+describe('locallyHidden t3 — D7 boundary exception documented', () => {
   it('locallyHidden.ts file exists on disk', () => {
     expect(existsSync(LOCALLY_HIDDEN_PATH)).toBe(true)
   })
@@ -150,12 +147,6 @@ describe('Story 3-12 / locallyHidden t3 — D7 boundary exception documented (AC
     expect(existsSync(LOCALLY_HIDDEN_PATH)).toBe(true)
     const src = readFileSync(LOCALLY_HIDDEN_PATH, 'utf8')
     expect(src).not.toMatch(/@tanstack\/(react-query|query-[\w-]+)/)
-  })
-
-  it('locallyHidden.ts cites Story 3-12 ID in its exception comment', () => {
-    expect(existsSync(LOCALLY_HIDDEN_PATH)).toBe(true)
-    const src = readFileSync(LOCALLY_HIDDEN_PATH, 'utf8')
-    expect(src).toMatch(/3-12|Story 3\.12/)
   })
 
   it('locallyHidden.ts exports useLocallyHiddenPostIds function', () => {

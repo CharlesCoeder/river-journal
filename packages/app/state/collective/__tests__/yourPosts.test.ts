@@ -1,13 +1,13 @@
 /**
- * Story 3-5 — TDD red-phase unit tests for `state/collective/yourPosts.ts`.
+ * TDD red-phase unit tests for `state/collective/yourPosts.ts`.
  *
- * These tests MUST fail before Story 3-5 is implemented (the target module
+ * These tests MUST fail before the target module is implemented (it
  * does not exist yet) and pass after.
  *
- * Surface covered (AC #10, #11, #12, #13, #17):
+ * Surface covered:
  *   - `yourPostsKey` deep-equals ['collective', 'yourPosts'] (and is the
  *     literal-narrowed `as const` tuple).
- *   - `PAGE_SIZE === 20` (regression sentinel for the NFR31 100-row budget:
+ *   - `PAGE_SIZE === 20` (regression sentinel for the 100-row budget:
  *     PAGE_SIZE * maxPages = 20 * 5 = 100).
  *   - `fetchYourPostsPage(cursor)` calls `supabase.rpc('collective_your_posts_page', ...)`
  *     with `{ cursor, page_size: PAGE_SIZE + 1 }` (the look-ahead idiom).
@@ -21,9 +21,9 @@
  *     `useInfiniteQuery` mock so we don't need a React renderer.
  *
  * Note: The hook's runtime behaviour under React (mounting, suspense, refetch)
- * is intentionally NOT covered here -- Story 3-2's queryClient.test.ts
- * precedent stops short of React rendering. Story 3-14 (YourPostsScreen UI)
- * is where rendering tests will land.
+ * is intentionally NOT covered here -- the queryClient.test.ts precedent
+ * stops short of React rendering. The YourPostsScreen UI rendering tests
+ * will land separately.
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
@@ -51,7 +51,7 @@ beforeEach(() => {
   useInfiniteQueryMock.mockReset()
 })
 
-describe('Story 3-5 / yourPostsKey shape (AC #10)', () => {
+describe('yourPostsKey shape', () => {
   it('exports yourPostsKey deep-equal to ["collective", "yourPosts"]', async () => {
     const mod = await import('../yourPosts')
     expect(mod.yourPostsKey).toEqual(['collective', 'yourPosts'])
@@ -81,14 +81,14 @@ describe('Cross-user defense / yourPostsKeyForUser (user-scoped key)', () => {
   })
 })
 
-describe('Story 3-5 / PAGE_SIZE constant (AC #11)', () => {
-  it('exports PAGE_SIZE === 20 (NFR31 100-row budget regression sentinel)', async () => {
+describe('PAGE_SIZE constant', () => {
+  it('exports PAGE_SIZE === 20 (100-row budget regression sentinel)', async () => {
     const mod = await import('../yourPosts')
     expect(mod.PAGE_SIZE).toBe(20)
   })
 })
 
-describe('Story 3-5 / fetchYourPostsPage RPC call shape (AC #12)', () => {
+describe('fetchYourPostsPage RPC call shape', () => {
   it('calls supabase.rpc with name "collective_your_posts_page" and { cursor: null, page_size: 21 } when invoked with cursor: null', async () => {
     const { supabase } = await import('../../../utils/supabase')
     const rpc = supabase.rpc as ReturnType<typeof vi.fn>
@@ -251,7 +251,7 @@ describe('Story 3-5 / fetchYourPostsPage RPC call shape (AC #12)', () => {
   })
 })
 
-describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
+describe('useYourPosts() useInfiniteQuery config', () => {
   it('passes the user-scoped queryKey ([...yourPostsKey, userId]) to useInfiniteQuery', async () => {
     const { useYourPosts, yourPostsKey, yourPostsKeyForUser } = await import('../yourPosts')
     useYourPosts('user-A')
@@ -294,7 +294,7 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
     expect(opts.getNextPageParam({ items: [], nextCursor: null })).toBeNull()
   })
 
-  it('declares maxPages === 5 (NFR31: 5 * PAGE_SIZE = 100 in-memory cap)', async () => {
+  it('declares maxPages === 5 (5 * PAGE_SIZE = 100 in-memory cap)', async () => {
     const { useYourPosts } = await import('../yourPosts')
     useInfiniteQueryMock.mockReset()
     useYourPosts('user-A')
@@ -343,13 +343,13 @@ describe('Story 3-5 / useYourPosts() useInfiniteQuery config (AC #13)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Story 3-15 — `title` passthrough on YourPost rows (AC #28)
+// `title` passthrough on YourPost rows
 //
 // `collective_your_posts_page` now returns `title` (the column value: present
 // on top-level own posts, NULL on reply-type own posts). fetchYourPostsPage
 // passes rows through unchanged, so `title` must survive to the mapped rows.
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Story 3-15 / fetchYourPostsPage title passthrough (AC #28)', () => {
+describe('fetchYourPostsPage title passthrough', () => {
   it('surfaces title on a top-level own post and null on a reply-type own post', async () => {
     const { supabase } = await import('../../../utils/supabase')
     const rpc = supabase.rpc as ReturnType<typeof vi.fn>

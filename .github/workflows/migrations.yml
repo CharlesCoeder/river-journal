@@ -1,0 +1,72 @@
+# Migrations — apply schema changes to production ONLY through a manually
+# approved, forward-only gate.
+#
+# Triggers on a merge to main that touches supabase/migrations/**. The apply
+# job is bound to the `production` GitHub Environment, which is configured with
+# a REQUIRED REVIEWER — the job body does not run until a human approves. On
+# approval it runs the forward-only linter FIRST and applies via `supabase db
+# push` ONLY if the linter passes (fail-closed ordering). Migrations NEVER
+# auto-apply.
+#
+# Gate integrity (documented in docs/deployment-guide.md):
+#   - The Environment reviewer must NOT be the person who pushed the migration
+#     (GitHub Environments allow self-approval unless the approver differs).
+#   - The reviewer confirms ci.yml is green for the SAME commit before
+#     approving — this workflow is intentionally independent of ci.yml.
+#   - SUPABASE_* secrets are scoped to the `production` Environment, so they are
+#     unavailable until the reviewer approves (a repo-level secret would let the
+#     job apply before the gate).
+
+name: Migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+
+jobs:
+  apply:
+    name: apply-migrations
+    runs-on: ubuntu-latest
+    # Human approval gate — required reviewer configured in repo Settings →
+    # Environments → production. The job pauses here until approved.
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      # A dedicated production project ref (its own secret) so a mistyped ref
+      # can never target staging or another project.
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install (immutable)
+        run: yarn install --immutable
+
+      # Fail-closed forward-only gate — MUST pass before any apply. Rejects
+      # down/reverse migration markers and destructive DROP TABLE / DROP COLUMN.
+      # (`supabase db lint` validates SQL correctness, not directionality, so it
+      # is not a substitute for this check.)
+      - name: Forward-only migration lint
+        run: yarn lint:forward-only-migrations
+
+      - name: Link production project
+        run: node_modules/.bin/supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      # Runs ONLY after the forward-only lint passes. The service-role key /
+      # DB password come from Environment-scoped secrets, unavailable until the
+      # reviewer approved above.
+      - name: Apply migrations (supabase db push)
+        run: node_modules/.bin/supabase db push

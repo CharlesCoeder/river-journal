@@ -1,20 +1,20 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-8 — TDD red-phase unit tests for `packages/ui/src/components/AuthorByline.tsx`.
+ * TDD red-phase unit tests for `packages/ui/src/components/AuthorByline.tsx`.
  *
- * Red-phase contract: every test MUST fail until Story 3-8's Task 1 creates
- * `packages/ui/src/components/AuthorByline.tsx`.
+ * Red-phase contract: every test MUST fail until
+ * `packages/ui/src/components/AuthorByline.tsx` is created.
  *
- * AC coverage (AC #1–#7, #26):
- *   t1 — renders displayName · postedAt with no tenure label (AC #2, #26-t1)
- *   t2 — renders tenure labels for all three tiers (AC #2, #3, #26-t2)
- *   t3 — deletedDisplay suppresses tenure even if tenureTier set (AC #4, #26-t3)
- *   t4 — tenure label renders in italic (AC #2, #26-t4)
- *   t5 — relative time formatting: 3h, 2d, short-date (AC #5, #26-t5)
- *   t6 — numberOfLines={1} on outer text container (AC #2, #26-t6)
- *   t7 — no avatar/image markup (AC #7, #26-t7)
- *   t8 — TENURE_TIER_LABEL is exported as a const (AC #3)
- *   t9 — a11y label flattens to single announcement (AC #6)
+ * Coverage:
+ *   t1 — renders displayName · postedAt with no tenure label
+ *   t2 — renders tenure labels for all three tiers
+ *   t3 — deletedDisplay suppresses tenure even if tenureTier set
+ *   t4 — tenure label renders in italic
+ *   t5 — relative time formatting: 3h, 2d, short-date
+ *   t6 — numberOfLines={1} on outer text container
+ *   t7 — no avatar/image markup
+ *   t8 — TENURE_TIER_LABEL is exported as a const
+ *   t9 — a11y label flattens to single announcement
  *
  * Mock strategy: mock @my/ui (Tamagui) and forward a11y props to DOM elements;
  * mirrors StreakChip.test.tsx pattern.
@@ -177,10 +177,9 @@ afterEach(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — renders displayName · postedAt with no tenure label when tenureTier is undefined
-// AC #2, #26-t1
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t1 — base rendering (AC #2)', () => {
+describe('AuthorByline t1 — base rendering', () => {
   it('renders displayName text', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString() // 1h ago
     render(React.createElement(AuthorByline, { displayName: 'Alice', postedAt }))
@@ -206,10 +205,9 @@ describe('Story 3-8 / AuthorByline t1 — base rendering (AC #2)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — renders tenure labels for all three tiers
-// AC #2, #3, #26-t2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t2 — tenure tier labels (AC #2, #3)', () => {
+describe('AuthorByline t2 — tenure tier labels', () => {
   it('renders "Day 30+" when tenureTier===30', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     render(React.createElement(AuthorByline, { displayName: 'Bob', postedAt, tenureTier: 30 }))
@@ -231,50 +229,57 @@ describe('Story 3-8 / AuthorByline t2 — tenure tier labels (AC #2, #3)', () =>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — deletedDisplay suppresses tenure even if tenureTier is set
-// AC #4, #26-t3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t3 — deletedDisplay suppresses tenure (AC #4)', () => {
+describe('AuthorByline t3 — deletedDisplay suppresses tenure', () => {
   it('renders "[deleted]" in name slot when deletedDisplay===true', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    render(React.createElement(AuthorByline, {
-      displayName: 'Alice',
-      postedAt,
-      deletedDisplay: true,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Alice',
+        postedAt,
+        deletedDisplay: true,
+      })
+    )
     expect(screen.getByText(/\[deleted\]/)).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
   })
 
   it('does NOT render tenure label when deletedDisplay===true even if tenureTier===30', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    render(React.createElement(AuthorByline, {
-      displayName: 'Alice',
-      postedAt,
-      deletedDisplay: true,
-      tenureTier: 30,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Alice',
+        postedAt,
+        deletedDisplay: true,
+        tenureTier: 30,
+      })
+    )
     expect(screen.queryByText(/Day 30\+/)).toBeNull()
   })
 
   it('does NOT render tenure label when deletedDisplay===true even if tenureTier===365', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    render(React.createElement(AuthorByline, {
-      displayName: 'Bob',
-      postedAt,
-      deletedDisplay: true,
-      tenureTier: 365,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Bob',
+        postedAt,
+        deletedDisplay: true,
+        tenureTier: 365,
+      })
+    )
     expect(screen.queryByText(/Year\+/)).toBeNull()
   })
 
   it('retains the timestamp even when deletedDisplay===true', () => {
     const postedAt = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() // 3h ago
-    render(React.createElement(AuthorByline, {
-      displayName: 'Alice',
-      postedAt,
-      deletedDisplay: true,
-    }))
+    render(
+      React.createElement(AuthorByline, {
+        displayName: 'Alice',
+        postedAt,
+        deletedDisplay: true,
+      })
+    )
     // Timestamp should still be visible in some form (h or "h ago" or date)
     const text = document.body.textContent ?? ''
     // Should contain time info — either "h", "d", or a date
@@ -284,10 +289,9 @@ describe('Story 3-8 / AuthorByline t3 — deletedDisplay suppresses tenure (AC #
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — tenure label renders in italic
-// AC #2, #26-t4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t4 — tenure label italic style (AC #2)', () => {
+describe('AuthorByline t4 — tenure label italic style', () => {
   it('tenure label element has fontStyle="italic" (data-font-style="italic")', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     render(React.createElement(AuthorByline, { displayName: 'Eve', postedAt, tenureTier: 100 }))
@@ -301,10 +305,9 @@ describe('Story 3-8 / AuthorByline t4 — tenure label italic style (AC #2)', ()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t5 — relative time formatting
-// AC #5, #26-t5
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t5 — relative time formatting (AC #5)', () => {
+describe('AuthorByline t5 — relative time formatting', () => {
   it('formats timestamp ~3 hours ago as "3h" or matching relative pattern', () => {
     const postedAt = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
     render(React.createElement(AuthorByline, { displayName: 'Frank', postedAt }))
@@ -331,10 +334,9 @@ describe('Story 3-8 / AuthorByline t5 — relative time formatting (AC #5)', () 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t6 — numberOfLines={1} on the outer text container
-// AC #2, #26-t6
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t6 — single-line truncation (AC #2)', () => {
+describe('AuthorByline t6 — single-line truncation', () => {
   it('outer text element has numberOfLines=1 (data-number-of-lines="1")', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     render(React.createElement(AuthorByline, { displayName: 'Ivy', postedAt }))
@@ -346,10 +348,9 @@ describe('Story 3-8 / AuthorByline t6 — single-line truncation (AC #2)', () =>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t7 — no avatar/image markup
-// AC #7, #26-t7
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t7 — no avatar or image (AC #7)', () => {
+describe('AuthorByline t7 — no avatar or image', () => {
   it('renders no <img> element', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     render(React.createElement(AuthorByline, { displayName: 'Jack', postedAt }))
@@ -373,10 +374,9 @@ describe('Story 3-8 / AuthorByline t7 — no avatar or image (AC #7)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t8 — TENURE_TIER_LABEL is exported and correct
-// AC #3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t8 — TENURE_TIER_LABEL export (AC #3)', () => {
+describe('AuthorByline t8 — TENURE_TIER_LABEL export', () => {
   it('exports TENURE_TIER_LABEL as a const with correct values', () => {
     expect(TENURE_TIER_LABEL).toBeDefined()
     expect(TENURE_TIER_LABEL[30]).toBe('Day 30+')
@@ -391,10 +391,9 @@ describe('Story 3-8 / AuthorByline t8 — TENURE_TIER_LABEL export (AC #3)', () 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t9 — a11y label flattens to single announcement
-// AC #6
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / AuthorByline t9 — a11y label (AC #6)', () => {
+describe('AuthorByline t9 — a11y label', () => {
   it('has an accessible label that includes the displayName', () => {
     const postedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     render(React.createElement(AuthorByline, { displayName: 'Karen', postedAt }))

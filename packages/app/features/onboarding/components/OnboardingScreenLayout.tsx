@@ -101,23 +101,30 @@ export function OnboardingScreenLayout({
 }
 
 // ---------------------------------------------------------------------------
-// OnboardingSkipButton — the Secondary "Skip" affordance.
+// OnboardingSkipButton — the Secondary quiet affordance ("Skip" by default,
+// or another quiet label such as "Not now").
 //
-// Per the UX Button Hierarchy, Skip is Secondary (NOT the primary CTA and NOT
+// Per the UX Button Hierarchy, the secondary is NOT the primary CTA and NOT
 // an ExpandingLineButton): a small sans label with a thin static 1px bottom
 // border and a muted stone color, with no expand-on-press motion. Only one
-// primary action per screen; Skip is always the quiet exit beside it.
+// primary action per screen; the secondary is always the quiet exit beside it.
 // ---------------------------------------------------------------------------
 
 export interface OnboardingSkipButtonProps {
   onPress: () => void
+  /** Quiet secondary label. Defaults to "Skip"; the consent screen uses "Not now". */
+  label?: string
 }
 
-export function OnboardingSkipButton({ onPress }: OnboardingSkipButtonProps) {
+export function OnboardingSkipButton({ onPress, label = 'Skip' }: OnboardingSkipButtonProps) {
   return (
     <Text
       tag="button"
-      accessibilityLabel="Skip"
+      // Bare Tamagui Text primitive: pass web-native `aria-label` (like the
+      // section's `aria-labelledby` above) rather than RN `accessibilityLabel`,
+      // which Text does not map and would leak to the DOM as an unknown prop.
+      // Tamagui normalizes `aria-label` → accessibilityLabel on native.
+      aria-label={label}
       onPress={onPress}
       fontFamily="$body"
       fontSize="$4"
@@ -129,7 +136,7 @@ export function OnboardingSkipButton({ onPress }: OnboardingSkipButtonProps) {
       hoverStyle={{ color: '$color' }}
       pressStyle={{ opacity: 0.6 }}
     >
-      Skip
+      {label}
     </Text>
   )
 }

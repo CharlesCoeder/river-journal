@@ -82,19 +82,21 @@ export function ThemePicker() {
   const customTheme = use$(store$.profile.customTheme)
   const streak = use$(store$.views.streak!) as unknown as StreakState
   // Direct read from profile for "is this theme unlocked?" — single source of truth
-  // for unlock-state in the picker. See AC 27: this and useUnlockedThemes('free') are
-  // the same data routed differently; direct read avoids a streak-recompute round-trip.
+  // for unlock-state in the picker. This and useUnlockedThemes('free') are the same
+  // data routed differently; the direct read avoids a streak-recompute round-trip.
   const unlockedFromProfile = use$(store$.profile.unlockedThemes) ?? []
   const [editorOpen, setEditorOpen] = useState(false)
   const [confirmingTheme, setConfirmingTheme] = useState<ThemeName | null>(null)
 
   const router = useRouter()
 
-  // TODO(Story 7.1): replace with use$(store$.profile.subscription_tier) ?? 'free'
   const tier: SubscriptionTier = getThemePickerTier()
 
   // Tokens earned minus tokens already spent
-  const availableTokens = Math.max(0, (streak?.unlockTokensEarned ?? 0) - unlockedFromProfile.length)
+  const availableTokens = Math.max(
+    0,
+    (streak?.unlockTokensEarned ?? 0) - unlockedFromProfile.length
+  )
 
   const isCustomSelected = currentTheme === 'custom'
 
@@ -145,7 +147,11 @@ export function ThemePicker() {
               gap="$2"
               paddingTop="$2"
             >
-              <Text fontFamily="$body" fontSize={13} color="$color8">
+              <Text
+                fontFamily="$body"
+                fontSize={13}
+                color="$color8"
+              >
                 Unlock {THEME_LABELS[name]}?
               </Text>
               <XStack gap="$3">
@@ -173,12 +179,11 @@ export function ThemePicker() {
 
   return (
     <YStack gap="$3">
-      {/* "Unlock everything now" — free tier only. Tap routes to stub paid tier surface.
-          STUB destination — Story 7.4 wires the real PaidTierPurchaseSurface. */}
+      {/* "Unlock everything now" — free tier only. Routes to the purchase surface. */}
       {tier === 'free' && (
         <ExpandingLineButton
           onPress={() => {
-            router.push('/paid/coming-soon')
+            router.push('/paid')
           }}
         >
           Unlock everything now

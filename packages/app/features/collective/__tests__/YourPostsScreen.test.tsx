@@ -8,24 +8,24 @@
  *   - packages/app/features/collective/YourPostRow.tsx
  *   - packages/app/features/collective/_shared.tsx (SkeletonRows + formatTimeAgo)
  *
- * Test plan (t1–t15) is authoritative per Dev Notes.
+ * Test plan (t1–t15) is authoritative per design notes.
  *
- * AC coverage:
- *   t1  — posts render in chronological order (AC #1, #2, #3, #4, #5)
- *   t2  — empty state CTA when mode === 'full' (AC #16, #17)
- *   t3  — empty state CTA when mode === 'preview' / undefined (AC #16, #17, #38)
- *   t4  — self-deleted row: [deleted] body + deletion-date marker (AC #10, #11)
- *   t5  — self-deleted row: reaction count suppressed, reply count shown (AC #12)
- *   t6  — engagement counts singular/plural correctness (AC #12)
- *   t7  — skeleton loading on cold cache (AC #18)
- *   t8  — error with no cache: retry button + copy (AC #19)
- *   t9  — error with cached data: strip + posts still visible (AC #20)
- *   t10 — offline strip renders relative time (AC #21)
- *   t11 — strip precedence: error-with-cache beats offline (AC #22)
- *   t12 — load more button visible + calls fetchNextPage (AC #23)
- *   t13 — load more hidden when hasNextPage === false (AC #23)
- *   t14 — tappable row navigates to thread (AC #13)
- *   t15 — boundary rule grep: no @legendapp/state import (AC #1, #30)
+ * Coverage:
+ *   t1  — posts render in chronological order
+ *   t2  — empty state CTA when mode === 'full'
+ *   t3  — empty state CTA when mode === 'preview' / undefined
+ *   t4  — self-deleted row: [deleted] body + deletion-date marker
+ *   t5  — self-deleted row: reaction count suppressed, reply count shown
+ *   t6  — engagement counts singular/plural correctness
+ *   t7  — skeleton loading on cold cache
+ *   t8  — error with no cache: retry button + copy
+ *   t9  — error with cached data: strip + posts still visible
+ *   t10 — offline strip renders relative time
+ *   t11 — strip precedence: error-with-cache beats offline
+ *   t12 — load more button visible + calls fetchNextPage
+ *   t13 — load more hidden when hasNextPage === false
+ *   t14 — tappable row navigates to thread
+ *   t15 — boundary rule grep: no @legendapp/state import
  *
  * Mock strategy: vi.mock for useYourPosts, useFeed, useCurrentUserId,
  * onlineManager, solito/router; @my/ui mocked to testable HTML.
@@ -87,7 +87,8 @@ vi.mock('app/state/collective/currentUser', () => ({
 
 // ─── onlineManager mock ───────────────────────────────────────────────────────
 vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
+  const actual =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
   return {
     ...actual,
     onlineManager: {
@@ -157,8 +158,7 @@ vi.mock('@my/ui', async () => {
     YStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'y', ...mapA11y(props) }, children),
 
-    Separator: (_props: any) =>
-      ReactModule.createElement('hr', { 'data-testid': 'separator' }),
+    Separator: (_props: any) => ReactModule.createElement('hr', { 'data-testid': 'separator' }),
 
     ExpandingLineButton: ({ children, onPress, disabled, ...props }: any) =>
       ReactModule.createElement(
@@ -167,7 +167,8 @@ vi.mock('@my/ui', async () => {
           onClick: onPress,
           disabled: !!disabled,
           'aria-disabled': disabled ? 'true' : 'false',
-          'data-testid': props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
+          'data-testid':
+            props['data-testid'] || `btn-${String(children).toLowerCase().replace(/\s/g, '-')}`,
         },
         children
       ),
@@ -185,26 +186,27 @@ vi.mock('@my/ui', async () => {
         },
         deletedDisplay ? '[deleted]' : displayName
       ),
-
   }
 })
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-function makeYourPost(overrides: Partial<{
-  id: string
-  user_id: string
-  parent_post_id: string | null
-  body: string
-  created_at: string
-  is_removed: boolean
-  is_user_deleted: boolean
-  user_deleted_at: string | null
-  reaction_count: number
-  descendant_count: number
-  tenure_tier: 30 | 100 | 365 | null
-  mode: 'full'
-}> = {}) {
+function makeYourPost(
+  overrides: Partial<{
+    id: string
+    user_id: string
+    parent_post_id: string | null
+    body: string
+    created_at: string
+    is_removed: boolean
+    is_user_deleted: boolean
+    user_deleted_at: string | null
+    reaction_count: number
+    descendant_count: number
+    tenure_tier: 30 | 100 | 365 | null
+    mode: 'full'
+  }> = {}
+) {
   return {
     id: 'your-post-default',
     user_id: 'user-abc123',
@@ -263,15 +265,26 @@ afterEach(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — Renders posts in chronological order (newest first)
-// AC #1, #2, #3, #4, #5
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t1 — renders posts in chronological order', () => {
   beforeEach(() => {
     mockYourPostsData = makeYourPostsData([
-      makeYourPost({ id: 'post-newest', body: 'Newest post.', created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() }),
-      makeYourPost({ id: 'post-middle', body: 'Middle post.', created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() }),
-      makeYourPost({ id: 'post-oldest', body: 'Oldest post.', created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }),
+      makeYourPost({
+        id: 'post-newest',
+        body: 'Newest post.',
+        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+      }),
+      makeYourPost({
+        id: 'post-middle',
+        body: 'Middle post.',
+        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      }),
+      makeYourPost({
+        id: 'post-oldest',
+        body: 'Oldest post.',
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      }),
     ])
     mockYourPostsIsLoading = false
   })
@@ -329,7 +342,6 @@ describe('t1 — renders posts in chronological order', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — Empty state shows correct CTA when mode === 'full'
-// AC #16, #17
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t2 — empty state CTA when mode === full', () => {
@@ -364,7 +376,6 @@ describe('t2 — empty state CTA when mode === full', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — Empty state shows correct CTA when mode === 'preview' or undefined
-// AC #16, #17, #38
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t3 — empty state CTA when mode === preview or feed data undefined', () => {
@@ -410,7 +421,6 @@ describe('t3 — empty state CTA when mode === preview or feed data undefined', 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — Self-deleted row renders [deleted] body + deletion-date marker
-// AC #10, #11
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t4 — self-deleted row renders [deleted] body and deletion-date marker', () => {
@@ -474,7 +484,6 @@ describe('t4 — self-deleted row renders [deleted] body and deletion-date marke
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t5 — Self-deleted row suppresses reaction count, keeps reply count
-// AC #12
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t5 — self-deleted row suppresses reaction count, shows reply count', () => {
@@ -522,7 +531,6 @@ describe('t5 — self-deleted row suppresses reaction count, shows reply count',
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t6 — Engagement counts render with singular/plural correctness
-// AC #12
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t6 — engagement count singular/plural correctness', () => {
@@ -560,7 +568,6 @@ describe('t6 — engagement count singular/plural correctness', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t7 — Skeleton loading on cold cache
-// AC #18
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t7 — skeleton loading state on cold cache', () => {
@@ -590,7 +597,6 @@ describe('t7 — skeleton loading state on cold cache', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t8 — Error with no cached data: retry button + correct copy
-// AC #19
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t8 — error with no cached data shows retry surface', () => {
@@ -626,7 +632,6 @@ describe('t8 — error with no cached data shows retry surface', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t9 — Error with cached data: error strip + cached posts still visible
-// AC #20
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t9 — error with cached data shows strip and cached posts', () => {
@@ -657,7 +662,6 @@ describe('t9 — error with cached data shows strip and cached posts', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t10 — Offline strip renders relative time
-// AC #21
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t10 — offline strip renders relative time', () => {
@@ -690,7 +694,6 @@ describe('t10 — offline strip renders relative time', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t11 — Strip precedence: error-with-cache beats offline
-// AC #22
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t11 — strip precedence error-with-cache > offline', () => {
@@ -747,7 +750,6 @@ describe('t11 — strip precedence error-with-cache > offline', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t12 — Load more button visible when hasNextPage === true
-// AC #23
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t12 — load more button visible and functional', () => {
@@ -785,7 +787,6 @@ describe('t12 — load more button visible and functional', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t13 — Load more hidden when hasNextPage === false
-// AC #23
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t13 — load more button hidden when hasNextPage === false', () => {
@@ -803,7 +804,6 @@ describe('t13 — load more button hidden when hasNextPage === false', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t14 — Tappable row navigates to thread
-// AC #13
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t14 — tappable row navigates to thread', () => {
@@ -857,7 +857,6 @@ describe('t14 — tappable row navigates to thread', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t15 — Boundary rule grep: YourPostsScreen.tsx must not import @legendapp/state
-// AC #1, #30
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('t15 — boundary rule D7 source-grep', () => {

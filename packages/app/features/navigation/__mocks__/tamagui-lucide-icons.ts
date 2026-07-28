@@ -63,6 +63,7 @@ export const Moon = () => null
 export const Zap = () => null
 export const Activity = () => null
 export const Layers = () => null
+// biome-ignore lint/suspicious/noShadowRestrictedNames: mirrors the real Lucide icon export named `Map`
 export const Map = () => null
 export const Globe = () => null
 export const Wifi = () => null

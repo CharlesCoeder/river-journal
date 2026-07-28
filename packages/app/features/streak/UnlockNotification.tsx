@@ -12,7 +12,7 @@
  * so reduced-motion handling stays at the call-site and this component stays testable
  * without mocking `useReducedMotion`.
  *
- * Animation tokens degrade to `100ms` tween under prefers-reduced-motion (AC 15);
+ * Animation tokens degrade to `100ms` tween under prefers-reduced-motion;
  * the parent CelebrationScreen passes the correct token via `enterTransition`.
  */
 

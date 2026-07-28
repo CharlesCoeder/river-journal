@@ -161,7 +161,11 @@ vi.mock('app/state/persistConfig', () => ({
 // ---------------------------------------------------------------------------
 let __pushSpy = vi.fn()
 vi.mock('solito/navigation', () => ({
-  useRouter: () => ({ push: (...args: unknown[]) => __pushSpy(...args), back: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({
+    push: (...args: unknown[]) => __pushSpy(...args),
+    back: vi.fn(),
+    replace: vi.fn(),
+  }),
   usePathname: () => '/',
   useLink: () => ({}),
   useParams: () => ({}),
@@ -198,7 +202,7 @@ function renderMenu() {
 // when they are restored, re-add the matching assertions for /streak/ and /account/ below
 // and bump the count expectations back to 7.
 describe('MenuSurface renders the currently visible items in the locked order', () => {
-  it('renders the currently visible menu items including a Log in/out item (AC 1)', () => {
+  it('renders the currently visible menu items including a Log in/out item', () => {
     renderMenu()
 
     expect(screen.getByText(/past entries/i)).toBeTruthy()
@@ -207,7 +211,7 @@ describe('MenuSurface renders the currently visible items in the locked order', 
     expect(screen.getByText(/log in/i)).toBeTruthy() // unauthenticated default
   })
 
-  it('MENU_ITEMS exports the currently visible items in the locked order (AC 1)', () => {
+  it('MENU_ITEMS exports the currently visible items in the locked order', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
     const keys = MENU_ITEMS.map((i) => i.key)
     expect(keys).toEqual([
@@ -219,13 +223,13 @@ describe('MenuSurface renders the currently visible items in the locked order', 
     ])
   })
 
-  it('DOM contains the expected number of menuitem elements inside role="menu" (AC 1, AC 4)', () => {
+  it('DOM contains the expected number of menuitem elements inside role="menu"', () => {
     renderMenu()
     const container = screen.getByRole('menu')
     expect(container.querySelectorAll('[role="menuitem"]').length).toBe(5)
   })
 
-  it('MENU_ITEMS[2] is the your-posts entry with route /collective/your-posts (AC 24, AC 25)', () => {
+  it('MENU_ITEMS[2] is the your-posts entry with route /collective/your-posts', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
     expect(MENU_ITEMS[2]!.key).toBe('your-posts')
     expect(MENU_ITEMS[2]!.route).toBe('/collective/your-posts')
@@ -244,14 +248,14 @@ describe('each menu item routes to the correct destination', () => {
   ] as const
 
   for (const { label, route } of routeTable) {
-    it(`pressing "${String(label)}" calls router.push("${route}") (AC 3)`, async () => {
+    it(`pressing "${String(label)}" calls router.push("${route}")`, async () => {
       renderMenu()
       fireEvent.click(screen.getByText(label))
       await waitFor(() => expect(__pushSpy).toHaveBeenCalledWith(route))
     })
   }
 
-  it('pressing Log in when unauthenticated routes to /auth without calling signOut (AC 3)', async () => {
+  it('pressing Log in when unauthenticated routes to /auth without calling signOut', async () => {
     mockIsAuthenticated = false
     renderMenu()
     fireEvent.click(screen.getByText(/log in/i))
@@ -261,7 +265,7 @@ describe('each menu item routes to the correct destination', () => {
     })
   })
 
-  it('pressing Log out when authenticated calls signOut then routes to /auth (AC 3)', async () => {
+  it('pressing Log out when authenticated calls signOut then routes to /auth', async () => {
     mockIsAuthenticated = true
     mockSignOut.mockResolvedValue({ error: null })
     renderMenu()
@@ -272,7 +276,7 @@ describe('each menu item routes to the correct destination', () => {
     })
   })
 
-  it('label shows "Log out" when authenticated and "Log in" when unauthenticated (AC 3)', () => {
+  it('label shows "Log out" when authenticated and "Log in" when unauthenticated', () => {
     mockIsAuthenticated = false
     const { unmount } = renderMenu()
     expect(screen.getByText(/log in/i)).toBeTruthy()
@@ -287,70 +291,84 @@ describe('each menu item routes to the correct destination', () => {
 })
 
 // ===========================================================================
-// Suite 3 — Press-flood guard (AC 12)
+// Suite 3 — Press-flood guard
 // ===========================================================================
 
 describe('press-flood guard: rapid taps on a menu item enqueue at most one navigation', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())
 
-  it('second tap within 400 ms fires router.push exactly once (AC 12)', async () => {
+  it('second tap within 400 ms fires router.push exactly once', async () => {
     renderMenu()
     const item = screen.getByText(/past entries/i)
     fireEvent.click(item)
     fireEvent.click(item)
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('tap on a different item during the latch window is also blocked (AC 12)', async () => {
+  it('tap on a different item during the latch window is also blocked', async () => {
     renderMenu()
     fireEvent.click(screen.getByText(/past entries/i))
     fireEvent.click(screen.getByText(/collective/i))
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('latch clears after 400 ms and the next tap is accepted (AC 12)', async () => {
+  it('latch clears after 400 ms and the next tap is accepted', async () => {
     renderMenu()
     const item = screen.getByText(/past entries/i)
     fireEvent.click(item)
-    await act(async () => { vi.advanceTimersByTime(400) })
+    await act(async () => {
+      vi.advanceTimersByTime(400)
+    })
     fireEvent.click(item)
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     expect(__pushSpy).toHaveBeenCalledTimes(2)
   })
 })
 
 // ===========================================================================
-// Suite 4 — Stagger short-circuit on first press (AC 13)
+// Suite 4 — Stagger short-circuit on first press
 // ===========================================================================
 
 describe('stagger animation completes immediately when any item is pressed', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())
 
-  it('all items are visible immediately after a press during the stagger sequence (AC 13)', async () => {
+  it('all items are visible immediately after a press during the stagger sequence', async () => {
     renderMenu()
     // 50ms: item 0 (0ms) revealed; items 1-5 (100-500ms) not yet
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     fireEvent.click(screen.getByText(/past entries/i))
     const hidden = screen.getByRole('menu').querySelectorAll('[data-hidden="true"]')
     expect(hidden.length).toBe(0)
   })
 
-  it('no further DOM changes occur after press clears all pending stagger timeouts (AC 13)', async () => {
+  it('no further DOM changes occur after press clears all pending stagger timeouts', async () => {
     const { container } = renderMenu()
-    await act(async () => { vi.advanceTimersByTime(50) })
+    await act(async () => {
+      vi.advanceTimersByTime(50)
+    })
     fireEvent.click(screen.getByText(/past entries/i))
     const snapshot = container.innerHTML
-    await act(async () => { vi.advanceTimersByTime(1000) })
+    await act(async () => {
+      vi.advanceTimersByTime(1000)
+    })
     expect(container.innerHTML).toBe(snapshot)
   })
 })
 
 // ===========================================================================
-// Suite 5 — Reduced-motion compliance (AC 7)
+// Suite 5 — Reduced-motion compliance
 // ===========================================================================
 
 describe('reduced-motion: all items render visible without stagger delays', () => {
@@ -359,7 +377,7 @@ describe('reduced-motion: all items render visible without stagger delays', () =
     myUi.__setReducedMotion(false)
   })
 
-  it('when useReducedMotion returns true all seven items are visible on first render, no timer advance needed (AC 7)', async () => {
+  it('when useReducedMotion returns true all seven items are visible on first render, no timer advance needed', async () => {
     vi.useFakeTimers()
     const myUi = (await import('@my/ui')) as any
     myUi.__setReducedMotion(true)
@@ -375,32 +393,32 @@ describe('reduced-motion: all items render visible without stagger delays', () =
 })
 
 // ===========================================================================
-// Suite 6 — Container-level accessibility (AC 11)
+// Suite 6 — Container-level accessibility
 // ===========================================================================
 
 describe('container-level accessibility labels and roles', () => {
-  it('list container has aria-label="Main menu" (AC 11)', () => {
+  it('list container has aria-label="Main menu"', () => {
     renderMenu()
     expect(screen.getByRole('menu', { name: /main menu/i })).toBeTruthy()
   })
 
-  it('container carries role="menu" (AC 4)', () => {
+  it('container carries role="menu"', () => {
     renderMenu()
     expect(screen.getByRole('menu')).toBeTruthy()
   })
 })
 
 // ===========================================================================
-// Suite 7 — Per-item accessibility and touch-target sizing (AC 4, 5)
+// Suite 7 — Per-item accessibility and touch-target sizing
 // ===========================================================================
 
 describe('per-item accessibility and minimum touch-target', () => {
-  it('all currently visible items have role="menuitem" (AC 4)', () => {
+  it('all currently visible items have role="menuitem"', () => {
     renderMenu()
     expect(screen.getAllByRole('menuitem').length).toBe(5)
   })
 
-  it('each item element carries a minimum height of 44 px via inline style (AC 5)', () => {
+  it('each item element carries a minimum height of 44 px via inline style', () => {
     renderMenu()
     for (const item of screen.getAllByRole('menuitem')) {
       const style = item.getAttribute('style') ?? ''
@@ -414,28 +432,32 @@ describe('per-item accessibility and minimum touch-target', () => {
 })
 
 // ===========================================================================
-// Suite 8 — MENU_ITEMS immutability (AC 14)
+// Suite 8 — MENU_ITEMS immutability
 // ===========================================================================
 
 describe('MENU_ITEMS is a frozen / readonly array that preserves the locked order', () => {
-  it('MENU_ITEMS has the expected number of currently-visible entries (AC 14)', () => {
+  it('MENU_ITEMS has the expected number of currently-visible entries', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
     expect(MENU_ITEMS).toHaveLength(5)
   })
 
-  it('attempting to push a new item does not change the array length (AC 14)', () => {
+  it('attempting to push a new item does not change the array length', () => {
     if (!MENU_ITEMS) throw new Error('MENU_ITEMS not exported — implementation missing')
     // TypeScript makes .push() a compile error via `as const`.
     // At runtime a frozen array throws; a readonly tuple silently no-ops.
     // @ts-expect-error — intentional mutation attempt to verify runtime guard
     const mutate = () => MENU_ITEMS!.push({ key: 'hack', label: 'Hack', route: '/hack' } as never)
-    try { mutate() } catch (_) { /* expected for Object.freeze */ }
+    try {
+      mutate()
+    } catch (_) {
+      /* expected for Object.freeze */
+    }
     expect(MENU_ITEMS).toHaveLength(5)
   })
 })
 
 // ===========================================================================
-// Suite 9 — signOut called exactly once even on double-tap (AC 12)
+// Suite 9 — signOut called exactly once even on double-tap
 // ===========================================================================
 
 describe('signOut is invoked at most once on the Log out item regardless of tap count', () => {
@@ -446,7 +468,7 @@ describe('signOut is invoked at most once on the Log out item regardless of tap 
   })
   afterEach(() => vi.useRealTimers())
 
-  it('double-tapping Log out calls signOut exactly once (AC 12)', async () => {
+  it('double-tapping Log out calls signOut exactly once', async () => {
     renderMenu()
     const el = screen.getByText(/log out/i)
     fireEvent.click(el)
@@ -460,14 +482,14 @@ describe('signOut is invoked at most once on the Log out item regardless of tap 
 })
 
 // ===========================================================================
-// Suite 10 — Auth-flip race condition (AC 3)
+// Suite 10 — Auth-flip race condition
 // ===========================================================================
 
 describe('auth-flip race: navigation fires exactly once when auth state changes mid-press', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())
 
-  it('navigation to /auth fires once even when isAuthenticated flips before signOut resolves (AC 3)', async () => {
+  it('navigation to /auth fires once even when isAuthenticated flips before signOut resolves', async () => {
     mockIsAuthenticated = true
     mockSignOut.mockImplementation(
       () =>
@@ -492,7 +514,7 @@ describe('auth-flip race: navigation fires exactly once when auth state changes 
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('re-rendering with isAuthed=false does NOT trigger a second router.push (AC 3)', async () => {
+  it('re-rendering with isAuthed=false does NOT trigger a second router.push', async () => {
     mockIsAuthenticated = true
     mockSignOut.mockResolvedValue({ error: null })
 
@@ -507,7 +529,9 @@ describe('auth-flip race: navigation fires exactly once when auth state changes 
     mockIsAuthenticated = false
     if (MenuSurface) rerender(React.createElement(MenuSurface))
 
-    await act(async () => { vi.advanceTimersByTime(200) })
+    await act(async () => {
+      vi.advanceTimersByTime(200)
+    })
 
     expect(__pushSpy).toHaveBeenCalledTimes(1)
   })

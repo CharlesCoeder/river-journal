@@ -51,7 +51,7 @@ const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 export type CreatePostVars = {
   id: string
   body: string
-  // Story 3-15: top-level callers pass the post title; reply callers pass
+  // Top-level callers pass the post title; reply callers pass
   // `null`/omit. The server CHECK (collective_posts_title_chk) backstops
   // correctness (required on top-level, must be NULL on replies).
   title?: string | null
@@ -98,7 +98,7 @@ type ReactMutationContext = {
   reactionsSnapshot: ReactionsCache | undefined
 }
 
-// ─── Sentinels (preserved from Story 3-2 stub) ───────────────────────────────
+// ─── Sentinels (preserved from initial stub) ───────────────────────────────
 // These are read by provider/index.tsx:98–106 in dev as an ordering witness.
 // Removing or renaming them breaks the dev-only eager-import regression guard.
 
@@ -150,7 +150,7 @@ queryClient.setMutationDefaults(['collective', 'post'], {
     const snapshot = queryClient.getQueryData<InfiniteData<FeedPage>>(collectiveFeedKey)
 
     if (snapshot) {
-      // Story 3-15: the optimistic row matches the new (no-`body`) feed `Post`
+      // The optimistic row matches the new (no-`body`) feed `Post`
       // shape — `title` + `excerpt` + `descendant_count` + `reactions` instead
       // of `body`. `excerpt: ''` is acceptable: onSettled invalidation replaces
       // this row with the canonical RPC row within the poll window.
@@ -233,10 +233,7 @@ queryClient.setMutationDefaults(['collective', 'react'], {
       // The caller passes the existing reaction's UUID as vars.id.
       // Deleting by PK avoids chaining multiple .eq() filters while
       // still being precise about which row to remove.
-      const { error } = await supabase
-        .from('collective_reactions')
-        .delete()
-        .eq('id', vars.id)
+      const { error } = await supabase.from('collective_reactions').delete().eq('id', vars.id)
       if (error) throw error
     }
   },
@@ -260,10 +257,7 @@ queryClient.setMutationDefaults(['collective', 'react'], {
       const optimistic: ReactionsCache = {
         counts: {
           ...reactionsSnapshot.counts,
-          [vars.kind]:
-            vars.toggle === 'add'
-              ? prevCount + 1
-              : Math.max(0, prevCount - 1),
+          [vars.kind]: vars.toggle === 'add' ? prevCount + 1 : Math.max(0, prevCount - 1),
         },
         userReactions: {
           ...reactionsSnapshot.userReactions,
@@ -300,7 +294,7 @@ queryClient.setMutationDefaults(['collective', 'report'], {
   gcTime: TWENTY_FOUR_HOURS_MS,
 
   mutationFn: async (vars: ReportPostVars) => {
-    // PRIVACY (NFR19): note content is NEVER passed to console.log / Sentry /
+    // PRIVACY: note content is NEVER passed to console.log / Sentry /
     // any structured-logging helper. We pass `note` only to the DB insert.
     const insert: ReportInsert = {
       id: vars.id,
@@ -330,7 +324,7 @@ queryClient.setMutationDefaults(['collective', 'report'], {
   },
 
   // Report onMutate intentionally does NOT mutate any cache.
-  // Local-hide behavior (Story 3.12) is handled at the component level via
+  // Local-hide behavior is handled at the component level via
   // Legend-State users.preferences.locallyHiddenPosts — NOT in this TQ mutation.
   onMutate: async (_vars: ReportPostVars): Promise<null> => {
     return null
@@ -351,18 +345,18 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
   gcTime: TWENTY_FOUR_HOURS_MS,
 
   mutationFn: async (vars: DeleteOwnPostVars) => {
-    // PRIVACY (NFR19): only post_id is sent to the RPC — the original body is
+    // PRIVACY: only post_id is sent to the RPC — the original body is
     // never in the request payload, and the optimistic update uses the literal
     // '[deleted]', not the original body.
     const { error } = await supabase.rpc('delete_my_post', { post_id: vars.post_id })
     if (error) {
       // Swallow the ambiguous 42501 from delete_my_post when BOTH code AND
       // message match exactly. This covers offline-replay idempotency: the
-      // post was already deleted by a prior partial run (AC #2, #11, #32).
+      // post was already deleted by a prior partial run.
       // Any other 42501 (e.g. RLS denial of EXECUTE) is re-thrown — match
-      // BOTH conditions; never swallow on code alone (AC #32).
+      // BOTH conditions; never swallow on code alone.
       // Double-submit safety: the second tap hits this path and resolves
-      // cleanly; the post stays in deleted state (AC #34).
+      // cleanly; the post stays in deleted state.
       if (error.code === '42501' && error.message === 'cannot delete this post') {
         return
       }
@@ -387,7 +381,7 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     // Walk all three caches and update the matching row. The spread preserves
     // all other fields including the discriminated `mode` union literal.
     //
-    // Story 3-15: the FEED `Post` no longer has `body` (the feed RPC dropped it
+    // The FEED `Post` no longer has `body` (the feed RPC dropped it
     // in favour of `excerpt`), so the feed-cache update sets ONLY the deletion
     // flags — the client renders `[deleted]` from `is_user_deleted`, the same
     // convention the RPCs already rely on. The thread + yourPosts caches still
@@ -395,9 +389,9 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     if (feedSnapshot) {
       queryClient.setQueryData<InfiniteData<FeedPage>>(collectiveFeedKey, {
         ...feedSnapshot,
-        pages: feedSnapshot.pages.map(page => ({
+        pages: feedSnapshot.pages.map((page) => ({
           ...page,
-          items: page.items.map(item =>
+          items: page.items.map((item) =>
             item.id === vars.post_id
               ? { ...item, is_user_deleted: true, user_deleted_at: deletedAt }
               : item
@@ -407,29 +401,26 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     }
 
     if (threadSnapshot) {
-      queryClient.setQueryData<InfiniteData<ThreadPageResult>>(
-        collectiveThreadKey(vars.post_id),
-        {
-          ...threadSnapshot,
-          pages: threadSnapshot.pages.map(page => ({
-            ...page,
-            items: page.items.map(item =>
-              item.id === vars.post_id
-                ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
-                : item
-            ),
-          })),
-        }
-      )
+      queryClient.setQueryData<InfiniteData<ThreadPageResult>>(collectiveThreadKey(vars.post_id), {
+        ...threadSnapshot,
+        pages: threadSnapshot.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item) =>
+            item.id === vars.post_id
+              ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
+              : item
+          ),
+        })),
+      })
     }
 
     for (const [key, snapshot] of yourPostsSnapshots) {
       if (!snapshot) continue
       queryClient.setQueryData<InfiniteData<YourPostsPage>>(key, {
         ...snapshot,
-        pages: snapshot.pages.map(page => ({
+        pages: snapshot.pages.map((page) => ({
           ...page,
-          items: page.items.map(item =>
+          items: page.items.map((item) =>
             item.id === vars.post_id
               ? { ...item, body: '[deleted]', is_user_deleted: true, user_deleted_at: deletedAt }
               : item
@@ -441,11 +432,7 @@ queryClient.setMutationDefaults(['collective', 'delete_own'], {
     return { feedSnapshot, threadSnapshot, yourPostsSnapshots }
   },
 
-  onError: (
-    _err: unknown,
-    vars: DeleteOwnPostVars,
-    ctx: DeleteOwnContext | undefined
-  ) => {
+  onError: (_err: unknown, vars: DeleteOwnPostVars, ctx: DeleteOwnContext | undefined) => {
     // Restore every snapshot that was non-undefined — never call setQueryData
     // with undefined (would clobber a fresher cache that arrived between
     // onMutate and onError). Mirrors the empty-cache safety pattern.

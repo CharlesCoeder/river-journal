@@ -1,9 +1,24 @@
-import { AnimatePresence, ScrollView, Text, YStack, XStack, View } from '@my/ui'
+import {
+  AnimatePresence,
+  ScrollView,
+  Text,
+  YStack,
+  XStack,
+  View,
+  ExpandingLineButton,
+} from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useEffect, useState } from 'react'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { encryptionSetup$ } from 'app/state/encryptionSetup'
+import { telemetryConsent$ } from 'app/state/telemetryConsent'
+import { setTelemetryConsent } from 'app/utils/telemetry/consent'
+import { ExportJournal } from './components/ExportJournal'
+import { ExportCollectivePosts } from './components/ExportCollectivePosts'
+import { BackupRestore } from './components/BackupRestore'
+import { DeleteAccountFlow } from './components/DeleteAccountFlow'
+import { ThreePostureDisclosure } from 'app/features/disclosure/ThreePostureDisclosure'
 
 function SectionHeader({ children }: { children: string }) {
   return (
@@ -61,8 +76,16 @@ function PrivacyModeCard({
       </Text>
       <YStack gap="$3">
         {bullets.map((bullet, i) => (
-          <XStack key={i} gap="$2" alignItems="flex-start">
-            <Text fontFamily="$body" fontSize={14} color="$color7">
+          <XStack
+            key={i}
+            gap="$2"
+            alignItems="flex-start"
+          >
+            <Text
+              fontFamily="$body"
+              fontSize={14}
+              color="$color7"
+            >
               {'\u2022'}
             </Text>
             <Text
@@ -123,7 +146,10 @@ function AccessRow({
 
 function RetentionCard({ title, body }: { title: string; body: string }) {
   return (
-    <YStack flex={1} gap="$2">
+    <YStack
+      flex={1}
+      gap="$2"
+    >
       <Text
         fontFamily="$journal"
         fontSize={18}
@@ -134,7 +160,68 @@ function RetentionCard({ title, body }: { title: string; body: string }) {
       >
         {title}
       </Text>
-      <Text fontFamily="$body" fontSize={14} color="$color8" lineHeight={22}>
+      <Text
+        fontFamily="$body"
+        fontSize={14}
+        color="$color8"
+        lineHeight={22}
+      >
+        {body}
+      </Text>
+    </YStack>
+  )
+}
+
+function PostureLine({
+  testID,
+  title,
+  body,
+  onPress,
+}: {
+  testID: string
+  title: string
+  body: string
+  onPress?: () => void
+}) {
+  // A pressable posture line (encrypted journal / Collective) carries a button
+  // role and opens the shared review disclosure. The reserved AI-cloud line
+  // passes no `onPress`: it renders as static, non-focusable text (NOT a
+  // disabled control — a disabled control is still announced as a dead
+  // affordance and visually implies a broken link).
+  const interactive = onPress !== undefined
+  return (
+    <YStack
+      testID={testID}
+      gap="$2"
+      {...(interactive
+        ? {
+            onPress,
+            role: 'button' as const,
+            tabIndex: 0,
+            onKeyDown: (e: any) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault?.()
+                onPress?.()
+              }
+            },
+            cursor: 'pointer',
+            hoverStyle: { opacity: 0.8 },
+          }
+        : {})}
+    >
+      <Text
+        fontFamily="$journal"
+        fontSize={18}
+        color="$color"
+      >
+        {title}
+      </Text>
+      <Text
+        fontFamily="$body"
+        fontSize={14}
+        color="$color8"
+        lineHeight={22}
+      >
         {body}
       </Text>
     </YStack>
@@ -142,14 +229,29 @@ function RetentionCard({ title, body }: { title: string; body: string }) {
 }
 
 const STAGGER_MS = 100
-const SECTION_COUNT = 3
+// Every section below is gated on `visibleCount >= n`; keep this equal to the
+// number of staggered sections so the last one actually reveals (a too-low
+// count would silently hide a section forever).
+const SECTION_COUNT = 7
+
+const TELEMETRY_CONSENT_COPY =
+  'When on, the app sends anonymous crash reports and basic usage events (which features are used, not what you write) to help us find and fix problems. Your journal entries, Collective posts, and any free text are never collected. Off by default; changing it takes effect immediately.'
 
 export function PrivacyCenterScreen() {
   const router = useRouter()
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const currentMode = use$(encryptionSetup$.currentMode)
   const syncEnabled = use$(store$.session.syncEnabled)
+  const telemetryEnabled = use$(telemetryConsent$.enabled)
   const [visibleCount, setVisibleCount] = useState(0)
+  // The Boundary A review disclosure, shared by the encrypted-journal and
+  // Collective posture lines (its copy covers both). Review mode never mutates
+  // the acknowledgment preference.
+  const [reviewOpen, setReviewOpen] = useState(false)
+  // The deletion-confirmation Dialog's open state. The Dialog stays mounted
+  // regardless of auth (driven by this state), so its terminal goodbye survives
+  // the sign-out-driven session flip — only the entry trigger is auth-gated.
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   useEffect(() => {
     const timers = Array.from({ length: SECTION_COUNT }, (_, i) =>
@@ -158,8 +260,7 @@ export function PrivacyCenterScreen() {
     return () => timers.forEach(clearTimeout)
   }, [])
 
-  const effectiveMode =
-    isAuthenticated && syncEnabled && currentMode ? currentMode : null
+  const effectiveMode = isAuthenticated && syncEnabled && currentMode ? currentMode : null
 
   return (
     <ScrollView
@@ -198,7 +299,11 @@ export function PrivacyCenterScreen() {
             >
               Privacy Center
             </Text>
-            <Text fontFamily="$body" fontSize={14} color="$color8">
+            <Text
+              fontFamily="$body"
+              fontSize={14}
+              color="$color8"
+            >
               How River Journal handles your data and encryption.
             </Text>
           </YStack>
@@ -220,7 +325,14 @@ export function PrivacyCenterScreen() {
           <AnimatePresence>
             {/* 1. Privacy Modes */}
             {visibleCount >= 1 && (
-              <YStack key="privacy-modes" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$6">
+              <YStack
+                key="privacy-modes"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
                 <SectionHeader>Privacy Modes</SectionHeader>
                 <XStack
                   flexDirection="column"
@@ -239,7 +351,9 @@ export function PrivacyCenterScreen() {
                   />
                   <PrivacyModeCard
                     title="Cloud Backup Mode"
-                    quote={'"The standard, hassle-free security method used by most everyday apps."'}
+                    quote={
+                      '"The standard, hassle-free security method used by most everyday apps."'
+                    }
                     bullets={[
                       'We securely handle the encryption behind the scenes.',
                       'Simple password recovery if you ever get locked out.',
@@ -251,9 +365,59 @@ export function PrivacyCenterScreen() {
               </YStack>
             )}
 
-            {/* 2. What We Can & Cannot Access */}
+            {/* 2. Privacy Postures — the v2 three-posture model. Always
+                visible regardless of auth: an anonymous/local-only user can
+                still read the postures and re-open the Boundary A review copy. */}
             {visibleCount >= 2 && (
-              <YStack key="access-info" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$6">
+              <YStack
+                key="postures"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
+                <SectionHeader>Privacy Postures</SectionHeader>
+                <YStack gap="$5">
+                  <PostureLine
+                    testID="posture-encrypted-journal"
+                    title="Encrypted journal"
+                    body="Your journal entries are encrypted on your device before they ever sync. We can't read them."
+                    onPress={() => setReviewOpen(true)}
+                  />
+                  <PostureLine
+                    testID="posture-collective"
+                    title="Collective posts"
+                    body="Posts you make in the Collective are stored as plain text on our servers. They are visible to other Collective members."
+                    onPress={() => setReviewOpen(true)}
+                  />
+                  <PostureLine
+                    testID="posture-ai-cloud"
+                    title="AI cloud inference (Growth)"
+                    body="When AI Reflection ships in a future release, you'll be able to choose between local inference (your writing never leaves your device) or cloud inference (sent to a named provider with a no-training commitment)."
+                  />
+                </YStack>
+                {reviewOpen && (
+                  <ThreePostureDisclosure
+                    boundary="collective_post_v1"
+                    mode="review"
+                    open={reviewOpen}
+                    onClose={() => setReviewOpen(false)}
+                  />
+                )}
+              </YStack>
+            )}
+
+            {/* 3. What We Can & Cannot Access */}
+            {visibleCount >= 3 && (
+              <YStack
+                key="access-info"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
                 <SectionHeader>What We Can & Cannot Access</SectionHeader>
                 <YStack gap="$5">
                   <AccessRow
@@ -277,9 +441,16 @@ export function PrivacyCenterScreen() {
               </YStack>
             )}
 
-            {/* 3. Data Retention & Deletion */}
-            {visibleCount >= 3 && (
-              <YStack key="retention" transition="designEnter" enterStyle={{ opacity: 0, y: 10 }} opacity={1} y={0} gap="$6">
+            {/* 4. Data Retention & Deletion */}
+            {visibleCount >= 4 && (
+              <YStack
+                key="retention"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
                 <SectionHeader>Data Retention & Deletion</SectionHeader>
                 <XStack
                   flexDirection="column"
@@ -299,10 +470,126 @@ export function PrivacyCenterScreen() {
                     body="Entries on your device remain as anonymous local data, even after account deletion or disabling sync."
                   />
                 </XStack>
+                {/* Deletion entry — authenticated only (anonymous users have no
+                    account to delete). Opens the always-mounted confirmation
+                    Dialog below. */}
+                {isAuthenticated && (
+                  <Text
+                    testID="delete-account-entry"
+                    fontFamily="$body"
+                    fontSize={11}
+                    letterSpacing={2}
+                    textTransform="uppercase"
+                    color="$color8"
+                    cursor="pointer"
+                    hoverStyle={{ color: '$color' }}
+                    onPress={() => setDeleteOpen(true)}
+                    alignSelf="flex-start"
+                  >
+                    Delete account
+                  </Text>
+                )}
+              </YStack>
+            )}
+
+            {/* 5. Your Data — the export data-rights affordances. Journal export
+                is always available (anonymous/local-only included); Collective
+                export is authenticated-only. */}
+            {visibleCount >= 5 && (
+              <YStack
+                key="data-rights"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
+                <SectionHeader>Your Data</SectionHeader>
+                <YStack gap="$8">
+                  <ExportJournal />
+                  {isAuthenticated && <ExportCollectivePosts />}
+                </YStack>
+              </YStack>
+            )}
+
+            {/* 6. Encrypted Backup — export/restore a passphrase-encrypted copy
+                of the whole journal. Fully local; available to every user
+                (including anonymous/local-only), so its entry points are never
+                auth-gated. */}
+            {visibleCount >= 6 && (
+              <YStack
+                key="encrypted-backup"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
+                <SectionHeader>Encrypted Backup</SectionHeader>
+                <BackupRestore />
+              </YStack>
+            )}
+
+            {/* 7. Usage & Crash Reports — the device-local telemetry opt-in.
+                Default OFF; a single toggle gates both crash and product
+                analytics. Available to every user (never auth-gated) since the
+                preference is per-device and never synced. Flipping it applies
+                immediately with no restart. */}
+            {visibleCount >= 7 && (
+              <YStack
+                key="usage-crash-reports"
+                transition="designEnter"
+                enterStyle={{ opacity: 0, y: 10 }}
+                opacity={1}
+                y={0}
+                gap="$6"
+              >
+                <SectionHeader>Usage & Crash Reports</SectionHeader>
+                <YStack gap="$4">
+                  <XStack
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$4"
+                      color="$color"
+                    >
+                      Share usage & crash reports
+                    </Text>
+                    <ExpandingLineButton
+                      size="default"
+                      testID="telemetry-consent-toggle"
+                      accessibilityRole="switch"
+                      accessibilityLabel="Share usage and crash reports"
+                      accessibilityState={{ checked: telemetryEnabled }}
+                      onPress={() => setTelemetryConsent(!telemetryEnabled)}
+                    >
+                      {telemetryEnabled ? 'On' : 'Off'}
+                    </ExpandingLineButton>
+                  </XStack>
+                  <Text
+                    fontFamily="$body"
+                    fontSize={13}
+                    color="$color8"
+                    lineHeight={20}
+                  >
+                    {TELEMETRY_CONSENT_COPY}
+                  </Text>
+                </YStack>
               </YStack>
             )}
           </AnimatePresence>
         </YStack>
+
+        {/* The deletion-confirmation Dialog stays mounted regardless of auth or
+            stagger — its open/step state drives it, so the terminal goodbye
+            survives the sign-out that flips isAuthenticated. Only the entry
+            trigger above is auth-gated. */}
+        <DeleteAccountFlow
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+        />
       </YStack>
     </ScrollView>
   )

@@ -1,14 +1,14 @@
 /**
- * Story 3-2 — TDD red-phase E2E (integration) tests for the TanStack Query
- * infrastructure substrate. These tests MUST fail before Story 3-2 is
- * implemented and pass after.
+ * TDD red-phase E2E (integration) tests for the TanStack Query
+ * infrastructure substrate. These tests MUST fail before implementation
+ * and pass after.
  *
  * Surface covered:
- *   - AC #3, #15: queryClient defaultOptions (retry, retryDelay cap, mutations.retry).
- *   - AC #4, #15: dehydrateOptions.shouldDehydrateMutation matrix.
- *   - AC #5: queryClient.native re-exports identical shape (smoke import).
- *   - AC #6, #18: state/collective/mutations stub side-effects + load timestamp.
- *   - AC #20: queryStorage adapter resilience — getItem returns undefined,
+ *   - queryClient defaultOptions (retry, retryDelay cap, mutations.retry).
+ *   - dehydrateOptions.shouldDehydrateMutation matrix.
+ *   - queryClient.native re-exports identical shape (smoke import).
+ *   - state/collective/mutations stub side-effects + load timestamp.
+ *   - queryStorage adapter resilience — getItem returns undefined,
  *             setItem/removeItem swallow errors (no unhandled rejection).
  */
 
@@ -17,7 +17,7 @@ import { QueryClient, MutationCache } from '@tanstack/react-query'
 
 import { queryClient, dehydrateOptions } from '../queryClient'
 
-describe('Story 3-2 / queryClient defaults (AC #3, #15)', () => {
+describe('queryClient defaults', () => {
   it('exports a singleton QueryClient instance', () => {
     expect(queryClient).toBeInstanceOf(QueryClient)
   })
@@ -62,7 +62,7 @@ function makeMutation(opts: {
   } as unknown as Parameters<NonNullable<typeof dehydrateOptions.shouldDehydrateMutation>>[0]
 }
 
-describe('Story 3-2 / dehydrateOptions.shouldDehydrateMutation (AC #4, #15)', () => {
+describe('dehydrateOptions.shouldDehydrateMutation', () => {
   it('persists in-flight collective.post', () => {
     const m = makeMutation({ key: ['collective', 'post'], status: 'pending', isPaused: false })
     expect(dehydrateOptions.shouldDehydrateMutation!(m)).toBe(true)
@@ -96,7 +96,7 @@ describe('Story 3-2 / dehydrateOptions.shouldDehydrateMutation (AC #4, #15)', ()
   })
 })
 
-describe('Story 3-2 / queryClient.native re-exports identical shape (AC #5)', () => {
+describe('queryClient.native re-exports identical shape', () => {
   it('re-exports queryClient and dehydrateOptions from ./queryClient', async () => {
     // Vitest runs in a Node context; Metro's `.native.ts` resolution does NOT
     // apply here. We import the .native module by explicit path and assert the
@@ -109,7 +109,7 @@ describe('Story 3-2 / queryClient.native re-exports identical shape (AC #5)', ()
   })
 })
 
-describe('Story 3-2 / state/collective/mutations stub (AC #6, #18)', () => {
+describe('state/collective/mutations stub', () => {
   it('exports __collectiveMutationsStub === true', async () => {
     const mod = await import('../collective/mutations')
     expect(mod.__collectiveMutationsStub).toBe(true)
@@ -122,7 +122,7 @@ describe('Story 3-2 / state/collective/mutations stub (AC #6, #18)', () => {
   })
 })
 
-describe('Story 3-2 / queryStorage resilience (AC #20)', () => {
+describe('queryStorage resilience', () => {
   it('getItem resolves to undefined when underlying storage throws', async () => {
     // The web/desktop adapter wraps IndexedDB. We can't easily induce a real
     // IndexedDB failure under jsdom-less Node, so instead we exercise the
@@ -152,10 +152,10 @@ describe('Story 3-2 / queryStorage resilience (AC #20)', () => {
   })
 })
 
-describe('Story 3-2 / queryClient mutationCache exists (sanity)', () => {
-  it('exposes a MutationCache (so setMutationDefaults in Story 3.7 has a target)', () => {
+describe('queryClient mutationCache exists (sanity)', () => {
+  it('exposes a MutationCache (so setMutationDefaults has a target)', () => {
     // Ensure that the singleton has a fully-constructed mutation cache —
-    // a regression here would mean Story 3.7's setMutationDefaults calls
+    // a regression here would mean setMutationDefaults calls
     // would fail even with correct eager-import ordering.
     expect(queryClient.getMutationCache()).toBeInstanceOf(MutationCache)
   })

@@ -1,12 +1,12 @@
 // packages/app/features/collective/ThreadView.tsx
 //
-// Flagship Collective thread surface — title-led redesign (Story 3-16).
+// Flagship Collective thread surface — title-led redesign.
 //
 // Shape (mirrors docs/collective-design-reference CollectiveThread.tsx):
 //   • a "Back to the room" link
 //   • the ROOT letter: title (h1) + byline + full body + interactive reactions
 //     + reply, sourced from useThreadRoot() (the feed RPC no longer carries
-//     `body`, so the root's body has no other source — Story 3-16 follow-up #1)
+//     `body`, so the root's body has no other source)
 //   • a branching reply tree: each reply is byline + body + reactions, nested
 //     under left depth rails, with a depth cap + "view N more replies" affordance
 //
@@ -52,7 +52,7 @@ import { timeAgoCasual } from './_shared'
 
 // ─── Depth cap ────────────────────────────────────────────────────────────────
 // Depth caps tuned for: mobile rail-stack readability, web content-density.
-// Revisit after dogfood feedback (deferred-decisions #2).
+// Revisit after dogfood feedback.
 const WEB_DEPTH_CAP = 6
 const MOBILE_DEPTH_CAP = 4
 
@@ -147,7 +147,7 @@ function SkeletonRows() {
 // function-component render. The user taps "View N more replies" → ThreadView adds
 // the postId to expandedSubtreeIds → React mounts ThreadExpansion → useThread runs.
 //
-// Cache note: gcTime: 5min for expansion instances (Story 3-4). Collapsing unmounts
+// Cache note: gcTime: 5min for expansion instances. Collapsing unmounts
 // the component but the cache entry survives; re-expanding within 5min hits cache.
 
 interface ThreadExpansionProps {
@@ -185,7 +185,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   const isSuspended = useIsSuspended(currentUserId ?? null)
   const hiddenIds = useLocallyHiddenPostIds()
   // Root post (title + full body) — the feed RPC dropped `body`, so this is the
-  // ONLY source for the root's body. Story 3-16 follow-up #1.
+  // ONLY source for the root's body.
   const rootQuery = useThreadRoot(postId)
   // Reply tree (direct children of the root; deeper levels lazy-load).
   const tree = useThread(postId, { role: 'root' })
@@ -277,10 +277,15 @@ export default function ThreadView({ postId }: ThreadViewProps) {
 
       // allLoaded: the entire subtree is present in the flat list — render inline.
       // hasUnloaded: there are more descendants to load via ThreadExpansion.
-      const allLoaded = hasDescendants && loadedDescCount >= (post.descendant_count ?? 0)
+      // When direct children are actually present in the flat list we render them
+      // even if `descendant_count` is a stale/inconsistent 0 — the loaded rows are
+      // the authoritative signal that replies exist.
+      const allLoaded =
+        (hasDescendants || loadedChildren.length > 0) &&
+        loadedDescCount >= (post.descendant_count ?? 0)
       const hasUnloaded = hasDescendants && !allLoaded
 
-      // aria-expanded: omit when there is no content to expand/collapse (AC #6).
+      // aria-expanded: omit when there is no content to expand/collapse.
       const ariaExpanded = hasDescendants ? !isCollapsed : undefined
 
       // Deletion state: self-deleted → tombstone; anonymized → body shown, author
@@ -376,6 +381,10 @@ export default function ThreadView({ postId }: ThreadViewProps) {
                 canReport={
                   post.user_id !== currentUserId && !post.is_user_deleted && post.user_id !== null
                 }
+                canBlock={
+                  post.user_id !== currentUserId && !post.is_user_deleted && post.user_id !== null
+                }
+                blockAuthorUserId={post.user_id}
                 canSelfDelete={post.user_id === currentUserId && !post.is_user_deleted}
                 canFocus={!isRoot}
                 onFocus={
@@ -674,7 +683,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
 
   // ─── Removed / not-found root ──────────────────────────────────────────────
   // collective_thread_root returns null when the root is moderator-removed or
-  // does not exist (AC 11).
+  // does not exist.
   if (rootQuery.data === null) {
     return (
       <View
@@ -702,62 +711,64 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   return (
     <AnimatePresence>
       {mounted && (
-    <YStack
-      key="collective-thread-body"
-      transition="designEnter"
-      enterStyle={{ opacity: 0, y: 10 }}
-      opacity={1}
-      y={0}
-      maxWidth={720}
-      marginHorizontal="auto"
-      width="100%"
-      paddingHorizontal="$5"
-      paddingVertical="$8"
-    >
-      {/* Back to the room (or to the full thread when focused on a subthread) */}
-      <View
-        role="button"
-        aria-label={
-          focusedFromRoot && focusedFromRoot !== postId ? 'Back to full thread' : 'Back to the room'
-        }
-        onPress={() =>
-          router.push(
-            focusedFromRoot && focusedFromRoot !== postId
-              ? `/collective/thread/${focusedFromRoot}`
-              : '/collective/dev'
-          )
-        }
-        cursor="pointer"
-        marginBottom="$9"
-      >
-        <XStack
-          alignItems="center"
-          gap="$2"
+        <YStack
+          key="collective-thread-body"
+          transition="designEnter"
+          enterStyle={{ opacity: 0, y: 10 }}
+          opacity={1}
+          y={0}
+          maxWidth={720}
+          marginHorizontal="auto"
+          width="100%"
+          paddingHorizontal="$5"
+          paddingVertical="$8"
         >
-          <ArrowLeft
-            size={16}
-            color="$color9"
-          />
-          <Text
-            fontSize="$2"
-            color="$color9"
-            fontFamily="$body"
+          {/* Back to the room (or to the full thread when focused on a subthread) */}
+          <View
+            role="button"
+            aria-label={
+              focusedFromRoot && focusedFromRoot !== postId
+                ? 'Back to full thread'
+                : 'Back to the room'
+            }
+            onPress={() =>
+              router.push(
+                focusedFromRoot && focusedFromRoot !== postId
+                  ? `/collective/thread/${focusedFromRoot}`
+                  : '/collective/dev'
+              )
+            }
+            cursor="pointer"
+            marginBottom="$9"
           >
-            {focusedFromRoot && focusedFromRoot !== postId
-              ? 'Back to full thread'
-              : 'Back to the room'}
-          </Text>
-        </XStack>
-      </View>
+            <XStack
+              alignItems="center"
+              gap="$2"
+            >
+              <ArrowLeft
+                size={16}
+                color="$color9"
+              />
+              <Text
+                fontSize="$2"
+                color="$color9"
+                fontFamily="$body"
+              >
+                {focusedFromRoot && focusedFromRoot !== postId
+                  ? 'Back to full thread'
+                  : 'Back to the room'}
+              </Text>
+            </XStack>
+          </View>
 
-      {/* Root letter at depth 0; its descendants rendered recursively via renderPost */}
-      <View
-        tag="ul"
-        role="tree"
-      >
-        {rootPost ? renderPost(rootPost, 0, true) : null}
-      </View>
-    </YStack>
+          {/* Root letter at depth 0; its descendants rendered recursively via renderPost */}
+          <View
+            tag="ul"
+            role="tree"
+          >
+            {rootPost ? renderPost(rootPost, 0, true) : null}
+          </View>
+        </YStack>
       )}
     </AnimatePresence>
   )

@@ -1,27 +1,27 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-11 — TDD red-phase tests for the `useToggleReaction.onMutate` extension
- * that resolves the AC #10 deferral from Story 3-7.
+ * TDD red-phase tests for the `useToggleReaction.onMutate` extension
+ * that resolves a previously deferred piece of the reactions-cache work.
  *
- * Red-phase contract: every test MUST fail until Story 3-11's Task 3 extends
+ * Red-phase contract: every test MUST fail until Task 3 extends
  * `useToggleReaction.onMutate` in `packages/app/state/collective/mutations.ts`
  * to apply the optimistic toggle on the new ['collective','reactions',postId] cache,
  * and updates `ReactMutationContext` to include `reactionsSnapshot`.
  *
  * NOTE: This is a NEW file. It does NOT replace or collide with
- * `packages/app/state/__tests__/mutations.test.ts` (Story 3-7's 54-test suite).
+ * `packages/app/state/__tests__/mutations.test.ts` (the existing 54-test suite).
  * This file lives at `packages/app/state/collective/__tests__/mutations.test.ts`.
  *
- * AC coverage (AC #8, #17):
+ * Test coverage:
  *   - t-new1: onMutate for toggle:'add' snapshots ['collective','reactions',postId]
  *             cache, increments count[kind] by 1, sets userReactions[kind] to vars.id.
  *   - t-new2: onMutate for toggle:'remove' snapshots cache, decrements count[kind]
  *             (clamp ≥ 0), clears userReactions[kind] to null.
  *   - t-new3: onError restores reactionsSnapshot AND prior feed/thread snapshots;
- *             never calls setQueryData with undefined (AC #31 from Story 3-7).
+ *             never calls setQueryData with undefined.
  *   - t-new4: onSettled invalidates ['collective'] prefix (existing behavior preserved).
  *
- * Mocking strategy: vi.hoisted() for supabase mocks; mirrors the Story 3-7
+ * Mocking strategy: vi.hoisted() for supabase mocks; mirrors the existing
  * mutations.test.ts pattern.
  */
 
@@ -68,7 +68,7 @@ import { collectiveThreadKey, type ThreadPageResult } from 'app/state/collective
 import { yourPostsKey, type YourPost, type YourPostsPage } from 'app/state/collective/yourPosts'
 
 // ─── Types for the new reactions cache shape ─────────────────────────────────
-// These imports will fail until Story 3-11 creates state/collective/reactions.ts
+// These imports will fail until state/collective/reactions.ts is created
 // and state/collective/types.ts. That's the expected red-phase failure signal.
 import { collectiveReactionsKey } from 'app/state/collective/reactions'
 import type { ReactionKind } from 'app/state/collective/types'
@@ -136,7 +136,7 @@ afterEach(() => {
 // t-new1 — onMutate toggle:'add' snapshots reactions cache + applies optimistic update
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1): toggle:add', () => {
+describe('useToggleReaction.onMutate (t-new1): toggle:add', () => {
   it('snapshots the reactions cache before modifying it', async () => {
     const reactDefaults = queryClient.getMutationDefaults(['collective', 'react'])
     expect(reactDefaults, 'collective.react defaults must be registered').toBeDefined()
@@ -214,7 +214,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
     expect(after!.userReactions.sparkle).toBe('rxn-uuid-sparkle')
   })
 
-  it('preserves feedSnapshot in context (existing Story 3-7 contract preserved)', async () => {
+  it('preserves feedSnapshot in context (existing contract preserved)', async () => {
     const reactDefaults = queryClient.getMutationDefaults(['collective', 'react'])
     expect(reactDefaults).toBeDefined()
 
@@ -233,7 +233,11 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
     await queryClient.cancelQueries({ queryKey: ['collective'] })
     const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
-    const ctx = context as { feedSnapshot?: unknown; threadSnapshot?: unknown; reactionsSnapshot?: unknown }
+    const ctx = context as {
+      feedSnapshot?: unknown
+      threadSnapshot?: unknown
+      reactionsSnapshot?: unknown
+    }
     expect(ctx.feedSnapshot).toBeDefined()
   })
 })
@@ -242,7 +246,7 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new1)
 // t-new2 — onMutate toggle:'remove' snapshots + decrements count + clears userReactions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new2): toggle:remove', () => {
+describe('useToggleReaction.onMutate (t-new2): toggle:remove', () => {
   it('decrements counts[kind] by 1 after toggle:remove', async () => {
     const reactDefaults = queryClient.getMutationDefaults(['collective', 'react'])
     expect(reactDefaults).toBeDefined()
@@ -349,10 +353,10 @@ describe('Story 3-11 / useToggleReaction.onMutate — AC #10 resolution (t-new2)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // t-new3 — onError restores reactionsSnapshot + prior feed/thread snapshots
-//           Never calls setQueryData with undefined (AC #31)
+//           Never calls setQueryData with undefined
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)', () => {
+describe('useToggleReaction.onError — reactions rollback (t-new3)', () => {
   it('restores reactions cache to snapshot on error', async () => {
     const reactDefaults = queryClient.getMutationDefaults(['collective', 'react'])
     expect(reactDefaults).toBeDefined()
@@ -375,7 +379,9 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
     const context = await reactDefaults!.onMutate!(vars, MUTATION_FN_CONTEXT)
 
     // Verify optimistic update was applied
-    const afterOptimistic = queryClient.getQueryData<ReactionsCache>(collectiveReactionsKey(POST_ID))
+    const afterOptimistic = queryClient.getQueryData<ReactionsCache>(
+      collectiveReactionsKey(POST_ID)
+    )
     expect(afterOptimistic!.counts.heart).toBe(4)
 
     // Simulate error — should rollback
@@ -386,7 +392,7 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
     expect(afterRollback!.userReactions.heart).toBe('rxn-orig')
   })
 
-  it('does NOT call setQueryData(key, undefined) when reactionsSnapshot is undefined (AC #31)', async () => {
+  it('does NOT call setQueryData(key, undefined) when reactionsSnapshot is undefined', async () => {
     const reactDefaults = queryClient.getMutationDefaults(['collective', 'react'])
     expect(reactDefaults).toBeDefined()
 
@@ -417,7 +423,7 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
     expect(undefinedCalls.length).toBe(0)
   })
 
-  it('still restores feedSnapshot on error (existing Story 3-7 contract preserved)', async () => {
+  it('still restores feedSnapshot on error (existing contract preserved)', async () => {
     const reactDefaults = queryClient.getMutationDefaults(['collective', 'react'])
     expect(reactDefaults).toBeDefined()
 
@@ -452,10 +458,10 @@ describe('Story 3-11 / useToggleReaction.onError — reactions rollback (t-new3)
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// t-new4 — onSettled still invalidates ['collective'] prefix (AC #17)
+// t-new4 — onSettled still invalidates ['collective'] prefix
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('Story 3-11 / useToggleReaction.onSettled — invalidation preserved (t-new4)', () => {
+describe('useToggleReaction.onSettled — invalidation preserved (t-new4)', () => {
   it('onSettled fires invalidateQueries with [collective] prefix after the extension', async () => {
     const reactDefaults = queryClient.getMutationDefaults(['collective', 'react'])
     expect(reactDefaults).toBeDefined()
@@ -484,8 +490,8 @@ describe('Story 3-11 / useToggleReaction.onSettled — invalidation preserved (t
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Story 3-15 — title in the create-post path + title-led optimistic feed row +
-// delete_own feed-cache no-body (AC #27)
+// Title in the create-post path + title-led optimistic feed row +
+// delete_own feed-cache no-body
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function makeYourPost(overrides: Partial<YourPost> = {}): YourPost {
@@ -512,7 +518,7 @@ function makeYourPost(overrides: Partial<YourPost> = {}): YourPost {
 // permissive function type (test-only) to invoke them with our literal vars.
 type AnyFn = (...args: any[]) => any
 
-describe('Story 3-15 / useCreatePost insert payload carries title (AC #27a)', () => {
+describe('useCreatePost insert payload carries title', () => {
   it('passes a top-level title through to the insert', async () => {
     const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
     expect(postDefaults).toBeDefined()
@@ -546,7 +552,7 @@ describe('Story 3-15 / useCreatePost insert payload carries title (AC #27a)', ()
   })
 })
 
-describe('Story 3-15 / optimistic feed row is title-led, no body (AC #27b)', () => {
+describe('optimistic feed row is title-led, no body', () => {
   it('inserts an optimistic feed row with title/excerpt/descendant_count/reactions and NO body', async () => {
     const postDefaults = queryClient.getMutationDefaults(['collective', 'post'])
     expect(postDefaults).toBeDefined()
@@ -571,7 +577,7 @@ describe('Story 3-15 / optimistic feed row is title-led, no body (AC #27b)', () 
     expect(row.descendant_count).toBe(0)
     expect(row.reactions).toEqual({})
     expect(row.__optimistic).toBe(true)
-    // The feed cache must NOT carry a full body (Story 3-15 D5).
+    // The feed cache must NOT carry a full body.
     expect('body' in row).toBe(false)
   })
 })
@@ -644,7 +650,7 @@ describe('Regression 2026-07 / reply onMutate must NOT touch the top-level feed 
   })
 })
 
-describe('Story 3-15 / delete_own feed-cache update omits body (AC #27c)', () => {
+describe('delete_own feed-cache update omits body', () => {
   const POST_ID = 'del-1'
 
   it('feed cache: sets is_user_deleted + user_deleted_at but does NOT write body', async () => {
@@ -678,7 +684,13 @@ describe('Story 3-15 / delete_own feed-cache update omits body (AC #27c)', () =>
     // thread cache holds `ThreadPost` (which has `body`). The runtime object
     // carries a `body` field, so this faithfully simulates a seeded thread row.
     const threadData = {
-      pages: [{ items: [makePost({ id: POST_ID, parent_post_id: 'root' })], mode: 'full', nextCursor: null }],
+      pages: [
+        {
+          items: [makePost({ id: POST_ID, parent_post_id: 'root' })],
+          mode: 'full',
+          nextCursor: null,
+        },
+      ],
       pageParams: [null],
     } as unknown as InfiniteData<ThreadPageResult>
     queryClient.setQueryData(collectiveThreadKey(POST_ID), threadData)
@@ -698,8 +710,8 @@ describe('Story 3-15 / delete_own feed-cache update omits body (AC #27c)', () =>
     expect(threadRow.body).toBe('[deleted]')
     expect(threadRow.is_user_deleted).toBe(true)
 
-    const yourRow = queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)!.pages[0]!
-      .items[0]!
+    const yourRow =
+      queryClient.getQueryData<InfiniteData<YourPostsPage>>(yourPostsKey)!.pages[0]!.items[0]!
     expect(yourRow.body).toBe('[deleted]')
     expect(yourRow.is_user_deleted).toBe(true)
   })

@@ -19,10 +19,18 @@ import type {
   FontPairingId,
   HotkeyActionId,
 } from './types'
-import { THEME_NAMES, DEFAULT_THEME, DARK_THEMES, FONT_PAIRING_IDS, DEFAULT_FONT_PAIRING } from './types'
+import type { SubscriptionTier } from './streak'
+import {
+  THEME_NAMES,
+  DEFAULT_THEME,
+  DARK_THEMES,
+  FONT_PAIRING_IDS,
+  DEFAULT_FONT_PAIRING,
+} from './types'
 import { flows$ } from './flows'
 import { entries$ } from './entries'
 import { graceDays$ } from './grace_days'
+import { pushTokens$ } from './push_tokens'
 
 import { getTodayJournalDayString } from './date-utils'
 import {
@@ -32,6 +40,10 @@ import {
   deviceState$,
   type PreviousAccountBannerState,
 } from './syncConfig'
+// Product-analytics capture — the platform-split module resolves to the web or
+// native SDK wrapper automatically. This is a telemetry call site only; it owns
+// no state and pulls in neither Legend-State nor TanStack Query.
+import { captureEvent } from '../utils/telemetry/posthog'
 
 // Re-export theme constants for convenience
 export { THEME_NAMES, DEFAULT_THEME, DARK_THEMES }
@@ -71,7 +83,7 @@ export const store$ = observable<AppState>({
 })
 
 // Re-export granular observables for convenience
-export { flows$, entries$, graceDays$ }
+export { flows$, entries$, graceDays$, pushTokens$ }
 
 // =================================================================
 // 1b. EPHEMERAL STATE (NOT PERSISTED)
@@ -131,6 +143,39 @@ export const ephemeral$ = observable<{
    * correct than swallowing it.
    */
   surfacedUnlockMilestones: Set<number>
+  /**
+   * Per-session dismissal flag for the web/desktop in-app reminder card. Set
+   * true when the user dismisses the card; hides it for the rest of the
+   * session. Non-persisted (per-session, like `surfacedUnlockMilestones`) —
+   * resets to false on cold start so the card re-evaluates against fresh
+   * pending state on the next app open. Do NOT add to persistConfig/store$.
+   */
+  reminderCardDismissed: boolean
+  /**
+   * The unread-replies `since` bound the in-app reminder card pinned for THIS
+   * app session (an ISO string), or null before the card has seeded it. Seeded
+   * ONCE — on the first mount of the card in a session, after the profile has
+   * hydrated — from the persisted `reminders.repliesLastSeenAt` (or `now` on a
+   * first-ever open); the same mount advances `repliesLastSeenAt` to `now`.
+   *
+   * Session-scoping is load-bearing: the card mounts on every Home landing
+   * (journal → back, collective → back), so keying the pinned `since` + the
+   * once-per-open advance to the SESSION (not the mount) is what stops a Home
+   * bounce from advancing the bound and self-clearing an unacted-on replies
+   * reminder. Later mounts in the same session reuse this value and do NOT
+   * re-advance. Non-persisted (per-session, like `reminderCardDismissed`) —
+   * resets to null on cold start so the next app open re-seeds and re-advances.
+   * Do NOT add to persistConfig/store$.
+   */
+  reminderRepliesSince: string | null
+  /**
+   * Transient App Lock state: true while the App Lock overlay must gate the UI.
+   * Non-persisted by design — resets to false on every cold start, and a fresh
+   * launch re-locks (sets this true after persistence load) when the App Lock
+   * preference is enabled. Read reactively in the overlay via use$; write with
+   * .set(...). Do NOT persist this or add it to persistConfig/store$.
+   */
+  isLocked: boolean
 }>({
   persistentEditor: {
     isVisible: false,
@@ -144,6 +189,9 @@ export const ephemeral$ = observable<{
   keyboardHeight: 0,
   thresholdCrossing: null,
   surfacedUnlockMilestones: new Set<number>(),
+  reminderCardDismissed: false,
+  reminderRepliesSince: null,
+  isLocked: false,
 })
 
 // =================================================================
@@ -209,6 +257,7 @@ export const clearUserData = () => {
   const allFlows = flows$.get() ?? {}
   const allEntries = entries$.get() ?? {}
   const allGraceDays = graceDays$.get() ?? {}
+  const allPushTokens = pushTokens$.get() ?? {}
   const currentUserId = store$.session.userId.get()
 
   // Phase 1: strip user_id from items we're about to remove.
@@ -232,6 +281,12 @@ export const clearUserData = () => {
     for (const [id, gd] of Object.entries(allGraceDays)) {
       if (gd.userId === currentUserId) {
         graceDays$[id]!.userId.set(null as unknown as string)
+      }
+    }
+    // Push tokens have no sync_excluded — nullify userId so save transform skips them
+    for (const [id, pt] of Object.entries(allPushTokens)) {
+      if (pt.userId === currentUserId) {
+        pushTokens$[id]!.userId.set(null as unknown as string)
       }
     }
   })
@@ -261,6 +316,9 @@ export const clearUserData = () => {
 
     // Grace days have no sync_excluded carve-out — no anonymous origin
     graceDays$.set({})
+
+    // Push tokens have no sync_excluded carve-out — no anonymous origin
+    pushTokens$.set({})
 
     store$.lastUpdated.set(new Date().toISOString())
   })
@@ -325,7 +383,9 @@ export const adoptOrphanFlows = (userId: string): void => {
     // eslint-disable-next-line no-console
     console.log(
       `🏠 [adoptOrphanFlows] POST-ADOPT: adopted ${adoptedEntries} entries, ${adoptedFlows} flows for user ${userId.slice(0, 8)}…${
-        skippedForeignParent > 0 ? ` (skipped ${skippedForeignParent} flows under foreign-owned parent)` : ''
+        skippedForeignParent > 0
+          ? ` (skipped ${skippedForeignParent} flows under foreign-owned parent)`
+          : ''
       }`
     )
   }
@@ -613,6 +673,7 @@ export const deletePreviousUserData = (userId: string): void => {
   const allFlows = flows$.peek() ?? {}
   const allEntries = entries$.peek() ?? {}
   const allGraceDays = graceDays$.peek() ?? {}
+  const allPushTokens = pushTokens$.peek() ?? {}
 
   // Snapshot target ids BEFORE phase 1 nullifies user_id (otherwise the
   // proxy-backed `allFlows[id].user_id` we'd filter on later reads as null).
@@ -628,6 +689,10 @@ export const deletePreviousUserData = (userId: string): void => {
   for (const id in allGraceDays) {
     if (allGraceDays[id]?.userId === userId) targetGraceIds.add(id)
   }
+  const targetPushTokenIds = new Set<string>()
+  for (const id in allPushTokens) {
+    if (allPushTokens[id]?.userId === userId) targetPushTokenIds.add(id)
+  }
 
   // Phase 1: nullify user_id on items we're about to remove so transform.save
   // returns undefined and Legend-State will not queue Supabase delete ops.
@@ -641,6 +706,9 @@ export const deletePreviousUserData = (userId: string): void => {
     }
     for (const id of targetGraceIds) {
       graceDays$[id]!.userId.set(null as unknown as string)
+    }
+    for (const id of targetPushTokenIds) {
+      pushTokens$[id]!.userId.set(null as unknown as string)
     }
   })
 
@@ -658,11 +726,17 @@ export const deletePreviousUserData = (userId: string): void => {
     }
     entries$.set(finalEntries)
 
-    const finalGrace: Record<string, typeof allGraceDays[string]> = {}
+    const finalGrace: Record<string, (typeof allGraceDays)[string]> = {}
     for (const [id, gd] of Object.entries(graceDays$.peek() ?? {})) {
       if (!targetGraceIds.has(id)) finalGrace[id] = gd
     }
     graceDays$.set(finalGrace)
+
+    const finalPushTokens: Record<string, (typeof allPushTokens)[string]> = {}
+    for (const [id, pt] of Object.entries(pushTokens$.peek() ?? {})) {
+      if (!targetPushTokenIds.has(id)) finalPushTokens[id] = pt
+    }
+    pushTokens$.set(finalPushTokens)
 
     store$.lastUpdated.set(new Date().toISOString())
   })
@@ -992,6 +1066,11 @@ export const recordThresholdCrossingIfNeeded = (newCount: number): void => {
     crossedAt: new Date().toISOString(),
     wordCountAtCrossing: newCount,
   })
+  // Emit the once-per-flow <500→≥500 crossing (metadata only — never content).
+  captureEvent('flow_500_crossed', {
+    user_id: store$.session?.userId?.peek?.() ?? null,
+    tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+  })
 }
 
 /**
@@ -1084,6 +1163,7 @@ export const ensureProfile = () => {
       hotkeyOverrides: {},
       editor: { focusMode: false, focusGranularity: 'paragraph' },
       unlockedThemes: [],
+      subscription_tier: 'free',
       sync: {
         word_goal: true,
         themeName: true,
@@ -1123,7 +1203,7 @@ export const setFocusMode = (value: boolean): void => {
 }
 
 /**
- * Sets the focus-mode granularity preference (Story 2.11).
+ * Sets the focus-mode granularity preference.
  * Creates a profile if none exists (mirrors setFocusMode).
  */
 export const setFocusGranularity = (value: 'paragraph' | 'sentence'): void => {
@@ -1219,6 +1299,21 @@ export const spendUnlockToken = (theme: ThemeName): void => {
   const current = store$.profile.unlockedThemes.peek() ?? []
   if (current.includes(theme)) return
   store$.profile.unlockedThemes.set([...current, theme])
+}
+
+/**
+ * Reflects the server-authoritative subscription tier onto the client profile.
+ *
+ * The client NEVER guesses this value — it is fed only by the receipt-validation
+ * response and the app-open re-validation refresh. Creates a profile if none
+ * exists (mirrors setTheme / spendUnlockToken). A paid tier is ADDITIVE: it
+ * unlocks cosmetics reactively via the streak-tier seam without ever writing
+ * `unlockedThemes` or any streak state, so this setter touches only the tier
+ * field and nothing else.
+ */
+export const applySubscriptionTierFromServer = (tier: SubscriptionTier): void => {
+  ensureProfile()
+  store$.profile.subscription_tier.set(tier)
 }
 
 /**

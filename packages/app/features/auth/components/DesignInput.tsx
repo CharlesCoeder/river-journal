@@ -50,8 +50,8 @@ export function DesignInput({
         onSubmitEditing={onSubmitEditing}
         // On web, secureTextEntry doesn't always produce type="password".
         // Explicitly set it so the browser masks input and respects password manager autofill.
-        {...(isWeb && secureTextEntry ? { type: 'password' } as any : {})}
-        {...(isWeb && keyboardType === 'email-address' ? { type: 'email' } as any : {})}
+        {...(isWeb && secureTextEntry ? ({ type: 'password' } as any) : {})}
+        {...(isWeb && keyboardType === 'email-address' ? ({ type: 'email' } as any) : {})}
         flex={1}
         fontFamily="$journal"
         fontSize={20}

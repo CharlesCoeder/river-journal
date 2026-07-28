@@ -22,6 +22,8 @@ import {
   mapDbFlowToLocalOrKeepExisting,
   dbGraceDayToLocal,
   localGraceDayToDb,
+  dbPushTokenToLocal,
+  localPushTokenToDb,
   syncEncryptionError$,
   syncEncryptionMode$,
   syncManagedKeyBytes$,
@@ -512,9 +514,13 @@ describe('GraceDay transforms', () => {
 
   it('output contains exactly the five local fields — no DB metadata leaks', () => {
     const local = dbGraceDayToLocal(fullDbRow)
-    expect(Object.keys(local).sort()).toEqual(
-      ['earnedAt', 'earnedForMilestone', 'id', 'usedForDate', 'userId']
-    )
+    expect(Object.keys(local).sort()).toEqual([
+      'earnedAt',
+      'earnedForMilestone',
+      'id',
+      'usedForDate',
+      'userId',
+    ])
   })
 
   it('strips is_deleted from the local shape', () => {
@@ -602,5 +608,156 @@ describe('GraceDay transforms', () => {
 
     vi.restoreAllMocks()
     spies.forEach((s) => s.mockRestore())
+  })
+})
+
+describe('PushToken transforms', () => {
+  const fullDbRow = {
+    id: 'pt-1',
+    user_id: 'u1',
+    expo_push_token: 'ExponentPushToken[abc123]',
+    platform: 'ios' as const,
+    device_label: 'Alice iPhone',
+    last_used_at: '2026-07-11T10:00:00Z',
+    is_deleted: false,
+    created_at: '2026-07-11T09:00:00Z',
+    updated_at: '2026-07-11T09:00:00Z',
+  }
+
+  it('converts a fully-populated DB row to camelCase local shape', () => {
+    const local = dbPushTokenToLocal(fullDbRow)
+    expect(local).toEqual({
+      id: 'pt-1',
+      userId: 'u1',
+      expoPushToken: 'ExponentPushToken[abc123]',
+      platform: 'ios',
+      deviceLabel: 'Alice iPhone',
+      lastUsedAt: '2026-07-11T10:00:00Z',
+    })
+  })
+
+  it('preserves null device_label in the local shape', () => {
+    const local = dbPushTokenToLocal({ ...fullDbRow, device_label: null })
+    expect(local.deviceLabel).toBeNull()
+  })
+
+  it('output contains exactly the six local fields — no DB metadata leaks', () => {
+    const local = dbPushTokenToLocal(fullDbRow)
+    expect(Object.keys(local).sort()).toEqual([
+      'deviceLabel',
+      'expoPushToken',
+      'id',
+      'lastUsedAt',
+      'platform',
+      'userId',
+    ])
+  })
+
+  it('strips is_deleted from the local shape', () => {
+    const local = dbPushTokenToLocal(fullDbRow)
+    expect(local).not.toHaveProperty('is_deleted')
+  })
+
+  it('strips created_at from the local shape', () => {
+    const local = dbPushTokenToLocal(fullDbRow)
+    expect(local).not.toHaveProperty('created_at')
+  })
+
+  it('strips updated_at from the local shape', () => {
+    const local = dbPushTokenToLocal(fullDbRow)
+    expect(local).not.toHaveProperty('updated_at')
+  })
+
+  it('partial update with only id and lastUsedAt emits only those two DB fields', () => {
+    const db = localPushTokenToDb({ id: 'pt-1', lastUsedAt: '2026-07-11T12:00:00Z' })
+    expect(db).toEqual({ id: 'pt-1', last_used_at: '2026-07-11T12:00:00Z' })
+    expect(db).not.toHaveProperty('user_id')
+    expect(db).not.toHaveProperty('expo_push_token')
+    expect(db).not.toHaveProperty('platform')
+    expect(db).not.toHaveProperty('device_label')
+  })
+
+  it('explicit null deviceLabel is written to the DB payload, distinct from an absent key', () => {
+    const dbWithNull = localPushTokenToDb({ id: 'pt-1', deviceLabel: null })
+    expect(Object.prototype.hasOwnProperty.call(dbWithNull, 'device_label')).toBe(true)
+    expect(dbWithNull.device_label).toBeNull()
+
+    const dbWithoutKey = localPushTokenToDb({ id: 'pt-1' })
+    expect(Object.prototype.hasOwnProperty.call(dbWithoutKey, 'device_label')).toBe(false)
+  })
+
+  it('absent deviceLabel is omitted from the DB payload entirely', () => {
+    const db = localPushTokenToDb({ id: 'pt-1', expoPushToken: 'ExponentPushToken[abc123]' })
+    expect(Object.prototype.hasOwnProperty.call(db, 'device_label')).toBe(false)
+  })
+
+  it('does not include updated_at in the DB payload — DB trigger owns it', () => {
+    const db = localPushTokenToDb({
+      id: 'pt-1',
+      userId: 'u1',
+      expoPushToken: 'ExponentPushToken[abc123]',
+      platform: 'ios',
+      deviceLabel: 'Alice iPhone',
+      lastUsedAt: '2026-07-11T12:00:00Z',
+    })
+    expect(db).not.toHaveProperty('updated_at')
+  })
+
+  it('does not include is_deleted in the DB payload — global fieldDeleted config owns soft-delete', () => {
+    const db = localPushTokenToDb({
+      id: 'pt-1',
+      userId: 'u1',
+      expoPushToken: 'ExponentPushToken[abc123]',
+      platform: 'ios',
+      deviceLabel: null,
+      lastUsedAt: '2026-07-11T12:00:00Z',
+    })
+    expect(db).not.toHaveProperty('is_deleted')
+  })
+
+  it('calls no encryption helpers when saving a push-token row', async () => {
+    const encryptionModule = await import('../../utils/encryption')
+    const spies = Object.entries(encryptionModule)
+      .filter(([, v]) => typeof v === 'function')
+      .map(([name]) =>
+        vi.spyOn(encryptionModule, name as keyof typeof encryptionModule as never)
+      ) as ReturnType<typeof vi.spyOn>[]
+
+    const encryptSpy = vi.spyOn(encryptionModule, 'encryptFlowContent')
+    const decryptSpy = vi.spyOn(encryptionModule, 'decryptFlowContent')
+    const encryptManagedSpy = vi.spyOn(encryptionModule, 'encryptFlowContentManaged')
+    const decryptManagedSpy = vi.spyOn(encryptionModule, 'decryptFlowContentManaged')
+
+    localPushTokenToDb({
+      id: 'pt-1',
+      userId: 'u1',
+      expoPushToken: 'ExponentPushToken[abc123]',
+      platform: 'ios',
+      deviceLabel: 'Alice iPhone',
+      lastUsedAt: '2026-07-11T12:00:00Z',
+    })
+
+    expect(encryptSpy).not.toHaveBeenCalled()
+    expect(decryptSpy).not.toHaveBeenCalled()
+    expect(encryptManagedSpy).not.toHaveBeenCalled()
+    expect(decryptManagedSpy).not.toHaveBeenCalled()
+
+    vi.restoreAllMocks()
+    spies.forEach((s) => s.mockRestore())
+  })
+
+  // ── Soft-delete whitelist boundary ──
+  // When a token row is soft-deleted (Legend-State `.delete()` → the global
+  // `fieldDeleted: 'is_deleted'` config), the save transform must not leak
+  // `is_deleted` into the DB whitelist and must not drop the id. Extends —
+  // does not rewrite — the PushToken transforms coverage above.
+  it('does not leak is_deleted into the DB payload even when the local value carries it (soft-delete boundary)', () => {
+    const db = localPushTokenToDb({ id: 'pt-1', is_deleted: true } as any)
+    expect(db).not.toHaveProperty('is_deleted')
+  })
+
+  it('a delete-shaped partial ({ id }) round-trips through localPushTokenToDb to exactly { id }', () => {
+    const db = localPushTokenToDb({ id: 'pt-1' })
+    expect(db).toEqual({ id: 'pt-1' })
   })
 })

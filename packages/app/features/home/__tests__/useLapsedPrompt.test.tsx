@@ -29,9 +29,9 @@ beforeEach(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. First-time user — shouldShow is false (AC2, AC6)
+// 1. First-time user — shouldShow is false
 // ─────────────────────────────────────────────────────────────────────────────
-describe('useLapsedPrompt — first-time user gate (AC2, AC6)', () => {
+describe('useLapsedPrompt — first-time user gate', () => {
   it('returns shouldShow: false when hasOpenedBefore is false, even with a very old previousSessionAt', () => {
     lapsed$.set({
       lastSessionAt: T0,
@@ -39,8 +39,8 @@ describe('useLapsedPrompt — first-time user gate (AC2, AC6)', () => {
       dismissedAt: null,
       hasOpenedBefore: false,
     })
-    const { result } = renderHook(() =>
-      useLapsedPrompt(T0) // now is far beyond the previous session
+    const { result } = renderHook(
+      () => useLapsedPrompt(T0) // now is far beyond the previous session
     )
     expect(result.current.shouldShow).toBe(false)
   })
@@ -53,9 +53,9 @@ describe('useLapsedPrompt — first-time user gate (AC2, AC6)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Within 7 days — shouldShow is false (AC2, AC6)
+// 2. Within 7 days — shouldShow is false
 // ─────────────────────────────────────────────────────────────────────────────
-describe('useLapsedPrompt — within 7 days (AC2, AC6)', () => {
+describe('useLapsedPrompt — within 7 days', () => {
   it('returns shouldShow: false when gap is 5 days (< threshold)', () => {
     // Previous session was 5 days ago; the current session (this boot) is T0.
     lapsed$.set({
@@ -70,9 +70,9 @@ describe('useLapsedPrompt — within 7 days (AC2, AC6)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. > 7 days, not dismissed — shouldShow is true (AC2)
+// 3. > 7 days, not dismissed — shouldShow is true
 // ─────────────────────────────────────────────────────────────────────────────
-describe('useLapsedPrompt — lapsed and not dismissed (AC2)', () => {
+describe('useLapsedPrompt — lapsed and not dismissed', () => {
   it('returns shouldShow: true when gap is 8 days and dismissedAt is null', () => {
     // Realistic boot: recordSessionOpen advanced lastSessionAt to now (T0) and
     // snapshotted the 8-days-ago prior session into previousSessionAt.
@@ -88,9 +88,9 @@ describe('useLapsedPrompt — lapsed and not dismissed (AC2)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. > 7 days, dismissed in current window — shouldShow is false (AC2, AC6)
+// 4. > 7 days, dismissed in current window — shouldShow is false
 // ─────────────────────────────────────────────────────────────────────────────
-describe('useLapsedPrompt — lapsed but dismissed in current window (AC2, AC6)', () => {
+describe('useLapsedPrompt — lapsed but dismissed in current window', () => {
   it('returns shouldShow: false when dismissedAt >= lastSessionAt (dismissed in this window)', () => {
     const lastSessionAt = T0 - 1000 // current session opened ~1s ago (this boot)
     const previousSessionAt = T0 - 9 * DAY_MS // prior session 9 days ago → lapsed
@@ -103,25 +103,30 @@ describe('useLapsedPrompt — lapsed but dismissed in current window (AC2, AC6)'
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. > 7 days, dismissed in *prior* window — shouldShow is true (AC2, AC6)
+// 5. > 7 days, dismissed in *prior* window — shouldShow is true
 // (dismissedAt < lastSessionAt means the dismissal was from an older window)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('useLapsedPrompt — lapsed, dismissed in prior window (AC2, AC6)', () => {
+describe('useLapsedPrompt — lapsed, dismissed in prior window', () => {
   it('returns shouldShow: true when dismissedAt < lastSessionAt (prior-window dismissal)', () => {
     const oldDismissal = T0 - 20 * DAY_MS // dismissal from an older lapsed window
     const previousSessionAt = T0 - 9 * DAY_MS // prior session → now - 9d > threshold → lapsed
     const lastSessionAt = T0 - 1000 // current session opened this boot
     // oldDismissal < lastSessionAt → dismissal belongs to a prior window, not this one
-    lapsed$.set({ lastSessionAt, previousSessionAt, dismissedAt: oldDismissal, hasOpenedBefore: true })
+    lapsed$.set({
+      lastSessionAt,
+      previousSessionAt,
+      dismissedAt: oldDismissal,
+      hasOpenedBefore: true,
+    })
     const { result } = renderHook(() => useLapsedPrompt(T0))
     expect(result.current.shouldShow).toBe(true)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. Boundary: exactly LAPSED_THRESHOLD_MS — shouldShow is false (strict >) (AC2)
+// 6. Boundary: exactly LAPSED_THRESHOLD_MS — shouldShow is false (strict >)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('useLapsedPrompt — boundary: exactly threshold (AC2)', () => {
+describe('useLapsedPrompt — boundary: exactly threshold', () => {
   it('returns shouldShow: false when now - previousSessionAt === LAPSED_THRESHOLD_MS exactly', () => {
     lapsed$.set({
       lastSessionAt: T0,
@@ -135,9 +140,9 @@ describe('useLapsedPrompt — boundary: exactly threshold (AC2)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. dismiss() calls dismissLapsedPrompt and sets dismissedAt (AC2)
+// 7. dismiss() calls dismissLapsedPrompt and sets dismissedAt
 // ─────────────────────────────────────────────────────────────────────────────
-describe('useLapsedPrompt — dismiss action (AC2)', () => {
+describe('useLapsedPrompt — dismiss action', () => {
   it('calling dismiss() results in lapsed$.dismissedAt being non-null', () => {
     lapsed$.set({
       lastSessionAt: T0,

@@ -116,7 +116,8 @@ vi.mock('@my/ui', async () => {
     if (!open) return null
     return ReactModule.createElement('div', { role: 'dialog', 'aria-modal': 'true' }, children)
   }
-  Dialog.Portal = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Portal = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
   Dialog.Overlay = () => null
   Dialog.Content = ({ children }: any) =>
     ReactModule.createElement('div', { 'data-testid': 'dialog-content' }, children)
@@ -128,7 +129,8 @@ vi.mock('@my/ui', async () => {
     ReactModule.createElement(ReactModule.Fragment, null, children)
 
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     YStack: passthrough('div'),
     XStack: passthrough('div'),
     View: passthrough('div'),
@@ -261,10 +263,10 @@ afterEach(() => {
 })
 
 // =============================================================================
-// AC 22: exit-confirm gating — 6 cases
+// exit-confirm gating — 6 cases
 // =============================================================================
 
-describe('AC22 — Case 1: wordCount=0, no content → Finish Session goes straight to home (no dialog)', () => {
+describe('Case 1: wordCount=0, no content → Finish Session goes straight to home (no dialog)', () => {
   it('does NOT render the exit-confirm dialog on mount with zero content', () => {
     mockState.instantWordCount = 0
     mockState.activeFlowContent = null
@@ -288,13 +290,13 @@ describe('AC22 — Case 1: wordCount=0, no content → Finish Session goes strai
       expect(screen.queryByRole('dialog')).toBeNull()
       expect(pushSpy).toHaveBeenCalledWith('/')
     } else {
-      // Correct: bottom bar not rendered when there is no content (AC 16)
+      // Correct: bottom bar not rendered when there is no content
       expect(screen.queryByRole('dialog')).toBeNull()
     }
   })
 })
 
-describe('AC22 — Case 2: wordCount=30, content present, no checkpoint → dialog with "You\'ve barely written"', () => {
+describe('Case 2: wordCount=30, content present, no checkpoint → dialog with "You\'ve barely written"', () => {
   it('shows the exit-confirm dialog when word count < 50 and no checkpoint', () => {
     mockState.instantWordCount = 30
     mockState.activeFlowContent = 'thirty words of content here'
@@ -330,7 +332,7 @@ describe('AC22 — Case 2: wordCount=30, content present, no checkpoint → dial
   })
 })
 
-describe('AC22 — Case 3: wordCount=30, content present, checkpoint reached → no dialog, goes to celebration', () => {
+describe('Case 3: wordCount=30, content present, checkpoint reached → no dialog, goes to celebration', () => {
   it('does NOT show the exit-confirm dialog when checkpoint is reached', () => {
     mockState.instantWordCount = 30
     mockState.activeFlowContent = 'thirty words but checkpoint reached'
@@ -368,7 +370,7 @@ describe('AC22 — Case 3: wordCount=30, content present, checkpoint reached →
   })
 })
 
-describe('AC22 — Case 4: wordCount=60, content present → no dialog, goes to celebration', () => {
+describe('Case 4: wordCount=60, content present → no dialog, goes to celebration', () => {
   it('does NOT show the exit-confirm dialog when word count >= 50', () => {
     mockState.instantWordCount = 60
     mockState.activeFlowContent = 'sixty words of writing in this flow'
@@ -418,7 +420,7 @@ describe('AC22 — Case 4: wordCount=60, content present → no dialog, goes to 
   })
 })
 
-describe('AC22 — Case 5: Cancel button in dialog dismisses dialog; user stays on /journal', () => {
+describe('Case 5: Cancel button in dialog dismisses dialog; user stays on /journal', () => {
   beforeEach(() => {
     mockState.instantWordCount = 30
     mockState.activeFlowContent = 'thirty words of content'
@@ -461,7 +463,7 @@ describe('AC22 — Case 5: Cancel button in dialog dismisses dialog; user stays 
   })
 })
 
-describe('AC22 — Case 6: Confirm button navigates to "/" and does NOT call saveActiveFlowSession', () => {
+describe('Case 6: Confirm button navigates to "/" and does NOT call saveActiveFlowSession', () => {
   beforeEach(() => {
     mockState.instantWordCount = 30
     mockState.activeFlowContent = 'thirty words of content'
@@ -503,10 +505,10 @@ describe('AC22 — Case 6: Confirm button navigates to "/" and does NOT call sav
 })
 
 // =============================================================================
-// AC 23: focus-mode toggle wiring + aria-pressed
+// focus-mode toggle wiring + aria-pressed
 // =============================================================================
 
-describe('AC23 — Focus mode toggle appears in editor chrome', () => {
+describe('Focus mode toggle appears in editor chrome', () => {
   it('renders a "Toggle focus mode" button in the editor chrome', () => {
     mockState.instantWordCount = 10
     mockState.activeFlowContent = 'some content'
@@ -517,7 +519,7 @@ describe('AC23 — Focus mode toggle appears in editor chrome', () => {
   })
 })
 
-describe('AC23 — aria-pressed reflects focusMode state', () => {
+describe('aria-pressed reflects focusMode state', () => {
   it('aria-pressed="false" when focusMode is undefined (default-OFF)', () => {
     mockState.instantWordCount = 10
     mockState.activeFlowContent = 'some content'
@@ -550,7 +552,7 @@ describe('AC23 — aria-pressed reflects focusMode state', () => {
   })
 })
 
-describe('AC23 — Tapping toggle calls setFocusMode with inverted value', () => {
+describe('Tapping toggle calls setFocusMode with inverted value', () => {
   it('calls setFocusMode(true) when tapped and focusMode is false', () => {
     mockState.instantWordCount = 10
     mockState.activeFlowContent = 'some content'

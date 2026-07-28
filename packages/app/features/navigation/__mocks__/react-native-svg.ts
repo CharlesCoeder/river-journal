@@ -20,6 +20,7 @@ export const Polyline = 'polyline'
 export const RadialGradient = 'radialGradient'
 export const Rect = 'rect'
 export const Stop = 'stop'
+// biome-ignore lint/suspicious/noShadowRestrictedNames: mirrors react-native-svg's real `Symbol` export name
 export const Symbol = 'symbol'
 export const Text = 'text'
 export const TextPath = 'textPath'

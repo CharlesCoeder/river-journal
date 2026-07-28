@@ -1,32 +1,32 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-8 — TDD red-phase unit tests for `features/collective/CollectiveFeedScreen.tsx`
+ * TDD red-phase unit tests for `features/collective/CollectiveFeedScreen.tsx`
  * and `features/collective/CollectivePreview.tsx`.
  *
- * Red-phase contract: every test MUST fail until Story 3-8's Task 3 and Task 4 create:
+ * Red-phase contract: every test MUST fail until Task 3 and Task 4 create:
  *   - packages/app/features/collective/CollectiveFeedScreen.tsx
  *   - packages/app/features/collective/CollectivePreview.tsx
  *   - packages/app/features/collective/PostRow.tsx
  *
- * AC coverage:
- *   t1  — full mode dispatch (AC #8, #11, #25-t1)
- *   t2  — preview mode dispatch (AC #9, #25-t2)
- *   t3  — server-driven mode defense-in-depth (AC #8, #25-t3)
- *   t4  — skeleton loading (AC #13, #25-t4)
- *   t5  — empty state full mode (AC #14, #25-t5)
- *   t6  — offline microcopy (AC #15, #25-t6)
- *   t7  — suspended user (AC #16, #25-t7)
- *   t8  — self-deleted post (AC #17, #25-t8)
- *   t9  — account-anonymized post (AC #18, #25-t9)
- *   t10 — removed-post defensive filter (AC #19, #25-t10)
- *   t11 — load more button (AC #12, #25-t11)
- *   t12 — boundary rule grep D7 (AC #23, #25-t12)
- *   t13 — precedence: both is_user_deleted + user_id===null (AC #17, #18, #25-t13)
- *   t14 — empty-preview guard (AC #34, #25-t14)
- *   t15 — mode-flip re-mount via key prop (AC #32, #25-t15)
- *   t16 — error state blank screen avoidance (AC #33, #25-t16)
- *   t17 — error with cached data shows cached posts + error strip (AC #33, #25-t17)
- *   t18 — load more hidden when hasNextPage===false (AC #12, #25-t18)
+ * Coverage:
+ *   t1  — full mode dispatch
+ *   t2  — preview mode dispatch
+ *   t3  — server-driven mode defense-in-depth
+ *   t4  — skeleton loading
+ *   t5  — empty state full mode
+ *   t6  — offline microcopy
+ *   t7  — suspended user
+ *   t8  — self-deleted post
+ *   t9  — account-anonymized post
+ *   t10 — removed-post defensive filter
+ *   t11 — load more button
+ *   t12 — boundary rule grep D7
+ *   t13 — precedence: both is_user_deleted + user_id===null
+ *   t14 — empty-preview guard
+ *   t15 — mode-flip re-mount via key prop
+ *   t16 — error state blank screen avoidance
+ *   t17 — error with cached data shows cached posts + error strip
+ *   t18 — load more hidden when hasNextPage===false
  *
  * Mock strategy: vi.mock for useFeed, useIsSuspended, useCurrentUserId, onlineManager;
  * @my/ui mocked to map Tamagui primitives to testable HTML elements;
@@ -141,8 +141,8 @@ vi.mock('@tamagui/lucide-icons', () => {
   }
 })
 
-// ─── useDeleteOwnPost mock — Story 3-13 ──────────────────────────────────────
-// Controlled mock for the delete mutation. The Story 3-13 UI tests drive this
+// ─── useDeleteOwnPost mock ────────────────────────────────────────────────────
+// Controlled mock for the delete mutation. The UI tests drive this
 // mock to assert dialog open/close behavior and that mutate is called with the
 // correct post_id. By mocking here we avoid driving real mutations through the
 // singleton queryClient during UI tests.
@@ -186,8 +186,8 @@ vi.mock('app/features/collective/ReactionStrip', () => ({
 }))
 
 // ─── FlagAffordance mock — renders as a button for a11y assertions ────────────
-// Story 3-13: Updated to accept canReport + canSelfDelete instead of disabled.
-// The old `disabled` prop is replaced by the two named flags in this story.
+// Updated to accept canReport + canSelfDelete instead of disabled.
+// The old `disabled` prop is replaced by the two named flags.
 // CRITICAL: If the mock still destructures `disabled`, it will always be
 // undefined after the prop rename, silently breaking t-new5/t-new6/t-new7 assertions.
 vi.mock('app/features/collective/FlagAffordance', () => ({
@@ -308,9 +308,9 @@ vi.mock('@my/ui', async () => {
         deletedDisplay ? '[deleted]' : displayName
       ),
 
-    // Story 3-13: Dialog and sub-components for delete confirmation dialog tests.
-    // These are needed so AC #27e–g assertions (screen.getByText, button presses)
-    // can render and interact with the dialog in happy-dom.
+    // Dialog and sub-components for delete confirmation dialog tests.
+    // These are needed so the delete-confirmation-dialog assertions (screen.getByText,
+    // button presses) can render and interact with the dialog in happy-dom.
     Dialog: Object.assign(
       ({ children, open, onOpenChange, modal }: any) => {
         if (!open) return null
@@ -401,7 +401,7 @@ function makePost(
     mode: 'full' as const,
     ...overrides,
   }
-  // Title-led redesign (Story 3-16): the feed RPC now returns `title`, a
+  // Title-led redesign: the feed RPC now returns `title`, a
   // server-truncated `excerpt` (no full body in the list), a per-kind
   // `reactions` tally map, and `descendant_count`. FeedPostRow renders the
   // title as the lead and the excerpt only inside the a11y label.
@@ -447,17 +447,15 @@ afterEach(() => {
   mockIsOnline = true
   mockLastQualifyingDate = null
   mockHiddenPostIds = new Set()
-  // Story 3-13
   mockDeleteMutate.mockReset()
   mockDeleteIsPending = false
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — full mode dispatch
-// AC #8, #11, #25-t1
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t1 — full mode dispatch (AC #8, #11)', () => {
+describe('t1 — full mode dispatch', () => {
   beforeEach(() => {
     mockFeedData = makeFeedData([makePost({ id: 'post-full-1', mode: 'full' })], 'full')
     mockIsLoading = false
@@ -510,10 +508,9 @@ describe('Story 3-8 / t1 — full mode dispatch (AC #8, #11)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — preview mode dispatch
-// AC #9, #10, #25-t2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t2 — preview mode dispatch (AC #9, #10)', () => {
+describe('t2 — preview mode dispatch', () => {
   beforeEach(() => {
     mockFeedData = makeFeedData(
       [
@@ -583,10 +580,9 @@ describe('Story 3-8 / t2 — preview mode dispatch (AC #9, #10)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — server-driven mode defense-in-depth
-// AC #8, #25-t3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t3 — server-driven mode defense-in-depth (AC #8)', () => {
+describe('t3 — server-driven mode defense-in-depth', () => {
   it('renders preview mode even when local streak says today qualifies (trusts RPC, not streak)', () => {
     // RPC says preview
     mockFeedData = makeFeedData([makePost({ id: 'server-preview-1', mode: 'preview' })], 'preview')
@@ -607,10 +603,9 @@ describe('Story 3-8 / t3 — server-driven mode defense-in-depth (AC #8)', () =>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — skeleton loading
-// AC #13, #25-t4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t4 — skeleton loading state (AC #13)', () => {
+describe('t4 — skeleton loading state', () => {
   beforeEach(() => {
     mockIsLoading = true
     mockFeedData = undefined
@@ -639,10 +634,9 @@ describe('Story 3-8 / t4 — skeleton loading state (AC #13)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t5 — empty state (full mode, zero posts)
-// AC #14, #25-t5
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t5 — empty state in full mode (AC #14)', () => {
+describe('t5 — empty state in full mode', () => {
   beforeEach(() => {
     mockFeedData = makeFeedData([], 'full')
     mockIsLoading = false
@@ -667,10 +661,9 @@ describe('Story 3-8 / t5 — empty state in full mode (AC #14)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t6 — offline microcopy
-// AC #15, #25-t6
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t6 — offline microcopy (AC #15)', () => {
+describe('t6 — offline microcopy', () => {
   beforeEach(() => {
     mockIsOnline = false
     // 5 minutes ago
@@ -703,10 +696,9 @@ describe('Story 3-8 / t6 — offline microcopy (AC #15)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t7 — suspended user
-// AC #16, #25-t7
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t7 — suspended user rendering (AC #16)', () => {
+describe('t7 — suspended user rendering', () => {
   beforeEach(() => {
     mockIsSuspended = true
     mockFeedData = makeFeedData(
@@ -735,10 +727,9 @@ describe('Story 3-8 / t7 — suspended user rendering (AC #16)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t8 — self-deleted post
-// AC #17, #25-t8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t8 — self-deleted post rendering (AC #17)', () => {
+describe('t8 — self-deleted post rendering', () => {
   beforeEach(() => {
     mockFeedData = makeFeedData(
       [
@@ -780,10 +771,9 @@ describe('Story 3-8 / t8 — self-deleted post rendering (AC #17)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t9 — account-anonymized post (user_id === null)
-// AC #18, #25-t9
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t9 — account-anonymized post (user_id===null) (AC #18)', () => {
+describe('t9 — account-anonymized post (user_id===null)', () => {
   beforeEach(() => {
     mockFeedData = makeFeedData(
       [
@@ -824,10 +814,9 @@ describe('Story 3-8 / t9 — account-anonymized post (user_id===null) (AC #18)',
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t10 — removed-post defensive filter
-// AC #19, #25-t10
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t10 — removed-post defensive filter (AC #19)', () => {
+describe('t10 — removed-post defensive filter', () => {
   it('does not render a post with is_removed===true even if RPC leaks it', () => {
     mockFeedData = makeFeedData(
       [
@@ -847,10 +836,9 @@ describe('Story 3-8 / t10 — removed-post defensive filter (AC #19)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t11 — load more button wired to fetchNextPage
-// AC #12, #25-t11
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t11 — load more button (AC #12)', () => {
+describe('t11 — load more button', () => {
   it('renders "Load more" button when hasNextPage===true', () => {
     mockFeedData = makeFeedData([makePost({ id: 'paged-post-1' })], 'full', 'some-cursor')
     mockHasNextPage = true
@@ -890,10 +878,9 @@ describe('Story 3-8 / t11 — load more button (AC #12)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t12 — boundary rule grep (D7)
-// AC #23, #25-t12
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
+describe('t12 — boundary rule D7 grep', () => {
   it('CollectiveFeedScreen.tsx exists', () => {
     expect(
       existsSync(FEED_SCREEN_PATH),
@@ -958,10 +945,9 @@ describe('Story 3-8 / t12 — boundary rule D7 grep (AC #23)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t13 — precedence: is_user_deleted AND user_id===null simultaneously
-// AC #17, #18, #25-t13
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t13 — deletion precedence: both flags set (AC #17, #18)', () => {
+describe('t13 — deletion precedence: both flags set', () => {
   it('renders the withdrawn tombstone when both is_user_deleted AND user_id===null (self-delete wins)', () => {
     mockFeedData = makeFeedData(
       [
@@ -1022,10 +1008,9 @@ describe('Story 3-8 / t13 — deletion precedence: both flags set (AC #17, #18)'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t14 — empty-preview guard (CollectivePreview with posts.length===0)
-// AC #34, #25-t14
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t14 — empty-preview guard (AC #34)', () => {
+describe('t14 — empty-preview guard', () => {
   it('does not crash when preview mode returns zero posts', () => {
     mockFeedData = makeFeedData([], 'preview')
     mockIsLoading = false
@@ -1070,10 +1055,9 @@ describe('Story 3-8 / t14 — empty-preview guard (AC #34)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t15 — mode-flip re-mount via key prop
-// AC #32, #25-t15
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t15 — mode-flip re-mount (AC #32)', () => {
+describe('t15 — mode-flip re-mount', () => {
   it('transitions from preview to full mode correctly on re-render', () => {
     // Initial render: preview mode
     mockFeedData = makeFeedData([makePost({ id: 'flip-post-1', mode: 'preview' })], 'preview')
@@ -1099,10 +1083,9 @@ describe('Story 3-8 / t15 — mode-flip re-mount (AC #32)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t16 — error state: blank screen avoidance
-// AC #33, #25-t16
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t16 — error state blank screen avoidance (AC #33)', () => {
+describe('t16 — error state blank screen avoidance', () => {
   beforeEach(() => {
     mockIsError = true
     mockFeedData = undefined
@@ -1135,10 +1118,9 @@ describe('Story 3-8 / t16 — error state blank screen avoidance (AC #33)', () =
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t17 — error with cached data shows posts + error strip
-// AC #33, #25-t17
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t17 — error with cached data (AC #33)', () => {
+describe('t17 — error with cached data', () => {
   beforeEach(() => {
     mockIsError = true
     mockFeedData = makeFeedData(
@@ -1166,10 +1148,9 @@ describe('Story 3-8 / t17 — error with cached data (AC #33)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t18 — Load more hidden when hasNextPage===false
-// AC #12, #25-t18
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-8 / t18 — Load more hidden when hasNextPage===false (AC #12)', () => {
+describe('t18 — Load more hidden when hasNextPage===false', () => {
   it('does NOT render "Load more" button when hasNextPage===false', () => {
     mockFeedData = makeFeedData([makePost({ id: 'last-page-post' })], 'full')
     mockHasNextPage = false
@@ -1181,15 +1162,14 @@ describe('Story 3-8 / t18 — Load more hidden when hasNextPage===false (AC #12)
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Story 3-12 additions — locally-hidden filter + PostRow FlagAffordance integration
+// Locally-hidden filter + PostRow FlagAffordance integration additions
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t-new1 — locally-hidden filter applies: hidden post does not render
-// AC #18 t-new1
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t-new1 — locally-hidden filter hides post from feed (AC #10, #18)', () => {
+describe('t-new1 — locally-hidden filter hides post from feed', () => {
   it('post with id in hiddenIds does not render an <article>', () => {
     mockHiddenPostIds = new Set(['p2'])
     mockFeedData = makeFeedData(
@@ -1240,10 +1220,9 @@ describe('Story 3-12 / t-new1 — locally-hidden filter hides post from feed (AC
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t-new2 — empty hidden set is a no-op (all posts render)
-// AC #18 t-new2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t-new2 — empty hidden set is no-op (AC #10, #18)', () => {
+describe('t-new2 — empty hidden set is no-op', () => {
   it('all posts render when hiddenIds is empty', () => {
     mockHiddenPostIds = new Set()
     mockFeedData = makeFeedData(
@@ -1277,10 +1256,9 @@ describe('Story 3-12 / t-new2 — empty hidden set is no-op (AC #10, #18)', () =
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t-new3 — is_removed precedence: global removal runs before local-hide
-// AC #10, #18 t-new3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t-new3 — is_removed filter runs before local-hide (AC #10, #18)', () => {
+describe('t-new3 — is_removed filter runs before local-hide', () => {
   it('post with is_removed===true does not render even when NOT in hiddenIds', () => {
     mockHiddenPostIds = new Set() // NOT locally hidden
     mockFeedData = makeFeedData(
@@ -1312,10 +1290,9 @@ describe('Story 3-12 / t-new3 — is_removed filter runs before local-hide (AC #
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t-new4 — FlagAffordance mounts on a normal post (non-own, non-deleted, non-anon)
-// AC #11, #19 t-new4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-new4 — others post renders a normal title-led row (was FlagAffordance) (AC #11, #19)', () => {
+describe('t-new4 — others post renders a normal title-led row (was FlagAffordance)', () => {
   it('renders the title + author-slice byline for an others non-deleted post', () => {
     // Title-led redesign: the feed row no longer hosts FlagAffordance (moderation
     // moved to the thread). A normal others-post renders as a normal title-led
@@ -1348,10 +1325,9 @@ describe('Story 3-16 / t-new4 — others post renders a normal title-led row (wa
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t-new5 — FlagAffordance hidden on own post (user_id === currentUserId)
-// AC #1, #11, #19 t-new5
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-new5 — own post renders "You" byline, no feed-row actions (AC #1, #11, #19)', () => {
+describe('t-new5 — own post renders "You" byline, no feed-row actions', () => {
   it('byline reads "You" for own post and no post-actions affordance is in the feed row', () => {
     mockCurrentUserId = 'user-abc123'
     mockFeedData = makeFeedData(
@@ -1378,10 +1354,9 @@ describe('Story 3-16 / t-new5 — own post renders "You" byline, no feed-row act
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t-new6 — FlagAffordance hidden on self-deleted post
-// AC #1, #11, #19 t-new6
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-new6 — self-deleted post renders tombstone, no feed-row actions (AC #1, #11, #19)', () => {
+describe('t-new6 — self-deleted post renders tombstone, no feed-row actions', () => {
   it('renders the withdrawn tombstone and no post-actions affordance', () => {
     mockCurrentUserId = 'user-abc123'
     mockFeedData = makeFeedData(
@@ -1405,10 +1380,9 @@ describe('Story 3-16 / t-new6 — self-deleted post renders tombstone, no feed-r
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t-new7 — FlagAffordance hidden on anonymized post (user_id === null)
-// AC #1, #11, #19 t-new7
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-new7 — anonymized post renders title + "[deleted]" byline, no feed-row actions (AC #1, #11, #19)', () => {
+describe('t-new7 — anonymized post renders title + "[deleted]" byline, no feed-row actions', () => {
   it('renders the title and "[deleted]" byline, with no post-actions affordance', () => {
     mockCurrentUserId = 'user-abc123'
     mockFeedData = makeFeedData(
@@ -1425,13 +1399,13 @@ describe('Story 3-16 / t-new7 — anonymized post renders title + "[deleted]" by
 })
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Story 3-13 / self-delete affordance tests
+// self-delete affordance tests
 //
-// RED PHASE CONTRACT: every test in this block MUST FAIL until the Story 3-13
+// RED PHASE CONTRACT: every test in this block MUST FAIL until the
 // developer:
 //   1. Renames FlagAffordance's `disabled` prop to `canReport` + adds `canSelfDelete`.
 //   2. Adds the Delete menu item inside FlagAffordance's Popover content.
-//   3. Adds the delete confirmation Dialog with the exact copy from AC #17.
+//   3. Adds the delete confirmation Dialog with the exact copy.
 //   4. Updates PostRow to compute `canSelfDelete` and `canReport` and pass both
 //      flags to FlagAffordance.
 //
@@ -1440,18 +1414,18 @@ describe('Story 3-16 / t-new7 — anonymized post renders title + "[deleted]" by
 //     The mock does NOT render the Dialog — tests that need the Dialog interact
 //     with FlagAffordance's REAL implementation, so those tests mock
 //     useDeleteOwnPost at the module level but render the real component.
-//   - For dialog tests (27.e–g), a separate render strategy is used: we render
+//   - For dialog tests, a separate render strategy is used: we render
 //     FlagAffordance directly (not through CollectiveFeedScreen) so the real
 //     Dialog code is exercised. This mirrors the report-dialog test pattern.
-//   - AC #27a–d use CollectiveFeedScreen render (FlagAffordance mock).
-//   - AC #27e–h use direct FlagAffordance render (real component, mocked hook).
+//   - Cases a–d use CollectiveFeedScreen render (FlagAffordance mock).
+//   - Cases e–h use direct FlagAffordance render (real component, mocked hook).
 // ═════════════════════════════════════════════════════════════════════════════
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #27a — Delete menu item renders for own non-deleted post
+// Case a — Delete menu item renders for own non-deleted post
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-3-13-a — own non-deleted post renders a normal row, no feed-row self-delete (AC #13, #14, #27a)', () => {
+describe('t-3-13-a — own non-deleted post renders a normal row, no feed-row self-delete', () => {
   it('renders a normal title-led row (no "Delete your post" affordance in the feed)', () => {
     // Title-led redesign: the self-delete affordance moved out of the feed row
     // into the thread. An own non-deleted post renders as a normal title-led
@@ -1501,10 +1475,10 @@ describe('Story 3-16 / t-3-13-a — own non-deleted post renders a normal row, n
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #27b — Delete menu item absent for other user's post
+// Case b — Delete menu item absent for other user's post
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-3-13-b — others post: no self-delete in feed row (AC #14, #27b)', () => {
+describe('t-3-13-b — others post: no self-delete in feed row', () => {
   it('does NOT render "Delete your post" button for an others post', () => {
     mockCurrentUserId = 'user-abc123'
     mockFeedData = makeFeedData(
@@ -1544,10 +1518,10 @@ describe('Story 3-16 / t-3-13-b — others post: no self-delete in feed row (AC 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #27c — Delete menu item absent when is_user_deleted === true
+// Case c — Delete menu item absent when is_user_deleted === true
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-3-13-c — own already-deleted post renders tombstone (AC #14, #27c)', () => {
+describe('t-3-13-c — own already-deleted post renders tombstone', () => {
   it('does NOT render "Delete your post" button when post.is_user_deleted === true', () => {
     mockCurrentUserId = 'user-abc123'
     mockFeedData = makeFeedData(
@@ -1591,11 +1565,11 @@ describe('Story 3-16 / t-3-13-c — own already-deleted post renders tombstone (
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #27d — Existing Story 3-12 tests preserved after prop rename
+// Case d — Existing tests preserved after prop rename
 // (The FlagAffordance mock update must not break existing t-new4–t-new7 semantics)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-3-13-d — feed row never hosts moderation affordances (AC #16, #27d)', () => {
+describe('t-3-13-d — feed row never hosts moderation affordances', () => {
   it('others normal post: title-led row, no report/post-actions affordance in feed', () => {
     mockCurrentUserId = 'user-abc123'
     mockFeedData = makeFeedData(
@@ -1656,7 +1630,7 @@ describe('Story 3-16 / t-3-13-d — feed row never hosts moderation affordances 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #27e–g — Delete confirmation Dialog tests
+// Cases e–g — Delete confirmation Dialog tests
 //
 // These tests render FlagAffordance DIRECTLY (not through CollectiveFeedScreen)
 // so the real Dialog code path executes. The @my/ui mock above provides Dialog
@@ -1675,7 +1649,7 @@ beforeEach(async () => {
   FlagAffordance = (mod as any).FlagAffordance ?? (mod as any).default
 })
 
-describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correct copy (AC #17, #27e)', () => {
+describe('t-3-13-e — Delete confirmation Dialog opens with correct copy', () => {
   it('tapping Delete menu item opens Dialog with title "Delete this post?"', async () => {
     // RED: fails until FlagAffordance renders a Delete menu item that opens a Dialog.
     if (!FlagAffordance) return
@@ -1690,7 +1664,7 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
     )
 
     // Find and click the Delete trigger (popover button or menu item)
-    // The trigger renders "Delete your post" aria-label per AC #22 (only canSelfDelete)
+    // The trigger renders "Delete your post" aria-label (only canSelfDelete)
     const trigger = screen.queryByRole('button', { name: /delete your post/i })
     expect(trigger, 'Delete your post trigger must be present').not.toBeNull()
 
@@ -1709,7 +1683,7 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
     expect(dialogTitle, 'Dialog title "Delete this post?" must appear').not.toBeNull()
   })
 
-  it('Dialog description contains "[deleted]" mention from AC #17', async () => {
+  it('Dialog description contains "[deleted]" mention', async () => {
     // RED: fails until Dialog description copy is wired.
     if (!FlagAffordance) return
 
@@ -1728,7 +1702,7 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
     const deleteMenuItem = screen.queryByText(/^Delete$/i)
     if (deleteMenuItem) fireEvent.click(deleteMenuItem)
 
-    // AC #17 exact copy: "The text will be replaced with '[deleted]'"
+    // Exact copy: "The text will be replaced with '[deleted]'"
     const descriptionText = screen.queryByText(/replaced with '\[deleted\]'/i)
     expect(descriptionText, 'Dialog description must mention "[deleted]"').not.toBeNull()
   })
@@ -1763,7 +1737,7 @@ describe('Story 3-13 / t-3-13-e — Delete confirmation Dialog opens with correc
   })
 })
 
-describe('Story 3-13 / t-3-13-f — Cancel in Dialog fires no mutation (AC #19, #27f)', () => {
+describe('t-3-13-f — Cancel in Dialog fires no mutation', () => {
   it('tapping Cancel closes Dialog without calling useDeleteOwnPost().mutate', async () => {
     // RED: fails until Cancel handler is wired to close Dialog without mutating.
     if (!FlagAffordance) return
@@ -1800,7 +1774,7 @@ describe('Story 3-13 / t-3-13-f — Cancel in Dialog fires no mutation (AC #19, 
   })
 })
 
-describe('Story 3-13 / t-3-13-g — Delete in Dialog fires mutation with correct post_id (AC #18, #27g)', () => {
+describe('t-3-13-g — Delete in Dialog fires mutation with correct post_id', () => {
   it('tapping Delete calls useDeleteOwnPost().mutate({ post_id }) exactly once', async () => {
     // RED: fails until Delete button handler is wired to call deleteMutation.mutate.
     if (!FlagAffordance) return
@@ -1866,11 +1840,11 @@ describe('Story 3-13 / t-3-13-g — Delete in Dialog fires mutation with correct
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC #27h — Optimistic update renders deleted state
+// Case h — Optimistic update renders deleted state
 // This re-uses the existing t8 deletion-state assertions pattern.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-16 / t-3-13-h — post renders deleted state after optimistic update (AC #17, #27h)', () => {
+describe('t-3-13-h — post renders deleted state after optimistic update', () => {
   it('post with is_user_deleted=true (optimistic) renders the withdrawn tombstone + "[deleted]" a11y label', () => {
     // The deletion-state matrix (now in FeedPostRow) must render the title-led
     // tombstone for a post optimistically marked deleted: "This letter was

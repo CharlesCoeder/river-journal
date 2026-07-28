@@ -99,7 +99,7 @@ async function importFeed(): Promise<FeedModule> {
  * server-truncated `excerpt`, `descendant_count`, and a per-kind `reactions`
  * tally, and NO full `body`. Row 0 exercises the zero-reactions `{}` case.
  */
-function makeRows(count: number, mode: string = 'full') {
+function makeRows(count: number, mode = 'full') {
   const rows: Array<Record<string, unknown>> = []
   for (let i = 0; i < count; i++) {
     rows.push({
@@ -342,15 +342,11 @@ describe('useFeed() useInfiniteQuery config', () => {
       throw new Error('feed.ts missing — existsSync precondition will already have failed')
     }
     const src = readFileSync(FEED_PATH, 'utf8')
-    expect(src, 'maxPages: 5 (NFR31 100-post bound)').toMatch(/maxPages\s*:\s*5\b/)
+    expect(src, 'maxPages: 5 (100-post bound)').toMatch(/maxPages\s*:\s*5\b/)
     expect(src, 'refetchInterval: 30_000').toMatch(/refetchInterval\s*:\s*30[_]?000\b/)
     expect(src, 'staleTime: 25_000').toMatch(/staleTime\s*:\s*25[_]?000\b/)
-    expect(src, 'refetchOnWindowFocus: true').toMatch(
-      /refetchOnWindowFocus\s*:\s*true\b/
-    )
-    expect(src, 'queryKey: collectiveFeedKey').toMatch(
-      /queryKey\s*:\s*collectiveFeedKey\b/
-    )
+    expect(src, 'refetchOnWindowFocus: true').toMatch(/refetchOnWindowFocus\s*:\s*true\b/)
+    expect(src, 'queryKey: collectiveFeedKey').toMatch(/queryKey\s*:\s*collectiveFeedKey\b/)
     expect(src, 'initialPageParam: null').toMatch(/initialPageParam\s*:\s*null\b/)
     expect(src, 'getNextPageParam present').toMatch(/getNextPageParam\s*:/)
     // refetchIntervalInBackground must NOT be set to true.
@@ -371,10 +367,10 @@ describe('useFeed() useInfiniteQuery config', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Memory bound — maxPages × PAGE_SIZE = 100 (NFR31)
+// Memory bound — maxPages × PAGE_SIZE = 100
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('memory bound NFR31', () => {
+describe('memory bound', () => {
   it('PAGE_SIZE * 5 === 100 (the documented memory ceiling)', async () => {
     const { PAGE_SIZE } = await importFeed()
     expect(PAGE_SIZE * 5).toBe(100)
@@ -409,7 +405,7 @@ describe('observe() invalidation on streak transitions', () => {
     await drainMicrotasks()
     expect(spy).not.toHaveBeenCalled()
 
-    // Drive a transition. Per Dev Notes, the cleanest path is to drive the
+    // Drive a transition. Per design notes, the cleanest path is to drive the
     // upstream observables that the streak computed view derives from, but
     // since `observe()` reads `lastQualifyingDate.get()` directly, any actual
     // value change triggers the reaction. We mutate entries$/flows$ to force

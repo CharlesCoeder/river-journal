@@ -66,13 +66,11 @@ function Collapsible({
     <YStack
       overflow={height === 'auto' ? undefined : 'hidden'}
       // Only apply transition after the first close — avoids animating on mount
-      transition={hasAnimated.current ? animation as any : undefined}
+      transition={hasAnimated.current ? (animation as any) : undefined}
       height={height}
       opacity={open ? 1 : 0}
     >
-      <YStack onLayout={onLayout}>
-        {children}
-      </YStack>
+      <YStack onLayout={onLayout}>{children}</YStack>
     </YStack>
   )
 }
@@ -151,8 +149,15 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
 
   if (isLoading) {
     return (
-      <YStack padding="$4" alignItems="center">
-        <Text fontSize="$3" fontFamily="$body" color="$color10">
+      <YStack
+        padding="$4"
+        alignItems="center"
+      >
+        <Text
+          fontSize="$3"
+          fontFamily="$body"
+          color="$color10"
+        >
           Loading…
         </Text>
       </YStack>
@@ -162,7 +167,10 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
   if (browsers.length === 0) return null
 
   return (
-    <YStack testID="trusted-browsers-list" gap="$3">
+    <YStack
+      testID="trusted-browsers-list"
+      gap="$3"
+    >
       {browsers.map((browser) => {
         const isCurrentBrowser =
           localTokenHash !== null && browser.deviceTokenHash === localTokenHash
@@ -190,18 +198,38 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
                 alignItems="center"
                 gap="$4"
               >
-                <YStack flex={1} gap="$1">
-                  <XStack gap="$2" alignItems="center">
-                    <Text fontFamily="$journal" fontSize={20} color="$color">
+                <YStack
+                  flex={1}
+                  gap="$1"
+                >
+                  <XStack
+                    gap="$2"
+                    alignItems="center"
+                  >
+                    <Text
+                      fontFamily="$journal"
+                      fontSize={20}
+                      color="$color"
+                    >
                       {browser.label}
                     </Text>
                     {isCurrentBrowser && (
-                      <Text fontFamily="$journalItalic" fontStyle="italic" fontSize={14} color="$color8">
+                      <Text
+                        fontFamily="$journalItalic"
+                        fontStyle="italic"
+                        fontSize={14}
+                        color="$color8"
+                      >
                         (this browser)
                       </Text>
                     )}
                   </XStack>
-                  <Text fontFamily="$body" fontSize={12} color="$color8" marginTop={2}>
+                  <Text
+                    fontFamily="$body"
+                    fontSize={12}
+                    color="$color8"
+                    marginTop={2}
+                  >
                     Last used: {formatRelativeTime(browser.lastUsedAt)}
                   </Text>
                 </YStack>
@@ -225,9 +253,14 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
 
               <Collapsible open={isConfirming}>
                 <YStack gap="$3">
-                  <Text fontFamily="$body" fontSize={13} color="$color8" lineHeight={20}>
-                    {browser.label} will no longer unlock your encryption key automatically.
-                    You'll need your password next time.
+                  <Text
+                    fontFamily="$body"
+                    fontSize={13}
+                    color="$color8"
+                    lineHeight={20}
+                  >
+                    {browser.label} will no longer unlock your encryption key automatically. You'll
+                    need your password next time.
                   </Text>
                   <XStack gap="$5">
                     <Text

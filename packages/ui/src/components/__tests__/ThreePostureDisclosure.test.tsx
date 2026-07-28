@@ -3,8 +3,6 @@
 // ALL tests in this file MUST FAIL before implementation of
 // packages/ui/src/components/ThreePostureDisclosure.tsx.
 //
-// Story 3-6 ACs covered: 1, 2, 3, 4, 5, 6, 7, 8
-//
 // Test framework: Vitest + React Testing Library
 // Dialog mock: mirrors JournalScreen.exitConfirm.test.tsx:117 pattern
 
@@ -27,12 +25,18 @@ vi.mock('../../hooks/useReducedMotion', () => ({
 // ─── Mock tamagui — Dialog + layout primitives → semantic HTML ───────────────
 //
 // Mirrors the JournalScreen.exitConfirm.test.tsx:117 Dialog mock pattern.
-// Dialog.Content surfaces `data-transition` so AC #6 (reduced-motion) is
+// Dialog.Content surfaces `data-transition` so reduced-motion is
 // assertable without inspecting Tamagui internals.
 vi.mock('tamagui', () => {
   const ReactModule = require('react')
 
-  const Dialog = ({ children, open, onOpenChange, dismissOnOverlayPress, disableEscapeKey }: any) => {
+  const Dialog = ({
+    children,
+    open,
+    onOpenChange,
+    dismissOnOverlayPress,
+    disableEscapeKey,
+  }: any) => {
     if (!open) return null
     return ReactModule.createElement(
       'div',
@@ -56,7 +60,8 @@ vi.mock('tamagui', () => {
     )
   }
 
-  Dialog.Portal = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Portal = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
 
   Dialog.Overlay = ({ onPress, ...rest }: any) =>
     ReactModule.createElement('div', {
@@ -145,9 +150,7 @@ vi.mock('../ExpandingLineButton', () => {
 // ─── Import under test ───────────────────────────────────────────────────────
 // This import WILL FAIL (module doesn't exist yet) until the primitive is implemented.
 // That failure IS the red-phase signal.
-import {
-  ThreePostureDisclosure,
-} from '../ThreePostureDisclosure'
+import { ThreePostureDisclosure } from '../ThreePostureDisclosure'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared props factory
@@ -170,10 +173,10 @@ afterEach(() => {
 })
 
 // =============================================================================
-// AC #3: Boundary B renders nothing
+// Boundary B renders nothing
 // =============================================================================
 
-describe('AC3 — boundary=ai_cloud_v1 renders null regardless of open', () => {
+describe('boundary=ai_cloud_v1 renders null regardless of open', () => {
   it('renders nothing when boundary is ai_cloud_v1 and open=true', () => {
     const props = makeProps({ boundary: 'ai_cloud_v1', open: true })
     const { container } = render(React.createElement(ThreePostureDisclosure, props))
@@ -188,10 +191,10 @@ describe('AC3 — boundary=ai_cloud_v1 renders null regardless of open', () => {
 })
 
 // =============================================================================
-// AC #4: Boundary A first-time mode — dialog structure and copy
+// Boundary A first-time mode — dialog structure and copy
 // =============================================================================
 
-describe('AC4 — boundary=collective_post_v1, mode=first-time — full-screen dialog', () => {
+describe('boundary=collective_post_v1, mode=first-time — full-screen dialog', () => {
   it('renders a dialog element with role="dialog" and aria-modal="true"', () => {
     render(React.createElement(ThreePostureDisclosure, makeProps()))
     const dialog = screen.getByRole('dialog')
@@ -248,10 +251,10 @@ describe('AC4 — boundary=collective_post_v1, mode=first-time — full-screen d
 })
 
 // =============================================================================
-// AC #4: mode='review' — button label is "Close", onRequestClose on press
+// mode='review' — button label is "Close", onRequestClose on press
 // =============================================================================
 
-describe('AC4 / AC12 — mode=review', () => {
+describe('mode=review', () => {
   it('renders button labeled "Close" in review mode (not "Got it, post")', () => {
     render(React.createElement(ThreePostureDisclosure, makeProps({ mode: 'review' })))
     expect(screen.queryByRole('button', { name: /got it, post/i })).toBeNull()
@@ -260,7 +263,9 @@ describe('AC4 / AC12 — mode=review', () => {
 
   it('calls onRequestClose when the close button is pressed in review mode', () => {
     const onRequestClose = vi.fn()
-    render(React.createElement(ThreePostureDisclosure, makeProps({ mode: 'review', onRequestClose })))
+    render(
+      React.createElement(ThreePostureDisclosure, makeProps({ mode: 'review', onRequestClose }))
+    )
     const btn = screen.getByRole('button', { name: /close/i })
     fireEvent.click(btn)
     expect(onRequestClose).toHaveBeenCalledOnce()
@@ -282,10 +287,10 @@ describe('AC4 / AC12 — mode=review', () => {
 })
 
 // =============================================================================
-// AC #4: Tap-outside-dismiss — disabled in first-time, enabled in review
+// Tap-outside-dismiss — disabled in first-time, enabled in review
 // =============================================================================
 
-describe('AC4 — tap-outside-dismiss behavior', () => {
+describe('tap-outside-dismiss behavior', () => {
   it('first-time mode: clicking dialog overlay does NOT call onAcknowledge or onRequestClose', () => {
     const onAcknowledge = vi.fn()
     const onRequestClose = vi.fn()
@@ -308,10 +313,7 @@ describe('AC4 — tap-outside-dismiss behavior', () => {
   it('review mode: clicking dialog overlay DOES call onRequestClose', () => {
     const onRequestClose = vi.fn()
     render(
-      React.createElement(
-        ThreePostureDisclosure,
-        makeProps({ mode: 'review', onRequestClose })
-      )
+      React.createElement(ThreePostureDisclosure, makeProps({ mode: 'review', onRequestClose }))
     )
     // The Dialog root element should have dismissOnOverlayPress=true in review
     const dialog = screen.getByRole('dialog')
@@ -335,10 +337,10 @@ describe('AC4 — tap-outside-dismiss behavior', () => {
 })
 
 // =============================================================================
-// AC #5: Focus management — acknowledge button is focused on open
+// Focus management — acknowledge button is focused on open
 // =============================================================================
 
-describe('AC5 — focus management', () => {
+describe('focus management', () => {
   it('moves focus to the acknowledge button after mount (first-time mode)', async () => {
     render(React.createElement(ThreePostureDisclosure, makeProps({ mode: 'first-time' })))
     // requestAnimationFrame-based focus requires we flush the frame
@@ -351,10 +353,10 @@ describe('AC5 — focus management', () => {
 })
 
 // =============================================================================
-// AC #6: prefers-reduced-motion — transition prop is '100ms' when reduced
+// prefers-reduced-motion — transition prop is '100ms' when reduced
 // =============================================================================
 
-describe('AC6 — prefers-reduced-motion', () => {
+describe('prefers-reduced-motion', () => {
   it('Dialog.Content has transition="100ms" when useReducedMotion returns true', () => {
     useReducedMotionMock.mockReturnValue(true)
     render(React.createElement(ThreePostureDisclosure, makeProps()))
@@ -371,10 +373,10 @@ describe('AC6 — prefers-reduced-motion', () => {
 })
 
 // =============================================================================
-// AC #1 / #2: Exports — types exported from the module
+// Exports — types exported from the module
 // =============================================================================
 
-describe('AC1/AC2 — module exports', () => {
+describe('module exports', () => {
   it('exports ThreePostureDisclosure component', async () => {
     const mod = await import('../ThreePostureDisclosure')
     expect(typeof mod.ThreePostureDisclosure).toBe('function')

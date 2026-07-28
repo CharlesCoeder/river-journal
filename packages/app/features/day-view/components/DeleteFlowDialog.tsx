@@ -18,7 +18,10 @@ function getFlowPreview(content: string, wordLimit = 50): string {
 
 export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialogProps) {
   return (
-    <AlertDialog open={!!flow} onOpenChange={onCancel}>
+    <AlertDialog
+      open={!!flow}
+      onOpenChange={onCancel}
+    >
       <AlertDialog.Portal>
         <AlertDialog.Overlay
           key="overlay"
@@ -42,15 +45,28 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
           gap="$4"
           maxWidth={400}
         >
-          <AlertDialog.Title fontFamily="$body" fontWeight="700">
+          <AlertDialog.Title
+            fontFamily="$body"
+            fontWeight="700"
+          >
             Delete Flow?
           </AlertDialog.Title>
-          <AlertDialog.Description fontFamily="$body" color="$color10">
+          <AlertDialog.Description
+            fontFamily="$body"
+            color="$color10"
+          >
             {flow && getFlowPreview(flow.content)}
           </AlertDialog.Description>
-          <XStack gap="$3" justifyContent="flex-end">
+          <XStack
+            gap="$3"
+            justifyContent="flex-end"
+          >
             <AlertDialog.Cancel asChild>
-              <Button chromeless borderWidth={1} borderColor="$borderColor">
+              <Button
+                chromeless
+                borderWidth={1}
+                borderColor="$borderColor"
+              >
                 <Text fontFamily="$body">Cancel</Text>
               </Button>
             </AlertDialog.Cancel>
@@ -61,7 +77,11 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
                 hoverStyle={{ backgroundColor: '$red11' }}
                 pressStyle={{ backgroundColor: '$red11' }}
               >
-                <Text fontFamily="$body" fontWeight="600" color="white">
+                <Text
+                  fontFamily="$body"
+                  fontWeight="600"
+                  color="white"
+                >
                   Delete
                 </Text>
               </Button>

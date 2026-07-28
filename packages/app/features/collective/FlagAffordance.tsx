@@ -28,8 +28,10 @@ import {
 import { MoreHorizontal } from '@tamagui/lucide-icons'
 import { useReportPost, useDeleteOwnPost } from 'app/state/collective/mutations'
 import type { ReportPostVars } from 'app/state/collective/mutations'
-import { addLocallyHiddenPost } from 'app/state/store'
+import { addLocallyHiddenPost, store$ } from 'app/state/store'
+import { captureEvent } from 'app/utils/telemetry/posthog'
 import { generateUUID } from 'app/utils/uuid'
+import { BlockUserConfirmDialog } from './BlockUserConfirmDialog'
 
 // ─── Reason definitions ───────────────────────────────────────────────────────
 
@@ -69,14 +71,35 @@ export interface FlagAffordanceProps {
    * Only invoked when canFocus === true.
    */
   onFocus?: () => void
+  /**
+   * When true, a "Block this user" menu item is rendered — a SEPARATE sibling
+   * of "Report" (orthogonal; a distinct action, not nested under it). Computed by the mount
+   * site: post.user_id !== currentUserId && !is_user_deleted && post.user_id !== null.
+   */
+  canBlock?: boolean
+  /**
+   * The post author's user_id — the party to be blocked. Passed to
+   * BlockUserConfirmDialog as blockedUserId. Distinct from postId.
+   */
+  blockAuthorUserId?: string | null
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelete, canFocus = false, onFocus }: FlagAffordanceProps) {
+export function FlagAffordance({
+  postId,
+  reporterUserId,
+  canReport,
+  canSelfDelete,
+  canFocus = false,
+  onFocus,
+  canBlock = false,
+  blockAuthorUserId,
+}: FlagAffordanceProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false)
   const [selectedReason, setSelectedReason] = useState<ReasonCode | undefined>(undefined)
   const [note, setNote] = useState('')
   const mutation = useReportPost()
@@ -88,17 +111,24 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
 
   // Early returns — hooks have all been called above (Rules of Hooks)
   if (reporterUserId === null) return null
-  // Nothing to show: no report, no delete, no focus affordance.
-  if (!canReport && !canSelfDelete && !canFocus) return null
+  // Nothing to show: no report, no delete, no focus, no block affordance.
+  if (!canReport && !canSelfDelete && !canFocus && !canBlock) return null
 
   const animationToken = reducedMotion ? undefined : 'quick'
 
-  // Context-aware a11y label for the trigger button.
-  const triggerAriaLabel = canReport && canSelfDelete
-    ? 'Post actions'
-    : canSelfDelete
-      ? 'Delete your post'
-      : 'Report this post'
+  // Context-aware a11y label for the trigger button. When more than one primary
+  // action is available the label is the generic "Post actions"; single-action
+  // cases get a specific label. (canFocus is a thread-navigation affordance, not
+  // a primary action, so it does not by itself flip the label to "Post actions".)
+  const primaryActionCount = Number(canReport) + Number(canSelfDelete) + Number(canBlock)
+  const triggerAriaLabel =
+    primaryActionCount > 1
+      ? 'Post actions'
+      : canSelfDelete
+        ? 'Delete your post'
+        : canBlock
+          ? 'Block this user'
+          : 'Report this post'
 
   function handleFocus() {
     setMenuOpen(false)
@@ -115,6 +145,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
     setDeleteDialogOpen(true)
   }
 
+  function openBlockDialog() {
+    setMenuOpen(false)
+    setBlockDialogOpen(true)
+  }
+
   function handleCancel() {
     setDialogOpen(false)
     setNote('')
@@ -128,7 +163,7 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
   function handleDeleteConfirm() {
     // Guard against double-tap: if already pending, the second tap's mutation
     // will hit the 42501 ambiguous-error swallow path on the server and resolve
-    // cleanly. AC #34.
+    // cleanly.
     if (deleteMutation.isPending) return
     // Fire-and-forget — do NOT await. Optimistic cache update is synchronous.
     deleteMutation.mutate({ post_id: postId })
@@ -153,6 +188,13 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
     mutation.mutate(vars)
     addLocallyHiddenPost(postId)
 
+    // Report metric — metadata ONLY. The reporter's free-text note is NEVER
+    // part of this payload; only the tier + user id leave the device.
+    captureEvent('collective_report_submitted', {
+      user_id: reporterUserId!,
+      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
+    })
+
     setDialogOpen(false)
     setMenuOpen(false)
     setNote('')
@@ -163,7 +205,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
 
   return (
     <>
-      <Popover open={menuOpen} onOpenChange={setMenuOpen} placement="bottom-end">
+      <Popover
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        placement="bottom-end"
+      >
         <Popover.Trigger asChild>
           <View
             tag="button"
@@ -210,6 +256,17 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
                 <Text>Report</Text>
               </View>
             ) : null}
+            {canBlock ? (
+              <View
+                tag="button"
+                role="menuitem"
+                onPress={openBlockDialog}
+                paddingHorizontal="$3"
+                paddingVertical="$2"
+              >
+                <Text>Block this user</Text>
+              </View>
+            ) : null}
             {canSelfDelete ? (
               <View
                 tag="button"
@@ -225,7 +282,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
         </Popover.Content>
       </Popover>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        modal
+      >
         <Dialog.Portal>
           <Dialog.Overlay
             key="overlay"
@@ -245,10 +306,16 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
             borderWidth={1}
             animation={animationToken}
           >
-            <Dialog.Title fontSize="$5" fontFamily="$body">
+            <Dialog.Title
+              fontSize="$5"
+              fontFamily="$body"
+            >
               Report this post
             </Dialog.Title>
-            <Dialog.Description fontSize="$2" color="$color11">
+            <Dialog.Description
+              fontSize="$2"
+              color="$color11"
+            >
               Reports are confidential. Reported posts disappear from your feed.
             </Dialog.Description>
 
@@ -259,9 +326,19 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
             >
               <YStack gap="$2">
                 {REPORT_REASONS.map(({ code, label }) => (
-                  <XStack key={code} alignItems="center" gap="$2">
-                    <RadioGroup.Item value={code} id={`reason-${code}`} />
-                    <Label htmlFor={`reason-${code}`} fontSize="$3">
+                  <XStack
+                    key={code}
+                    alignItems="center"
+                    gap="$2"
+                  >
+                    <RadioGroup.Item
+                      value={code}
+                      id={`reason-${code}`}
+                    />
+                    <Label
+                      htmlFor={`reason-${code}`}
+                      fontSize="$3"
+                    >
                       {label}
                     </Label>
                   </XStack>
@@ -269,9 +346,12 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
               </YStack>
             </RadioGroup>
 
-            {/* Disclosure microcopy — placeholder route; link deferred per AC #24 */}
+            {/* Disclosure microcopy — placeholder route; link deferred */}
             {/* TODO(post-3-12): link to /about/guidelines once that route lands */}
-            <Text fontSize="$1" color="$color9">
+            <Text
+              fontSize="$1"
+              color="$color9"
+            >
               Confirm this post violates the community guidelines.
             </Text>
 
@@ -286,10 +366,12 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
               borderColor="$color3"
             />
 
-            <XStack gap="$3" justifyContent="flex-end" marginTop="$3">
-              <ExpandingLineButton onPress={handleCancel}>
-                Cancel
-              </ExpandingLineButton>
+            <XStack
+              gap="$3"
+              justifyContent="flex-end"
+              marginTop="$3"
+            >
+              <ExpandingLineButton onPress={handleCancel}>Cancel</ExpandingLineButton>
               <ExpandingLineButton
                 onPress={handleSubmit}
                 disabled={submitDisabled}
@@ -300,7 +382,11 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog>
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} modal>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        modal
+      >
         <Dialog.Portal>
           <Dialog.Overlay
             key="delete-overlay"
@@ -320,24 +406,38 @@ export function FlagAffordance({ postId, reporterUserId, canReport, canSelfDelet
             borderWidth={1}
             animation={animationToken}
           >
-            <Dialog.Title fontSize="$5" fontFamily="$body">
+            <Dialog.Title
+              fontSize="$5"
+              fontFamily="$body"
+            >
               Delete this post?
             </Dialog.Title>
-            <Dialog.Description fontSize="$2" color="$color11">
+            <Dialog.Description
+              fontSize="$2"
+              color="$color11"
+            >
               {"The text will be replaced with '[deleted]'. Replies under it will remain visible."}
             </Dialog.Description>
 
-            <XStack gap="$3" justifyContent="flex-end" marginTop="$3">
-              <ExpandingLineButton onPress={handleDeleteCancel}>
-                Cancel
-              </ExpandingLineButton>
-              <ExpandingLineButton onPress={handleDeleteConfirm}>
-                Delete
-              </ExpandingLineButton>
+            <XStack
+              gap="$3"
+              justifyContent="flex-end"
+              marginTop="$3"
+            >
+              <ExpandingLineButton onPress={handleDeleteCancel}>Cancel</ExpandingLineButton>
+              <ExpandingLineButton onPress={handleDeleteConfirm}>Delete</ExpandingLineButton>
             </XStack>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog>
+      {canBlock ? (
+        <BlockUserConfirmDialog
+          open={blockDialogOpen}
+          onOpenChange={setBlockDialogOpen}
+          blockerUserId={reporterUserId}
+          blockedUserId={blockAuthorUserId}
+        />
+      ) : null}
     </>
   )
 }

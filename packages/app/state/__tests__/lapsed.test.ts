@@ -26,9 +26,9 @@ beforeEach(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Initial state (AC1)
+// 1. Initial state
 // ─────────────────────────────────────────────────────────────────────────────
-describe('lapsed$ initial state (AC1)', () => {
+describe('lapsed$ initial state', () => {
   it('lastSessionAt is null on a fresh observable', () => {
     expect(lapsed$.lastSessionAt.get()).toBeNull()
   })
@@ -43,9 +43,9 @@ describe('lapsed$ initial state (AC1)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. recordSessionOpen — first call (AC1, AC3)
+// 2. recordSessionOpen — first call
 // ─────────────────────────────────────────────────────────────────────────────
-describe('recordSessionOpen — first call on fresh observable (AC1, AC3)', () => {
+describe('recordSessionOpen — first call on fresh observable', () => {
   it('sets lastSessionAt to the provided timestamp', () => {
     recordSessionOpen(T0)
     expect(lapsed$.lastSessionAt.get()).toBe(T0)
@@ -93,9 +93,9 @@ describe('recordSessionOpen — previousSessionAt snapshot', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Same-tick guard — idempotent on hot-reload (AC3)
+// 3. Same-tick guard — idempotent on hot-reload
 // ─────────────────────────────────────────────────────────────────────────────
-describe('recordSessionOpen — same-tick guard (AC3)', () => {
+describe('recordSessionOpen — same-tick guard', () => {
   it('second call within 60s is a no-op; lastSessionAt stays at first value', () => {
     recordSessionOpen(T0)
     recordSessionOpen(T0 + 30_000) // 30 seconds later — within same-tick window
@@ -110,9 +110,9 @@ describe('recordSessionOpen — same-tick guard (AC3)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. ≤ 7 days gap — dismissedAt NOT reset (AC3, AC6)
+// 4. ≤ 7 days gap — dismissedAt NOT reset
 // ─────────────────────────────────────────────────────────────────────────────
-describe('recordSessionOpen — gap ≤ 7 days does not reset dismissedAt (AC3, AC6)', () => {
+describe('recordSessionOpen — gap ≤ 7 days does not reset dismissedAt', () => {
   it('lastSessionAt advances to new timestamp', () => {
     recordSessionOpen(T0)
     const t1 = T0 + 5 * DAY_MS
@@ -132,9 +132,9 @@ describe('recordSessionOpen — gap ≤ 7 days does not reset dismissedAt (AC3, 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. > 7 days gap — dismissedAt reset to null (AC3, AC6)
+// 5. > 7 days gap — dismissedAt reset to null
 // ─────────────────────────────────────────────────────────────────────────────
-describe('recordSessionOpen — gap > 7 days resets dismissedAt (AC3, AC6)', () => {
+describe('recordSessionOpen — gap > 7 days resets dismissedAt', () => {
   it('dismissedAt is set to null when gap is 8 days (> threshold)', () => {
     recordSessionOpen(T0)
     const t1 = T0 + DAY_MS // simulate dismissal after first open
@@ -153,9 +153,9 @@ describe('recordSessionOpen — gap > 7 days resets dismissedAt (AC3, AC6)', () 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. ≤ 7 days gap — same-window dismissal is preserved (AC6)
+// 6. ≤ 7 days gap — same-window dismissal is preserved
 // ─────────────────────────────────────────────────────────────────────────────
-describe('recordSessionOpen — ≤ 7 days gap preserves existing dismissedAt (AC6)', () => {
+describe('recordSessionOpen — ≤ 7 days gap preserves existing dismissedAt', () => {
   it('dismissedAt remains set when gap is 5 days (same lapsed window)', () => {
     recordSessionOpen(T0)
     const tDismiss = T0 + 2 * DAY_MS
@@ -168,9 +168,9 @@ describe('recordSessionOpen — ≤ 7 days gap preserves existing dismissedAt (A
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. Boundary: exactly 7 days — NOT lapsed (strict greater-than) (AC1, AC6)
+// 7. Boundary: exactly 7 days — NOT lapsed (strict greater-than)
 // ─────────────────────────────────────────────────────────────────────────────
-describe('recordSessionOpen — exactly LAPSED_THRESHOLD_MS boundary (AC1, AC6)', () => {
+describe('recordSessionOpen — exactly LAPSED_THRESHOLD_MS boundary', () => {
   it('LAPSED_THRESHOLD_DAYS equals 7', () => {
     expect(LAPSED_THRESHOLD_DAYS).toBe(7)
   })
@@ -190,9 +190,9 @@ describe('recordSessionOpen — exactly LAPSED_THRESHOLD_MS boundary (AC1, AC6)'
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. dismissLapsedPrompt — sets dismissedAt (AC1)
+// 8. dismissLapsedPrompt — sets dismissedAt
 // ─────────────────────────────────────────────────────────────────────────────
-describe('dismissLapsedPrompt — sets dismissedAt (AC1)', () => {
+describe('dismissLapsedPrompt — sets dismissedAt', () => {
   it('sets dismissedAt to the provided timestamp', () => {
     const tDismiss = T0 + 500
     dismissLapsedPrompt(tDismiss)

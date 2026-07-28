@@ -5,7 +5,7 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
-// ─── Local push spy (NOT the shared lambda — see story 1-6, task 7 notes) ───
+// ─── Local push spy (NOT the shared lambda) ───
 const pushSpy = vi.fn()
 
 // ─── @my/ui mock — controllable useReducedMotion ────────────────────────────
@@ -16,7 +16,8 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } = props
+    const { testID, onPress, onScroll, children, accessibilityRole, accessibilityLabel, ...rest } =
+      props
     return {
       ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
@@ -39,7 +40,20 @@ vi.mock('@my/ui', async () => {
 
   // Stateful Text: exposes onHoverIn/onHoverOut/onPressIn/onPressOut as mouse events
   // Also captures transition and x props via data attributes for assertion.
-  const Text = ({ children, onPress, onHoverIn, onHoverOut, onPressIn, onPressOut, testID, accessibilityRole, accessibilityLabel, transition, x, ...props }: any) =>
+  const Text = ({
+    children,
+    onPress,
+    onHoverIn,
+    onHoverOut,
+    onPressIn,
+    onPressOut,
+    testID,
+    accessibilityRole,
+    accessibilityLabel,
+    transition,
+    x,
+    ...props
+  }: any) =>
     ReactModule.createElement(
       'span',
       {
@@ -58,7 +72,7 @@ vi.mock('@my/ui', async () => {
       children
     )
 
-    // ─── StreakChip stub — forwards dayCount, state and a11y props for HomeScreen assertions
+  // ─── StreakChip stub — forwards dayCount, state and a11y props for HomeScreen assertions
   const StreakChip = ({ dayCount, state, ...props }: any) => {
     const label = dayCount != null ? `Day ${dayCount} streak` : 'Day — streak'
     const text = dayCount != null ? `Day ${dayCount}` : 'Day —'
@@ -165,11 +179,26 @@ vi.mock('app/features/home/components/KeyringPrompt', () => ({
 }))
 
 vi.mock('app/features/home/components/OrphanFlowsDialog', () => ({
-  OrphanFlowsDialog: () => React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+  OrphanFlowsDialog: () =>
+    React.createElement('div', { 'data-testid': 'orphan-flows-dialog' }, null),
+}))
+vi.mock('app/features/moderation-receipts/ModerationReceiptGate', () => ({
+  ModerationReceiptGate: () =>
+    React.createElement('div', { 'data-testid': 'moderation-receipt-gate' }, null),
+}))
+vi.mock('app/features/notifications/StreakReminderPermissionGate', () => ({
+  StreakReminderPermissionGate: () =>
+    React.createElement('div', { 'data-testid': 'streak-reminder-permission-gate' }, null),
+}))
+
+vi.mock('app/features/notifications/InAppReminderGate', () => ({
+  InAppReminderGate: () =>
+    React.createElement('div', { 'data-testid': 'in-app-reminder-gate' }, null),
 }))
 
 vi.mock('app/features/home/components/EncryptionModeDialog', () => ({
-  EncryptionModeDialog: () => React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
+  EncryptionModeDialog: () =>
+    React.createElement('div', { 'data-testid': 'encryption-mode-dialog' }, null),
 }))
 
 // ─── WordLinkNav ─────────────────────────────────────────────────────────────
@@ -229,14 +258,15 @@ describe('HomeScreen renders hero content', () => {
     render(React.createElement(HomeScreen))
     // new Date().toLocaleDateString renders e.g. "Saturday, May 2, 2026"
     // assert that at least a month-name substring is present
-    const months = /January|February|March|April|May|June|July|August|September|October|November|December/
+    const months =
+      /January|February|March|April|May|June|July|August|September|October|November|December/
     const dateEl = screen.getByText(months)
     expect(dateEl).toBeTruthy()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. "Begin writing" CTA — accessibility (AC 7)
+// 2. "Begin writing" CTA — accessibility
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — accessibility', () => {
   it('renders "Begin writing" text', () => {
@@ -259,7 +289,7 @@ describe('Begin writing CTA — accessibility', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. CTA press navigates to /journal (AC 2)
+// 3. CTA press navigates to /journal
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — navigation', () => {
   beforeEach(() => {
@@ -282,7 +312,7 @@ describe('Begin writing CTA — navigation', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. CTA spring transition (AC 2)
+// 4. CTA spring transition
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — ctaSpring transition', () => {
   it('renders with transition="ctaSpring" when useReducedMotion returns false', () => {
@@ -302,7 +332,7 @@ describe('Begin writing CTA — ctaSpring transition', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. CTA translation x (AC 2)
+// 5. CTA translation x
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Begin writing CTA — x translation on hover/press', () => {
   it('x is 0 when not hovered / not pressed under normal motion', () => {
@@ -423,7 +453,7 @@ describe('CollectiveEntry slot wrapper (1-7: now contains CollectiveEntry compon
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. maxWidth={1024} reading-width cap preserved (AC 5)
+// 7. maxWidth={1024} reading-width cap preserved
 // Note: Tamagui style props are not forwarded to DOM via our passthrough mock,
 // so we assert via the component source pattern test: the slot tests above and
 // dialog tests below confirm the overall component renders. The maxWidth
@@ -440,7 +470,7 @@ describe('Reading-width container', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. Dialog preservation (AC 6)
+// 8. Dialog preservation
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Dialog components preserved', () => {
   it('mounts KeyringPrompt', () => {
@@ -620,7 +650,9 @@ describe('Lapsed prompt', () => {
     expect(prompt).toBeTruthy()
     expect(cta).toBeTruthy()
     // DOM order: prompt must appear before CTA
-    const allNodes = Array.from(document.body.querySelectorAll('[data-testid="lapsed-prompt"], [aria-label="Begin writing"]'))
+    const allNodes = Array.from(
+      document.body.querySelectorAll('[data-testid="lapsed-prompt"], [aria-label="Begin writing"]')
+    )
     const promptIdx = allNodes.findIndex((n) => n.getAttribute('data-testid') === 'lapsed-prompt')
     const ctaIdx = allNodes.findIndex((n) => n.getAttribute('aria-label') === 'Begin writing')
     expect(promptIdx).toBeLessThan(ctaIdx)

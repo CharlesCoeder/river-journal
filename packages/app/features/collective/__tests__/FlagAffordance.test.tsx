@@ -1,23 +1,23 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-12 — TDD red-phase unit tests for `features/collective/FlagAffordance.tsx`.
+ * TDD red-phase unit tests for `features/collective/FlagAffordance.tsx`.
  *
- * Red-phase contract: every test MUST fail until Story 3-12's Task 3 creates
+ * Red-phase contract: every test MUST fail until Task 3 creates
  * `packages/app/features/collective/FlagAffordance.tsx`.
  *
- * AC coverage (AC #1–#8, #12–#15, #21, #23):
- *   t1  — trigger renders; null reporterUserId → null (AC #1, #2)
- *   t2  — disabled hides trigger entirely (AC #4)
- *   t3  — opens popover on trigger click; "Report" menu item visible (AC #4, #5)
- *   t4  — opens dialog on Report click; radio list + TextArea visible (AC #5, #6, #7)
- *   t5  — Submit disabled until reason chosen; selecting reason enables it (AC #6, #8)
+ * Test coverage:
+ *   t1  — trigger renders; null reporterUserId → null
+ *   t2  — disabled hides trigger entirely
+ *   t3  — opens popover on trigger click; "Report" menu item visible
+ *   t4  — opens dialog on Report click; radio list + TextArea visible
+ *   t5  — Submit disabled until reason chosen; selecting reason enables it
  *   t6  — Submit fires useReportPost.mutate with correct vars + calls addLocallyHiddenPost;
- *          no console.* called (AC #8, #12, #13/NFR19)
- *   t7  — empty note submits as null (AC #7, #8)
- *   t8  — Cancel does not mutate or hide; dialog closes (AC #8)
- *   t9  — Submit during isPending is a no-op (AC #8, #12)
- *   t10 — Reduced-motion: animation props undefined on overlay/content (AC #14)
- *   t11 — Source grep: FlagAffordance.tsx has no console.*+note or Sentry+note (NFR19, AC #13)
+ *          no console.* called
+ *   t7  — empty note submits as null
+ *   t8  — Cancel does not mutate or hide; dialog closes
+ *   t9  — Submit during isPending is a no-op
+ *   t10 — Reduced-motion: animation props undefined on overlay/content
+ *   t11 — Source grep: FlagAffordance.tsx has no console.*+note or Sentry+note
  *
  * Mock strategy: vi.mock for useReportPost, addLocallyHiddenPost, @my/ui, @tamagui/lucide-icons.
  * Mirrors ReactionStrip.test.tsx + CollectiveFeedScreen.test.tsx patterns.
@@ -50,7 +50,7 @@ vi.mock('app/state/collective/mutations', () => ({
     isPending: mockIsPending,
     error: null,
   }),
-  // Story 3-13: useDeleteOwnPost needed by FlagAffordance after prop rename.
+  // useDeleteOwnPost needed by FlagAffordance after prop rename.
   useDeleteOwnPost: () => ({
     mutate: vi.fn(),
     mutateAsync: vi.fn(),
@@ -76,7 +76,17 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   return {
-    View: ({ children, tag, onPress, 'aria-label': ariaLabel, 'aria-haspopup': ariaHasPopup, role, opacity, pointerEvents, ...props }: any) => {
+    View: ({
+      children,
+      tag,
+      onPress,
+      'aria-label': ariaLabel,
+      'aria-haspopup': ariaHasPopup,
+      role,
+      opacity,
+      pointerEvents,
+      ...props
+    }: any) => {
       const htmlProps: Record<string, unknown> = {}
       if (ariaLabel) htmlProps['aria-label'] = ariaLabel
       if (ariaHasPopup) htmlProps['aria-haspopup'] = ariaHasPopup
@@ -93,8 +103,7 @@ vi.mock('@my/ui', async () => {
       return ReactModule.createElement(elementTag, htmlProps, children)
     },
 
-    Text: ({ children, ...props }: any) =>
-      ReactModule.createElement('span', {}, children),
+    Text: ({ children, ...props }: any) => ReactModule.createElement('span', {}, children),
 
     XStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'x' }, children),
@@ -104,25 +113,37 @@ vi.mock('@my/ui', async () => {
 
     // Popover — when open, render children; Trigger renders trigger, Content renders content
     Popover: ({ children, open, onOpenChange, placement }: any) =>
-      ReactModule.createElement('div', { 'data-popover': 'true', 'data-open': String(open) }, children),
+      ReactModule.createElement(
+        'div',
+        { 'data-popover': 'true', 'data-open': String(open) },
+        children
+      ),
 
     // Forward Popover sub-components
     // We use a factory that also attaches sub-components below
 
     Dialog: ({ children, open, onOpenChange, modal }: any) =>
-      ReactModule.createElement('div', {
-        'data-dialog': 'true',
-        'data-open': String(open),
-        role: open ? 'dialog' : undefined,
-      }, open ? children : null),
+      ReactModule.createElement(
+        'div',
+        {
+          'data-dialog': 'true',
+          'data-open': String(open),
+          role: open ? 'dialog' : undefined,
+        },
+        open ? children : null
+      ),
 
     RadioGroup: ({ children, value, onValueChange, required }: any) =>
-      ReactModule.createElement('div', {
-        role: 'radiogroup',
-        'data-value': value ?? '',
-        'data-required': required ? 'true' : undefined,
-        onChange: (e: any) => onValueChange?.(e.target.value),
-      }, children),
+      ReactModule.createElement(
+        'div',
+        {
+          role: 'radiogroup',
+          'data-value': value ?? '',
+          'data-required': required ? 'true' : undefined,
+          onChange: (e: any) => onValueChange?.(e.target.value),
+        },
+        children
+      ),
 
     Label: ({ children, htmlFor, ...props }: any) =>
       ReactModule.createElement('label', { htmlFor }, children),
@@ -136,14 +157,24 @@ vi.mock('@my/ui', async () => {
         'data-testid': 'report-note-textarea',
       }),
 
-    ExpandingLineButton: ({ children, onPress, disabled, 'aria-disabled': ariaDisabled, ...props }: any) => {
+    ExpandingLineButton: ({
+      children,
+      onPress,
+      disabled,
+      'aria-disabled': ariaDisabled,
+      ...props
+    }: any) => {
       const isDisabled = disabled || ariaDisabled === 'true' || ariaDisabled === true
-      return ReactModule.createElement('button', {
-        onClick: onPress,
-        disabled: !!isDisabled,
-        'aria-disabled': isDisabled ? 'true' : 'false',
-        'data-testid': `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
-      }, children)
+      return ReactModule.createElement(
+        'button',
+        {
+          onClick: onPress,
+          disabled: !!isDisabled,
+          'aria-disabled': isDisabled ? 'true' : 'false',
+          'data-testid': `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
+        },
+        children
+      )
     },
 
     Anchor: ({ children, href, ...props }: any) =>
@@ -163,7 +194,8 @@ vi.mock('@my/ui', async () => {
 vi.mock('@my/ui', async (importOriginal) => {
   const ReactModule = await import('react')
 
-  const makeElement = (tag: string) =>
+  const makeElement =
+    (tag: string) =>
     ({ children, ...props }: any) =>
       ReactModule.createElement(tag, props, children)
 
@@ -171,7 +203,16 @@ vi.mock('@my/ui', async (importOriginal) => {
   const PopoverTrigger = ({ children, asChild }: any) =>
     ReactModule.createElement('div', { 'data-popover-trigger': 'true' }, children)
 
-  const PopoverContent = ({ children, open: _open, padding, backgroundColor, borderColor, borderWidth, elevate, ...props }: any) =>
+  const PopoverContent = ({
+    children,
+    open: _open,
+    padding,
+    backgroundColor,
+    borderColor,
+    borderWidth,
+    elevate,
+    ...props
+  }: any) =>
     ReactModule.createElement('div', { 'data-popover-content': 'true', role: 'menu' }, children)
 
   // Dialog sub-components
@@ -185,10 +226,14 @@ vi.mock('@my/ui', async (importOriginal) => {
     })
 
   const DialogContent = ({ children, animation, ...props }: any) =>
-    ReactModule.createElement('div', {
-      'data-dialog-content': 'true',
-      'data-animation': animation ?? '',
-    }, children)
+    ReactModule.createElement(
+      'div',
+      {
+        'data-dialog-content': 'true',
+        'data-animation': animation ?? '',
+      },
+      children
+    )
 
   const DialogTitle = ({ children, ...props }: any) =>
     ReactModule.createElement('h2', { 'data-dialog-title': 'true' }, children)
@@ -198,22 +243,30 @@ vi.mock('@my/ui', async (importOriginal) => {
 
   // RadioGroup sub-components
   const RadioGroupItem = ({ children, value, id, ...props }: any) =>
-    ReactModule.createElement('input', {
-      type: 'radio',
-      id,
-      value,
-      'data-radio-item': 'true',
-      onChange: (e: any) => {
-        // bubble up — parent RadioGroup handles value change
+    ReactModule.createElement(
+      'input',
+      {
+        type: 'radio',
+        id,
+        value,
+        'data-radio-item': 'true',
+        onChange: (e: any) => {
+          // bubble up — parent RadioGroup handles value change
+        },
       },
-    }, children)
+      children
+    )
 
   const RadioGroupIndicator = (props: any) =>
     ReactModule.createElement('span', { 'data-radio-indicator': 'true' })
 
   // Compose Popover component
   const PopoverComponent = ({ children, open, onOpenChange, placement }: any) =>
-    ReactModule.createElement('div', { 'data-popover': 'true', 'data-open': String(open) }, children)
+    ReactModule.createElement(
+      'div',
+      { 'data-popover': 'true', 'data-open': String(open) },
+      children
+    )
 
   Object.assign(PopoverComponent, {
     Trigger: PopoverTrigger,
@@ -222,11 +275,15 @@ vi.mock('@my/ui', async (importOriginal) => {
 
   // Compose Dialog component
   const DialogComponent = ({ children, open, onOpenChange, modal }: any) =>
-    ReactModule.createElement('div', {
-      'data-dialog': 'true',
-      'data-open': String(open),
-      role: open ? 'dialog' : undefined,
-    }, open ? children : null)
+    ReactModule.createElement(
+      'div',
+      {
+        'data-dialog': 'true',
+        'data-open': String(open),
+        role: open ? 'dialog' : undefined,
+      },
+      open ? children : null
+    )
 
   Object.assign(DialogComponent, {
     Portal: DialogPortal,
@@ -238,17 +295,21 @@ vi.mock('@my/ui', async (importOriginal) => {
 
   // Compose RadioGroup component
   const RadioGroupComponent = ({ children, value, onValueChange, required }: any) =>
-    ReactModule.createElement('div', {
-      role: 'radiogroup',
-      'data-rg-value': value ?? '',
-      onClick: (e: any) => {
-        // Clicks on radio inputs inside bubble up here — intercept radio changes
-        const target = e.target as HTMLInputElement
-        if (target.type === 'radio') {
-          onValueChange?.(target.value)
-        }
+    ReactModule.createElement(
+      'div',
+      {
+        role: 'radiogroup',
+        'data-rg-value': value ?? '',
+        onClick: (e: any) => {
+          // Clicks on radio inputs inside bubble up here — intercept radio changes
+          const target = e.target as HTMLInputElement
+          if (target.type === 'radio') {
+            onValueChange?.(target.value)
+          }
+        },
       },
-    }, children)
+      children
+    )
 
   Object.assign(RadioGroupComponent, {
     Item: RadioGroupItem,
@@ -256,7 +317,17 @@ vi.mock('@my/ui', async (importOriginal) => {
   })
 
   return {
-    View: ({ children, tag, onPress, 'aria-label': ariaLabel, 'aria-haspopup': ariaHasPopup, role, opacity, pointerEvents, ...props }: any) => {
+    View: ({
+      children,
+      tag,
+      onPress,
+      'aria-label': ariaLabel,
+      'aria-haspopup': ariaHasPopup,
+      role,
+      opacity,
+      pointerEvents,
+      ...props
+    }: any) => {
       const htmlProps: Record<string, unknown> = {}
       if (ariaLabel) htmlProps['aria-label'] = ariaLabel
       if (ariaHasPopup) htmlProps['aria-haspopup'] = ariaHasPopup
@@ -272,8 +343,7 @@ vi.mock('@my/ui', async (importOriginal) => {
       return ReactModule.createElement(elementTag, htmlProps, children)
     },
 
-    Text: ({ children, ...props }: any) =>
-      ReactModule.createElement('span', {}, children),
+    Text: ({ children, ...props }: any) => ReactModule.createElement('span', {}, children),
 
     XStack: ({ children, ...props }: any) =>
       ReactModule.createElement('div', { 'data-stack': 'x' }, children),
@@ -299,14 +369,24 @@ vi.mock('@my/ui', async (importOriginal) => {
         'data-testid': 'report-note-textarea',
       }),
 
-    ExpandingLineButton: ({ children, onPress, disabled, 'aria-disabled': ariaDisabled, ...props }: any) => {
+    ExpandingLineButton: ({
+      children,
+      onPress,
+      disabled,
+      'aria-disabled': ariaDisabled,
+      ...props
+    }: any) => {
       const isDisabled = disabled || ariaDisabled === 'true' || ariaDisabled === true
-      return ReactModule.createElement('button', {
-        onClick: onPress,
-        disabled: !!isDisabled,
-        'aria-disabled': isDisabled ? 'true' : 'false',
-        'data-testid': `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
-      }, children)
+      return ReactModule.createElement(
+        'button',
+        {
+          onClick: onPress,
+          disabled: !!isDisabled,
+          'aria-disabled': isDisabled ? 'true' : 'false',
+          'data-testid': `btn-${String(children).toLowerCase().replace(/\s+/g, '-')}`,
+        },
+        children
+      )
     },
 
     Anchor: ({ children, href, ...props }: any) =>
@@ -322,6 +402,23 @@ vi.mock('@tamagui/lucide-icons', () => ({
     React.createElement('span', { 'data-icon': 'MoreHorizontal', 'data-size': size, ...props }),
 }))
 
+// ─── BlockUserConfirmDialog mock — captures the props it was mounted with ─────
+// FlagAffordance renders this as a sibling controlled dialog (mirroring the
+// report/delete dialogs). The mock never renders real dialog markup; tests
+// assert on the captured props + open/close calls instead.
+const blockDialogPropsCalls: any[] = []
+vi.mock('../BlockUserConfirmDialog', () => ({
+  BlockUserConfirmDialog: (props: any) => {
+    blockDialogPropsCalls.push(props)
+    return React.createElement('div', {
+      'data-testid': 'block-user-confirm-dialog',
+      'data-open': String(props.open),
+      'data-blocker': props.blockerUserId ?? '',
+      'data-blocked': props.blockedUserId ?? '',
+    })
+  },
+}))
+
 // ─── Import under test — will fail until FlagAffordance.tsx exists ────────────
 import { FlagAffordance } from '../FlagAffordance'
 
@@ -335,17 +432,22 @@ afterEach(() => {
   addLocallyHiddenPostSpy.mockReset()
   reduceMotionValue = false
   mockIsPending = false
+  blockDialogPropsCalls.length = 0
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — trigger renders; null reporterUserId renders nothing
-// AC #1, #2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
+describe('t1 — trigger renders', () => {
   it('renders a button with aria-label="Report this post" when canReport=true (only-report case)', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const trigger = screen.getByRole('button', { name: /report this post/i })
     expect(trigger).not.toBeNull()
@@ -353,14 +455,24 @@ describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
 
   it('renders nothing (null) when reporterUserId is null', () => {
     const { container } = render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: null, canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: null,
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     expect(container.firstChild).toBeNull()
   })
 
   it('renders the MoreHorizontal icon inside the trigger', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const icon = document.querySelector('[data-icon="MoreHorizontal"]')
     expect(icon).not.toBeNull()
@@ -368,7 +480,12 @@ describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
 
   it('trigger has aria-haspopup="menu"', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const trigger = screen.getByRole('button', { name: /report this post/i })
     expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
@@ -377,20 +494,29 @@ describe('Story 3-12 / t1 — trigger renders (AC #1, #2)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — disabled hides trigger entirely
-// AC #4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t2 — disabled renders nothing (AC #4)', () => {
+describe('t2 — disabled renders nothing', () => {
   it('returns null when disabled===true', () => {
     const { container } = render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: false, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: false,
+        canSelfDelete: false,
+      })
     )
     expect(container.firstChild).toBeNull()
   })
 
   it('no button present when disabled===true', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: false, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: false,
+        canSelfDelete: false,
+      })
     )
     expect(screen.queryByRole('button', { name: /report this post/i })).toBeNull()
   })
@@ -398,13 +524,17 @@ describe('Story 3-12 / t2 — disabled renders nothing (AC #4)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — opens popover on trigger click; "Report" menu item is visible
-// AC #4, #5
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () => {
+describe('t3 — popover opens on trigger click', () => {
   it('clicking the trigger opens the popover (Popover becomes data-open="true")', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
@@ -415,7 +545,12 @@ describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () =>
 
   it('"Report" menu item is visible after popover opens', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
@@ -425,7 +560,12 @@ describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () =>
 
   it('"Report" menu item has role="menuitem"', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
@@ -434,26 +574,30 @@ describe('Story 3-12 / t3 — popover opens on trigger click (AC #4, #5)', () =>
     expect(menuItem).not.toBeNull()
   })
 
-  it('Delete menu item is present in source (Story 3-13 implemented)', () => {
-    // The TODO(Story 3-13) placeholder was replaced by the real Delete menu item.
+  it('Delete menu item is present in source', () => {
+    // The TODO placeholder was replaced by the real Delete menu item.
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
     const src = readFileSync(FLAG_AFFORDANCE_PATH, 'utf8')
     // Verify the Delete menu item code is present (canSelfDelete conditional)
     expect(src).toMatch(/canSelfDelete/)
     // Verify the TODO placeholder is gone
-    expect(src).not.toMatch(/TODO\(Story 3-13\)/)
+    expect(src).not.toMatch(/TODO\(Story \d/)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — clicking "Report" opens dialog; radio list and TextArea visible
-// AC #5, #6, #7
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t4 — dialog opens with radio list + TextArea (AC #5, #6, #7)', () => {
+describe('t4 — dialog opens with radio list + TextArea', () => {
   function openDialog() {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
@@ -513,13 +657,17 @@ describe('Story 3-12 / t4 — dialog opens with radio list + TextArea (AC #5, #6
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t5 — Submit disabled until reason chosen; selecting reason enables it
-// AC #6, #8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t5 — Submit enabled only after reason selected (AC #6, #8)', () => {
+describe('t5 — Submit enabled only after reason selected', () => {
   function openDialog() {
     render(
-      React.createElement(FlagAffordance, { postId: 'p1', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p1',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     const trigger = screen.getByRole('button', { name: /report this post/i })
     fireEvent.click(trigger)
@@ -532,14 +680,16 @@ describe('Story 3-12 / t5 — Submit enabled only after reason selected (AC #6, 
     const submitBtn = screen.getByTestId('btn-submit')
     expect(
       submitBtn.getAttribute('aria-disabled') === 'true' ||
-      (submitBtn as HTMLButtonElement).disabled === true
+        (submitBtn as HTMLButtonElement).disabled === true
     ).toBe(true)
   })
 
   it('Submit button is enabled after selecting a reason', () => {
     openDialog()
     // Click the "Spam" radio
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     expect(spamRadio).not.toBeNull()
     fireEvent.click(spamRadio)
 
@@ -547,7 +697,7 @@ describe('Story 3-12 / t5 — Submit enabled only after reason selected (AC #6, 
     // After selection, submit should NOT be disabled
     expect(
       submitBtn.getAttribute('aria-disabled') === 'false' ||
-      (submitBtn as HTMLButtonElement).disabled === false
+        (submitBtn as HTMLButtonElement).disabled === false
     ).toBe(true)
   })
 
@@ -561,11 +711,10 @@ describe('Story 3-12 / t5 — Submit enabled only after reason selected (AC #6, 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t6 — Submit fires useReportPost.mutate with correct vars; adds to local-hide set;
-//      no console.* called during submit (NFR19)
-// AC #8, #12, #13/NFR19
+//      no console.* called during submit
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC #8, #12, NFR19)', () => {
+describe('t6 — Submit fires mutation + local-hide; no console', () => {
   beforeEach(() => {
     // Spy on console methods — must not be called
     vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -579,7 +728,12 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
   it('mutate called once with correct vars on submit', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-submit', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-submit',
+        reporterUserId: 'u-reporter',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     // Open popover
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
@@ -587,11 +741,15 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     // Select "Spam" reason
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
 
     // Type a note
-    const textarea = document.querySelector('[data-testid="report-note-textarea"]') as HTMLTextAreaElement
+    const textarea = document.querySelector(
+      '[data-testid="report-note-textarea"]'
+    ) as HTMLTextAreaElement
     fireEvent.change(textarea, { target: { value: 'hello' } })
 
     // Submit
@@ -605,18 +763,23 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
     expect(callArgs.reason_code).toBe('spam')
     expect(callArgs.note).toBe('hello')
     // id must be a valid UUID
-    expect(callArgs.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    )
+    expect(callArgs.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
   })
 
   it('addLocallyHiddenPost called once with postId on submit', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-submit', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-submit',
+        reporterUserId: 'u-reporter',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
     const submitBtn = screen.getByTestId('btn-submit')
     fireEvent.click(submitBtn)
@@ -628,11 +791,18 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
   it('addLocallyHiddenPost is called synchronously after mutate (not in onSuccess)', () => {
     // Both should be called in the same synchronous submit handler
     render(
-      React.createElement(FlagAffordance, { postId: 'p-sync', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-sync',
+        reporterUserId: 'u-reporter',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
     const submitBtn = screen.getByTestId('btn-submit')
     fireEvent.click(submitBtn)
@@ -643,13 +813,20 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
     expect(mutateOrder).toBeLessThan(hideOrder)
   })
 
-  it('console.log NOT called during submit (NFR19)', () => {
+  it('console.log NOT called during submit', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-nfr', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-nfr',
+        reporterUserId: 'u-reporter',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
     fireEvent.change(
       document.querySelector('[data-testid="report-note-textarea"]') as HTMLTextAreaElement,
@@ -664,11 +841,18 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
   it('dialog closes after submit', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-close', reporterUserId: 'u-reporter', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-close',
+        reporterUserId: 'u-reporter',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
     fireEvent.click(screen.getByTestId('btn-submit'))
 
@@ -679,17 +863,23 @@ describe('Story 3-12 / t6 — Submit fires mutation + local-hide; no console (AC
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t7 — empty note submits as null
-// AC #7, #8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
+describe('t7 — empty note submits as null', () => {
   it('mutate called with note: null when TextArea is empty', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-nonote', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-nonote',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
     // Do NOT type anything in the TextArea
     fireEvent.click(screen.getByTestId('btn-submit'))
@@ -701,11 +891,18 @@ describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
 
   it('mutate called with note: null when note is only whitespace', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-whitespace', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-whitespace',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
     fireEvent.change(
       document.querySelector('[data-testid="report-note-textarea"]') as HTMLTextAreaElement,
@@ -721,13 +918,17 @@ describe('Story 3-12 / t7 — empty note submits as null (AC #7, #8)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t8 — Cancel does not mutate or hide; dialog closes
-// AC #8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', () => {
+describe('t8 — Cancel closes dialog without mutation', () => {
   it('mutate NOT called when Cancel is tapped', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-cancel',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
@@ -738,7 +939,12 @@ describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', ()
 
   it('addLocallyHiddenPost NOT called when Cancel is tapped', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-cancel',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
@@ -749,7 +955,12 @@ describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', ()
 
   it('dialog closes after Cancel', () => {
     render(
-      React.createElement(FlagAffordance, { postId: 'p-cancel', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-cancel',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
@@ -762,19 +973,25 @@ describe('Story 3-12 / t8 — Cancel closes dialog without mutation (AC #8)', ()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t9 — Submit during isPending is a no-op (double-submit guard)
-// AC #8, #12
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t9 — Submit disabled during isPending (AC #8, #12)', () => {
+describe('t9 — Submit disabled during isPending', () => {
   it('mutate NOT called when Submit is tapped while isPending===true', () => {
     mockIsPending = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-pending', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-pending',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
     fireEvent.click(screen.getByTestId('btn-submit'))
 
@@ -784,45 +1001,61 @@ describe('Story 3-12 / t9 — Submit disabled during isPending (AC #8, #12)', ()
   it('Submit button is aria-disabled="true" when isPending===true', () => {
     mockIsPending = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-pending2', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-pending2',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
-    const spamRadio = document.querySelector('input[type="radio"][value="spam"]') as HTMLInputElement
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
     fireEvent.click(spamRadio)
 
     const submitBtn = screen.getByTestId('btn-submit')
     expect(
       submitBtn.getAttribute('aria-disabled') === 'true' ||
-      (submitBtn as HTMLButtonElement).disabled === true
+        (submitBtn as HTMLButtonElement).disabled === true
     ).toBe(true)
   })
 
   it('Submit button label stays "Submit" (no text swap) during isPending', () => {
     mockIsPending = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-pending3', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-pending3',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
 
     expect(screen.getByTestId('btn-submit').textContent).toBe('Submit')
-    // No "Submitting" or spinner text (AC #23)
+    // No "Submitting" or spinner text
     expect(screen.queryByText(/Submitting/i)).toBeNull()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t10 — Reduced-motion: animation prop undefined on overlay/content
-// AC #14
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', () => {
+describe('t10 — reduced-motion animation degradation', () => {
   it('Dialog overlay animation is undefined/empty when useReducedMotion returns true', () => {
     reduceMotionValue = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-rm', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-rm',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
@@ -836,7 +1069,12 @@ describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', (
   it('Dialog content animation is undefined/empty when useReducedMotion returns true', () => {
     reduceMotionValue = true
     render(
-      React.createElement(FlagAffordance, { postId: 'p-rm2', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-rm2',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
@@ -849,7 +1087,12 @@ describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', (
   it('Dialog uses "quick" animation token when reduced motion is OFF', () => {
     reduceMotionValue = false
     render(
-      React.createElement(FlagAffordance, { postId: 'p-anim', reporterUserId: 'u1', canReport: true, canSelfDelete: false })
+      React.createElement(FlagAffordance, {
+        postId: 'p-anim',
+        reporterUserId: 'u1',
+        canReport: true,
+        canSelfDelete: false,
+      })
     )
     fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /report/i }))
@@ -862,11 +1105,10 @@ describe('Story 3-12 / t10 — reduced-motion animation degradation (AC #14)', (
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// t11 — Source grep: no console.*+note or Sentry+note (NFR19)
-// AC #13/NFR19
+// t11 — Source grep: no console.*+note or Sentry+note
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-12 / t11 — telemetry guard source grep (NFR19, AC #13)', () => {
+describe('t11 — telemetry guard source grep', () => {
   it('FlagAffordance.tsx file exists on disk', () => {
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
   })
@@ -883,13 +1125,13 @@ describe('Story 3-12 / t11 — telemetry guard source grep (NFR19, AC #13)', () 
     expect(src).not.toMatch(/Sentry[\s\S]{0,200}note/)
   })
 
-  it('FlagAffordance.tsx does NOT import @legendapp/state (D7 boundary rule, AC #21)', () => {
+  it('FlagAffordance.tsx does NOT import @legendapp/state (D7 boundary rule)', () => {
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
     const src = readFileSync(FLAG_AFFORDANCE_PATH, 'utf8')
     expect(src).not.toMatch(/@legendapp\/state/)
   })
 
-  it('FlagAffordance.tsx has TODO marker for onLongPress deferral (AC #3 amendment)', () => {
+  it('FlagAffordance.tsx has TODO marker for onLongPress deferral', () => {
     expect(existsSync(FLAG_AFFORDANCE_PATH)).toBe(true)
     const src = readFileSync(FLAG_AFFORDANCE_PATH, 'utf8')
     expect(src).toMatch(/TODO\(post-3-12\).*onLongPress|onLongPress.*TODO\(post-3-12\)/i)
@@ -909,18 +1151,21 @@ describe('Story 3-12 / t11 — telemetry guard source grep (NFR19, AC #13)', () 
 describe('t12 — Focus menu item renders and fires onFocus', () => {
   it('renders Focus item in menu when canFocus=true', () => {
     const onFocusSpy = vi.fn()
-    const { container } = render(React.createElement(FlagAffordance, {
-      postId: 'post-focus-test',
-      reporterUserId: 'user-abc',
-      canReport: false,
-      canSelfDelete: false,
-      canFocus: true,
-      onFocus: onFocusSpy,
-    }))
+    const { container } = render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-focus-test',
+        reporterUserId: 'user-abc',
+        canReport: false,
+        canSelfDelete: false,
+        canFocus: true,
+        onFocus: onFocusSpy,
+      })
+    )
 
     // Open the menu
-    const trigger = container.querySelector('[data-popover-trigger] button, button[aria-haspopup="menu"]')
-      || container.querySelector('button')
+    const trigger =
+      container.querySelector('[data-popover-trigger] button, button[aria-haspopup="menu"]') ||
+      container.querySelector('button')
     expect(trigger).toBeTruthy()
     fireEvent.click(trigger!)
 
@@ -931,14 +1176,16 @@ describe('t12 — Focus menu item renders and fires onFocus', () => {
 
   it('calls onFocus when Focus menu item is tapped', () => {
     const onFocusSpy = vi.fn()
-    const { container } = render(React.createElement(FlagAffordance, {
-      postId: 'post-focus-test-2',
-      reporterUserId: 'user-abc',
-      canReport: false,
-      canSelfDelete: false,
-      canFocus: true,
-      onFocus: onFocusSpy,
-    }))
+    const { container } = render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-focus-test-2',
+        reporterUserId: 'user-abc',
+        canReport: false,
+        canSelfDelete: false,
+        canFocus: true,
+        onFocus: onFocusSpy,
+      })
+    )
 
     // Open the menu
     const trigger = container.querySelector('button')
@@ -953,27 +1200,272 @@ describe('t12 — Focus menu item renders and fires onFocus', () => {
   })
 
   it('does NOT render Focus item when canFocus=false (default)', () => {
-    render(React.createElement(FlagAffordance, {
-      postId: 'post-no-focus',
-      reporterUserId: 'user-abc',
-      canReport: true,
-      canSelfDelete: false,
-      canFocus: false,
-    }))
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-no-focus',
+        reporterUserId: 'user-abc',
+        canReport: true,
+        canSelfDelete: false,
+        canFocus: false,
+      })
+    )
 
     expect(screen.queryByText('Focus')).toBeNull()
   })
 
   it('renders nothing when canFocus=false and canReport=false and canSelfDelete=false', () => {
-    const { container } = render(React.createElement(FlagAffordance, {
-      postId: 'post-empty',
-      reporterUserId: 'user-abc',
-      canReport: false,
-      canSelfDelete: false,
-      canFocus: false,
-    }))
+    const { container } = render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-empty',
+        reporterUserId: 'user-abc',
+        canReport: false,
+        canSelfDelete: false,
+        canFocus: false,
+      })
+    )
 
     // No button should render (early return: nothing to show)
     expect(container.querySelector('button')).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// t13 — "Block this user" menu item: visibility, sibling-of-Report placement,
+//        opens BlockUserConfirmDialog with the right author id
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('t13 — "Block this user" menu item renders only when canBlock', () => {
+  it('renders the "Block this user" menuitem when canBlock=true', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-1',
+        reporterUserId: 'user-abc',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-1',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(screen.getByRole('menuitem', { name: /block this user/i })).toBeTruthy()
+  })
+
+  it('does NOT render "Block this user" when canBlock=false (default)', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-1',
+        reporterUserId: 'user-abc',
+        canReport: true,
+        canSelfDelete: false,
+      })
+    )
+    fireEvent.click(screen.getByRole('button', { name: /report this post/i }))
+
+    expect(screen.queryByText('Block this user')).toBeNull()
+  })
+
+  it('never renders "Block this user" for the viewer\'s own post — canBlock is computed false by the mount site, so the trigger itself must not even render when it is the only flag', () => {
+    // Mount sites compute canBlock false for own posts; verify FlagAffordance
+    // renders nothing when that is the ONLY flag supplied (own-post case, all
+    // other flags also false because the viewer can't report/delete via this path either).
+    const { container } = render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-own',
+        reporterUserId: 'user-abc',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: false,
+      })
+    )
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('renders the trigger (not null) when canBlock=true is the ONLY true flag', () => {
+    const { container } = render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-only-block',
+        reporterUserId: 'user-abc',
+        canReport: false,
+        canSelfDelete: false,
+        canFocus: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-2',
+      })
+    )
+    expect(container.firstChild).not.toBeNull()
+    expect(container.querySelector('button')).not.toBeNull()
+  })
+})
+
+describe('t13 — "Block this user" is a sibling of "Report", not nested under it', () => {
+  it('both "Report" and "Block this user" render simultaneously when canReport AND canBlock are true', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-both',
+        reporterUserId: 'user-abc',
+        canReport: true,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-3',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(screen.getByRole('menuitem', { name: /^report$/i })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: /block this user/i })).toBeTruthy()
+  })
+
+  it('"Block this user" has role="menuitem" (same affordance level as Report/Delete, not a submenu)', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-role',
+        reporterUserId: 'user-abc',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-4',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+
+    const item = screen.getByText('Block this user')
+    expect(item.closest('[role="menuitem"]')).toBeTruthy()
+  })
+})
+
+describe('t13 — tapping "Block this user" closes the menu and opens BlockUserConfirmDialog with the right author id', () => {
+  it('opens the block dialog (data-open="true") after tapping the menu item', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-open',
+        reporterUserId: 'user-current',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-open',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-open')).toBe('true')
+  })
+
+  it('closes the popover menu when the block dialog opens', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-close-menu',
+        reporterUserId: 'user-current',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-close',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const popover = document.querySelector('[data-popover="true"]')
+    expect(popover?.getAttribute('data-open')).toBe('false')
+  })
+
+  it('passes blockerUserId === reporterUserId (the current user) to the dialog', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-blocker-id',
+        reporterUserId: 'user-current-viewer',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-target',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-blocker')).toBe('user-current-viewer')
+  })
+
+  it('passes blockedUserId === blockAuthorUserId (the post author, NOT the postId) to the dialog', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-not-the-author-id',
+        reporterUserId: 'user-current-viewer',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-target-id',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /block this user/i }))
+
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-blocked')).toBe('author-target-id')
+    expect(dialog.getAttribute('data-blocked')).not.toBe('post-not-the-author-id')
+  })
+
+  it('the dialog is mounted (present in the tree) even before it is opened — controlled sibling, not a lazy trigger', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-mounted',
+        reporterUserId: 'user-current',
+        canReport: false,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-mounted',
+      })
+    )
+    // Before any interaction, the dialog component is already in the tree with open=false.
+    const dialog = screen.getByTestId('block-user-confirm-dialog')
+    expect(dialog.getAttribute('data-open')).toBe('false')
+  })
+})
+
+describe('t13 — existing Report/Delete flows are unbroken by the Block addition', () => {
+  it('Report still opens its own dialog independent of the block dialog', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-report-still-works',
+        reporterUserId: 'user-current',
+        canReport: true,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-x',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /^report$/i }))
+
+    const reportDialogs = document.querySelectorAll('[data-dialog="true"][data-open="true"]')
+    expect(reportDialogs.length).toBe(1)
+    // The block dialog (mocked) must remain closed.
+    expect(screen.getByTestId('block-user-confirm-dialog').getAttribute('data-open')).toBe('false')
+  })
+
+  it('Submit still fires useReportPost.mutate with correct vars when canBlock is also true', () => {
+    render(
+      React.createElement(FlagAffordance, {
+        postId: 'post-report-mutate',
+        reporterUserId: 'user-reporter',
+        canReport: true,
+        canSelfDelete: false,
+        canBlock: true,
+        blockAuthorUserId: 'author-y',
+      })
+    )
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /^report$/i }))
+    const spamRadio = document.querySelector(
+      'input[type="radio"][value="spam"]'
+    ) as HTMLInputElement
+    fireEvent.click(spamRadio)
+    fireEvent.click(screen.getByTestId('btn-submit'))
+
+    expect(mutateSpy).toHaveBeenCalledTimes(1)
+    expect(mutateSpy.mock.calls[0]![0].post_id).toBe('post-report-mutate')
   })
 })

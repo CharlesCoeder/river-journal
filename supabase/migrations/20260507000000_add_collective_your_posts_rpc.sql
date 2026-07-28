@@ -73,8 +73,8 @@ BEGIN
   -- (is_removed = TRUE) but INCLUDE user-soft-deleted (is_user_deleted =
   -- TRUE) rows with the ORIGINAL body. The user is reading their OWN
   -- soft-deleted posts and may want to recover content; UI redaction with
-  -- the "you deleted this on [date]" marker happens in YourPostsScreen
-  -- (Story 3.14), NOT in the RPC. Consistent with collective_feed_page /
+  -- the "you deleted this on [date]" marker happens in YourPostsScreen,
+  -- NOT in the RPC. Consistent with collective_feed_page /
   -- collective_thread_page (both pass body through unmodified plus the
   -- is_user_deleted flag; clients render [deleted] based on the flag).
   --
@@ -147,7 +147,7 @@ BEGIN
     op.user_deleted_at,
     COALESCE(rc.n, 0)::INT AS reaction_count,
     LEAST(COALESCE(d.n, 0), 99)::INT AS descendant_count,
-    -- tenure_tier always NULL in this story; reserved for the FR68
+    -- tenure_tier always NULL for now; reserved for a future
     -- follow-up that will populate it once `users.longest_streak_ever`
     -- and `users.preferences.tenure_display` ship. The pgTAP regression
     -- test asserts NULL here as a sentinel.

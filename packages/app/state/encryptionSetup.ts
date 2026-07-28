@@ -1,7 +1,12 @@
 import { batch, observable, observe } from '@legendapp/state'
 import type { EncryptionMode } from '../types/index'
 import { store$ } from './store'
-import { clearStoredMasterKey, hasPlatformKeyring, loadMasterKey, cacheOnlyMasterKey } from '../utils/encryptionKeyStore'
+import {
+  clearStoredMasterKey,
+  hasPlatformKeyring,
+  loadMasterKey,
+  cacheOnlyMasterKey,
+} from '../utils/encryptionKeyStore'
 import {
   readUserEncryptionSettings,
   unlockE2EEncryptionOnDevice,
@@ -24,11 +29,23 @@ import {
   getBrowserLabel,
   clearWebTrustData,
 } from '../utils/webKeyStore'
-import { syncEncryptionError$, syncEncryptionMode$, syncManagedKeyBytes$, getManagedKeyBytes, supabase, dbFlowToLocal } from './syncConfig'
+import {
+  syncEncryptionError$,
+  syncEncryptionMode$,
+  syncManagedKeyBytes$,
+  getManagedKeyBytes,
+  supabase,
+  dbFlowToLocal,
+} from './syncConfig'
 import { flows$ } from './flows'
 import { base64ToBytes } from '../utils/encryption'
 
-export type EncryptionSetupStep = 'choice' | 'e2e-password' | 'legacy-e2e-password' | 'saving' | 'trust-browser'
+export type EncryptionSetupStep =
+  | 'choice'
+  | 'e2e-password'
+  | 'legacy-e2e-password'
+  | 'saving'
+  | 'trust-browser'
 
 export interface EncryptionSetupError {
   message: string
@@ -195,7 +212,7 @@ const resolveLocalE2EKeyAvailability = async (
   userId: string,
   mode: EncryptionMode | null,
   salt: string | null
-) : Promise<{ hasLocalE2EKey: boolean; error: EncryptionSetupError | null }> => {
+): Promise<{ hasLocalE2EKey: boolean; error: EncryptionSetupError | null }> => {
   if (mode !== 'e2e' || !salt) {
     return { hasLocalE2EKey: false, error: null }
   }
@@ -270,7 +287,7 @@ const resolveWebTrustKey = async (
   }
 
   if (verification.status === 'network_error') {
-    // Network error after retry: discard unwrapped key, DON'T clear trust data (AC 12)
+    // Network error after retry: discard unwrapped key, DON'T clear trust data
     return { hasLocalE2EKey: false, error: null }
   }
 
@@ -663,17 +680,16 @@ export const submitE2EPassword = async (
 
   encryptionSetup$.step.set('saving')
 
-  const bootstrapResult =
-    isUnlockingExistingE2E
-      ? await unlockE2EEncryptionOnDevice({
-          userId,
-          password: normalizedPassword,
-          salt: currentModeSalt,
-        })
-      : await startE2EEncryptionBootstrap({
-          userId,
-          password: normalizedPassword,
-        })
+  const bootstrapResult = isUnlockingExistingE2E
+    ? await unlockE2EEncryptionOnDevice({
+        userId,
+        password: normalizedPassword,
+        salt: currentModeSalt,
+      })
+    : await startE2EEncryptionBootstrap({
+        userId,
+        password: normalizedPassword,
+      })
 
   if (bootstrapResult.error) {
     batch(() => {
@@ -971,7 +987,7 @@ export const dismissTrustBrowserPrompt = (): void => {
 }
 
 /**
- * M1 (AC#6): Retry fetching the managed encryption key from Supabase.
+ * M1: Retry fetching the managed encryption key from Supabase.
  * Useful when the initial fetch failed due to a transient network error.
  */
 export const retryFetchManagedKey = async (): Promise<boolean> => {

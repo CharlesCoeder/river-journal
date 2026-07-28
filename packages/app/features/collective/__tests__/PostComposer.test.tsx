@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Story 3-9 — TDD red-phase unit tests for `features/collective/PostComposer.tsx`.
+ * TDD red-phase unit tests for `features/collective/PostComposer.tsx`.
  *
- * Red-phase contract: every test MUST fail until Story 3-9 creates:
+ * Red-phase contract: every test MUST fail until the following files exist:
  *   - packages/app/features/collective/PostComposer.tsx
  *   - packages/app/features/collective/CollectiveLexicalEditor.tsx
  *   - packages/app/features/collective/CollectiveLexicalEditor.native.tsx
@@ -11,31 +11,31 @@
  *   - apps/mobile/app/collective/compose.tsx
  *
  * AC coverage:
- *   t1  — first-time disclosure gate (AC #1, #2, #26-t1)
- *   t2  — already-acknowledged path (AC #2, #26-t2)
- *   t3  — Lexical isolation regression D14 (AC #7, #9, #26-t3)
- *   t4  — ephemeral$.persistentEditor.isVisible not touched (AC #8, #26-t4)
- *   t5  — "posting as" preview + tenure-tier opt-in (AC #6, #26-t5)
- *   t6  — submit success path (AC #12, #26-t6)
- *   t7  — submit disabled when body empty (AC #13, #26-t7)
- *   t8  — submit disabled when pending (AC #13, #26-t8)
- *   t9  — submit disabled when suspended (AC #13, #18, #26-t9)
- *   t10 — error path: microcopy + body preserved (AC #16, #26-t10)
- *   t11 — telemetry redaction grep (AC #20, #26-t11)
- *   t12 — compact reply variant (AC #17, #26-t12)
- *   t13 — Lexical config namespace reuse (AC #10, #13, #26-t13)
- *   t14 — disclosure focus-return on review-mode dismiss, body preserved (AC #4, #26-t14)
- *   t15 — submit calls createPostWithId per-call (UUID distinctness) (AC #12, #26-t15)
- *   t16 — submit awaits the mutation; composer stays open until it resolves (#26-t16)
- *   t17 — double-tap submit guard (AC #13, #26-t17)
- *   t18 — route files exist (AC #23, #24, #25)
- *   t19 — disclosure gate acknowledgment focus (AC #3)
- *   t20 — word/character count renders (AC #11)
- *   t21 — tenure-tier opt-out: tenureTier not passed (AC #6, #21)
- *   t22 — D14 boundary: PostComposer does NOT import PersistentEditor or ephemeral$ (AC #7, #27)
- *   t23 — unauthenticated: "Sign in to post." placeholder (AC #13)
- *   t24 — compact mode: Cancel button calls onCancelled (AC #17)
- *   t25 — ambient label tap opens disclosure in review mode (AC #4)
+ *   t1  — first-time disclosure gate
+ *   t2  — already-acknowledged path
+ *   t3  — Lexical isolation regression D14
+ *   t4  — ephemeral$.persistentEditor.isVisible not touched
+ *   t5  — "posting as" preview + tenure-tier opt-in
+ *   t6  — submit success path
+ *   t7  — submit disabled when body empty
+ *   t8  — submit disabled when pending
+ *   t9  — submit disabled when suspended
+ *   t10 — error path: microcopy + body preserved
+ *   t11 — telemetry redaction grep
+ *   t12 — compact reply variant
+ *   t13 — Lexical config namespace reuse
+ *   t14 — disclosure focus-return on review-mode dismiss, body preserved
+ *   t15 — submit calls createPostWithId per-call (UUID distinctness)
+ *   t16 — submit awaits the mutation; composer stays open until it resolves
+ *   t17 — double-tap submit guard
+ *   t18 — route files exist
+ *   t19 — disclosure gate acknowledgment focus
+ *   t20 — word/character count renders
+ *   t21 — tenure-tier opt-out: tenureTier not passed
+ *   t22 — D14 boundary: PostComposer does NOT import PersistentEditor or ephemeral$
+ *   t23 — unauthenticated: "Sign in to post." placeholder
+ *   t24 — compact mode: Cancel button calls onCancelled
+ *   t25 — ambient label tap opens disclosure in review mode
  *
  * Mock strategy: vi.mock for useCreatePost/createPostWithId, useCurrentUserId,
  * useIsSuspended, useRouter, hasAcknowledgedBoundaryA, ThreePostureDisclosure,
@@ -181,7 +181,7 @@ vi.mock('solito/navigation', () => ({
   useRouter: () => ({ back: mockRouterBack, push: mockRouterPush }),
 }))
 
-// ─── store$ mock for tenure-tier opt-in (AC #22) ─────────────────────────────
+// ─── store$ mock for tenure-tier opt-in ─────────────────────────────────────
 // NOTE: vi.mock factories are hoisted to top of file; cannot directly reference
 // `const` variables initialized below. Use property getters so the reference is
 // resolved lazily at call time (after module initialization completes).
@@ -228,7 +228,7 @@ vi.mock('@my/ui', async () => {
       ReactModule.createElement('span', mapA11y(props), children),
 
     // TextArea — maps Tamagui props onto a native <textarea>. Title-led redesign
-    // (Story 3-16) uses this for the required "Letter title" field. We surface
+    // uses this for the required "Letter title" field. We surface
     // value/placeholder/aria-label and translate onChangeText to an onChange that
     // passes e.target.value (Tamagui's onChangeText is value-first, not event-first).
     TextArea: ({ value, onChangeText, placeholder, ...props }: any) =>
@@ -354,10 +354,9 @@ afterEach(() => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t1 — first-time disclosure gate
-// AC #1, #2, #26-t1
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t1 — first-time disclosure gate (AC #1, #2)', () => {
+describe('t1 — first-time disclosure gate', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = false
   })
@@ -414,10 +413,9 @@ describe('Story 3-9 / t1 — first-time disclosure gate (AC #1, #2)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t2 — already-acknowledged path
-// AC #2, #26-t2
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t2 — already-acknowledged path (AC #2)', () => {
+describe('t2 — already-acknowledged path', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -450,10 +448,9 @@ describe('Story 3-9 / t2 — already-acknowledged path (AC #2)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t3 — Lexical isolation regression (D14)
-// AC #7, #9, #26-t3
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t3 — Lexical isolation regression D14 (AC #7, #9)', () => {
+describe('t3 — Lexical isolation regression D14', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -490,10 +487,9 @@ describe('Story 3-9 / t3 — Lexical isolation regression D14 (AC #7, #9)', () =
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t4 — ephemeral$.persistentEditor.isVisible NOT touched
-// AC #8, #26-t4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t4 — ephemeral$.persistentEditor.isVisible not touched (AC #8)', () => {
+describe('t4 — ephemeral$.persistentEditor.isVisible not touched', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -512,10 +508,9 @@ describe('Story 3-9 / t4 — ephemeral$.persistentEditor.isVisible not touched (
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t5 — "posting as" preview with tenure-tier opt-in
-// AC #6, #26-t5
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t5 — "posting as" preview (AC #6)', () => {
+describe('t5 — "posting as" preview', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
     mockCurrentUserId = 'abcdef0123456789'
@@ -540,7 +535,7 @@ describe('Story 3-9 / t5 — "posting as" preview (AC #6)', () => {
     // When opt-in is true, tenureTier should be passed (not 'none')
     // Note: current implementation defers the actual tier value (TODO) so
     // the test confirms the prop pipeline exists; the value may still be undefined
-    // per AC #6 / Task 4 deferral note. We assert the component renders.
+    // per the Task 4 deferral note. We assert the component renders.
     expect(byline).not.toBeNull()
   })
 
@@ -555,10 +550,9 @@ describe('Story 3-9 / t5 — "posting as" preview (AC #6)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t6 — submit success path
-// AC #12, #26-t6
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
+describe('t6 — submit success path', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
     mockCurrentUserId = 'user-xyz'
@@ -605,10 +599,9 @@ describe('Story 3-9 / t6 — submit success path (AC #12)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t7 — submit disabled when body is empty
-// AC #13, #26-t7
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t7 — submit disabled when body empty (AC #13)', () => {
+describe('t7 — submit disabled when body empty', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -638,9 +631,9 @@ describe('Story 3-9 / t7 — submit disabled when body empty (AC #13)', () => {
     expect(submitBtn.closest('button')?.disabled).toBe(false)
   })
 
-  it('does NOT render empty-state microcopy when body is empty (AC #13 spec: no message)', () => {
+  it('does NOT render empty-state microcopy when body is empty (spec: no message)', () => {
     render(React.createElement(PostComposer))
-    // AC #13: Empty: NO microcopy (just the disabled state)
+    // Empty: NO microcopy (just the disabled state)
     expect(screen.queryByText(/Submitting/i)).toBeNull()
     expect(screen.queryByText(/paused/i)).toBeNull()
   })
@@ -648,10 +641,9 @@ describe('Story 3-9 / t7 — submit disabled when body empty (AC #13)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t8 — submit disabled when pending
-// AC #13, #26-t8
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t8 — submit disabled when pending (AC #13)', () => {
+describe('t8 — submit disabled when pending', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
     mockIsPending = true
@@ -671,7 +663,6 @@ describe('Story 3-9 / t8 — submit disabled when pending (AC #13)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t9 — submit disabled when suspended
-// AC #13, #18, #26-t9
 // ─────────────────────────────────────────────────────────────────────────────
 
 // t9 REMOVED in iteration 2: suspension-state rendering moved to
@@ -681,10 +672,9 @@ describe('Story 3-9 / t8 — submit disabled when pending (AC #13)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t10 — error path: microcopy rendered + body preserved
-// AC #16, #26-t10
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t10 — error path (AC #16)', () => {
+describe('t10 — error path', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -770,10 +760,9 @@ describe('Story 3-9 / t10 — error path (AC #16)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t11 — telemetry redaction grep
-// AC #20, #26-t11
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t11 — telemetry redaction grep (AC #20)', () => {
+describe('t11 — telemetry redaction grep', () => {
   it('PostComposer.tsx exists (prerequisite for grep)', () => {
     expect(
       existsSync(POST_COMPOSER_PATH),
@@ -797,10 +786,9 @@ describe('Story 3-9 / t11 — telemetry redaction grep (AC #20)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t12 — compact reply variant
-// AC #17, #26-t12
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
+describe('t12 — compact reply variant', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -871,11 +859,10 @@ describe('Story 3-9 / t12 — compact reply variant (AC #17)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// t13 — Lexical config namespace reuse (AC #10, #13)
-// AC #10, #13, #26-t13
+// t13 — Lexical config namespace reuse
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t13 — Lexical config namespace reuse (AC #10, #13)', () => {
+describe('t13 — Lexical config namespace reuse', () => {
   it('CollectiveLexicalEditor.tsx exists', () => {
     expect(
       existsSync(COLLECTIVE_LEXICAL_EDITOR_PATH),
@@ -911,10 +898,9 @@ describe('Story 3-9 / t13 — Lexical config namespace reuse (AC #10, #13)', () 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t14 — disclosure review-mode dismiss: body preserved
-// AC #4, #26-t14
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t14 — review-mode disclosure dismiss, body preserved (AC #4)', () => {
+describe('t14 — review-mode disclosure dismiss, body preserved', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -953,10 +939,9 @@ describe('Story 3-9 / t14 — review-mode disclosure dismiss, body preserved (AC
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t15 — submit calls createPostWithId per-call (UUID distinctness guard)
-// AC #12, #26-t15
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t15 — per-call UUID generation (AC #12)', () => {
+describe('t15 — per-call UUID generation', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -1002,7 +987,7 @@ describe('Story 3-9 / t15 — per-call UUID generation (AC #12)', () => {
 // confirmed success.)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t16 — submit awaits the mutation before closing', () => {
+describe('t16 — submit awaits the mutation before closing', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -1068,10 +1053,10 @@ describe('Story 3-9 / t16 — submit awaits the mutation before closing', () => 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t17 — double-tap submit guard
-// AC #13, #26-t17 (Chaos Monkey #2)
+// (Chaos Monkey #2)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t17 — double-tap submit guard (AC #13)', () => {
+describe('t17 — double-tap submit guard', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -1137,10 +1122,9 @@ describe('Story 3-9 / t17 — double-tap submit guard (AC #13)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t18 — route files exist
-// AC #23, #24, #25
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t18 — route files exist (AC #23, #24, #25)', () => {
+describe('t18 — route files exist', () => {
   it('apps/web/app/collective/compose/page.tsx exists', () => {
     expect(
       existsSync(WEB_COMPOSE_ROUTE_PATH),
@@ -1185,11 +1169,10 @@ describe('Story 3-9 / t18 — route files exist (AC #23, #24, #25)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// t19 — disclosure gate acknowledgment triggers focus (AC #3)
-// AC #3
+// t19 — disclosure gate acknowledgment triggers focus
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t19 — disclosure acknowledgment schedules focus (AC #3)', () => {
+describe('t19 — disclosure acknowledgment schedules focus', () => {
   it('after acknowledgment, setShowDisclosure(false) is called synchronously (composer body becomes visible)', () => {
     mockHasAcknowledgedBoundaryA = false
     render(React.createElement(PostComposer))
@@ -1211,7 +1194,7 @@ describe('Story 3-9 / t19 — disclosure acknowledgment schedules focus (AC #3)'
     // (simulates a write failure where acknowledged_at never persisted)
     const ackBtn = document.querySelector('[data-testid="disclosure-acknowledge-btn"]')
     fireEvent.click(ackBtn!)
-    // Disclosure should re-show (defensive recheck per AC #3 / Failure Mode Analysis #1)
+    // Disclosure should re-show (defensive recheck per Failure Mode Analysis #1)
     const modal = document.querySelector('[data-testid="disclosure-modal"]')
     expect(modal).not.toBeNull()
   })
@@ -1219,17 +1202,16 @@ describe('Story 3-9 / t19 — disclosure acknowledgment schedules focus (AC #3)'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t20 — word/character count renders
-// AC #11
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t20 — word/character count (AC #11)', () => {
+describe('t20 — word/character count', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
 
   it('renders word and char count micro-typography below writing surface', () => {
     render(React.createElement(PostComposer))
-    // AC #11: "{words} words · {chars} chars"
+    // "{words} words · {chars} chars"
     expect(screen.getByText(/\d+ words · \d+ chars/)).not.toBeNull()
   })
 
@@ -1243,10 +1225,9 @@ describe('Story 3-9 / t20 — word/character count (AC #11)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t21 — tenure-tier opt-out: tenureTier NOT passed to AuthorByline preview
-// AC #6, #21
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t21 — tenure-tier opt-out (AC #6, #21)', () => {
+describe('t21 — tenure-tier opt-out', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
     mockShowTenureTier = false
@@ -1263,10 +1244,9 @@ describe('Story 3-9 / t21 — tenure-tier opt-out (AC #6, #21)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t22 — D14 boundary: PostComposer does NOT import PersistentEditor or ephemeral$.persistentEditor
-// AC #7, #27
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t22 — D14 boundary: no PersistentEditor or ephemeral$.persistentEditor import (AC #7, #27)', () => {
+describe('t22 — D14 boundary: no PersistentEditor or ephemeral$.persistentEditor import', () => {
   it('PostComposer.tsx does NOT import PersistentEditor', () => {
     if (!existsSync(POST_COMPOSER_PATH)) return
     const src = readFileSync(POST_COMPOSER_PATH, 'utf8')
@@ -1313,7 +1293,7 @@ describe('Story 3-9 / t22 — D14 boundary: no PersistentEditor or ephemeral$.pe
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t23 — unauthenticated: "Sign in to post." placeholder renders
-// AC #13 (unauthenticated branch)
+// (unauthenticated branch)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // t23 REMOVED in iteration 2: unauthenticated rendering moved to
@@ -1322,10 +1302,9 @@ describe('Story 3-9 / t22 — D14 boundary: no PersistentEditor or ephemeral$.pe
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t24 — compact mode Cancel button calls onCancelled
-// AC #17
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t24 — compact Cancel button (AC #17)', () => {
+describe('t24 — compact Cancel button', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -1363,10 +1342,9 @@ describe('Story 3-9 / t24 — compact Cancel button (AC #17)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // t25 — ambient label tap opens disclosure in review mode
-// AC #4
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Story 3-9 / t25 — ambient label tap triggers review disclosure (AC #4)', () => {
+describe('t25 — ambient label tap triggers review disclosure', () => {
   beforeEach(() => {
     mockHasAcknowledgedBoundaryA = true
   })
@@ -1379,8 +1357,8 @@ describe('Story 3-9 / t25 — ambient label tap triggers review disclosure (AC #
     expect(capturedDisclosureProps.open).toBe(true)
   })
 
-  it('review-mode close does NOT modify acknowledged_at (AC #4 — no timestamp change)', () => {
-    // The Story 3.6 wrapper's review-close path does not touch users.preferences.
+  it('review-mode close does NOT modify acknowledged_at (no timestamp change)', () => {
+    // The wrapper's review-close path does not touch users.preferences.
     // PostComposer should NOT call any acknowledgment write in the review-close path.
     // We verify by asserting the disclosure is called with mode='review' (not 'first-time'),
     // meaning the composer delegates to the wrapper which owns that invariant.

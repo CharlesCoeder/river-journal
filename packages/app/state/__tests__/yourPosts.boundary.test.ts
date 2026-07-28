@@ -1,5 +1,5 @@
 /**
- * Story 3-5 — TDD red-phase boundary-rule regression test (AC #14, #15, #18).
+ * TDD red-phase boundary-rule regression test.
  *
  * Two enforcement layers are asserted here. Both fail in red phase:
  *   1. The file `state/collective/yourPosts.ts` does not exist yet.
@@ -7,8 +7,8 @@
  *      MUST NOT call `use$()` or import from `@legendapp/state/react`.
  *
  * This complements the existing `boundary-rule.test.ts` TQ_FILES iteration
- * (which Story 3-5 also extends additively in AC #18). Keeping a dedicated
- * file here makes the story's red-phase signal sharp: a missing module or a
+ * (which this work also extends additively). Keeping a dedicated
+ * file here makes the red-phase signal sharp: a missing module or a
  * stray Legend-State import surfaces in this file's dedicated `describe`
  * block rather than getting buried in the multi-story TQ_FILES sweep.
  *
@@ -30,12 +30,12 @@ const YOUR_POSTS_ABS = path.join(STATE_DIR, YOUR_POSTS_REL)
 const LEGEND_PATTERN = /@legendapp\/state(?:\/[\w-]+(?:\/[\w-]+)?)?/
 const USE_DOLLAR_PATTERN = /\buse\$\s*\(/
 
-describe('Story 3-5 / Boundary rule D7 -- yourPosts.ts is a TQ-side file (AC #14, #15)', () => {
+describe('Boundary rule D7 -- yourPosts.ts is a TQ-side file', () => {
   it('packages/app/state/collective/yourPosts.ts exists', () => {
     expect(existsSync(YOUR_POSTS_ABS), `expected ${YOUR_POSTS_REL} to exist`).toBe(true)
   })
 
-  it('does NOT import @legendapp/state (any subpath) (AC #14)', () => {
+  it('does NOT import @legendapp/state (any subpath)', () => {
     if (!existsSync(YOUR_POSTS_ABS)) {
       // Red-phase: file does not exist. We still want this assertion to fail
       // loudly (the previous test surfaces the missing-file root cause).
@@ -45,7 +45,7 @@ describe('Story 3-5 / Boundary rule D7 -- yourPosts.ts is a TQ-side file (AC #14
     expect(src).not.toMatch(LEGEND_PATTERN)
   })
 
-  it('does NOT call use$() (AC #15)', () => {
+  it('does NOT call use$()', () => {
     if (!existsSync(YOUR_POSTS_ABS)) {
       expect.fail(`${YOUR_POSTS_REL} does not exist; cannot grep for use$()`)
     }
@@ -54,7 +54,7 @@ describe('Story 3-5 / Boundary rule D7 -- yourPosts.ts is a TQ-side file (AC #14
   })
 })
 
-describe('Story 3-5 / boundary-rule.test.ts TQ_FILES extension (AC #18)', () => {
+describe('boundary-rule.test.ts TQ_FILES extension', () => {
   it('TQ_FILES array in boundary-rule.test.ts contains "collective/yourPosts.ts"', () => {
     const boundaryTestPath = path.join(STATE_DIR, '__tests__', 'boundary-rule.test.ts')
     expect(existsSync(boundaryTestPath), 'boundary-rule.test.ts must exist').toBe(true)
@@ -65,7 +65,7 @@ describe('Story 3-5 / boundary-rule.test.ts TQ_FILES extension (AC #18)', () => 
   })
 })
 
-describe('Story 3-5 / database.ts type entry (AC #16)', () => {
+describe('database.ts type entry', () => {
   it('packages/app/types/database.ts declares collective_your_posts_page in the Functions block', () => {
     const dbTypesPath = path.resolve(STATE_DIR, '../types/database.ts')
     expect(existsSync(dbTypesPath), 'types/database.ts must exist').toBe(true)
@@ -74,7 +74,7 @@ describe('Story 3-5 / database.ts type entry (AC #16)', () => {
   })
 })
 
-describe('Story 3-5 / migration file presence (AC #1)', () => {
+describe('migration file presence', () => {
   it('a migration file matching *_add_collective_your_posts_rpc.sql exists under supabase/migrations/', () => {
     const repoRoot = path.resolve(STATE_DIR, '../../..')
     const migrationsDir = path.join(repoRoot, 'supabase', 'migrations')

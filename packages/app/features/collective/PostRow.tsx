@@ -32,8 +32,8 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
   // displayName placeholder from user_id slice; future story will JOIN profiles in the RPC
   const displayName = post.user_id?.slice(0, 8) ?? '[deleted]'
 
-  // a11y label: the server-truncated excerpt for screen readers. Story 3-15:
-  // the feed Post no longer carries full `body` — only `excerpt` (≤140 chars).
+  // a11y label: the server-truncated excerpt for screen readers.
+  // The feed Post no longer carries full `body` — only `excerpt` (≤140 chars).
   // Deleted posts announce only '[deleted]' so the screen-reader label never
   // carries body text (mirrors the visible-body suppression below).
   const excerpt = post.excerpt ?? ''
@@ -67,6 +67,12 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
             post.is_user_deleted === false &&
             post.user_id !== null
           }
+          canBlock={
+            post.user_id !== currentUserId &&
+            post.is_user_deleted === false &&
+            post.user_id !== null
+          }
+          blockAuthorUserId={post.user_id}
         />
       </XStack>
       {/* For self-deleted posts, body is the literal '[deleted]' — AuthorByline already

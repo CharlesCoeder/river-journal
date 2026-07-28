@@ -42,10 +42,7 @@ export const bytesToBase64 = (bytes: Uint8Array): string => {
 
 export const base64ToBytes = (b64: string): Uint8Array => {
   if (!b64 || b64.length % 4 !== 0 || !BASE64_PATTERN.test(b64)) {
-    throwEncryptionError(
-      'Invalid base64 string provided for decoding.',
-      'invalid_base64_input'
-    )
+    throwEncryptionError('Invalid base64 string provided for decoding.', 'invalid_base64_input')
   }
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
 }
@@ -145,12 +142,18 @@ const normalizePayload = (input: unknown): EncryptedFlowPayload => {
 
   const algorithm = payload.algorithm
   if (algorithm !== ENCRYPTION_ALGORITHM) {
-    throwEncryptionError('Encrypted payload algorithm is unsupported.', 'unsupported_payload_algorithm')
+    throwEncryptionError(
+      'Encrypted payload algorithm is unsupported.',
+      'unsupported_payload_algorithm'
+    )
   }
 
   const nonceB64 = payload.nonce
   if (typeof nonceB64 !== 'string') {
-    return throwEncryptionError('Encrypted payload nonce is invalid.', 'encrypted_payload_invalid_nonce')
+    return throwEncryptionError(
+      'Encrypted payload nonce is invalid.',
+      'encrypted_payload_invalid_nonce'
+    )
   }
   const nonceValue: string = nonceB64
   assertBase64(nonceValue, 'nonce')
@@ -167,12 +170,18 @@ const normalizePayload = (input: unknown): EncryptedFlowPayload => {
 
   const nonce = base64ToBytes(nonceValue)
   if (nonce.length !== NONCE_BYTES) {
-    throwEncryptionError('Encrypted payload nonce length is invalid.', 'encrypted_payload_invalid_nonce')
+    throwEncryptionError(
+      'Encrypted payload nonce length is invalid.',
+      'encrypted_payload_invalid_nonce'
+    )
   }
 
   const ciphertext = base64ToBytes(ciphertextValue)
   if (ciphertext.length === 0) {
-    throwEncryptionError('Encrypted payload ciphertext is empty.', 'encrypted_payload_invalid_ciphertext')
+    throwEncryptionError(
+      'Encrypted payload ciphertext is empty.',
+      'encrypted_payload_invalid_ciphertext'
+    )
   }
 
   return {
@@ -214,7 +223,10 @@ const tryTauriScrypt = async (password: string, saltB64: string): Promise<Uint8A
   }
 }
 
-export async function deriveMasterKeyFromPassword(password: string, saltB64: string): Promise<Uint8Array> {
+export async function deriveMasterKeyFromPassword(
+  password: string,
+  saltB64: string
+): Promise<Uint8Array> {
   if (!password.trim()) {
     throwEncryptionError('Encryption password is required.', 'missing_password')
   }
@@ -241,7 +253,7 @@ export async function deriveMasterKeyFromPassword(password: string, saltB64: str
   }
 
   // 3. Fallback: JS scryptAsync (web)
-  await new Promise(resolve => setTimeout(resolve, 0))
+  await new Promise((resolve) => setTimeout(resolve, 0))
 
   return scryptAsync(password, salt, {
     N: 2 ** 17,
@@ -262,7 +274,10 @@ export function encodeEncryptedPayload(payload: EncryptedFlowPayload): string {
 
 export function decodeEncryptedPayload(serialized: string): EncryptedFlowPayload {
   if (!isEncryptedFlowPayload(serialized)) {
-    throwEncryptionError('Flow payload is not an encrypted E2E envelope.', 'unsupported_payload_format')
+    throwEncryptionError(
+      'Flow payload is not an encrypted E2E envelope.',
+      'unsupported_payload_format'
+    )
   }
 
   const json = serialized.slice(ENCRYPTION_PAYLOAD_PREFIX.length)
@@ -270,7 +285,10 @@ export function decodeEncryptedPayload(serialized: string): EncryptedFlowPayload
     return normalizePayload(JSON.parse(json) as unknown)
   } catch (error) {
     if (error instanceof EncryptionError) throw error
-    return throwEncryptionError('Encrypted payload JSON is malformed.', 'encrypted_payload_invalid_json')
+    return throwEncryptionError(
+      'Encrypted payload JSON is malformed.',
+      'encrypted_payload_invalid_json'
+    )
   }
 }
 
@@ -341,7 +359,10 @@ export function encodeManagedPayload(payload: EncryptedFlowPayload): string {
 
 export function decodeManagedPayload(serialized: string): EncryptedFlowPayload {
   if (!isManagedEncryptedPayload(serialized)) {
-    throwEncryptionError('Flow payload is not a managed encryption envelope.', 'unsupported_payload_format')
+    throwEncryptionError(
+      'Flow payload is not a managed encryption envelope.',
+      'unsupported_payload_format'
+    )
   }
 
   const json = serialized.slice(MANAGED_PAYLOAD_PREFIX.length)
@@ -349,7 +370,10 @@ export function decodeManagedPayload(serialized: string): EncryptedFlowPayload {
     return normalizePayload(JSON.parse(json) as unknown)
   } catch (error) {
     if (error instanceof EncryptionError) throw error
-    return throwEncryptionError('Managed payload JSON is malformed.', 'encrypted_payload_invalid_json')
+    return throwEncryptionError(
+      'Managed payload JSON is malformed.',
+      'encrypted_payload_invalid_json'
+    )
   }
 }
 

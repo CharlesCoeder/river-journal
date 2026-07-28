@@ -74,9 +74,7 @@ export function LocalOnlyEntriesScreen() {
     if (!userId) return
     // Defense in depth: restoreExcludedEntries already filters foreign rows,
     // but only pass own + anonymous entry ids so the caller is honest.
-    const ids = summaries
-      .filter((s) => !s.user_id || s.user_id === userId)
-      .map((s) => s.entryId)
+    const ids = summaries.filter((s) => !s.user_id || s.user_id === userId).map((s) => s.entryId)
     if (ids.length === 0) return
     restoreExcludedEntries(ids, userId)
     queryClient.invalidateQueries({ queryKey: collectiveEligibilityKey })
@@ -205,11 +203,23 @@ export function LocalOnlyEntriesScreen() {
                       borderBottomWidth={1}
                       borderColor="$color3"
                     >
-                      <YStack gap="$1" flex={1} paddingRight="$3">
-                        <Text fontFamily="$body" fontSize={15} color="$color">
+                      <YStack
+                        gap="$1"
+                        flex={1}
+                        paddingRight="$3"
+                      >
+                        <Text
+                          fontFamily="$body"
+                          fontSize={15}
+                          color="$color"
+                        >
                           {formatEntryDate(s.entryDate)}
                         </Text>
-                        <Text fontFamily="$body" fontSize={12} color="$color8">
+                        <Text
+                          fontFamily="$body"
+                          fontSize={12}
+                          color="$color8"
+                        >
                           {s.totalWordCount} {s.totalWordCount === 1 ? 'word' : 'words'}
                         </Text>
                         {isForeign && (
@@ -219,7 +229,8 @@ export function LocalOnlyEntriesScreen() {
                             color="$color9"
                             testID={`local-only-foreign-tooltip-${s.entryId}`}
                           >
-                            This entry belongs to a different account. Sign in as that account to recover it.
+                            This entry belongs to a different account. Sign in as that account to
+                            recover it.
                           </Text>
                         )}
                       </YStack>

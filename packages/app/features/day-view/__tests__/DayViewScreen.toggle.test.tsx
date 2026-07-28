@@ -29,13 +29,7 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const {
-      testID,
-      onPress,
-      'aria-label': ariaLabel,
-      'aria-pressed': ariaPressed,
-      ...rest
-    } = props
+    const { testID, onPress, 'aria-label': ariaLabel, 'aria-pressed': ariaPressed, ...rest } = props
     return {
       ...rest,
       ...(testID ? { 'data-testid': testID } : {}),
@@ -59,19 +53,32 @@ vi.mock('@my/ui', async () => {
       children
     )
 
+  const Input = ({ testID, value, onChangeText, 'aria-label': ariaLabel }: any) =>
+    ReactModule.createElement('input', {
+      'data-testid': testID,
+      value,
+      role: 'textbox',
+      'aria-label': ariaLabel,
+      onChange: (e: any) => onChangeText?.(e.target.value),
+      type: 'text',
+    })
+
   const Dialog = ({ children, open }: any) => {
     if (!open) return null
     return ReactModule.createElement('div', { role: 'dialog' }, children)
   }
-  Dialog.Portal = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Portal = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
   Dialog.Overlay = () => null
   Dialog.Content = ({ children }: any) => ReactModule.createElement('div', {}, children)
   Dialog.Title = ({ children }: any) => ReactModule.createElement('h2', {}, children)
   Dialog.Description = ({ children }: any) => ReactModule.createElement('p', {}, children)
-  Dialog.Close = ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children)
+  Dialog.Close = ({ children }: any) =>
+    ReactModule.createElement(ReactModule.Fragment, null, children)
 
   return {
-    AnimatePresence: ({ children }: any) => ReactModule.createElement(ReactModule.Fragment, null, children),
+    AnimatePresence: ({ children }: any) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
     ScrollView: passthrough('div'),
     YStack: passthrough('div'),
     XStack: passthrough('div'),
@@ -79,6 +86,7 @@ vi.mock('@my/ui', async () => {
     Text: passthrough('span'),
     Dialog,
     ExpandingLineButton,
+    Input,
     useReducedMotion: () => false,
     isWeb: true,
   }
@@ -100,6 +108,9 @@ vi.mock('solito/navigation', () => ({
 // ─── app/state/store ─────────────────────────────────────────────────────────
 vi.mock('app/state/store', () => {
   const store$ = {
+    session: {
+      userId: { get: () => null, peek: () => null },
+    },
     views: {
       allEntriesSorted: () => mockEntriesSortedObservable,
       entriesByMonth: (_month: string) => ({
@@ -135,8 +146,7 @@ vi.mock('app/state/date-utils', () => ({
 
 // ─── CalendarMonthView stub — keeps toggle tests focused on toggle behavior ──
 vi.mock('../CalendarMonthView', () => ({
-  CalendarMonthView: () =>
-    React.createElement('div', { 'data-testid': 'calendar-stub' }),
+  CalendarMonthView: () => React.createElement('div', { 'data-testid': 'calendar-stub' }),
 }))
 
 // ─── DeleteFlowDialog stub ───────────────────────────────────────────────────
@@ -150,6 +160,12 @@ vi.mock('../components/DeleteFlowDialog', () => ({
 // ─── WordLinkNav stub ─────────────────────────────────────────────────────────
 vi.mock('app/features/navigation/WordLinkNav', () => ({
   WordLinkNav: () => React.createElement('nav', { 'data-testid': 'word-link-nav' }),
+}))
+
+// ─── Read-only Editor stub — the search region's inline reader imports it;
+// stubbed to avoid mounting Lexical in these toggle-focused tests. ───────────
+vi.mock('app/features/journal/components/Editor', () => ({
+  Editor: () => null,
 }))
 
 // ─── Import under test ───────────────────────────────────────────────────────
@@ -183,7 +199,7 @@ afterEach(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toggle renders (AC 1)
+// Toggle renders
 // ─────────────────────────────────────────────────────────────────────────────
 describe('View-mode toggle renders in DayViewScreen', () => {
   it('renders a "Linear" toggle button', () => {
@@ -198,7 +214,7 @@ describe('View-mode toggle renders in DayViewScreen', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Initial state — linear mode is default (AC 1, 2, 3)
+// Initial state — linear mode is default
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Default view mode is linear (preserves v1 behavior)', () => {
   it('calendar stub is NOT in the DOM on initial render', () => {
@@ -220,7 +236,7 @@ describe('Default view mode is linear (preserves v1 behavior)', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toggle to calendar mode (AC 4)
+// Toggle to calendar mode
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Tapping Calendar toggle switches to calendar mode', () => {
   it('CalendarMonthView stub appears after tapping Calendar', () => {
@@ -232,13 +248,17 @@ describe('Tapping Calendar toggle switches to calendar mode', () => {
   it('"Calendar" button has aria-pressed="true" after tapping Calendar', () => {
     renderDayView()
     clickCalendarToggle()
-    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe(
+      'true'
+    )
   })
 
   it('"Linear" button has aria-pressed="false" after tapping Calendar', () => {
     renderDayView()
     clickCalendarToggle()
-    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe(
+      'false'
+    )
   })
 
   it('linear-mode empty state is NOT in the DOM after switching to calendar', () => {
@@ -250,7 +270,7 @@ describe('Tapping Calendar toggle switches to calendar mode', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toggle back to linear mode (AC 3)
+// Toggle back to linear mode
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Tapping Linear toggle returns to linear mode', () => {
   it('CalendarMonthView stub is removed after toggling back to Linear', () => {
@@ -265,19 +285,23 @@ describe('Tapping Linear toggle returns to linear mode', () => {
     renderDayView()
     clickCalendarToggle()
     clickLinearToggle()
-    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: /linear/i }).getAttribute('aria-pressed')).toBe(
+      'true'
+    )
   })
 
   it('"Calendar" button has aria-pressed="false" after toggling back to Linear', () => {
     renderDayView()
     clickCalendarToggle()
     clickLinearToggle()
-    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: /calendar/i }).getAttribute('aria-pressed')).toBe(
+      'false'
+    )
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Linear list preserved verbatim (AC 3) — empty state smoke
+// Linear list preserved verbatim — empty state smoke
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Linear mode preserves existing entry list behavior', () => {
   it('renders the "river is dry" empty state when there are no entries in linear mode', () => {
@@ -289,7 +313,7 @@ describe('Linear mode preserves existing entry list behavior', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Page header and navigation preserved in both modes (AC 4)
+// Page header and navigation preserved in both modes
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Page header and WordLinkNav remain visible in both modes', () => {
   it('Past Entries heading is visible in linear mode', () => {

@@ -57,10 +57,8 @@ export function useIdentityLinking(): IdentityLinkingState {
         supabase.rpc('user_has_password'),
       ])
 
-      const identitiesOk =
-        identitiesResult.status === 'fulfilled' && !identitiesResult.value.error
-      const passwordOk =
-        passwordResult.status === 'fulfilled' && !passwordResult.value.error
+      const identitiesOk = identitiesResult.status === 'fulfilled' && !identitiesResult.value.error
+      const passwordOk = passwordResult.status === 'fulfilled' && !passwordResult.value.error
 
       if (!identitiesOk) {
         const err =
@@ -85,7 +83,9 @@ export function useIdentityLinking(): IdentityLinkingState {
     // Re-fetch when a real session arrives. Only listen for SIGNED_IN and
     // INITIAL_SESSION — TOKEN_REFRESHED is excluded because getSession()
     // above can itself trigger a token refresh, which would create a loop.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         fetchProviderData()
       }

@@ -17,7 +17,9 @@ vi.mock('../../../utils/userEncryption', () => ({
   unlockE2EEncryptionOnDevice: (...args: unknown[]) => mockUnlockE2EEncryptionOnDevice(...args),
   validateE2EMasterKeyForUser: vi.fn().mockResolvedValue({ isValid: true, error: null }),
   persistMasterKeyToKeyring: vi.fn().mockResolvedValue({ error: null }),
-  bootstrapManagedEncryption: vi.fn().mockResolvedValue({ error: null, managedKeyHex: 'a'.repeat(64) }),
+  bootstrapManagedEncryption: vi
+    .fn()
+    .mockResolvedValue({ error: null, managedKeyHex: 'a'.repeat(64) }),
   fetchManagedEncryptionKey: (...args: unknown[]) => mockFetchManagedEncryptionKey(...args),
   registerTrustedBrowser: vi.fn().mockResolvedValue({ error: null }),
   verifyTrustedBrowser: vi.fn().mockResolvedValue({ valid: false }),
@@ -58,17 +60,8 @@ vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
 
   const mapProps = (props: Record<string, unknown>) => {
-    const {
-      testID,
-      onPress,
-      onChangeText,
-      id,
-      htmlFor,
-      disabled,
-      value,
-      placeholder,
-      children,
-    } = props
+    const { testID, onPress, onChangeText, id, htmlFor, disabled, value, placeholder, children } =
+      props
 
     return {
       ...(id ? { id } : {}),
@@ -156,7 +149,16 @@ vi.mock('@my/ui', async () => {
         children
       ),
     H1: passthrough('h1'),
-    Input: ({ children, testID, value, onChangeText, secureTextEntry, disabled, placeholder, autoComplete }: any) =>
+    Input: ({
+      children,
+      testID,
+      value,
+      onChangeText,
+      secureTextEntry,
+      disabled,
+      placeholder,
+      autoComplete,
+    }: any) =>
       ReactModule.createElement('input', {
         type: secureTextEntry ? 'password' : 'text',
         value,
@@ -180,11 +182,7 @@ vi.mock('@my/ui', async () => {
     YStack: passthrough('div'),
     StreakChip: passthrough('div'),
     CollectiveEntry: ({ children, onPress, ...props }: any) =>
-      ReactModule.createElement(
-        'div',
-        { ...(onPress ? { onClick: onPress } : {}) },
-        children
-      ),
+      ReactModule.createElement('div', { ...(onPress ? { onClick: onPress } : {}) }, children),
     useReducedMotion: () => false,
   }
 })
@@ -307,7 +305,9 @@ describe.skip('SettingsScreen encryption flow', () => {
 
     // Regression: warnings still render
     expect(screen.getByText('This choice cannot be changed later.')).toBeTruthy()
-    expect(screen.getByText('If you forget this password, your cloud data is unrecoverable.')).toBeTruthy()
+    expect(
+      screen.getByText('If you forget this password, your cloud data is unrecoverable.')
+    ).toBeTruthy()
 
     // Regression: confirm/cancel buttons still render
     expect(screen.getByText('Confirm Strict Privacy Mode')).toBeTruthy()

@@ -49,7 +49,7 @@ export function SliderHub({ children }: SliderHubProps) {
   const media = useMedia()
   const reduceMotion = useReducedMotion()
 
-  // Web-mobile short-circuit (AC #5):
+  // Web-mobile short-circuit:
   // • SSR: typeof window === 'undefined' → passthrough (conservative default)
   // • Web $sm breakpoint → passthrough (tap fallbacks only)
   const hasWindow = typeof window !== 'undefined'
@@ -128,7 +128,10 @@ function SliderHubGesture({
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[{ flex: 1 }, animatedStyle]} accessible={false}>
+      <Animated.View
+        style={[{ flex: 1 }, animatedStyle]}
+        accessible={false}
+      >
         {children}
       </Animated.View>
     </GestureDetector>

@@ -171,7 +171,7 @@ export const injectFocusModeCSS = (): (() => void) => {
       .lex-paragraph.rj-focus-active { transition: opacity 0ms; }
     }
 
-    /* Per-sentence focus mode (Story 2.11). Kept in sync with lexical-theme.css.
+    /* Per-sentence focus mode. Kept in sync with lexical-theme.css.
        Animates the dim via color on the stable SentenceNode span. */
     .lex-root .rj-sentence              { transition: color 200ms ease-out; }
     .lex-root .rj-sentence.rj-sentence-dim    { color: color-mix(in srgb, currentColor 40%, transparent); }

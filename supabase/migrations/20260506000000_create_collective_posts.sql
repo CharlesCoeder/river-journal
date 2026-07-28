@@ -88,7 +88,7 @@ DECLARE
 BEGIN
   -- Check for the override marker. We read this migration's own source via
   -- pg_read_file is not portable, so the marker is honored by a textual
-  -- pre-grep at the migration-runner level (Story 9-5 CI). For local
+  -- pre-grep at the migration-runner level (CI). For local
   -- supabase db reset, the marker is informational; the verification still
   -- runs. (Documented limitation; the verification covers both flow paths.)
   IF v_skip THEN

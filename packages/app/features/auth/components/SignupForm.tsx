@@ -48,7 +48,8 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
 
   const validatePassword = useCallback((value: string): string | undefined => {
     if (!value) return 'Password is required'
-    if (value.length < MIN_PASSWORD_LENGTH) return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`
+    if (value.length < MIN_PASSWORD_LENGTH)
+      return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`
     return undefined
   }, [])
 
@@ -71,7 +72,8 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
   }, [password, validatePassword])
 
   const handleConfirmPasswordBlur = useCallback(() => {
-    if (confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: validateConfirmPassword(confirmPassword) }))
+    if (confirmPassword)
+      setErrors((prev) => ({ ...prev, confirmPassword: validateConfirmPassword(confirmPassword) }))
   }, [confirmPassword, validateConfirmPassword])
 
   const handleEmailChange = useCallback(
@@ -105,24 +107,42 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
     const confirmPasswordError = validateConfirmPassword(confirmPassword)
 
     if (emailError || passwordError || confirmPasswordError) {
-      setErrors({ email: emailError, password: passwordError, confirmPassword: confirmPasswordError })
+      setErrors({
+        email: emailError,
+        password: passwordError,
+        confirmPassword: confirmPasswordError,
+      })
       return
     }
 
     setIsLoading(true)
     try {
       const { user, error } = await signUpWithEmail(email, password)
-      if (error) { setErrors({ general: error }); return }
+      if (error) {
+        setErrors({ general: error })
+        return
+      }
       if (user) onSuccess?.()
     } finally {
       setIsLoading(false)
     }
-  }, [email, password, confirmPassword, validateEmail, validatePassword, validateConfirmPassword, onSuccess])
+  }, [
+    email,
+    password,
+    confirmPassword,
+    validateEmail,
+    validatePassword,
+    validateConfirmPassword,
+    onSuccess,
+  ])
 
   const canSubmit = !!email && !!password && !!confirmPassword && !isLoading
 
   return (
-    <YStack gap="$5" width="100%">
+    <YStack
+      gap="$5"
+      width="100%"
+    >
       {/* Email */}
       <YStack>
         <DesignInput
@@ -135,7 +155,12 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
           onSubmitEditing={handleSubmit}
         />
         {errors.email && (
-          <Text fontSize={12} color="$color" fontFamily="$body" marginTop="$1">
+          <Text
+            fontSize={12}
+            color="$color"
+            fontFamily="$body"
+            marginTop="$1"
+          >
             {errors.email}
           </Text>
         )}
@@ -156,7 +181,12 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
           onSubmitEditing={handleSubmit}
         />
         {errors.password && (
-          <Text fontSize={12} color="$color" fontFamily="$body" marginTop="$1">
+          <Text
+            fontSize={12}
+            color="$color"
+            fontFamily="$body"
+            marginTop="$1"
+          >
             {errors.password}
           </Text>
         )}
@@ -175,7 +205,12 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
           onSubmitEditing={handleSubmit}
         />
         {errors.confirmPassword && (
-          <Text fontSize={12} color="$color" fontFamily="$body" marginTop="$1">
+          <Text
+            fontSize={12}
+            color="$color"
+            fontFamily="$body"
+            marginTop="$1"
+          >
             {errors.confirmPassword}
           </Text>
         )}
@@ -183,7 +218,12 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
 
       {/* Error */}
       {errors.general && (
-        <Text fontSize={12} color="$color" fontFamily="$body" textAlign="center">
+        <Text
+          fontSize={12}
+          color="$color"
+          fontFamily="$body"
+          textAlign="center"
+        >
           {errors.general}
         </Text>
       )}
@@ -217,17 +257,35 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
       </XStack>
 
       {/* "or" divider */}
-      <XStack alignItems="center" gap="$3" width="100%" marginTop="$2">
-        <View flex={1} height={1} backgroundColor="$color3" />
-        <Text fontFamily="$body" fontSize={10} letterSpacing={3} textTransform="uppercase" color="$color7">
+      <XStack
+        alignItems="center"
+        gap="$3"
+        width="100%"
+        marginTop="$2"
+      >
+        <View
+          flex={1}
+          height={1}
+          backgroundColor="$color3"
+        />
+        <Text
+          fontFamily="$body"
+          fontSize={10}
+          letterSpacing={3}
+          textTransform="uppercase"
+          color="$color7"
+        >
           or
         </Text>
-        <View flex={1} height={1} backgroundColor="$color3" />
+        <View
+          flex={1}
+          height={1}
+          backgroundColor="$color3"
+        />
       </XStack>
 
       {/* Google OAuth */}
       <GoogleSignInButton onSuccess={onSuccess} />
-
     </YStack>
   )
 }
