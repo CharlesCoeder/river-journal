@@ -29,7 +29,6 @@ import { startAppLockTracking } from './appLockTracking'
 import { runPostDeletionCleanup } from './accountCleanup'
 import { telemetryConsent$ } from './telemetryConsent'
 import { initSentry, setSentryUser } from '../utils/telemetry/sentry'
-import { enablePostHog, identifyPostHogUser, initPostHog } from '../utils/telemetry/posthog'
 import './streak' // attaches store$.views.streak side-effect
 
 export const appStatus$ = observable({
@@ -211,9 +210,9 @@ export function resumePendingAccountCleanupIfNeeded() {
 
 /**
  * Boot telemetry gate: run once after persistence load. Telemetry is opt-in, so
- * the SDKs must NOT initialize at module load (before persistence) — the
+ * the Sentry SDK must NOT initialize at module load (before persistence) — the
  * consent flag is only readable after `initializePersistence()` awaits
- * `isPersistLoaded`. Init both only if the user opted in; otherwise no init runs
+ * `isPersistLoaded`. Init only if the user opted in; otherwise no init runs
  * and zero telemetry traffic leaves the device this launch (on web/desktop the
  * SDK module is still statically imported; only init is deferred). A late toggle
  * re-runs init via utils/telemetry/consent.ts, no restart.
@@ -227,18 +226,12 @@ export function applyBootTelemetryGate() {
 
   try {
     initSentry()
-    initPostHog()
-    // posthog-js PERSISTS its opt-out choice, so a prior opted-out session would
-    // rehydrate that flag and leave capture silently dead while the toggle reads
-    // On — re-assert opt-in after init.
-    enablePostHog()
-    // Auth INITIAL_SESSION can hydrate the persisted session before these SDKs
-    // init on boot, dropping the identify that utils/auth.ts would fire.
+    // Auth INITIAL_SESSION can hydrate the persisted session before the SDK
+    // inits on boot, dropping the identify that utils/auth.ts would fire.
     // Re-identify the persisted user now (user_id only, never PII).
     const userId = store$.session.userId.peek()
     if (userId) {
       setSentryUser(userId)
-      identifyPostHogUser(userId)
     }
   } catch (error) {
     // Telemetry must never reject initializePersistence() and blank the app.

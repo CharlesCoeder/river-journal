@@ -12,7 +12,6 @@ import {
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
-import { captureEvent } from 'app/utils/telemetry/posthog'
 import { isSyncReady$ } from 'app/state/syncConfig'
 import { pendingCollectiveReturn$ } from 'app/state/authReturn'
 import type { StreakState } from 'app/state/streak'
@@ -83,11 +82,6 @@ export function HomeScreen() {
   })
 
   const handleBeginFlow = () => {
-    // Session-begin metric — the reliable, deduped start point (metadata only).
-    captureEvent('flow_started', {
-      user_id: store$.session?.userId?.peek?.() ?? null,
-      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
-    })
     if (showLapsed) dismissLapsed()
     router.push('/journal')
   }

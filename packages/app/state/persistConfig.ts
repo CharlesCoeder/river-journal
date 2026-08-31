@@ -25,7 +25,7 @@ import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/ind
 //     upgrade: the new object store is created and every existing table is left
 //     intact.
 // 12: added 'telemetry-consent' table for the local-only, per-device telemetry
-//     opt-in preference (default OFF; gates Sentry + PostHog init; see
+//     opt-in preference (default OFF; gates telemetry SDK init; see
 //     state/telemetryConsent.ts). Never synced. Additive-only upgrade: the new
 //     object store is created and every existing table is left intact.
 // 11: added 'app-lock' table for the local-only, per-device App Lock

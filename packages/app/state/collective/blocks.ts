@@ -83,11 +83,9 @@ export const blockedUsersKeyForUser = (userId: string) => [...blockedUsersKey, u
 // setMutationDefaults — TWO top-level calls at module load (FOOTGUN #1)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// TELEMETRY (future boundary): PostHog is NOT wired yet — no capture ships here.
-// When it lands, the events are `collective_user_blocked` / `collective_user_
-// unblocked` with metadata `{ user_id (blocker), action }` ONLY. The blocked
-// user's id must NEVER enter analytics or any log — that is a re-identification
-// side-channel that would break the silent invariant above.
+// TELEMETRY: no capture ships here (the app has no product analytics). The
+// blocked user's id must NEVER enter telemetry or any log — that is a
+// re-identification side-channel that would break the silent invariant above.
 
 // ─── 1. collective.block ───────────────────────────────────────────────────────
 
