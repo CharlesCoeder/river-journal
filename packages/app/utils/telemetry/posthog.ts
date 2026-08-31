@@ -93,10 +93,16 @@ export function disablePostHog(): void {
  * Re-permit capturing when consent is granted after a prior opt-out. posthog-js
  * persists the opt-out flag, so a fresh `initPostHog()` alone would stay opted
  * out; this clears that. A no-op if `init` never ran.
+ *
+ * `captureEventName: false` suppresses the `$opt_in` event posthog-js otherwise
+ * emits on EVERY call. This path runs on every boot (applyBootTelemetryGate) and
+ * on each consent toggle, so the default would flood the project with "Opt in"
+ * events — and those bypass captureEvent/the allowlist entirely. We manage
+ * consent locally, so the SDK's opt-in event carries no signal we want.
  */
 export function enablePostHog(): void {
   if (!inited) return
-  posthog.opt_in_capturing()
+  posthog.opt_in_capturing({ captureEventName: false })
 }
 
 /**
