@@ -33,7 +33,6 @@ import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
 import { logError, logInfo, redact } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
 import { type ExpoMessage, fanOutExpoPush } from '../_shared/expoPush.ts'
-import { emitServerEvent, SERVER_DISTINCT_ID } from '../_shared/posthog.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // The deep-link payload attached to each moderation push. EXACTLY these four
@@ -420,17 +419,6 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
     error_ticket_count: result.errorTicketCount,
     chunk_failure_count: result.chunkFailureCount,
     duration_ms: Date.now() - started,
-  })
-
-  // Best-effort, fail-open product-analytics emit on the ONE real delivery path
-  // (opted-in recipient, fanOutExpoPush ran). action_type is the enum value;
-  // counts are aggregate — NO user id, no reason/note, no content. Awaited but
-  // returns void and never throws, so the metadata-only ok() / enumeration-
-  // oracle guard is unchanged.
-  await emitServerEvent('moderation_notification_delivered', SERVER_DISTINCT_ID, {
-    action_type: payload.action_type,
-    sent_count: result.sentCount,
-    failed_count: result.errorTicketCount + result.chunkFailureCount,
   })
 
   // Minimal success body — NO resolved user / author (enumeration-oracle guard).

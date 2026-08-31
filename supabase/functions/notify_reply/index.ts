@@ -42,7 +42,6 @@ import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
 import { type ExpoMessage, fanOutExpoPush } from '../_shared/expoPush.ts'
-import { emitServerEvent, SERVER_DISTINCT_ID } from '../_shared/posthog.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Loose but sufficient UUID-shape check (8-4-4-4-12 hex, version-agnostic —
@@ -335,17 +334,6 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
     error_ticket_count: result.errorTicketCount,
     chunk_failure_count: result.chunkFailureCount,
     duration_ms: Date.now() - started,
-  })
-
-  // Best-effort, fail-open product-analytics emit on the ONE real delivery path
-  // (fanOutExpoPush ran). Aggregate counts only — NO recipient/author id, no
-  // content. Awaited so the request isolate doesn't tear down an un-flushed
-  // fetch, but it returns void and never throws, so it cannot alter the
-  // fail-closed posture or the minimal ok() body below.
-  await emitServerEvent('collective_reply_delivered', SERVER_DISTINCT_ID, {
-    recipient_count: recipientIds.length,
-    sent_count: result.sentCount,
-    failed_count: result.errorTicketCount + result.chunkFailureCount,
   })
 
   // Minimal success body — NO resolved recipient / author (enumeration-oracle guard).

@@ -5,7 +5,7 @@
  * This is a true end-to-end test of the script AS an operator/CI would run
  * it: `node scripts/lint-edge-function-logging.mjs` is shelled out to as a
  * real child process against the real repository tree (mirroring the
- * `lint-posthog-events.mjs` precedent, `lintPosthogEvents.e2e.test.ts`).
+ * `lint-posthog-events.mjs` precedent, `lintPosthogAbsence.e2e.test.ts`).
  * Nothing about the lint script itself is mocked. Fixture `.fixture.ts`
  * files that intentionally violate the rules are planted immediately before
  * each test under a scratch directory INSIDE `supabase/functions/` (the
