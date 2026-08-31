@@ -30,7 +30,7 @@ export function ConsentScreen({ headlineId, transition, onComplete }: ConsentScr
     <OnboardingScreenLayout
       headlineId={headlineId}
       headline="Help improve River Journal"
-      body="Share anonymous crash and usage reports so we can fix problems and improve the app. Your journal entries are never collected. You can change this anytime in Privacy Center."
+      body="Share crash reports so we can fix problems. They carry technical error details linked to your account ID — never your email or anything you write, and no usage analytics. You can change this anytime in Privacy Center."
       transition={transition}
     >
       <XStack
