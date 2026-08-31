@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { redactEvent, REDACTED } from '../redactor'
+import { normalizeUrlToRoutePattern, redactEvent, REDACTED } from '../redactor'
 import { KNOWN_CONTENT_KEYS, isContentKey, looksLikeFreeText } from '../contentKeys'
 
 /** Deep recursive scan for a literal substring anywhere in the payload. */
@@ -148,6 +148,63 @@ describe('redactEvent — scrubs standard Sentry fields, not just a fixed allowl
       },
     })
     expect(containsLeak(result, 'local var journal text')).toBe(false)
+  })
+})
+
+describe('normalizeUrlToRoutePattern — id segments become the route pattern', () => {
+  it('replaces a UUID path segment and drops the query string', () => {
+    expect(
+      normalizeUrlToRoutePattern(
+        'https://example.com/collective/thread/0b8f4d0e-2f6a-4a4e-9c1d-3a7b8c9d0e1f?ref=push#top'
+      )
+    ).toBe('https://example.com/collective/thread/[id]')
+  })
+
+  it('replaces numeric and long-hex segments while keeping route names', () => {
+    expect(normalizeUrlToRoutePattern('https://example.com/day-view/20260831')).toBe(
+      'https://example.com/day-view/[id]'
+    )
+    expect(normalizeUrlToRoutePattern('https://example.com/journal/' + 'deadbeef'.repeat(4))).toBe(
+      'https://example.com/journal/[id]'
+    )
+  })
+
+  it('normalizes relative URLs without inventing an origin', () => {
+    expect(
+      normalizeUrlToRoutePattern('/collective/thread/0b8f4d0e-2f6a-4a4e-9c1d-3a7b8c9d0e1f')
+    ).toBe('/collective/thread/[id]')
+  })
+
+  it('leaves an id-free URL untouched apart from dropping the query', () => {
+    expect(normalizeUrlToRoutePattern('https://example.com/settings')).toBe(
+      'https://example.com/settings'
+    )
+  })
+
+  it('returns an unparseable input unchanged (never throws)', () => {
+    expect(normalizeUrlToRoutePattern('not a url at all')).toBe('not a url at all')
+  })
+})
+
+describe('redactEvent — request.url is normalized to its route pattern', () => {
+  it('strips the resource id from request.url so it cannot pair with user.id', () => {
+    const uuid = '0b8f4d0e-2f6a-4a4e-9c1d-3a7b8c9d0e1f'
+    const result = redactEvent({
+      user: { id: 'user-abc-123' },
+      request: { url: `https://app.example.com/collective/thread/${uuid}?utm_source=x` },
+    }) as any
+    expect(result.request.url).toBe('https://app.example.com/collective/thread/[id]')
+    expect(containsLeak(result, uuid)).toBe(false)
+    expect(containsLeak(result, 'utm_source')).toBe(false)
+    // The user id itself is still preserved — the pair is what is broken.
+    expect(result.user.id).toBe('user-abc-123')
+  })
+
+  it('does not rewrite URLs outside request.url (breadcrumb urls stay as-is)', () => {
+    const result = redactEvent({
+      breadcrumbs: [{ category: 'http', data: { url: 'https://example.com/api/123' } }],
+    }) as any
+    expect(result.breadcrumbs[0].data.url).toBe('https://example.com/api/123')
   })
 })
 
