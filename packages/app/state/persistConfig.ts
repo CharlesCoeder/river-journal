@@ -6,13 +6,18 @@
 import { configureSynced } from '@legendapp/state/sync'
 import { observablePersistIndexedDB } from '@legendapp/state/persist-plugins/indexeddb'
 
-// Canonical RiverJournal IndexedDB schema source-of-truth. Both Legend-State
-// (this module) and the TanStack Query adapter (state/queryStorage.ts) open
-// the SAME database at the SAME version and MUST agree on the full set of
-// object stores. Whichever caller fires `onupgradeneeded` first is responsible
-// for creating any missing stores — otherwise a later opener at the same
-// version sees no upgrade event and silently misses its store. Keep this list
-// the only place store names are declared.
+// Canonical RiverJournal IndexedDB schema source-of-truth for Legend-State's
+// persist plugin. Legend-State creates every store listed here with
+// `keyPath: 'id'` (in-line keys). Keep this list the only place store names are
+// declared.
+//
+// NOTE: 'tanstack-query' remains in this list for backward compatibility — the
+// store was created here in DB_VERSION 6 and removing it would require a risky
+// production IndexedDB migration. Nothing writes to it: the TanStack Query
+// cache adapter (state/queryStorage.ts) now owns a SEPARATE database
+// (`RiverJournalQueryCache`) with an out-of-line-key store, precisely because
+// Legend-State's forced `keyPath: 'id'` here is incompatible with the
+// explicit-key `put(value, key)` writes the query cache requires.
 //
 // 13: added 'billing-receipt' table for the local-only app-open entitlement
 //     re-validation receipt (the `cs_...`/receipt id to re-POST on app open;
