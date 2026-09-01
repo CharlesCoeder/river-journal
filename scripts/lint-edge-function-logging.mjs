@@ -15,8 +15,8 @@
  *     module specifier is an `encryption` module is rejected in EVERY file (no
  *     exemption).
  *
- * This is a RAW-SOURCE line scanner (mirroring `lint-posthog-events.mjs`'s
- * SKIP_DIRS / collectFiles / fail-closed conventions) — it greps banned tokens,
+ * This is a RAW-SOURCE line scanner (SKIP_DIRS / collectFiles / fail-closed
+ * conventions) — it greps banned tokens,
  * so no esbuild/TS-AST is needed. To avoid false positives it strips `//` line
  * comments and obvious string literals before matching, and only matches the
  * `console.method(` CALL shape (not the bare word "console").

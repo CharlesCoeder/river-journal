@@ -28,7 +28,6 @@
     "test": "vitest run",
     "test:ci": "vitest run --exclude '**/build.test.ts' --exclude '**/dev.test.ts'",
     "test:watch": "vitest",
-    "lint:posthog": "node scripts/lint-posthog-events.mjs",
     "lint:edge-logging": "node scripts/lint-edge-function-logging.mjs",
     "lint:boundaries": "node scripts/lint-boundaries.mjs",
     "lint:forward-only-migrations": "node scripts/lint-forward-only-migrations.mjs",

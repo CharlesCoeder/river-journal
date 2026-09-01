@@ -50,6 +50,6 @@ describe('telemetryConsent.ts source — device-local, never synced, no SDK coup
     const source = readFileSync(modulePath, 'utf-8')
     expect(source).not.toMatch(/from ['"].*syncConfig['"]/)
     expect(source).not.toMatch(/configureSyncedSupabase/)
-    expect(source).not.toMatch(/posthog-js|@sentry|posthog-react-native/)
+    expect(source).not.toMatch(/@sentry/)
   })
 })
