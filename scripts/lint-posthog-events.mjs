@@ -185,7 +185,7 @@ try {
       if (shape.test(stripped)) {
         violation(
           file,
-          `contains a ${String(shape).includes('capture') ? 'captureEvent(' : 'emitServerEvent('} call — the removed analytics entry points must stay removed`,
+          `contains a ${String(shape).includes('capture') ? 'captureEvent(' : 'emitServerEvent('} call — the removed analytics entry points must stay removed`
         )
       }
     }
@@ -213,7 +213,9 @@ try {
     process.exit(1)
   }
 
-  console.log('lint-posthog-events: clean — no analytics dependency, import, call site, or config token found.')
+  console.log(
+    'lint-posthog-events: clean — no analytics dependency, import, call site, or config token found.'
+  )
   process.exit(0)
 } catch (error) {
   console.error('lint-posthog-events: crashed while scanning:', error)

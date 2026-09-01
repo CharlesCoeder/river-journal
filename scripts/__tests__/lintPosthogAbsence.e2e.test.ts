@@ -59,7 +59,10 @@ describe('scripts/lint-posthog-events.mjs — the no-analytics guard', () => {
 
   it('fails when a posthog import reappears in source', () => {
     try {
-      plantFixture('sneakyImport.fixture.ts', "import posthog from 'posthog-js'\nexport { posthog }\n")
+      plantFixture(
+        'sneakyImport.fixture.ts',
+        "import posthog from 'posthog-js'\nexport { posthog }\n"
+      )
       const { status, output } = runLint()
       expect(status).toBe(1)
       expect(output).toContain('sneakyImport.fixture.ts')
