@@ -40,7 +40,7 @@ vi.mock('solito/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
 }))
 
-// ─── Mock the telemetry consent orchestrator (pulls Sentry/PostHog SDKs) ─────
+// ─── Mock the telemetry consent orchestrator (pulls the Sentry SDK) ──────────
 const { mockSetTelemetryConsent } = vi.hoisted(() => ({ mockSetTelemetryConsent: vi.fn() }))
 vi.mock('../../../utils/telemetry/consent', () => ({
   setTelemetryConsent: mockSetTelemetryConsent,

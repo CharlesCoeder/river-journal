@@ -65,6 +65,11 @@ export default defineConfig({
   },
   test: {
     setupFiles: ['./vitest.setup.ts'],
+    // Runs once per invocation, before collection: purges scratch migration
+    // fixtures orphaned by an interrupted run, which would otherwise make an
+    // unrelated file's "the migrations tree lints clean" assertion fail
+    // depending on file order. See the file header for the full rationale.
+    globalSetup: ['./vitest.globalSetup.mts'],
     // Exclude default deps + git worktrees (kept under .claude/worktrees/ for sprint
     // recovery). Without this, vitest's glob walks into worktree copies of the repo
     // and runs duplicate test files against worktree-local node_modules.

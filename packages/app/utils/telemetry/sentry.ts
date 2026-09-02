@@ -16,6 +16,7 @@
 
 import * as Sentry from '@sentry/nextjs'
 import { telemetryConsent$ } from '../../state/telemetryConsent'
+import { SENTRY_DATA_COLLECTION } from './dataCollection'
 import { redactEvent } from './redactor'
 
 /**
@@ -50,6 +51,11 @@ export function initSentry(): void {
     // redactor only scrubs fields it walks, so we also prevent the SDK from
     // stuffing raw PII/content upstream of beforeSend.
     sendDefaultPii: false,
+    // Explicit collection posture (userInfo/IP off, stack-frame local
+    // variables off, no bodies/cookies). MUST stay the full shared object:
+    // a partial dataCollection flips the SDK's unset-field defaults to the
+    // permissive set, silently re-enabling IP inference.
+    dataCollection: SENTRY_DATA_COLLECTION,
     // Low/zero tracing so dev never floods the project; modest in production.
     tracesSampleRate: isProduction ? 0.1 : 0,
     // THE client-side content-exclusion enforcement point. Every error event

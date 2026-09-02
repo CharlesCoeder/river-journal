@@ -74,9 +74,6 @@ jobs:
       - name: Format + lint (Biome)
         run: node_modules/.bin/biome check .
 
-      - name: Lint PostHog event allowlist
-        run: yarn lint:posthog
-
       - name: Lint Edge Function logging / encryption boundary
         run: yarn lint:edge-logging
 

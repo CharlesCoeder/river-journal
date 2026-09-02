@@ -235,7 +235,7 @@ const STAGGER_MS = 100
 const SECTION_COUNT = 7
 
 const TELEMETRY_CONSENT_COPY =
-  'When on, the app sends anonymous crash reports and basic usage events (which features are used, not what you write) to help us find and fix problems. Your journal entries, Collective posts, and any free text are never collected. Off by default; changing it takes effect immediately.'
+  'When on, the app sends crash reports to help us find and fix problems. A crash report carries technical error details and is linked to your account ID — never your email, your name, or anything you write. Your journal entries, Collective posts, and any free text are never collected, and the app sends no usage analytics at all. Off by default; changing it takes effect immediately.'
 
 export function PrivacyCenterScreen() {
   const router = useRouter()

@@ -28,8 +28,7 @@ import {
 import { MoreHorizontal } from '@tamagui/lucide-icons'
 import { useReportPost, useDeleteOwnPost } from 'app/state/collective/mutations'
 import type { ReportPostVars } from 'app/state/collective/mutations'
-import { addLocallyHiddenPost, store$ } from 'app/state/store'
-import { captureEvent } from 'app/utils/telemetry/posthog'
+import { addLocallyHiddenPost } from 'app/state/store'
 import { generateUUID } from 'app/utils/uuid'
 import { BlockUserConfirmDialog } from './BlockUserConfirmDialog'
 
@@ -187,13 +186,6 @@ export function FlagAffordance({
     // regardless of whether the report ultimately succeeds server-side).
     mutation.mutate(vars)
     addLocallyHiddenPost(postId)
-
-    // Report metric — metadata ONLY. The reporter's free-text note is NEVER
-    // part of this payload; only the tier + user id leave the device.
-    captureEvent('collective_report_submitted', {
-      user_id: reporterUserId!,
-      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
-    })
 
     setDialogOpen(false)
     setMenuOpen(false)

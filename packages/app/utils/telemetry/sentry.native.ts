@@ -11,6 +11,7 @@
 
 import * as Sentry from '@sentry/react-native'
 import { telemetryConsent$ } from '../../state/telemetryConsent'
+import { SENTRY_DATA_COLLECTION } from './dataCollection'
 import { redactEvent } from './redactor'
 
 declare const __DEV__: boolean
@@ -46,6 +47,12 @@ export function initSentry(): void {
     // Never attach device PII. The redactor scrubs content, but we also
     // stop the SDK collecting raw PII upstream of beforeSend.
     sendDefaultPii: false,
+    // Explicit collection posture (userInfo/IP off, stack-frame local
+    // variables off, no bodies/cookies) — the SAME shared object as web, so
+    // the resolved posture cannot drift between platforms. The RN options
+    // type lags @sentry/core and omits `dataCollection`, but the bundled
+    // core client resolves it at runtime; the cast bridges the type gap.
+    ...({ dataCollection: SENTRY_DATA_COLLECTION } as Record<string, unknown>),
     tracesSampleRate: isRelease ? 0.1 : 0,
     // THE client-side content-exclusion enforcement point (shared redactor).
     beforeSend: redactEvent,

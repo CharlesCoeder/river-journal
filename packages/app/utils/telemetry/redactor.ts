@@ -72,6 +72,59 @@ function scrubObject(obj: LooseEvent, seen: WeakSet<object>): LooseEvent {
 }
 
 /**
+ * Path segments that identify a single resource rather than name a route:
+ * UUIDs (Supabase row ids), purely numeric ids, and long (16+ char) hex
+ * tokens. Short alphabetic segments (`thread`, `journal`, `settings`) are
+ * route names and pass through.
+ */
+const ID_SEGMENT_PATTERN =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+|[0-9a-f]{16,})$/i
+
+/**
+ * Normalize a URL to its route pattern: every id-shaped path segment becomes
+ * `[id]` and the query string / fragment are dropped entirely.
+ *
+ * WHY: `user.id` is attached to every event, so a preserved concrete URL
+ * (`/collective/thread/<uuid>`) turns a crash report into "user X was reading
+ * post Y" — a correlatable pair. The route pattern keeps the debugging signal
+ * (which screen crashed) without the resource identity. The query string goes
+ * wholesale because it can carry ids and campaign/click parameters that a
+ * route pattern has no use for.
+ *
+ * Handles absolute and relative URLs; returns the input unchanged when it is
+ * not parseable as either (never throws — redactEvent's contract).
+ */
+export function normalizeUrlToRoutePattern(url: string): string {
+  let parsed: URL
+  try {
+    // Path-only URLs (`/thread/<id>`) need a base to parse; anything else must
+    // parse on its own, so an arbitrary non-URL string passes through
+    // unchanged instead of being mangled into a percent-encoded path.
+    parsed = url.startsWith('/') ? new URL(url, 'relative://placeholder') : new URL(url)
+  } catch {
+    return url
+  }
+  const pattern = parsed.pathname
+    .split('/')
+    .map((segment) => (ID_SEGMENT_PATTERN.test(segment) ? '[id]' : segment))
+    .join('/')
+  return parsed.protocol === 'relative:' ? pattern : `${parsed.origin}${pattern}`
+}
+
+/**
+ * Post-scrub step for the one standard field that legitimately holds a URL:
+ * `event.request.url`. Runs on the rebuilt copy (never the caller's object).
+ */
+function normalizeRequestUrl(scrubbed: LooseEvent): void {
+  const request = scrubbed.request
+  if (request === null || typeof request !== 'object') return
+  const url = (request as LooseEvent).url
+  if (typeof url === 'string') {
+    ;(request as LooseEvent).url = normalizeUrlToRoutePattern(url)
+  }
+}
+
+/**
  * The `beforeSend` / `beforeSendTransaction` body. Scrubs the ENTIRE event
  * tree through both nets rather than a hardcoded allowlist of locations, so
  * content is stripped wherever it appears — including standard Sentry fields
@@ -83,7 +136,10 @@ function scrubObject(obj: LooseEvent, seen: WeakSet<object>): LooseEvent {
  * A value is redacted if EITHER net fires (known content key, or free-text
  * prose). Short technical strings (error messages, ids, urls, route names)
  * and the Supabase `user.id` sit below the free-text floor and are preserved
- * for debugging.
+ * for debugging. One targeted exception: `request.url` is additionally
+ * normalized to its route pattern (`/collective/thread/<uuid>` →
+ * `/collective/thread/[id]`, query string dropped) so the event's `user.id`
+ * cannot be paired with a concrete resource identity.
  *
  * ROBUSTNESS: never throws (a throwing `beforeSend` drops the event, or
  * worse in some SDK versions sends it un-scrubbed), guards circular references,
@@ -100,7 +156,11 @@ export function redactEvent<T>(event: T): T {
     const seen = new WeakSet<object>()
     // Recursively scrub the whole event. `scrubValue` rebuilds every object
     // and array as a fresh value, so the input is never mutated.
-    return scrubValue(event, false, seen) as T
+    const scrubbed = scrubValue(event, false, seen)
+    if (scrubbed !== null && typeof scrubbed === 'object' && !Array.isArray(scrubbed)) {
+      normalizeRequestUrl(scrubbed as LooseEvent)
+    }
+    return scrubbed as T
   } catch {
     // Never let beforeSend throw. Fall back to a minimally-safe event: drop
     // every field that can carry content-bearing subtrees rather than risk

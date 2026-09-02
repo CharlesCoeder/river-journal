@@ -40,10 +40,6 @@ import {
   deviceState$,
   type PreviousAccountBannerState,
 } from './syncConfig'
-// Product-analytics capture — the platform-split module resolves to the web or
-// native SDK wrapper automatically. This is a telemetry call site only; it owns
-// no state and pulls in neither Legend-State nor TanStack Query.
-import { captureEvent } from '../utils/telemetry/posthog'
 
 // Re-export theme constants for convenience
 export { THEME_NAMES, DEFAULT_THEME, DARK_THEMES }
@@ -1065,11 +1061,6 @@ export const recordThresholdCrossingIfNeeded = (newCount: number): void => {
   ephemeral$.thresholdCrossing.set({
     crossedAt: new Date().toISOString(),
     wordCountAtCrossing: newCount,
-  })
-  // Emit the once-per-flow <500→≥500 crossing (metadata only — never content).
-  captureEvent('flow_500_crossed', {
-    user_id: store$.session?.userId?.peek?.() ?? null,
-    tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
   })
 }
 

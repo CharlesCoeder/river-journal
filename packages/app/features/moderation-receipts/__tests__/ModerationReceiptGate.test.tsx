@@ -83,11 +83,16 @@ vi.mock('../ModerationReceiptDialog', () => ({
 // ─── Import under test — fails until ModerationReceiptGate.tsx exists ────────
 import { ModerationReceiptGate } from '../ModerationReceiptGate'
 
+// The shared "active suspension" fixture. `ends_at` MUST stay far-future: the
+// gate applies a render-time expiry guard (`ends_at > Date.now()`), so a merely
+// near-future date silently turns every case below into the no-suspension path
+// once real wall-clock passes it. Use the file's sentinel convention — 2099 for
+// active, 2020 for lapsed — never a date near "now" at authoring time.
 const SUSPENSION_ROW = {
   id: 'susp-1',
   kind: 'post_react',
   starts_at: '2026-06-01T00:00:00.000Z',
-  ends_at: '2026-08-01T00:00:00.000Z',
+  ends_at: '2099-01-01T00:00:00.000Z',
   reason: 'harassment',
 }
 

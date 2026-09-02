@@ -29,8 +29,6 @@ import {
   setFocusMode,
   hasReachedAutosaveCheckpoint,
 } from 'app/state/store'
-import { captureEvent } from 'app/utils/telemetry/posthog'
-import { getWordCountBucket } from 'app/utils/telemetry/eventAllowlist'
 import { use$ } from '@legendapp/state/react'
 
 export function JournalScreen() {
@@ -52,14 +50,6 @@ export function JournalScreen() {
 
   const handleSaveFlow = () => {
     saveActiveFlowSession()
-    // Completion metric — the raw word count is bucketed before it leaves the
-    // device; only the bucket string is ever emitted.
-    const savedWordCount = store$.lastSavedFlow?.peek?.()?.wordCount ?? 0
-    captureEvent('flow_completed', {
-      user_id: store$.session?.userId?.peek?.() ?? null,
-      tier: store$.profile?.subscription_tier?.peek?.() ?? 'free',
-      word_count_bucket: getWordCountBucket(savedWordCount),
-    })
     setShowExitConfirmDialog(false)
     hidePersistentEditor()
     router.replace('/journal/celebration')

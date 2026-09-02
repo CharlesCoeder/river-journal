@@ -1,9 +1,22 @@
 /**
  * Web/desktop AsyncStorage-shaped adapter over IndexedDB for TanStack Query
- * persistence. Reuses the `RiverJournal` database opened by persistConfig.ts
- * (single DB, separate object store: `'tanstack-query'`). The schema authority
- * is `state/persistConfig.ts` — DB_NAME, DB_VERSION, and TABLE_NAMES live
- * there and are imported here so both openers agree on the full schema.
+ * persistence.
+ *
+ * Owns a DEDICATED IndexedDB database (`RiverJournalQueryCache`, version 1)
+ * containing a single object store, `'tanstack-query'`, created with
+ * OUT-OF-LINE (explicit) keys — i.e. NO keyPath — so `store.put(value, key)`
+ * is valid.
+ *
+ * Why a separate database: the shared `RiverJournal` database is also opened by
+ * Legend-State's IndexedDB persist plugin (state/persistConfig.ts), which
+ * creates every store it manages with `keyPath: 'id'` (in-line keys). Whichever
+ * opener fires `onupgradeneeded` first wins the schema, and Legend-State opens
+ * the DB first during boot — so a co-located `'tanstack-query'` store would end
+ * up with `keyPath: 'id'`, and `put(value, explicitKey)` against an in-line-key
+ * store throws a `DataError` on every write (Firefox: "Data provided to an
+ * operation does not meet requirements"). Giving this cache its own database
+ * eliminates the keyPath conflict entirely, with zero coordination needed with
+ * Legend-State.
  *
  * Key namespace prefix: 'rj-tq:' — any callsite that writes here MUST include
  * the prefix in the key so a future grep catches stray persistence collisions.
@@ -16,8 +29,8 @@
  * into the persist-client boot path.
  */
 
-import { DB_NAME, DB_VERSION, TABLE_NAMES } from './persistConfig'
-
+const DB_NAME = 'RiverJournalQueryCache'
+const DB_VERSION = 1
 const TABLE_NAME = 'tanstack-query'
 
 function hasIndexedDB(): boolean {
@@ -32,17 +45,12 @@ function openDb(): Promise<IDBDatabase> {
     }
     const req = (globalThis as any).indexedDB.open(DB_NAME, DB_VERSION) as IDBOpenDBRequest
     req.onupgradeneeded = () => {
-      // Race-safety: whichever caller (this adapter vs. Legend-State's
-      // observablePersistIndexedDB) opens the DB first at a new version is
-      // the ONLY one that receives `onupgradeneeded`. Therefore each
-      // upgrade handler must create EVERY expected store, not just the one
-      // it directly cares about — otherwise the later opener at the same
-      // version sees no upgrade event and its store is silently missing.
+      // This database is owned exclusively by this adapter, so there is no
+      // second opener to coordinate with. Create the single store with
+      // out-of-line keys (no keyPath) so `put(value, key)` is valid.
       const db = req.result
-      for (const name of TABLE_NAMES) {
-        if (!db.objectStoreNames.contains(name)) {
-          db.createObjectStore(name)
-        }
+      if (!db.objectStoreNames.contains(TABLE_NAME)) {
+        db.createObjectStore(TABLE_NAME)
       }
     }
     req.onsuccess = () => resolve(req.result)

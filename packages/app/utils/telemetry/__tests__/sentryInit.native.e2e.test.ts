@@ -162,6 +162,24 @@ describe('initSentry (mobile) — default auto-capture cannot leak content upstr
     expect(initOptions?.sendDefaultPii).toBe(false)
   })
 
+  it('Sentry.init is called with the full explicit dataCollection posture, identical to web', async () => {
+    vi.stubGlobal('__DEV__', false)
+    process.env.EXPO_PUBLIC_SENTRY_ENABLED = 'true'
+    process.env.EXPO_PUBLIC_SENTRY_DSN = 'https://prod-dsn@example.ingest.sentry.io/2'
+
+    const { initSentry } = await import('../sentry.native')
+    const { SENTRY_DATA_COLLECTION } = await import('../dataCollection')
+    initSentry()
+
+    const initOptions = sentryInitMock.mock.calls[0]?.[0]
+    expect(initOptions?.dataCollection).toEqual(SENTRY_DATA_COLLECTION)
+    // The two load-bearing fields, pinned independently of the shared object:
+    // userInfo:false keeps infer_ip "never"; stackFrameVariables:false closes
+    // the local-variables content channel.
+    expect(initOptions?.dataCollection?.userInfo).toBe(false)
+    expect(initOptions?.dataCollection?.stackFrameVariables).toBe(false)
+  })
+
   it('Mobile session replay is never enabled (mobileReplayIntegration is never invoked)', async () => {
     vi.stubGlobal('__DEV__', false)
     process.env.EXPO_PUBLIC_SENTRY_ENABLED = 'true'

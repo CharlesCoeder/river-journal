@@ -29,8 +29,8 @@
  *      reads. A blanket `@legendapp/state` ban is deliberately NOT used —
  *      several accepted `use$`/`observe` reads would trip it.
  *
- * This is a RAW-SOURCE line scanner (mirroring lint-edge-function-logging.mjs
- * and lint-posthog-events.mjs): it strips `//` line comments and string
+ * This is a RAW-SOURCE line scanner (mirroring lint-edge-function-logging.mjs):
+ * it strips `//` line comments and string
  * literals before matching so a mention inside a comment or string is never a
  * false positive, and only matches real import specifiers / call shapes.
  *

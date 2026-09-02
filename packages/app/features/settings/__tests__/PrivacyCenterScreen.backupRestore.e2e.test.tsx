@@ -124,7 +124,7 @@ vi.mock('@my/ui', async () => {
   }
 })
 
-// The telemetry consent orchestrator pulls the Sentry/PostHog SDKs; stub it so
+// The telemetry consent orchestrator pulls the Sentry SDK; stub it so
 // this backup-focused suite stays light and SDK-free.
 vi.mock('app/utils/telemetry/consent', () => ({
   setTelemetryConsent: vi.fn(),

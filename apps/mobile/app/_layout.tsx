@@ -4,7 +4,7 @@ import 'app/state/collective/mutations'
 
 // Telemetry is OPT-IN, so init does NOT run here: the consent flag is only
 // readable after persistence loads, which happens later than this module. The
-// consent-gated Sentry/PostHog init lives in app/state/initializeApp.ts, after
+// consent-gated Sentry init lives in app/state/initializeApp.ts, after
 // the persisted flag is awaited. A late opt-in re-runs init via
 // app/utils/telemetry/consent.ts — no restart.
 

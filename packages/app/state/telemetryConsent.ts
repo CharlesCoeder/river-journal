@@ -1,10 +1,10 @@
 /**
  * state/telemetryConsent.ts
  *
- * Device-local, per-device telemetry consent preference. Telemetry (crash +
- * product analytics) is OPT-IN: this flag defaults OFF, and until it is turned
- * ON no SDK initializes and no telemetry request leaves the device. A single
- * flag gates BOTH Sentry (crash/error) and PostHog (product analytics).
+ * Device-local, per-device telemetry consent preference. Telemetry (crash/
+ * error reporting) is OPT-IN: this flag defaults OFF, and until it is turned
+ * ON no SDK initializes and no telemetry request leaves the device. The flag
+ * gates Sentry (crash/error) init.
  *
  * NEVER synced to Supabase — the opt-in choice is a per-device decision that
  * intentionally does not travel with the account (clones the appLock$ pattern).

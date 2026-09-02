@@ -209,11 +209,6 @@ describe('.github/workflows/ci.yml — format/lint gate', () => {
     expect(text).toMatch(/biome check/)
   })
 
-  it('runs the PostHog event-allowlist lint (`yarn lint:posthog`)', () => {
-    const text = readWorkflowText('ci.yml')
-    expect(text).toMatch(/\byarn lint:posthog\b/)
-  })
-
   it('runs the Edge Function logging/encryption-boundary lint (`yarn lint:edge-logging`)', () => {
     const text = readWorkflowText('ci.yml')
     expect(text).toMatch(/\byarn lint:edge-logging\b/)

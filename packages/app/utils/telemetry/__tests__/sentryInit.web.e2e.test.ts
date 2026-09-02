@@ -177,6 +177,24 @@ describe('initSentry (web/desktop) — default auto-capture cannot leak content 
     expect(initOptions?.sendDefaultPii).toBe(false)
   })
 
+  it('Sentry.init is called with the full explicit dataCollection posture (partial objects regress to permissive SDK defaults)', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    process.env.NEXT_PUBLIC_SENTRY_ENABLED = 'true'
+    process.env.NEXT_PUBLIC_SENTRY_DSN = 'https://prod-dsn@example.ingest.sentry.io/1'
+
+    const { initSentry } = await import('../sentry')
+    const { SENTRY_DATA_COLLECTION } = await import('../dataCollection')
+    initSentry()
+
+    const initOptions = sentryInitMock.mock.calls[0]?.[0]
+    expect(initOptions?.dataCollection).toEqual(SENTRY_DATA_COLLECTION)
+    // The two load-bearing fields, pinned independently of the shared object:
+    // userInfo:false keeps infer_ip "never"; stackFrameVariables:false closes
+    // the local-variables content channel.
+    expect(initOptions?.dataCollection?.userInfo).toBe(false)
+    expect(initOptions?.dataCollection?.stackFrameVariables).toBe(false)
+  })
+
   it('Session Replay is never enabled (replayIntegration is never invoked)', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     process.env.NEXT_PUBLIC_SENTRY_ENABLED = 'true'
