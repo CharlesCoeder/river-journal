@@ -61,3 +61,4 @@ apps/web/out
 
 # local tooling
 .mcp.json
+.env*
