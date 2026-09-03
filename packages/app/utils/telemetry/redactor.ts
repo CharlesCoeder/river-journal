@@ -125,6 +125,26 @@ function normalizeRequestUrl(scrubbed: LooseEvent): void {
 }
 
 /**
+ * Post-scrub step: drop the SDK's `contexts.culture` block (locale, timezone,
+ * calendar).
+ *
+ * WHY: unlike `user.geo` — which Sentry derives server-side from the request
+ * IP and which no client hook can reach — the culture block is assembled in
+ * the client from the browser/OS `Intl` APIs, so it IS within this redactor's
+ * reach. It carries no debugging signal, while timezone + locale sitting
+ * beside the stable `user.id` on every single event is gratuitous
+ * fingerprinting surface for a private journaling app.
+ *
+ * Sibling contexts (`react`, `trace`, `browser`, ...) are left untouched.
+ * Runs on the rebuilt copy (never the caller's object).
+ */
+function dropCultureContext(scrubbed: LooseEvent): void {
+  const contexts = scrubbed.contexts
+  if (contexts === null || typeof contexts !== 'object') return
+  delete (contexts as LooseEvent).culture
+}
+
+/**
  * The `beforeSend` / `beforeSendTransaction` body. Scrubs the ENTIRE event
  * tree through both nets rather than a hardcoded allowlist of locations, so
  * content is stripped wherever it appears — including standard Sentry fields
@@ -139,7 +159,9 @@ function normalizeRequestUrl(scrubbed: LooseEvent): void {
  * for debugging. One targeted exception: `request.url` is additionally
  * normalized to its route pattern (`/collective/thread/<uuid>` →
  * `/collective/thread/[id]`, query string dropped) so the event's `user.id`
- * cannot be paired with a concrete resource identity.
+ * cannot be paired with a concrete resource identity. A second targeted
+ * exception: `contexts.culture` (locale/timezone/calendar) is dropped
+ * outright — see `dropCultureContext`.
  *
  * ROBUSTNESS: never throws (a throwing `beforeSend` drops the event, or
  * worse in some SDK versions sends it un-scrubbed), guards circular references,
@@ -159,6 +181,7 @@ export function redactEvent<T>(event: T): T {
     const scrubbed = scrubValue(event, false, seen)
     if (scrubbed !== null && typeof scrubbed === 'object' && !Array.isArray(scrubbed)) {
       normalizeRequestUrl(scrubbed as LooseEvent)
+      dropCultureContext(scrubbed as LooseEvent)
     }
     return scrubbed as T
   } catch {

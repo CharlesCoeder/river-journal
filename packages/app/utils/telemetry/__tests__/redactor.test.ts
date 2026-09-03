@@ -208,6 +208,47 @@ describe('redactEvent — request.url is normalized to its route pattern', () =>
   })
 })
 
+describe('redactEvent — the culture context is dropped', () => {
+  it('removes contexts.culture so locale/timezone never ride beside user.id', () => {
+    const result = redactEvent({
+      user: { id: 'user-abc-123' },
+      contexts: {
+        culture: { calendar: 'gregory', locale: 'en-US', timezone: 'America/New_York' },
+        react: { version: '19.3.0' },
+      },
+    }) as any
+    expect(result.contexts.culture).toBeUndefined()
+    expect(containsLeak(result, 'America/New_York')).toBe(false)
+    expect(containsLeak(result, 'en-US')).toBe(false)
+    // The user id is still preserved — culture is what goes.
+    expect(result.user.id).toBe('user-abc-123')
+  })
+
+  it('leaves sibling contexts intact', () => {
+    const result = redactEvent({
+      contexts: {
+        culture: { timezone: 'Europe/Berlin' },
+        react: { version: '19.3.0' },
+        trace: { span_id: '86fb19aaa2c3b76a' },
+      },
+    }) as any
+    expect(result.contexts.culture).toBeUndefined()
+    expect(result.contexts.react.version).toBe('19.3.0')
+    expect(result.contexts.trace.span_id).toBe('86fb19aaa2c3b76a')
+  })
+
+  it('is a no-op on events with no contexts block', () => {
+    const result = redactEvent({ user: { id: 'user-abc-123' } }) as any
+    expect(result.user.id).toBe('user-abc-123')
+    expect(result.contexts).toBeUndefined()
+  })
+
+  it('tolerates a non-object contexts value without throwing', () => {
+    expect(() => redactEvent({ contexts: null } as any)).not.toThrow()
+    expect(() => redactEvent({ contexts: 'nonsense' } as any)).not.toThrow()
+  })
+})
+
 describe('redactEvent — non-content fields are preserved', () => {
   it('leaves a Supabase user id and a url untouched', () => {
     const event = {
