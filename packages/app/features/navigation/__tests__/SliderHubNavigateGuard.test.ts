@@ -2,15 +2,15 @@
 /**
  * Route-aware navigate guard in SliderHub.
  *
- * The `navigateTo` function inside SliderHubGesture short-circuits when the
- * current pathname already equals the target. SliderHub is mounted on the
- * home route only (apps/mobile/app/index.tsx), so in practice the pathname is
- * always '/' and the guard never fires — it is kept as defence in depth so a
- * future re-mount elsewhere can never push a duplicate of the current route.
+ * The `commit` function inside SliderHubGesture short-circuits a push whose
+ * target already equals the current pathname. SliderHub is route-aware
+ * (resolveSliderHubAction only ever pushes from '/'), so in practice the guard
+ * never fires — it is kept as defence in depth so no configuration of spokes
+ * can ever push a duplicate of the current route.
  *
- * Guard lives in SliderHub.tsx (navigateTo inner function):
- *   if (currentPathname === target) { committing.value = false; return }
- *   router.push(target)
+ * Guard lives in SliderHub.tsx (commit inner function, push branch):
+ *   if (pathname === action.route) { committing.value = false; return }
+ *   router.push(action.route)
  *
  * This file tests the observable contract:
  *   - same-route gesture commit → router.push NOT called  (no-op)
@@ -45,7 +45,7 @@ vi.mock('solito/navigation', () => ({
 // The remaining native modules are handled by the workspace-level vitest
 // aliases (react-native-reanimated, react-native-gesture-handler, @my/ui).
 // SliderHub is imported after the mock declaration so the hoist applies.
-import { computeSliderHubCommit } from '../SliderHub'
+import { computeSliderHubCommit } from '../sliderHubUtils'
 import { usePathname } from 'solito/navigation'
 
 // ---------------------------------------------------------------------------
@@ -59,8 +59,8 @@ import { usePathname } from 'solito/navigation'
 // ---------------------------------------------------------------------------
 
 /**
- * Minimal replica of the navigateTo guard for contract testing.
- * Structurally identical to SliderHub.tsx navigateTo.
+ * Minimal replica of the push guard for contract testing.
+ * Structurally identical to the push branch of SliderHub.tsx commit().
  */
 function makeNavigateTo(
   currentPathname: string | null,

@@ -7,6 +7,9 @@ export const GestureHandlerRootView = 'View'
 export const GestureDetector = ({ children }: { children: unknown }) => children
 
 const panBuilder = {
+  enabled: function () {
+    return this
+  },
   activeOffsetX: function () {
     return this
   },

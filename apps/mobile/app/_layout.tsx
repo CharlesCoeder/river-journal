@@ -15,6 +15,7 @@ import { SplashScreen, Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
+import { SliderHub } from 'app/features/navigation/SliderHub'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
@@ -87,29 +88,32 @@ function RootLayoutNav() {
                     Enforced by PR review until the CI grep lands.
                   */}
                   {/*
-                    The Slider Hub gesture wrapper is mounted on the home route
-                    (app/index.tsx), not here: wrapping the whole Stack made every
-                    pushed screen a gesture surface, so a swipe back from the menu
-                    was read as a swipe into the editor.
+                    Route-aware Slider Hub: on home the two slides open the editor
+                    and the menu; on each of those the reverse slide returns home;
+                    every other route is inert. It wraps the persistent editor too,
+                    so the editor slides with its screen and a drag that starts on
+                    it still reaches the hub.
                   */}
-                  <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen
-                      name="journal"
-                      options={{ animation: 'none' }}
-                    />
-                    {/* Slide left on home → menu slides in from the right on both platforms. */}
-                    <Stack.Screen
-                      name="menu"
-                      options={{ animation: 'slide_from_right' }}
-                    />
-                    <Stack.Screen name="auth" />
-                    <Stack.Screen name="privacy" />
-                    <Stack.Screen
-                      name="google-auth"
-                      options={{ animation: 'none' }}
-                    />
-                  </Stack>
-                  <PersistentEditor />
+                  <SliderHub>
+                    <Stack screenOptions={{ headerShown: false }}>
+                      <Stack.Screen
+                        name="journal"
+                        options={{ animation: 'none' }}
+                      />
+                      {/* Slide left on home → menu slides in from the right on both platforms. */}
+                      <Stack.Screen
+                        name="menu"
+                        options={{ animation: 'slide_from_right' }}
+                      />
+                      <Stack.Screen name="auth" />
+                      <Stack.Screen name="privacy" />
+                      <Stack.Screen
+                        name="google-auth"
+                        options={{ animation: 'none' }}
+                      />
+                    </Stack>
+                    <PersistentEditor />
+                  </SliderHub>
                   <NativeToast />
                   {/* App Lock — covers all routes. The privacy cover hides
                   content from the OS app-switcher snapshot on `inactive`; the
