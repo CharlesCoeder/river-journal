@@ -113,6 +113,9 @@ vi.mock('@my/ui', async () => {
     useReducedMotion: () => reduceMotionValue,
     StreakChip,
     CollectiveEntry,
+    // This suite exercises the native home surface (menu entry visible, word
+    // links hidden). The web branch is covered by WordLinkNav's own suite.
+    isWeb: false,
   }
 })
 
@@ -718,5 +721,41 @@ describe('Lapsed prompt', () => {
     const scrollContainer = screen.getByTestId('home-scroll-view')
     fireEvent.scroll(scrollContainer, { target: { scrollTop: 50 } })
     expect(dismissMock).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. Menu entry point (mobile) — one visible affordance for the menu surface
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Menu entry point (mobile)', () => {
+  beforeEach(() => {
+    lapsedMock.shouldShow = false
+    lapsedMock.dismiss = vi.fn()
+  })
+
+  it('renders an "Open menu" button', () => {
+    render(React.createElement(HomeScreen))
+    expect(screen.getByRole('button', { name: 'Open menu' })).toBeTruthy()
+  })
+
+  it('pressing it navigates to /menu', () => {
+    render(React.createElement(HomeScreen))
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+    expect(pushSpy).toHaveBeenCalledWith('/menu')
+  })
+
+  it('does not render the word-link nav on mobile (the menu surface owns those destinations)', () => {
+    render(React.createElement(HomeScreen))
+    expect(screen.queryByTestId('word-link-nav')).toBeNull()
+  })
+
+  it('pressing it while the lapsed prompt is showing dismisses the prompt first', () => {
+    lapsedMock.shouldShow = true
+    const dismissMock = vi.fn()
+    lapsedMock.dismiss = dismissMock
+    render(React.createElement(HomeScreen))
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+    expect(dismissMock).toHaveBeenCalled()
+    expect(pushSpy).toHaveBeenCalledWith('/menu')
   })
 })

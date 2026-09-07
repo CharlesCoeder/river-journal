@@ -10,7 +10,7 @@
  * dismiss the overlay or navigate out from under it.
  *
  * Mounted in apps/mobile/app/_layout.tsx beside <PersistentEditor /> /
- * <NativeToast /> (siblings of <SliderHub>), so it covers every route.
+ * <NativeToast /> (siblings of the root <Stack>), so it covers every route.
  */
 
 import { useCallback, useEffect, useState } from 'react'

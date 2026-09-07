@@ -15,7 +15,6 @@ import { SplashScreen, Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
-import { SliderHub } from 'app/features/navigation/SliderHub'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
@@ -80,27 +79,36 @@ function RootLayoutNav() {
             <Provider>
               <TamaguifiedReactNavigationThemeProvider>
                 <TamaguifiedSafeAreaView>
-                  <SliderHub>
-                    {/*
+                  {/*
                     The moderation admin surface (features/moderation/**) is
                     intentionally web + desktop only. Mobile must never contain an
                     admin/ route subtree or import from features/moderation/** —
                     it must not ship in publicly-distributed mobile binaries.
                     Enforced by PR review until the CI grep lands.
                   */}
-                    <Stack screenOptions={{ headerShown: false }}>
-                      <Stack.Screen
-                        name="journal"
-                        options={{ animation: 'none' }}
-                      />
-                      <Stack.Screen name="auth" />
-                      <Stack.Screen name="privacy" />
-                      <Stack.Screen
-                        name="google-auth"
-                        options={{ animation: 'none' }}
-                      />
-                    </Stack>
-                  </SliderHub>
+                  {/*
+                    The Slider Hub gesture wrapper is mounted on the home route
+                    (app/index.tsx), not here: wrapping the whole Stack made every
+                    pushed screen a gesture surface, so a swipe back from the menu
+                    was read as a swipe into the editor.
+                  */}
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen
+                      name="journal"
+                      options={{ animation: 'none' }}
+                    />
+                    {/* Slide left on home → menu slides in from the right on both platforms. */}
+                    <Stack.Screen
+                      name="menu"
+                      options={{ animation: 'slide_from_right' }}
+                    />
+                    <Stack.Screen name="auth" />
+                    <Stack.Screen name="privacy" />
+                    <Stack.Screen
+                      name="google-auth"
+                      options={{ animation: 'none' }}
+                    />
+                  </Stack>
                   <PersistentEditor />
                   <NativeToast />
                   {/* App Lock — covers all routes. The privacy cover hides

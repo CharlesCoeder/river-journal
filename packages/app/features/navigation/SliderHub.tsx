@@ -40,10 +40,16 @@ interface SliderHubProps {
  * On web at the $sm breakpoint (< ~660px) or during SSR, renders a
  * passthrough with no gesture handler.
  *
- * Mounted at `apps/mobile/app/_layout.tsx` (root layout) so every route
- * inherits the gesture wrapper. The route-aware `usePathname()` guard in
- * `navigateTo` short-circuits same-route commits to prevent loops when the
- * current route equals the destination.
+ * Mounted on the HOME route only (`apps/mobile/app/index.tsx`). Home is the
+ * hub; the two slides are its spokes. It must not wrap the root Stack: doing
+ * so made every pushed screen a gesture surface, so a swipe back towards home
+ * from the menu (or a stray horizontal drag over the editor) committed to the
+ * *other* spoke instead of going back. On pushed screens the only horizontal
+ * gesture is the native stack back-swipe.
+ *
+ * The route-aware `usePathname()` guard in `navigateTo` is kept as defence in
+ * depth: it short-circuits a commit whose destination equals the current
+ * route, so re-mounting this wrapper elsewhere can never push a duplicate.
  */
 export function SliderHub({ children }: SliderHubProps) {
   const media = useMedia()

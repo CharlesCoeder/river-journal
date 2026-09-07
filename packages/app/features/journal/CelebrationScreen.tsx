@@ -32,6 +32,7 @@ import {
   useReducedMotion,
 } from '@my/ui'
 import { useRouter } from 'solito/navigation'
+import { useNavigateHome } from 'app/features/navigation/useNavigateHome'
 import { use$ } from '@legendapp/state/react'
 import {
   store$,
@@ -48,6 +49,7 @@ import { Editor } from './components/Editor'
 
 export function CelebrationScreen() {
   const router = useRouter()
+  const navigateHome = useNavigateHome()
   const lastSavedFlow = use$(store$.lastSavedFlow)
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const [mounted, setMounted] = useState(false)
@@ -137,13 +139,13 @@ export function CelebrationScreen() {
 
   useEffect(() => {
     if (!lastSavedFlow) {
-      router.push('/')
+      navigateHome()
     }
-  }, [lastSavedFlow, router])
+  }, [lastSavedFlow, navigateHome])
 
   const handleDismiss = () => {
     clearLastSavedFlow()
-    router.push('/')
+    navigateHome()
   }
 
   const handleOpenCollective = () => {

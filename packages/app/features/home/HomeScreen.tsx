@@ -8,6 +8,7 @@ import {
   useReducedMotion,
   StreakChip,
   CollectiveEntry,
+  isWeb,
 } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
@@ -86,6 +87,14 @@ export function HomeScreen() {
     router.push('/journal')
   }
 
+  // Mobile: the menu surface has a visible entry point, not a gesture-only
+  // one. The Slider Hub slide-left remains as an accelerator for the same
+  // destination, so there is exactly one mental model: home ⇄ menu.
+  const handleMenuPress = () => {
+    if (showLapsed) dismissLapsed()
+    router.push('/menu')
+  }
+
   const handleCollectivePress = () => {
     if (showLapsed) dismissLapsed()
     if (!isAuthenticated) {
@@ -145,6 +154,8 @@ export function HomeScreen() {
               $lg={{ paddingHorizontal: '$12' }}
               position="relative"
             >
+              {/* Menu entry (mobile only) — anchored top-left, mirroring the streak chip */}
+              {!isWeb && <HomeMenuButtonSlot onPress={handleMenuPress} />}
               {/* StreakChip — anchored to top-right of the centered content card (M1 fix from 1-6 review) */}
               <HomeStreakChipSlot />
               {/* Content — left-aligned, generous spacing */}
@@ -206,8 +217,11 @@ export function HomeScreen() {
                   {/* Primary CTA — serif italic underline */}
                   <BeginWritingCTA onPress={handleBeginFlow} />
 
-                  {/* Word-link nav row (web/desktop wide viewports only) */}
-                  <WordLinkNav variant="home" />
+                  {/* Word-link nav row — web/desktop only. On mobile the same
+                      destinations live in the menu surface (button top-left or
+                      slide left), so rendering them here too would be a second,
+                      competing navigation model. */}
+                  {isWeb ? <WordLinkNav variant="home" /> : null}
                 </XStack>
               </YStack>
             </YStack>
@@ -270,6 +284,44 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
     >
       Begin writing
     </Text>
+  )
+}
+
+/** Menu entry slot — mobile only. Quiet uppercase word-link in the streak chip's register, 44px hit target. */
+function HomeMenuButtonSlot({ onPress }: { onPress: () => void }) {
+  return (
+    <View
+      testID="home-menu-button-slot"
+      position="absolute"
+      top="$4"
+      left="$4"
+    >
+      <View
+        role="button"
+        aria-label="Open menu"
+        cursor="pointer"
+        minHeight={44}
+        minWidth={44}
+        justifyContent="center"
+        // Pull the visible label back to the content edge while keeping the
+        // full 44px target (touch targets ≥ 44×44 is a locked mobile rule).
+        marginTop={-12}
+        marginLeft={-8}
+        paddingHorizontal={8}
+        pressStyle={{ opacity: 0.6 }}
+        onPress={onPress}
+      >
+        <Text
+          fontFamily="$body"
+          fontSize="$3"
+          color="$color8"
+          letterSpacing={1}
+          textTransform="uppercase"
+        >
+          Menu
+        </Text>
+      </View>
+    </View>
   )
 }
 

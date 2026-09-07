@@ -14,6 +14,7 @@ import { Eye, EyeOff } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
+import { useNavigateHome } from 'app/features/navigation/useNavigateHome'
 import { Editor } from './components/Editor'
 import { KeyboardOffsetView } from './components/KeyboardOffsetView'
 import { useTrackKeyboardHeight } from './hooks/useTrackKeyboardHeight'
@@ -33,6 +34,7 @@ import { use$ } from '@legendapp/state/react'
 
 export function JournalScreen() {
   const router = useRouter()
+  const navigateHome = useNavigateHome()
   const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false)
   const activeFlow = use$(store$.activeFlow)
   const reduceMotion = useReducedMotion()
@@ -45,7 +47,7 @@ export function JournalScreen() {
 
   const handleBackToHome = () => {
     hidePersistentEditor()
-    router.push('/')
+    navigateHome()
   }
 
   const handleSaveFlow = () => {

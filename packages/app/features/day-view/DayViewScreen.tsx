@@ -15,6 +15,7 @@ import { getTodayJournalDayString } from 'app/state/date-utils'
 import type { Flow } from 'app/state/types'
 import { DeleteFlowDialog } from './components/DeleteFlowDialog'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
+import { useNavigateHome } from 'app/features/navigation/useNavigateHome'
 import { CalendarMonthView } from './CalendarMonthView'
 import { PastEntriesSearch } from './PastEntriesSearch'
 
@@ -23,6 +24,7 @@ const MAX_STAGGER = 10
 
 export function DayViewScreen() {
   const router = useRouter()
+  const navigateHome = useNavigateHome()
   const allEntries = use$(store$.views.allEntriesSorted())
 
   const [viewMode, setViewMode] = useState<'linear' | 'calendar'>('linear')
@@ -106,7 +108,7 @@ export function DayViewScreen() {
             letterSpacing={0.5}
             cursor="pointer"
             hoverStyle={{ color: '$color' }}
-            onPress={() => router.push('/')}
+            onPress={navigateHome}
           >
             Back to Home
           </Text>

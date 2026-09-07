@@ -3,10 +3,12 @@
  * Route-aware navigate guard in SliderHub.
  *
  * The `navigateTo` function inside SliderHubGesture short-circuits when the
- * current pathname already equals the target — preventing infinite push loops
- * now that SliderHub is mounted at the root layout (every route).
+ * current pathname already equals the target. SliderHub is mounted on the
+ * home route only (apps/mobile/app/index.tsx), so in practice the pathname is
+ * always '/' and the guard never fires — it is kept as defence in depth so a
+ * future re-mount elsewhere can never push a duplicate of the current route.
  *
- * Guard lives at SliderHub.tsx lines 84–96 (navigateTo inner function):
+ * Guard lives in SliderHub.tsx (navigateTo inner function):
  *   if (currentPathname === target) { committing.value = false; return }
  *   router.push(target)
  *
@@ -58,7 +60,7 @@ import { usePathname } from 'solito/navigation'
 
 /**
  * Minimal replica of the navigateTo guard for contract testing.
- * Structurally identical to SliderHub.tsx navigateTo (lines 84–96).
+ * Structurally identical to SliderHub.tsx navigateTo.
  */
 function makeNavigateTo(
   currentPathname: string | null,
