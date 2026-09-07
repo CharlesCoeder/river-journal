@@ -15,11 +15,11 @@ import { SplashScreen, Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
-import { SliderHub } from 'app/features/navigation/SliderHub'
+import { SliderHub, type HubSpoke } from 'app/features/navigation/SliderHub'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
-import { store$ } from 'app/state/store'
+import { ephemeral$, store$ } from 'app/state/store'
 import { useTheme } from '@my/ui'
 import { PersistenceGate } from 'app/provider/PersistenceGate'
 import { PersistentEditor } from 'app/features/journal/components/PersistentEditor'
@@ -32,6 +32,14 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
+
+/**
+ * Inline-editor home: writing happens on the page itself, so there is no
+ * editor spoke to slide open. The menu keeps its slide — left to open, right
+ * to close — and the hub is switched off while the page is up (writing mode),
+ * so a horizontal drag over text is never read as navigation.
+ */
+const INLINE_HOME_SPOKES: readonly HubSpoke[] = [{ route: '/menu', open: 'left' }]
 
 export default function App() {
   const [fontsLoaded, fontsError] = useFonts({
@@ -72,6 +80,7 @@ export default function App() {
 }
 
 function RootLayoutNav() {
+  const editorExpanded = use$(ephemeral$.persistentEditor.expanded)
   return (
     <PersistenceGate>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -94,7 +103,10 @@ function RootLayoutNav() {
                     so the editor slides with its screen and a drag that starts on
                     it still reaches the hub.
                   */}
-                  <SliderHub>
+                  <SliderHub
+                    spokes={INLINE_HOME_SPOKES}
+                    enabled={!editorExpanded}
+                  >
                     <Stack screenOptions={{ headerShown: false }}>
                       <Stack.Screen
                         name="journal"
