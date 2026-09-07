@@ -8,11 +8,12 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { useRouter, usePathname } from 'solito/navigation'
+import { useRouter } from 'solito/navigation'
 import { useMedia } from '@my/ui'
 import { useReducedMotion } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { ephemeral$, store$ } from 'app/state/store'
+import { useHubPathname } from './useHubPathname'
 import {
   computeSliderHubCommit,
   DEFAULT_HUB_SPOKES,
@@ -118,7 +119,9 @@ function SliderHubGesture({
   enabled: boolean
 }) {
   const router = useRouter()
-  const pathname = normalizeHubPathname(usePathname())
+  // NOT solito's usePathname: at the root layout it has no enclosing screen
+  // and reports nothing, which made every route look like home.
+  const pathname = normalizeHubPathname(useHubPathname())
   const { width: screenWidth } = useWindowDimensions()
 
   // Which directions do anything here (see sliderHubDirections).
