@@ -180,6 +180,13 @@ export const ephemeral$ = observable<{
     initialContentRevision: 0,
     headerHeight: 0,
     bottomBarHeight: 0,
+    layoutMode: 'screen',
+    inlineTop: 0,
+    expandedTop: 0,
+    insetX: 0,
+    expanded: false,
+    isFocused: false,
+    blurRequest: 0,
   },
   instantWordCount: 0,
   keyboardHeight: 0,
@@ -1093,7 +1100,67 @@ export const showPersistentEditor = (
     isVisible: true,
     readOnly: options.readOnly ?? false,
     initialContent: options.content ?? '',
+    layoutMode: 'screen',
+    expanded: false,
   })
+}
+
+/**
+ * Shows the persistent editor as the home screen's inline writing area.
+ * Starts collapsed (sitting under the home chrome); focusing it expands it.
+ * The home screen reports the geometry via setInlineEditorGeometry.
+ */
+export const showInlineEditor = (options: { content?: string } = {}): void => {
+  ephemeral$.persistentEditor.assign({
+    isVisible: true,
+    readOnly: false,
+    initialContent: options.content ?? '',
+    layoutMode: 'inline',
+    expanded: false,
+  })
+}
+
+/**
+ * Records where the inline writing area sits. All values are px below the
+ * safe-area top (or, for insetX, px from the screen edge), rounded so layout
+ * jitter never re-triggers the slide animation.
+ */
+export const setInlineEditorGeometry = (geometry: {
+  inlineTop?: number
+  expandedTop?: number
+  insetX?: number
+}): void => {
+  const next: Partial<PersistentEditorState> = {}
+  if (geometry.inlineTop !== undefined) next.inlineTop = Math.round(geometry.inlineTop)
+  if (geometry.expandedTop !== undefined) next.expandedTop = Math.round(geometry.expandedTop)
+  if (geometry.insetX !== undefined) next.insetX = Math.round(geometry.insetX)
+  ephemeral$.persistentEditor.assign(next)
+}
+
+/** Inline mode: slide the editor up into writing mode (the home chrome fades). */
+export const expandInlineEditor = (): void => {
+  ephemeral$.persistentEditor.expanded.set(true)
+}
+
+/**
+ * Inline mode: slide the editor back under the home chrome and dismiss the
+ * keyboard. Content is NOT touched — an in-progress session simply pauses.
+ */
+export const collapseInlineEditor = (): void => {
+  ephemeral$.persistentEditor.expanded.set(false)
+  requestPersistentEditorBlur()
+}
+
+/** Ask the WebView to blur its contenteditable (dismisses the keyboard). */
+export const requestPersistentEditorBlur = (): void => {
+  ephemeral$.persistentEditor.blurRequest.set(ephemeral$.persistentEditor.blurRequest.peek() + 1)
+}
+
+/** Focus state reported by the WebView (FOCUS_COMMAND / BLUR_COMMAND). */
+export const setPersistentEditorFocused = (focused: boolean): void => {
+  if (ephemeral$.persistentEditor.isFocused.peek() !== focused) {
+    ephemeral$.persistentEditor.isFocused.set(focused)
+  }
 }
 
 /**
@@ -1112,6 +1179,24 @@ export const hidePersistentEditor = (): void => {
   )
   ephemeral$.persistentEditor.isVisible.set(false)
   ephemeral$.persistentEditor.bottomBarHeight.set(0)
+  // Leave the layout in the default screen mode so a later JournalScreen
+  // mount can't inherit inline geometry, and make sure the keyboard goes
+  // down with the editor.
+  ephemeral$.persistentEditor.assign({ layoutMode: 'screen', expanded: false, isFocused: false })
+  requestPersistentEditorBlur()
+}
+
+/**
+ * Empties the editor's document while it stays on screen. Used after a
+ * confirmed discard in inline mode, where — unlike JournalScreen, which
+ * navigates away — the editor remains visible and would otherwise keep
+ * showing the words the user just chose not to keep.
+ */
+export const clearPersistentEditorContent = (): void => {
+  ephemeral$.persistentEditor.initialContent.set('')
+  ephemeral$.persistentEditor.initialContentRevision.set(
+    ephemeral$.persistentEditor.initialContentRevision.peek() + 1
+  )
 }
 
 /**

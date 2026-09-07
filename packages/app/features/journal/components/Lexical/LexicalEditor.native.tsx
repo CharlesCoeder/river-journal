@@ -8,7 +8,7 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
-import { $getRoot } from 'lexical'
+import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_LOW, FOCUS_COMMAND } from 'lexical'
 import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { ALL_TRANSFORMERS } from './transformers'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
@@ -77,11 +77,65 @@ const WordCountPlugin: React.FC<{
   }, [editor])
   return null
 }
+/**
+ * Reports focus/blur of the contenteditable across the bridge as a boolean.
+ * Lexical dispatches FOCUS_COMMAND / BLUR_COMMAND from the root element's
+ * native focus events, which is exactly when the soft keyboard shows / hides.
+ */
+const FocusReportPlugin: React.FC<{
+  onFocusChange: (focused: boolean) => void
+}> = ({ onFocusChange }) => {
+  const [editor] = useLexicalComposerContext()
+  const callbackRef = useRef(onFocusChange)
+  callbackRef.current = onFocusChange
+  useEffect(() => {
+    const unregisterFocus = editor.registerCommand(
+      FOCUS_COMMAND,
+      () => {
+        callbackRef.current(true)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+    const unregisterBlur = editor.registerCommand(
+      BLUR_COMMAND,
+      () => {
+        callbackRef.current(false)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+    return () => {
+      unregisterFocus()
+      unregisterBlur()
+    }
+  }, [editor])
+  return null
+}
+
+/**
+ * Blurs the editor whenever the `request` counter changes (not on mount).
+ * Blurring the contenteditable is what dismisses the soft keyboard inside a
+ * WebView — RN's Keyboard.dismiss() only knows about native TextInputs.
+ */
+const BlurRequestPlugin: React.FC<{ request: number }> = ({ request }) => {
+  const [editor] = useLexicalComposerContext()
+  const lastRequest = useRef(request)
+  useEffect(() => {
+    if (request === lastRequest.current) return
+    lastRequest.current = request
+    editor.blur()
+  }, [editor, request])
+  return null
+}
+
 const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   placeholder = 'Start flowing...',
   className,
   onContentChange,
   onWordCountChange,
+  onFocusChange,
+  blurRequest,
   initialContent,
   contentRevision,
   themeValues,
@@ -157,6 +211,12 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         {/* Instant word count — computed inside WebView, only a number crosses the bridge */}
         {!readOnly && onWordCountChange ? (
           <WordCountPlugin onWordCountChange={onWordCountChange} />
+        ) : null}
+
+        {/* Focus reporting + blur-on-request — the keyboard's show/hide contract with native */}
+        {!readOnly && onFocusChange ? <FocusReportPlugin onFocusChange={onFocusChange} /> : null}
+        {!readOnly && blurRequest !== undefined ? (
+          <BlurRequestPlugin request={blurRequest} />
         ) : null}
 
         {/* Focus mode plugin — dims non-active paragraphs when enabled */}

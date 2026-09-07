@@ -1,21 +1,10 @@
-import {
-  AnimatePresence,
-  YStack,
-  XStack,
-  Dialog,
-  Text,
-  View,
-  isWeb,
-  ExpandingLineButton,
-  WordCounter,
-  useReducedMotion,
-} from '@my/ui'
-import { Eye, EyeOff } from '@tamagui/lucide-icons'
+import { AnimatePresence, YStack, View, isWeb } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 import { useNavigateHome } from 'app/features/navigation/useNavigateHome'
 import { Editor } from './components/Editor'
+import { FlowSessionBottomBar, FlowExitConfirmDialog } from './components/FlowSessionChrome'
 import { KeyboardOffsetView } from './components/KeyboardOffsetView'
 import { useTrackKeyboardHeight } from './hooks/useTrackKeyboardHeight'
 import {
@@ -37,7 +26,6 @@ export function JournalScreen() {
   const navigateHome = useNavigateHome()
   const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false)
   const activeFlow = use$(store$.activeFlow)
-  const reduceMotion = useReducedMotion()
   useTrackKeyboardHeight()
 
   // Focus mode — read with ?? false (acceptable at consumer site per story design notes)
@@ -142,128 +130,23 @@ export function JournalScreen() {
 
       {/* Bottom bar — word count + finish button */}
       <KeyboardOffsetView>
-        <AnimatePresence>
-          {hasContent && (
-            <XStack
-              key="bottom-bar"
-              transition="designEnter"
-              enterStyle={{ opacity: 0, y: 10 }}
-              exitStyle={{ opacity: 0, y: 10 }}
-              opacity={1}
-              y={0}
-              position={isWeb ? ('fixed' as any) : 'absolute'}
-              bottom={0}
-              left={0}
-              right={0}
-              paddingHorizontal="$4"
-              paddingVertical="$5"
-              $md={{ paddingHorizontal: '$8' }}
-              onLayout={handleBottomBarLayout}
-              $lg={{ paddingHorizontal: '$12' }}
-              paddingBottom="$6"
-              justifyContent="center"
-              zIndex={100}
-            >
-              <XStack
-                width="100%"
-                maxWidth={768}
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <XStack
-                  alignItems="center"
-                  gap="$3"
-                >
-                  <ExpandingLineButton
-                    size="default"
-                    onPress={() => setFocusMode(!focusMode)}
-                    aria-label="Toggle focus mode"
-                    aria-pressed={focusMode}
-                  >
-                    {focusMode ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </ExpandingLineButton>
-                  <WordCounter count={wordCount} />
-                </XStack>
-
-                <ExpandingLineButton
-                  size="default"
-                  onPress={handleExitFlow}
-                >
-                  Finish Session
-                </ExpandingLineButton>
-              </XStack>
-            </XStack>
-          )}
-        </AnimatePresence>
+        <FlowSessionBottomBar
+          visible={hasContent}
+          wordCount={wordCount}
+          focusMode={focusMode}
+          onToggleFocusMode={() => setFocusMode(!focusMode)}
+          onFinish={handleExitFlow}
+          onLayout={handleBottomBarLayout}
+        />
       </KeyboardOffsetView>
 
       {/* Exit-confirm dialog — shown when tapping Finish Session with <50 words and no checkpoint */}
-      <Dialog
+      <FlowExitConfirmDialog
         open={showExitConfirmDialog}
-        onOpenChange={(open) => {
-          setShowExitConfirmDialog(open)
-        }}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay
-            key="overlay"
-            transition="quick"
-            opacity={0.4}
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
-          />
-          <Dialog.Content
-            key="content"
-            animateOnly={['transform', 'opacity']}
-            transition={reduceMotion ? '100ms' : 'designModal'}
-            enterStyle={{ y: -10, opacity: 0 }}
-            exitStyle={{ y: 10, opacity: 0 }}
-            backgroundColor="$background"
-            borderRadius={2}
-            padding="$6"
-            gap="$4"
-            maxWidth="90%"
-            width="100%"
-            $sm={{ maxWidth: 400 }}
-            borderWidth={1}
-            borderColor="$color4"
-          >
-            <Dialog.Title
-              fontFamily="$journal"
-              fontSize="$6"
-              color="$color"
-            >
-              You've barely written
-            </Dialog.Title>
-            <Dialog.Description
-              fontFamily="$body"
-              fontSize="$3"
-              color="$color8"
-            >
-              Exit without saving? Your words won't be kept.
-            </Dialog.Description>
-
-            <XStack
-              gap="$4"
-              justifyContent="flex-end"
-              marginTop="$3"
-            >
-              <ExpandingLineButton
-                size="default"
-                onPress={() => setShowExitConfirmDialog(false)}
-              >
-                Cancel
-              </ExpandingLineButton>
-              <ExpandingLineButton
-                size="default"
-                onPress={handleConfirmExit}
-              >
-                Confirm
-              </ExpandingLineButton>
-            </XStack>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
+        onOpenChange={setShowExitConfirmDialog}
+        onCancel={() => setShowExitConfirmDialog(false)}
+        onConfirm={handleConfirmExit}
+      />
     </YStack>
   )
 }
