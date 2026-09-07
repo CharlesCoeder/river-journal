@@ -14,6 +14,7 @@ import { useReducedMotion } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { ephemeral$, store$ } from 'app/state/store'
 import { useHubPathname } from './useHubPathname'
+import { useNavigateHome } from './useNavigateHome'
 import {
   computeSliderHubCommit,
   DEFAULT_HUB_SPOKES,
@@ -119,6 +120,7 @@ function SliderHubGesture({
   enabled: boolean
 }) {
   const router = useRouter()
+  const navigateHome = useNavigateHome()
   // NOT solito's usePathname: at the root layout it has no enclosing screen
   // and reports nothing, which made every route look like home.
   const pathname = normalizeHubPathname(useHubPathname())
@@ -168,7 +170,12 @@ function SliderHubGesture({
       return
     }
     if (action.type === 'back') {
-      router.back()
+      // A spoke's return slide means "home", so pop TO home rather than
+      // dispatching a bare GO_BACK. At the root layout solito's back() is the
+      // container's goBack(), which warns "not handled by any navigator" if
+      // the stack is already at home (e.g. the native edge swipe popped the
+      // menu a frame earlier); popping to '/' is a no-op in that case.
+      navigateHome()
       settle()
       return
     }
