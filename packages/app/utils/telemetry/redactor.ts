@@ -124,6 +124,8 @@ function normalizeRequestUrl(scrubbed: LooseEvent): void {
   }
 }
 
+const BREADCRUMB_URL_FIELDS = ['url', 'from', 'to'] as const
+
 /**
  * Post-scrub step: route-normalize the URLs the SDK auto-captures into
  * breadcrumbs (`data.url` on fetch/xhr crumbs, `data.from`/`data.to` on
@@ -146,8 +148,6 @@ function normalizeRequestUrl(scrubbed: LooseEvent): void {
  * Accepts both breadcrumb shapes — a bare array and the `{ values: [...] }`
  * envelope — and leaves a crumb without a `data` object untouched.
  */
-const BREADCRUMB_URL_FIELDS = ['url', 'from', 'to'] as const
-
 function normalizeBreadcrumbUrls(scrubbed: LooseEvent): void {
   const raw = scrubbed.breadcrumbs
   const list = Array.isArray(raw)

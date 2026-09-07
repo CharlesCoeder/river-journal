@@ -265,9 +265,7 @@ describe('redactEvent — breadcrumb urls are route-normalized', () => {
         },
       ],
     }) as any
-    expect(result.breadcrumbs[0].data.url).toBe(
-      'https://proj.supabase.co/rest/v1/trusted_browsers'
-    )
+    expect(result.breadcrumbs[0].data.url).toBe('https://proj.supabase.co/rest/v1/trusted_browsers')
     expect(containsLeak(result, rowId)).toBe(false)
     // The endpoint itself survives — that is the debugging signal worth keeping.
     expect(containsLeak(result, 'trusted_browsers')).toBe(true)
@@ -279,7 +277,9 @@ describe('redactEvent — breadcrumb urls are route-normalized', () => {
       breadcrumbs: [
         {
           category: 'fetch',
-          data: { url: 'https://proj.supabase.co/rest/v1/flows?select=*&updated_at=gt.2026-08-31T18:18:45.440Z' },
+          data: {
+            url: 'https://proj.supabase.co/rest/v1/flows?select=*&updated_at=gt.2026-08-31T18:18:45.440Z',
+          },
         },
       ],
     }) as any
