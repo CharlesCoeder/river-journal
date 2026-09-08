@@ -1,8 +1,11 @@
 import { useCallback } from 'react'
 import { router } from 'expo-router'
+import { hubPagerController } from './hubPagerState'
 
 /**
- * Native "go home": pop the root stack back to the home route.
+ * Native "go home": pop the root stack back to the home route, and bring the
+ * hub pager to rest on home — "home" means the home pane, not whichever spoke
+ * was showing when a screen was pushed above it.
  *
  * `unstable_settings.initialRouteName = 'index'` in apps/mobile/app/_layout.tsx
  * guarantees home is always the first route in the root stack (even on deep
@@ -17,5 +20,6 @@ import { router } from 'expo-router'
 export function useNavigateHome(): () => void {
   return useCallback(() => {
     router.dismissTo('/')
+    hubPagerController.current?.goTo('/')
   }, [])
 }

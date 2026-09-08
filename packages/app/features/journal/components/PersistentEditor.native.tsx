@@ -20,6 +20,7 @@ import {
 } from 'app/state/store'
 import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from 'app/state/types'
 import { useDebouncedCallback } from 'use-debounce'
+import { hubEditorTranslateX } from 'app/features/navigation/hubPagerState'
 import LexicalEditor from './Lexical/LexicalEditor'
 import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
 
@@ -165,7 +166,13 @@ export const PersistentEditor = () => {
       : withSpring(collapsedOffset, INLINE_SLIDE_SPRING)
   }, [collapsedOffset, shouldShow, reduceMotion, translateY])
 
-  const containerAnimatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
+  // Horizontally the overlay follows the hub pager (hubPagerState) by a
+  // transform, so it slides with its page without re-laying-out the WebView.
+  // With no pager on screen the offset is 0.
+  const containerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateX: hubEditorTranslateX.value }],
+  }))
   const editorAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }))

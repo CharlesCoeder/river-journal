@@ -38,6 +38,7 @@ import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
+import { useHubPager } from 'app/features/navigation/hubPagerContext'
 import { ModerationReceiptGate } from 'app/features/moderation-receipts/ModerationReceiptGate'
 import { StreakReminderPermissionGate } from 'app/features/notifications/StreakReminderPermissionGate'
 import { InAppReminderGate } from 'app/features/notifications/InAppReminderGate'
@@ -51,13 +52,14 @@ import {
 // InlineHomeScreen (mobile experiment)
 //
 // Home IS the writing surface. The page reads, top to bottom: a quiet top row
-// (Menu ⟷ streak chip), today's date, the Collective entry, and then the
-// editor itself — live, with its placeholder — filling the rest of the screen.
+// (streak chip ⟷ Menu — the menu sits on the side it slides in from), today's
+// date, the Collective entry, and then the editor itself — live, with its
+// placeholder — filling the rest of the screen.
 //
 //   collapsed  ──tap into the editor──▶  expanded (writing mode)
 //   • chrome visible                     • chrome fades + lifts away
 //   • editor rests under the chrome      • editor slides up to the top row
-//                                        • close (×) replaces the streak chip
+//                                        • close (×) replaces the menu link
 //
 // Leaving writing mode is deliberately easy while nothing has been written:
 // dismissing the keyboard (blur) with an empty page collapses straight back
@@ -77,6 +79,9 @@ const EXPANDED_TOP_GAP = 8
 
 export function InlineHomeScreen() {
   const router = useRouter()
+  // Inside the hub pager the menu is the pane to the right of this page;
+  // opening it slides that pane rather than pushing a route.
+  const hub = useHubPager()
   const reduceMotion = useReducedMotion()
   useTrackKeyboardHeight()
 
@@ -202,7 +207,8 @@ export function InlineHomeScreen() {
   // ── Navigation ───────────────────────────────────────────────────────────
   const handleMenuPress = () => {
     if (showLapsed) dismissLapsed()
-    router.push('/menu')
+    if (hub) hub.goTo('/menu')
+    else router.push('/menu')
   }
 
   const handleCollectivePress = () => {
@@ -247,7 +253,9 @@ export function InlineHomeScreen() {
         width="100%"
         paddingHorizontal="$6"
       >
-        {/* Top row: Menu ⟷ streak chip; in writing mode the chip yields to the close control. */}
+        {/* Top row: streak chip ⟷ Menu. The menu link sits on the right, the
+            side its pane slides in from; in writing mode it yields to the
+            close control. */}
         <XStack
           onLayout={handleTopRowLayout}
           minHeight={44}
@@ -259,8 +267,12 @@ export function InlineHomeScreen() {
             opacity={chromeHidden ? 0 : 1}
             transition={chromeTransition}
             pointerEvents={chromeHidden ? 'none' : 'auto'}
+            testID="inline-home-streak-chip-slot"
           >
-            <MenuWordLink onPress={handleMenuPress} />
+            <StreakChip
+              dayCount={currentStreak}
+              state={streakState}
+            />
           </View>
           <View
             position="relative"
@@ -271,12 +283,8 @@ export function InlineHomeScreen() {
               opacity={chromeHidden ? 0 : 1}
               transition={chromeTransition}
               pointerEvents={chromeHidden ? 'none' : 'auto'}
-              testID="inline-home-streak-chip-slot"
             >
-              <StreakChip
-                dayCount={currentStreak}
-                state={streakState}
-              />
+              <MenuWordLink onPress={handleMenuPress} />
             </View>
             <View
               position="absolute"
@@ -381,7 +389,7 @@ export function InlineHomeScreen() {
   )
 }
 
-/** Quiet uppercase word-link in the streak chip's register, 44px hit target. */
+/** Quiet uppercase word-link in the streak chip's register, 44px hit target, flush to the right edge. */
 function MenuWordLink({ onPress }: { onPress: () => void }) {
   return (
     <View
@@ -391,7 +399,8 @@ function MenuWordLink({ onPress }: { onPress: () => void }) {
       minHeight={44}
       minWidth={44}
       justifyContent="center"
-      marginLeft={-8}
+      alignItems="flex-end"
+      marginRight={-8}
       paddingHorizontal={8}
       pressStyle={{ opacity: 0.6 }}
       onPress={onPress}
