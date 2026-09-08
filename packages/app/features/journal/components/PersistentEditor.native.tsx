@@ -257,7 +257,8 @@ export const PersistentEditor = () => {
   // back-to-app link), not the top row below it, which is clear until the ×
   // needs it and by then there is nothing to scroll. A wash of the page
   // background on top keeps the band in the theme's colour and takes the
-  // words down to a murmur, the way a translucent bar does. Sits between the
+  // words down to a murmur — still there as faint shapes, the way a
+  // translucent bar does. Sits between the
   // WebView and the ×, fades with writing mode, and lets touches through.
   // Collapsed, the clip hides everything above the hero anyway. (Android's
   // expo-blur renders a plain translucent wash unless its experimental
@@ -348,12 +349,12 @@ export const PersistentEditor = () => {
           pointerEvents="none"
         >
           <BlurView
-            intensity={60}
+            intensity={30}
             tint={isDarkColor(pageBackground) ? 'dark' : 'light'}
             style={StyleSheet.absoluteFill}
           />
           <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: pageBackground, opacity: 0.55 }]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: pageBackground, opacity: 0.4 }]}
           />
         </Animated.View>
       ) : null}
