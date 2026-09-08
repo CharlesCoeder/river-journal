@@ -1,4 +1,4 @@
-import { Platform, Pressable, StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -9,7 +9,7 @@ import Animated, {
 import { useTheme, useReducedMotion } from '@my/ui'
 import { X } from '@tamagui/lucide-icons'
 import { use$ } from '@legendapp/state/react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   ephemeral$,
@@ -54,11 +54,16 @@ const INLINE_SLIDE_SPRING = { stiffness: 80, damping: 20, mass: 1 }
  *    to the collapsed anchor with a transform. A transform never re-lays-out
  *    the WebView (no text reflow mid-animation), and the region above the
  *    translated editor is `box-none` so taps there reach the home chrome.
- *    In writing mode (iOS) the frame rides to the top of the screen and the
- *    document is inset instead, so the first line still starts under the top
- *    row while earlier lines scroll up beneath it and the status bar. The ×
- *    that abandons the page is drawn here, above the WebView, in the spot
- *    the home screen's Menu link occupies.
+ *    The WebView always spans from the top of the screen down to the bar and
+ *    the document keeps `insets.top + expandedTop` clear above its first line
+ *    (a CSS inset, set once), so the words start under the top row and, once
+ *    the page is long, earlier lines scroll up beneath it and the status bar.
+ *    What changes between the two states is only the clip around the WebView:
+ *    collapsed clips to the writing area under the hero so the hero stays
+ *    tappable; expanded reveals the whole page. The WebView's own frame never
+ *    moves at the switch, so nothing can jump. The × that abandons the page is
+ *    drawn here, above the WebView, in the spot the home screen's Menu link
+ *    occupies.
  *
  * Coordinates: the overlay's containing block is the root gesture host,
  * which spans the safe area — the same box every screen measures its
@@ -137,10 +142,19 @@ export const PersistentEditor = () => {
   // ── Geometry ────────────────────────────────────────────────────────────
   const isInline = persistentEditor.layoutMode === 'inline'
   const anchorTop = isInline ? persistentEditor.expandedTop : persistentEditor.headerHeight
+  // Inline: the document's top inset (see the class comment). The page is
+  // revealed only once the WebView has acknowledged the inset, so its first
+  // paint has the words where the frame expects them.
+  const documentInsetTop = isInline ? insets.top + anchorTop : 0
+  const [appliedInsetTop, setAppliedInsetTop] = useState(0)
+  const insetReady = !isInline || appliedInsetTop === documentInsetTop
   // Show when visible AND the anchoring geometry has been measured (prevents a
   // flash at the top of the screen before the first layout report).
   const shouldShow =
-    persistentEditor.isVisible && anchorTop > 0 && (!isInline || persistentEditor.inlineTop > 0)
+    persistentEditor.isVisible &&
+    anchorTop > 0 &&
+    (!isInline || persistentEditor.inlineTop > 0) &&
+    insetReady
   // Inline + collapsed: how far below the expanded anchor the editor rests.
   const collapsedOffset =
     isInline && !persistentEditor.expanded
@@ -149,14 +163,16 @@ export const PersistentEditor = () => {
   // The WebView document carries no margin of its own (see injectLayoutCSS),
   // so the container edge IS the text edge.
   const insetX = isInline ? persistentEditor.insetX : 0
-  // Writing mode rides to the top of the screen: the frame starts above the
-  // safe area and the document is inset by the same amount plus the anchor,
-  // so the first line lands exactly where the frame used to start and the
-  // switch is invisible. contentInset is an iOS WebView property; Android
-  // keeps the frame at the anchor.
-  const rideToTop = Platform.OS === 'ios' && isInline && persistentEditor.expanded
-  const frameTop = rideToTop ? -insets.top : anchorTop
-  const documentInsetTop = rideToTop ? insets.top + anchorTop : 0
+  // The clip: collapsed → the writing area under the hero; expanded → the
+  // whole screen (above the safe area). Screen mode clips at its anchor.
+  const clipTop = isInline
+    ? persistentEditor.expanded
+      ? -insets.top
+      : persistentEditor.inlineTop
+    : anchorTop
+  // Inline: the WebView is placed so its top is the top of the SCREEN whatever
+  // the clip does, and sized down to the bar, so the switch never re-lays it out.
+  const editorTop = isInline ? -(insets.top + clipTop) : 0
 
   // ── Animation ───────────────────────────────────────────────────────────
   const opacity = useSharedValue(0)
@@ -234,9 +250,15 @@ export const PersistentEditor = () => {
   // Expo DOM WebViews render in a separate native layer and ignore
   // parent opacity on Android.
   const keyboardLift = Math.max(0, keyboardHeight - insets.bottom)
+  const { height: windowHeight } = useWindowDimensions()
+  const editorHeight =
+    windowHeight - insets.bottom - persistentEditor.bottomBarHeight - keyboardLift
+  const editorStyle = isInline
+    ? { position: 'absolute' as const, top: editorTop, left: 0, right: 0, height: editorHeight }
+    : styles.editorWrapper
   const containerStyle = {
     position: 'absolute' as const,
-    top: shouldShow ? frameTop : -9999,
+    top: shouldShow ? clipTop : -9999,
     left: insetX,
     right: insetX,
     bottom: shouldShow ? persistentEditor.bottomBarHeight + keyboardLift : undefined,
@@ -251,7 +273,7 @@ export const PersistentEditor = () => {
   return (
     <>
       <Animated.View style={[containerStyle, containerAnimatedStyle]}>
-        <Animated.View style={[styles.editorWrapper, editorAnimatedStyle]}>
+        <Animated.View style={[editorStyle, editorAnimatedStyle]}>
           <View style={styles.editorWrapper}>
             <UniversalLexicalEditor
               themeValues={themeValues}
@@ -260,6 +282,8 @@ export const PersistentEditor = () => {
               onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange}
               onFocusChange={persistentEditor.readOnly ? undefined : setPersistentEditorFocused}
               blurRequest={persistentEditor.blurRequest}
+              topInset={documentInsetTop}
+              onTopInsetApplied={setAppliedInsetTop}
               initialContent={persistentEditor.initialContent}
               contentRevision={persistentEditor.initialContentRevision}
               readOnly={persistentEditor.readOnly}
@@ -267,10 +291,8 @@ export const PersistentEditor = () => {
               focusGranularity={focusGranularity}
               dom={{
                 hideKeyboardAccessoryView: true,
-                // Writing mode: the document starts under the top row while the
-                // frame reaches the screen top (see rideToTop). Never let iOS
-                // add its own safe-area adjustment on top of ours.
-                contentInset: { top: documentInsetTop, left: 0, bottom: 0, right: 0 },
+                // The WebView reaches under the status bar in writing mode; the room
+                // for it is the document's own inset, never an iOS one.
                 contentInsetAdjustmentBehavior: 'never',
                 automaticallyAdjustContentInsets: false,
               }}

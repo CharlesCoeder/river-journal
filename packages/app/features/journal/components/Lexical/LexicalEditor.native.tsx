@@ -134,6 +134,24 @@ const BlurRequestPlugin: React.FC<{ request: number }> = ({ request }) => {
   return null
 }
 
+/**
+ * Keeps `inset` px clear above the document's first line (the CSS variable
+ * injectLayoutCSS reads) and tells the host once it is in effect, so the host
+ * only reveals the page after the words are where it expects them.
+ */
+const TopInsetPlugin: React.FC<{
+  inset: number
+  onApplied?: (px: number) => void
+}> = ({ inset, onApplied }) => {
+  const callbackRef = useRef(onApplied)
+  callbackRef.current = onApplied
+  useEffect(() => {
+    document.documentElement.style.setProperty('--editor-top-inset', `${inset}px`)
+    callbackRef.current?.(inset)
+  }, [inset])
+  return null
+}
+
 const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   placeholder = 'Start flowing...',
   className,
@@ -141,6 +159,8 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   onWordCountChange,
   onFocusChange,
   blurRequest,
+  topInset,
+  onTopInsetApplied,
   initialContent,
   contentRevision,
   themeValues,
@@ -223,6 +243,12 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         {!readOnly && onWordCountChange ? (
           <WordCountPlugin onWordCountChange={onWordCountChange} />
         ) : null}
+
+        {/* Room above the first line, acknowledged back to the host */}
+        <TopInsetPlugin
+          inset={topInset ?? 0}
+          onApplied={onTopInsetApplied}
+        />
 
         {/* Focus reporting + blur-on-request — the keyboard's show/hide contract with native */}
         {!readOnly && onFocusChange ? <FocusReportPlugin onFocusChange={onFocusChange} /> : null}

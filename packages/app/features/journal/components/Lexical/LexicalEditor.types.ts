@@ -45,6 +45,11 @@ export interface LexicalEditorNativeProps extends LexicalEditorBaseProps {
   onFocusChange?: (focused: boolean) => void
   /** Monotonic counter — when it changes, the editor blurs itself (dismisses the keyboard). */
   blurRequest?: number
+  /** Space (px) the document keeps clear above its first line, so the host's frame can
+   *  reach the top of the screen while the words start under the chrome. */
+  topInset?: number
+  /** Fires once `topInset` has been applied to the document, with the value applied. */
+  onTopInsetApplied?: (px: number) => void
 }
 
 // Union type for platform-specific usage
