@@ -18,6 +18,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 
 const ROOT = path.resolve(import.meta.dirname, '../../../../..')
@@ -130,9 +131,11 @@ describe('— source map / symbolication scaffolding is wired into each build pi
     expect(config).toContain('trailingSlash')
   })
 
-  it('apps/mobile/app.json registers the @sentry/react-native Expo config plugin, preserving the existing plugin list', () => {
-    const appJson = readJson('apps/mobile/app.json')
-    const plugins: unknown[] = appJson.expo.plugins
+  it('apps/mobile/app.config.js registers the @sentry/react-native Expo config plugin, preserving the existing plugin list', () => {
+    // The mobile Expo config is a CommonJS module (it branches on APP_VARIANT),
+    // so evaluate it rather than parse it; unset, it yields the production app.
+    const appConfig = createRequire(import.meta.url)(path.join(ROOT, 'apps/mobile/app.config.js'))
+    const plugins: unknown[] = appConfig.expo.plugins
     const hasSentryPlugin = plugins.some(
       (p) =>
         (typeof p === 'string' && p.includes('sentry')) ||
@@ -160,7 +163,7 @@ describe('/— build-time-only Sentry secrets never carry a client-exposed prefi
     const files = [
       'apps/web/next.config.js',
       'apps/desktop/next.config.js',
-      'apps/mobile/app.json',
+      'apps/mobile/app.config.js',
       'apps/mobile/eas.json',
     ]
     for (const relPath of files) {
