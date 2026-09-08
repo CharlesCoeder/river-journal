@@ -253,12 +253,15 @@ export const PersistentEditor = () => {
 
   // ── The frosted band (inline writing mode) ──────────────────────────────
   // A system material blurs the WebView's text that has scrolled under the
-  // status bar and the top row; a wash of the page background on top keeps
-  // the band in the theme's colour and takes the words down to a murmur, the
-  // way a translucent bar does. Sits between the WebView and the ×, fades
-  // with writing mode, and lets touches through. Collapsed, the clip hides
-  // everything above the hero anyway. (Android's expo-blur renders a plain
-  // translucent wash unless its experimental renderer is opted into.)
+  // status bar — only the strip the OS draws in (clock, signal, the
+  // back-to-app link), not the top row below it, which is clear until the ×
+  // needs it and by then there is nothing to scroll. A wash of the page
+  // background on top keeps the band in the theme's colour and takes the
+  // words down to a murmur, the way a translucent bar does. Sits between the
+  // WebView and the ×, fades with writing mode, and lets touches through.
+  // Collapsed, the clip hides everything above the hero anyway. (Android's
+  // expo-blur renders a plain translucent wash unless its experimental
+  // renderer is opted into.)
   const pageBackground = theme.background?.val ?? '#ffffff'
   const bandVisible = isInline && persistentEditor.expanded
   const bandOpacity = useSharedValue(0)
@@ -274,7 +277,7 @@ export const PersistentEditor = () => {
     top: -insets.top,
     left: 0,
     right: 0,
-    height: documentInsetTop,
+    height: insets.top,
     zIndex: 100,
   }
 
