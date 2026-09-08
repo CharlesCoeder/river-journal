@@ -1,23 +1,23 @@
-const IS_DEV = process.env.APP_VARIANT === 'development';
-const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
+const IS_DEV = process.env.APP_VARIANT === 'development'
+const IS_PREVIEW = process.env.APP_VARIANT === 'preview'
 
 const getUniqueIdentifier = () => {
-  if (IS_DEV) return 'com.charlescoeder.riverjournal.dev';
-  if (IS_PREVIEW) return 'com.charlescoeder.riverjournal.preview';
-  return 'com.charlescoeder.riverjournal';
-};
+  if (IS_DEV) return 'com.charlescoeder.riverjournal.dev'
+  if (IS_PREVIEW) return 'com.charlescoeder.riverjournal.preview'
+  return 'com.charlescoeder.riverjournal'
+}
 
 const getAndroidPackage = () => {
-  if (IS_DEV) return 'com.river_journal.app.dev';
-  if (IS_PREVIEW) return 'com.river_journal.app.preview';
-  return 'com.river_journal.app';
-};
+  if (IS_DEV) return 'com.river_journal.app.dev'
+  if (IS_PREVIEW) return 'com.river_journal.app.preview'
+  return 'com.river_journal.app'
+}
 
 const getAppName = () => {
-  if (IS_DEV) return 'River Journal (Dev)';
-  if (IS_PREVIEW) return 'River Journal (Preview)';
-  return 'river-journal';
-};
+  if (IS_DEV) return 'River Journal (Dev)'
+  if (IS_PREVIEW) return 'River Journal (Preview)'
+  return 'river-journal'
+}
 
 // Dev/preview use their bundle identifier as the URL scheme. Expo already
 // registers the bundle identifier as a scheme in every native build, so
@@ -25,10 +25,10 @@ const getAppName = () => {
 // built before this scheme was set — without a rebuild. It also can't collide
 // with the production scheme, which is what lets both apps live on one phone.
 const getScheme = () => {
-  if (IS_DEV) return getUniqueIdentifier();
-  if (IS_PREVIEW) return getUniqueIdentifier();
-  return 'river-journal';
-};
+  if (IS_DEV) return getUniqueIdentifier()
+  if (IS_PREVIEW) return getUniqueIdentifier()
+  return 'river-journal'
+}
 
 module.exports = {
   expo: {
@@ -105,4 +105,4 @@ module.exports = {
       },
     },
   },
-};
+}
