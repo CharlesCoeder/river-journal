@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native'
+import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useTheme, useReducedMotion } from '@my/ui'
+import { X } from '@tamagui/lucide-icons'
 import { use$ } from '@legendapp/state/react'
 import { useEffect, useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -17,10 +18,17 @@ import {
   recordThresholdCrossingIfNeeded,
   registerEditorContentFlush,
   setPersistentEditorFocused,
+  discardInlineSession,
 } from 'app/state/store'
 import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from 'app/state/types'
 import { useDebouncedCallback } from 'use-debounce'
 import { hubEditorTranslateX } from 'app/features/navigation/hubPagerState'
+import {
+  INLINE_CLOSE_WORD_LIMIT,
+  INLINE_EXPANDED_TOP_GAP,
+  INLINE_TOP_ROW_CONTROL_OVERHANG,
+  INLINE_TOP_ROW_HEIGHT,
+} from '../inlineEditorLayout'
 import LexicalEditor from './Lexical/LexicalEditor'
 import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
 
@@ -46,6 +54,16 @@ const INLINE_SLIDE_SPRING = { stiffness: 80, damping: 20, mass: 1 }
  *    to the collapsed anchor with a transform. A transform never re-lays-out
  *    the WebView (no text reflow mid-animation), and the region above the
  *    translated editor is `box-none` so taps there reach the home chrome.
+ *    In writing mode (iOS) the frame rides to the top of the screen and the
+ *    document is inset instead, so the first line still starts under the top
+ *    row while earlier lines scroll up beneath it and the status bar. The ×
+ *    that abandons the page is drawn here, above the WebView, in the spot
+ *    the home screen's Menu link occupies.
+ *
+ * Coordinates: the overlay's containing block is the root gesture host,
+ * which spans the safe area — the same box every screen measures its
+ * geometry in — so reported anchors apply directly. Do not add the insets
+ * again (that once placed the frame a status bar too low).
  */
 export const PersistentEditor = () => {
   const theme = useTheme()
@@ -131,6 +149,14 @@ export const PersistentEditor = () => {
   // The WebView document carries no margin of its own (see injectLayoutCSS),
   // so the container edge IS the text edge.
   const insetX = isInline ? persistentEditor.insetX : 0
+  // Writing mode rides to the top of the screen: the frame starts above the
+  // safe area and the document is inset by the same amount plus the anchor,
+  // so the first line lands exactly where the frame used to start and the
+  // switch is invisible. contentInset is an iOS WebView property; Android
+  // keeps the frame at the anchor.
+  const rideToTop = Platform.OS === 'ios' && isInline && persistentEditor.expanded
+  const frameTop = rideToTop ? -insets.top : anchorTop
+  const documentInsetTop = rideToTop ? insets.top + anchorTop : 0
 
   // ── Animation ───────────────────────────────────────────────────────────
   const opacity = useSharedValue(0)
@@ -172,26 +198,48 @@ export const PersistentEditor = () => {
     transform: [{ translateY: translateY.value }],
   }))
 
+  // ── The × (inline writing mode) ─────────────────────────────────────────
+  // Abandons the page — a flow is written once — so it is offered only while
+  // the page is at most a few words long, and returns if they are deleted.
+  // Drawn here rather than by the home screen because in writing mode the
+  // frame covers the top row, and the control must sit above the WebView to
+  // be tappable. Placed where the Menu link sits, which it replaces.
+  const wordCount = use$(ephemeral$.instantWordCount)
+  const closeVisible = isInline && persistentEditor.expanded && wordCount <= INLINE_CLOSE_WORD_LIMIT
+  const closeOpacity = useSharedValue(0)
+  useEffect(() => {
+    closeOpacity.value = withTiming(closeVisible ? 1 : 0, { duration: reduceMotion ? 100 : 200 })
+  }, [closeVisible, reduceMotion, closeOpacity])
+  const closeAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: closeOpacity.value,
+    transform: [{ translateX: hubEditorTranslateX.value }],
+  }))
+  const closeStyle = {
+    position: 'absolute' as const,
+    top: persistentEditor.expandedTop - INLINE_EXPANDED_TOP_GAP - INLINE_TOP_ROW_HEIGHT,
+    right: Math.max(0, persistentEditor.insetX - INLINE_TOP_ROW_CONTROL_OVERHANG),
+    width: INLINE_TOP_ROW_HEIGHT,
+    height: INLINE_TOP_ROW_HEIGHT,
+    zIndex: 101,
+  }
+
   const keyboardHeight = use$(ephemeral$.keyboardHeight)
 
-  // Position below the anchor using safe area insets + reported geometry.
-  // This is inside a SafeAreaView at root layout level.
-  // Absolute children position from SafeAreaView's bounds (y=0 = screen top),
-  // so we add insets.top (status bar) + anchorTop to start below the chrome.
-  //
-  // When the keyboard is open its height (from screen bottom) replaces
-  // insets.bottom since the keyboard covers the home indicator area.
+  // The frame ends where the bottom bar begins. The bar sits at the bottom of
+  // the same safe-area box, and KeyboardOffsetView lifts it by however much
+  // the keyboard rises above the home-indicator inset, so the frame's bottom
+  // is the bar's height plus that lift.
   //
   // When hidden, move offscreen instead of relying on opacity alone —
   // Expo DOM WebViews render in a separate native layer and ignore
   // parent opacity on Android.
-  const bottomInset = keyboardHeight > 0 ? keyboardHeight : insets.bottom
+  const keyboardLift = Math.max(0, keyboardHeight - insets.bottom)
   const containerStyle = {
     position: 'absolute' as const,
-    top: shouldShow ? insets.top + anchorTop : -9999,
+    top: shouldShow ? frameTop : -9999,
     left: insetX,
     right: insetX,
-    bottom: shouldShow ? persistentEditor.bottomBarHeight + bottomInset : undefined,
+    bottom: shouldShow ? persistentEditor.bottomBarHeight + keyboardLift : undefined,
     height: shouldShow ? undefined : 0,
     zIndex: 100,
     overflow: 'hidden' as const,
@@ -201,33 +249,67 @@ export const PersistentEditor = () => {
   }
 
   return (
-    <Animated.View style={[containerStyle, containerAnimatedStyle]}>
-      <Animated.View style={[styles.editorWrapper, editorAnimatedStyle]}>
-        <View style={styles.editorWrapper}>
-          <UniversalLexicalEditor
-            themeValues={themeValues}
-            fontFamilies={fontFamilies}
-            onContentChange={persistentEditor.readOnly ? undefined : handleContentChange}
-            onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange}
-            onFocusChange={persistentEditor.readOnly ? undefined : setPersistentEditorFocused}
-            blurRequest={persistentEditor.blurRequest}
-            initialContent={persistentEditor.initialContent}
-            contentRevision={persistentEditor.initialContentRevision}
-            readOnly={persistentEditor.readOnly}
-            focusMode={focusMode}
-            focusGranularity={focusGranularity}
-            dom={{
-              hideKeyboardAccessoryView: true,
-            }}
-          />
-        </View>
+    <>
+      <Animated.View style={[containerStyle, containerAnimatedStyle]}>
+        <Animated.View style={[styles.editorWrapper, editorAnimatedStyle]}>
+          <View style={styles.editorWrapper}>
+            <UniversalLexicalEditor
+              themeValues={themeValues}
+              fontFamilies={fontFamilies}
+              onContentChange={persistentEditor.readOnly ? undefined : handleContentChange}
+              onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange}
+              onFocusChange={persistentEditor.readOnly ? undefined : setPersistentEditorFocused}
+              blurRequest={persistentEditor.blurRequest}
+              initialContent={persistentEditor.initialContent}
+              contentRevision={persistentEditor.initialContentRevision}
+              readOnly={persistentEditor.readOnly}
+              focusMode={focusMode}
+              focusGranularity={focusGranularity}
+              dom={{
+                hideKeyboardAccessoryView: true,
+                // Writing mode: the document starts under the top row while the
+                // frame reaches the screen top (see rideToTop). Never let iOS
+                // add its own safe-area adjustment on top of ours.
+                contentInset: { top: documentInsetTop, left: 0, bottom: 0, right: 0 },
+                contentInsetAdjustmentBehavior: 'never',
+                automaticallyAdjustContentInsets: false,
+              }}
+            />
+          </View>
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
+      {isInline && shouldShow ? (
+        <Animated.View
+          style={[closeStyle, closeAnimatedStyle]}
+          pointerEvents={closeVisible ? 'auto' : 'none'}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Discard and close"
+            onPress={discardInlineSession}
+            style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}
+          >
+            <X
+              size={20}
+              color={theme.color9?.val ?? theme.color?.val ?? '#000000'}
+            />
+          </Pressable>
+        </Animated.View>
+      ) : null}
+    </>
   )
 }
 const styles = StyleSheet.create({
   editorWrapper: {
     flex: 1,
     width: '100%',
+  },
+  closeButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonPressed: {
+    opacity: 0.6,
   },
 })

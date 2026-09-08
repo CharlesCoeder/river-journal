@@ -1151,6 +1151,19 @@ export const collapseInlineEditor = (): void => {
   requestPersistentEditorBlur()
 }
 
+/**
+ * Abandons the inline page: checkpoints pending keystrokes (so a late
+ * debounced write can't resurrect the discarded words), drops the active
+ * flow, empties the editor's document and collapses back to home. A flow is
+ * written once — this is the × in writing mode and the confirmed discard.
+ */
+export const discardInlineSession = (): void => {
+  flushEditorContent()
+  discardActiveFlowSession()
+  clearPersistentEditorContent()
+  collapseInlineEditor()
+}
+
 /** Ask the WebView to blur its contenteditable (dismisses the keyboard). */
 export const requestPersistentEditorBlur = (): void => {
   ephemeral$.persistentEditor.blurRequest.set(ephemeral$.persistentEditor.blurRequest.peek() + 1)

@@ -4,7 +4,6 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import type { LayoutChangeEvent } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { YStack, XStack, Text, View, StreakChip, CollectiveEntry, useReducedMotion } from '@my/ui'
-import { X } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import {
@@ -15,10 +14,9 @@ import {
   setInlineEditorGeometry,
   expandInlineEditor,
   collapseInlineEditor,
-  clearPersistentEditorContent,
+  discardInlineSession,
   updatePersistentEditorBottomBarHeight,
   saveActiveFlowSession,
-  discardActiveFlowSession,
   getActiveFlowContent,
   flushEditorContent,
   hasReachedAutosaveCheckpoint,
@@ -34,6 +32,10 @@ import {
   FlowExitConfirmDialog,
 } from 'app/features/journal/components/FlowSessionChrome'
 import { useTrackKeyboardHeight } from 'app/features/journal/hooks/useTrackKeyboardHeight'
+import {
+  INLINE_EXPANDED_TOP_GAP,
+  INLINE_TOP_ROW_HEIGHT,
+} from 'app/features/journal/inlineEditorLayout'
 import { EncryptionModeDialog } from 'app/features/home/components/EncryptionModeDialog'
 import { KeyringPrompt } from 'app/features/home/components/KeyringPrompt'
 import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialog'
@@ -60,8 +62,12 @@ import {
 //
 //   collapsed  ──tap into the editor──▶  expanded (writing mode)
 //   • chrome visible                     • chrome fades + lifts away
-//   • editor rests under the chrome      • editor slides up to the top row
-//                                        • close (×) replaces the menu link
+//   • editor rests under the chrome      • editor rides to the top of the
+//                                          screen; the words start under the
+//                                          top row and scroll up beneath it
+//                                        • the × (abandon the page) takes the
+//                                          menu link's place — drawn by the
+//                                          overlay itself, above the WebView
 //
 // A flow is written once, so leaving writing mode without keeping the words
 // is offered only while there is nothing much to lose: the × abandons the
@@ -77,12 +83,6 @@ import {
 // row reports its bottom (expanded anchor) and the hero its x (text inset);
 // PersistentEditor.native.tsx turns those into the editor's frame.
 // ---------------------------------------------------------------------------
-
-/** Breathing room between the top row and the expanded editor's first line. */
-const EXPANDED_TOP_GAP = 4
-
-/** The × (abandon the page) is offered while the page is at most this long. */
-const CLOSE_WORD_LIMIT = 5
 
 export function InlineHomeScreen() {
   const router = useRouter()
@@ -107,9 +107,6 @@ export function InlineHomeScreen() {
   const isFocused = use$(ephemeral$.persistentEditor.isFocused)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
   const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false)
-  // The × is an exit that keeps nothing, so it is only offered while the page
-  // is short enough to abandon without ceremony (and returns if the words go).
-  const closeVisible = expanded && wordCount <= CLOSE_WORD_LIMIT
 
   // ── Carry-overs from HomeScreen (home is the post-auth landing surface) ──
   // Mount-once (empty dep list is deliberate): an app-open refresh, not a
@@ -181,7 +178,7 @@ export function InlineHomeScreen() {
   // safe-area top; PersistentEditor adds insets.top itself.
   const handleTopRowLayout = useCallback((e: LayoutChangeEvent) => {
     const { y, height } = e.nativeEvent.layout
-    setInlineEditorGeometry({ expandedTop: y + height + EXPANDED_TOP_GAP })
+    setInlineEditorGeometry({ expandedTop: y + height + INLINE_EXPANDED_TOP_GAP })
   }, [])
   const handleHeaderLayout = useCallback((e: LayoutChangeEvent) => {
     const { y, height } = e.nativeEvent.layout
@@ -208,12 +205,7 @@ export function InlineHomeScreen() {
 
   const discardAndCollapse = () => {
     setShowExitConfirmDialog(false)
-    // Checkpoint any pending keystrokes first so a late debounced write can't
-    // resurrect the discarded words after activeFlow is cleared.
-    flushEditorContent()
-    discardActiveFlowSession()
-    clearPersistentEditorContent()
-    collapseInlineEditor()
+    discardInlineSession()
   }
 
   const handleFinish = () => {
@@ -291,11 +283,11 @@ export function InlineHomeScreen() {
         paddingHorizontal="$6"
       >
         {/* Top row: streak chip ⟷ Menu. The menu link sits on the right, the
-            side its pane slides in from; in writing mode the × (abandon the
-            page) takes its place while the page is still short. */}
+            side its pane slides in from; in writing mode the overlay draws
+            the × (abandon the page) in its place while the page is short. */}
         <XStack
           onLayout={handleTopRowLayout}
-          minHeight={44}
+          minHeight={INLINE_TOP_ROW_HEIGHT}
           alignItems="center"
           justifyContent="space-between"
           paddingTop="$2"
@@ -312,8 +304,7 @@ export function InlineHomeScreen() {
             />
           </View>
           <View
-            position="relative"
-            minHeight={44}
+            minHeight={INLINE_TOP_ROW_HEIGHT}
             justifyContent="center"
           >
             <Animated.View style={menuLinkSlideStyle}>
@@ -325,18 +316,6 @@ export function InlineHomeScreen() {
                 <MenuWordLink onPress={handleMenuPress} />
               </View>
             </Animated.View>
-            <View
-              position="absolute"
-              right={-12}
-              top={0}
-              bottom={0}
-              justifyContent="center"
-              opacity={closeVisible ? 1 : 0}
-              transition={chromeTransition}
-              pointerEvents={closeVisible ? 'auto' : 'none'}
-            >
-              <CloseEditorButton onPress={discardAndCollapse} />
-            </View>
           </View>
         </XStack>
 
@@ -453,28 +432,6 @@ function MenuWordLink({ onPress }: { onPress: () => void }) {
       >
         Menu
       </Text>
-    </View>
-  )
-}
-
-/** Abandons the page: clears the words, collapses the editor, dismisses the keyboard. */
-function CloseEditorButton({ onPress }: { onPress: () => void }) {
-  return (
-    <View
-      role="button"
-      aria-label="Discard and close"
-      cursor="pointer"
-      width={44}
-      height={44}
-      alignItems="center"
-      justifyContent="center"
-      pressStyle={{ opacity: 0.6 }}
-      onPress={onPress}
-    >
-      <X
-        size={20}
-        color="$color9"
-      />
     </View>
   )
 }
