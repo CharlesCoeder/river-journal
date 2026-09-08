@@ -349,12 +349,18 @@ export const PersistentEditor = () => {
           pointerEvents="none"
         >
           <BlurView
-            intensity={30}
-            tint={isDarkColor(pageBackground) ? 'dark' : 'light'}
+            // Full strength on purpose: below 100 expo-blur freezes a system
+            // animator part-way, which leaves the words dark and smeared.
+            // The chrome material is what the system's own bars use — a wide,
+            // soft blur that lifts what is beneath into pale ghosts.
+            intensity={100}
+            tint={
+              isDarkColor(pageBackground) ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'
+            }
             style={StyleSheet.absoluteFill}
           />
           <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: pageBackground, opacity: 0.4 }]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: pageBackground, opacity: 0.2 }]}
           />
         </Animated.View>
       ) : null}
