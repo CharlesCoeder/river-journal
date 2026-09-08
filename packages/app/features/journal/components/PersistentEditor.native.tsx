@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useTheme, useReducedMotion } from '@my/ui'
 import { X } from '@tamagui/lucide-icons'
+import { BlurView } from 'expo-blur'
 import { use$ } from '@legendapp/state/react'
 import { useEffect, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -61,15 +62,26 @@ const INLINE_SLIDE_SPRING = { stiffness: 80, damping: 20, mass: 1 }
  *    What changes between the two states is only the clip around the WebView:
  *    collapsed clips to the writing area under the hero so the hero stays
  *    tappable; expanded reveals the whole page. The WebView's own frame never
- *    moves at the switch, so nothing can jump. The × that abandons the page is
- *    drawn here, above the WebView, in the spot the home screen's Menu link
- *    occupies.
+ *    moves at the switch, so nothing can jump. The band the words scroll under
+ *    — the status bar and the top row — is frosted like a system bar so what is
+ *    beneath stays legible, and the × that abandons the page is drawn above it
+ *    all, in the spot the home screen's Menu link occupies.
  *
  * Coordinates: the overlay's containing block is the root gesture host,
  * which spans the safe area — the same box every screen measures its
  * geometry in — so reported anchors apply directly. Do not add the insets
  * again (that once placed the frame a status bar too low).
  */
+/** Whether a hex colour reads as dark — picks the blur material that suits the page. */
+const isDarkColor = (color: string): boolean => {
+  const hex = color.trim().match(/^#([0-9a-f]{6})/i)?.[1]
+  if (!hex) return false
+  const r = Number.parseInt(hex.slice(0, 2), 16)
+  const g = Number.parseInt(hex.slice(2, 4), 16)
+  const b = Number.parseInt(hex.slice(4, 6), 16)
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.5
+}
+
 export const PersistentEditor = () => {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -239,6 +251,33 @@ export const PersistentEditor = () => {
     zIndex: 101,
   }
 
+  // ── The frosted band (inline writing mode) ──────────────────────────────
+  // A system material blurs the WebView's text that has scrolled under the
+  // status bar and the top row; a wash of the page background on top keeps
+  // the band in the theme's colour and takes the words down to a murmur, the
+  // way a translucent bar does. Sits between the WebView and the ×, fades
+  // with writing mode, and lets touches through. Collapsed, the clip hides
+  // everything above the hero anyway. (Android's expo-blur renders a plain
+  // translucent wash unless its experimental renderer is opted into.)
+  const pageBackground = theme.background?.val ?? '#ffffff'
+  const bandVisible = isInline && persistentEditor.expanded
+  const bandOpacity = useSharedValue(0)
+  useEffect(() => {
+    bandOpacity.value = withTiming(bandVisible ? 1 : 0, { duration: reduceMotion ? 100 : 200 })
+  }, [bandVisible, reduceMotion, bandOpacity])
+  const bandAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: bandOpacity.value,
+    transform: [{ translateX: hubEditorTranslateX.value }],
+  }))
+  const bandStyle = {
+    position: 'absolute' as const,
+    top: -insets.top,
+    left: 0,
+    right: 0,
+    height: documentInsetTop,
+    zIndex: 100,
+  }
+
   const keyboardHeight = use$(ephemeral$.keyboardHeight)
 
   // The frame ends where the bottom bar begins. The bar sits at the bottom of
@@ -300,6 +339,21 @@ export const PersistentEditor = () => {
           </View>
         </Animated.View>
       </Animated.View>
+      {isInline && shouldShow ? (
+        <Animated.View
+          style={[bandStyle, bandAnimatedStyle]}
+          pointerEvents="none"
+        >
+          <BlurView
+            intensity={60}
+            tint={isDarkColor(pageBackground) ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: pageBackground, opacity: 0.55 }]}
+          />
+        </Animated.View>
+      ) : null}
       {isInline && shouldShow ? (
         <Animated.View
           style={[closeStyle, closeAnimatedStyle]}
