@@ -143,12 +143,18 @@ export const PersistentEditor = () => {
   // ── Geometry ────────────────────────────────────────────────────────────
   const isInline = persistentEditor.layoutMode === 'inline'
   const anchorTop = isInline ? persistentEditor.expandedTop : persistentEditor.headerHeight
-  // Inline: the document's top inset (see the class comment). The page is
-  // revealed only once the WebView has acknowledged the inset, so its first
-  // paint has the words where the frame expects them.
-  const documentInsetTop = isInline ? insets.top + anchorTop : 0
-  const [appliedInsetTop, setAppliedInsetTop] = useState(0)
-  const insetReady = !isInline || appliedInsetTop === documentInsetTop
+  // Inline: the document's insets (see the class comment) — above the first
+  // line, and the page margins on either side. The page is revealed only once
+  // the WebView has acknowledged them, so its first paint has the words where
+  // the frame expects them.
+  const documentInsets = {
+    top: isInline ? insets.top + anchorTop : 0,
+    sides: isInline ? persistentEditor.insetX : 0,
+  }
+  const [appliedInsets, setAppliedInsets] = useState({ top: 0, sides: 0 })
+  const insetReady =
+    !isInline ||
+    (appliedInsets.top === documentInsets.top && appliedInsets.sides === documentInsets.sides)
   // Show when visible AND the anchoring geometry has been measured (prevents a
   // flash at the top of the screen before the first layout report).
   const shouldShow =
@@ -161,9 +167,9 @@ export const PersistentEditor = () => {
     isInline && !persistentEditor.expanded
       ? Math.max(0, persistentEditor.inlineTop - persistentEditor.expandedTop)
       : 0
-  // The WebView document carries no margin of its own (see injectLayoutCSS),
-  // so the container edge IS the text edge.
-  const insetX = isInline ? persistentEditor.insetX : 0
+  // Inline, the WebView spans the full width and the page margins are the
+  // document's own (a CSS inset, like the top one), so its scrollbar rides
+  // the screen edge instead of floating a margin in from it.
   // The clip: collapsed → the writing area under the hero; expanded → the
   // whole screen (above the safe area). Screen mode clips at its anchor.
   const clipTop = isInline
@@ -286,8 +292,8 @@ export const PersistentEditor = () => {
   const containerStyle = {
     position: 'absolute' as const,
     top: shouldShow ? clipTop : -9999,
-    left: insetX,
-    right: insetX,
+    left: 0,
+    right: 0,
     bottom: shouldShow ? persistentEditor.bottomBarHeight + keyboardLift : undefined,
     height: shouldShow ? undefined : 0,
     zIndex: 100,
@@ -309,8 +315,8 @@ export const PersistentEditor = () => {
               onWordCountChange={persistentEditor.readOnly ? undefined : handleWordCountChange}
               onFocusChange={persistentEditor.readOnly ? undefined : setPersistentEditorFocused}
               blurRequest={persistentEditor.blurRequest}
-              topInset={documentInsetTop}
-              onTopInsetApplied={setAppliedInsetTop}
+              documentInsets={documentInsets}
+              onDocumentInsetsApplied={setAppliedInsets}
               initialContent={persistentEditor.initialContent}
               contentRevision={persistentEditor.initialContentRevision}
               readOnly={persistentEditor.readOnly}

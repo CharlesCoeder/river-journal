@@ -135,20 +135,24 @@ const BlurRequestPlugin: React.FC<{ request: number }> = ({ request }) => {
 }
 
 /**
- * Keeps `inset` px clear above the document's first line (the CSS variable
- * injectLayoutCSS reads) and tells the host once it is in effect, so the host
- * only reveals the page after the words are where it expects them.
+ * Keeps `top` px clear above the document's first line and `sides` px on
+ * either side (the CSS variables injectLayoutCSS reads) and tells the host
+ * once they are in effect, so the host only reveals the page after the words
+ * are where it expects them.
  */
-const TopInsetPlugin: React.FC<{
-  inset: number
-  onApplied?: (px: number) => void
-}> = ({ inset, onApplied }) => {
+const DocumentInsetsPlugin: React.FC<{
+  top: number
+  sides: number
+  onApplied?: (applied: { top: number; sides: number }) => void
+}> = ({ top, sides, onApplied }) => {
   const callbackRef = useRef(onApplied)
   callbackRef.current = onApplied
   useEffect(() => {
-    document.documentElement.style.setProperty('--editor-top-inset', `${inset}px`)
-    callbackRef.current?.(inset)
-  }, [inset])
+    const root = document.documentElement.style
+    root.setProperty('--editor-top-inset', `${top}px`)
+    root.setProperty('--editor-side-inset', `${sides}px`)
+    callbackRef.current?.({ top, sides })
+  }, [top, sides])
   return null
 }
 
@@ -159,8 +163,8 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   onWordCountChange,
   onFocusChange,
   blurRequest,
-  topInset,
-  onTopInsetApplied,
+  documentInsets,
+  onDocumentInsetsApplied,
   initialContent,
   contentRevision,
   themeValues,
@@ -244,10 +248,11 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
           <WordCountPlugin onWordCountChange={onWordCountChange} />
         ) : null}
 
-        {/* Room above the first line, acknowledged back to the host */}
-        <TopInsetPlugin
-          inset={topInset ?? 0}
-          onApplied={onTopInsetApplied}
+        {/* Room above the first line and beside the words, acknowledged back to the host */}
+        <DocumentInsetsPlugin
+          top={documentInsets?.top ?? 0}
+          sides={documentInsets?.sides ?? 0}
+          onApplied={onDocumentInsetsApplied}
         />
 
         {/* Focus reporting + blur-on-request — the keyboard's show/hide contract with native */}

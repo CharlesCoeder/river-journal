@@ -227,10 +227,11 @@ export const injectLayoutCSS = (): (() => void) => {
   const css = `
     body {
       margin: 0;
-      /* Set by the host (see LexicalEditor.native's topInset): the space the
-         page keeps clear above its first line so earlier lines can scroll up
-         under the chrome and the status bar. */
-      padding-top: var(--editor-top-inset, 0px);
+      /* Set by the host (LexicalEditor.native's documentInsets): the space the
+         page keeps clear above its first line and on either side, so earlier
+         lines can scroll up under the chrome and the scrollbar rides the
+         screen edge. */
+      padding: var(--editor-top-inset, 0px) var(--editor-side-inset, 0px) 0;
     }
     .lex-root p,
     .lex-paragraph {
