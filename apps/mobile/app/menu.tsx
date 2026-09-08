@@ -1,10 +1,21 @@
+import { useEffect } from 'react'
+import { router } from 'expo-router'
 import { YStack } from '@my/ui'
-import { MenuSurface } from 'app/features/navigation/MenuSurface'
+import { requestHubPane } from 'app/features/navigation/hubPagerState'
 
-export default function MenuScreen() {
+/**
+ * The menu lives as a pane of home (see app/index.tsx). Anything that still
+ * navigates here — a deep link — is sent home with the menu pane requested.
+ */
+export default function MenuRoute() {
+  useEffect(() => {
+    requestHubPane('/menu')
+    router.dismissTo('/')
+  }, [])
   return (
-    <YStack flex={1}>
-      <MenuSurface />
-    </YStack>
+    <YStack
+      flex={1}
+      backgroundColor="$background"
+    />
   )
 }

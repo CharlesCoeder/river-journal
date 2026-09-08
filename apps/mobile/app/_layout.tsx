@@ -15,7 +15,7 @@ import { SplashScreen, Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
-import { SliderHub } from 'app/features/navigation/SliderHub'
+import { HubGestureHost } from 'app/features/navigation/HubGestureHost'
 import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
@@ -80,17 +80,29 @@ function RootLayoutNav() {
             <Provider>
               <TamaguifiedReactNavigationThemeProvider>
                 <TamaguifiedSafeAreaView>
-                  <SliderHub>
-                    {/*
+                  {/*
                     The moderation admin surface (features/moderation/**) is
                     intentionally web + desktop only. Mobile must never contain an
                     admin/ route subtree or import from features/moderation/** —
                     it must not ship in publicly-distributed mobile binaries.
                     Enforced by PR review until the CI grep lands.
                   */}
+                  {/*
+                    Hub pager gesture host: home and the menu are one horizontal
+                    surface (see app/index.tsx). The pan lives here, around BOTH
+                    the Stack and the persistent editor overlay, so a drag that
+                    starts on the WebView still moves the hub. It is inert on
+                    every screen pushed above home.
+                  */}
+                  <HubGestureHost>
                     <Stack screenOptions={{ headerShown: false }}>
                       <Stack.Screen
                         name="journal"
+                        options={{ animation: 'none' }}
+                      />
+                      {/* Redirects into the hub pager's menu pane — no slide of its own. */}
+                      <Stack.Screen
+                        name="menu"
                         options={{ animation: 'none' }}
                       />
                       <Stack.Screen name="auth" />
@@ -100,8 +112,8 @@ function RootLayoutNav() {
                         options={{ animation: 'none' }}
                       />
                     </Stack>
-                  </SliderHub>
-                  <PersistentEditor />
+                    <PersistentEditor />
+                  </HubGestureHost>
                   <NativeToast />
                   {/* App Lock — covers all routes. The privacy cover hides
                   content from the OS app-switcher snapshot on `inactive`; the

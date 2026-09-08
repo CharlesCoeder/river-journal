@@ -39,23 +39,32 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void
-  // Disables the control (e.g. until the 13+ attestation box is checked). While
-  // disabled the press handler is a no-op, so NO OAuth call fires.
-  disabled?: boolean
-  // Fires synchronously right before the OAuth flow is initiated (never while
-  // disabled). On web the redirect unloads the page, so this is the only spot
-  // where persisted pre-auth intent (e.g. deferred attestation) can be recorded.
+  /**
+   * Pre-flight gate run on EVERY press, before any OAuth work. Return false to
+   * swallow the press: no OAuth call fires, and the caller surfaces its own
+   * inline explanation (e.g. the 13+ attestation nudge on the sign-up tab).
+   *
+   * Deliberately not a `disabled` prop: the control keeps its normal, enabled
+   * appearance so the tap registers and can be answered, instead of a greyed
+   * button that gives the user nothing to act on.
+   */
+  canStart?: () => boolean
+  // Fires synchronously right before the OAuth flow is initiated (never when
+  // `canStart` refused). On web the redirect unloads the page, so this is the
+  // only spot where persisted pre-auth intent (e.g. deferred attestation) can
+  // be recorded.
   onAuthStart?: () => void
 }
 
 // onSuccess is not used on web — the redirect flow reloads the page,
 // and onAuthStateChange handles session updates automatically.
-export function GoogleSignInButton({ disabled = false, onAuthStart }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({ canStart, onAuthStart }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handlePress = useCallback(async () => {
-    if (disabled) return
+    if (isLoading) return
+    if (canStart && !canStart()) return
     setIsLoading(true)
     setError(null)
     try {
@@ -70,24 +79,24 @@ export function GoogleSignInButton({ disabled = false, onAuthStart }: GoogleSign
       setError('Could not connect to Google. Please try again.')
       setIsLoading(false)
     }
-  }, [disabled, onAuthStart])
+  }, [isLoading, canStart, onAuthStart])
 
   return (
     <>
       <XStack
         onPress={handlePress}
-        disabled={isLoading || disabled}
+        disabled={isLoading}
         backgroundColor="transparent"
         borderColor="$color3"
         borderWidth={1}
-        hoverStyle={disabled ? {} : { borderColor: '$color' }}
-        pressStyle={disabled ? {} : { opacity: 0.8 }}
+        hoverStyle={{ borderColor: '$color' }}
+        pressStyle={{ opacity: 0.8 }}
         paddingVertical="$3"
         justifyContent="center"
         alignItems="center"
         gap="$3"
-        cursor={isLoading || disabled ? 'not-allowed' : 'pointer'}
-        opacity={isLoading || disabled ? 0.5 : 1}
+        cursor={isLoading ? 'not-allowed' : 'pointer'}
+        opacity={isLoading ? 0.5 : 1}
       >
         {isLoading ? (
           <Spinner size="small" />

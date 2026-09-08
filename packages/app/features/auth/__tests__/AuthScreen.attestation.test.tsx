@@ -1,17 +1,21 @@
 // @vitest-environment happy-dom
 /**
- * `AuthScreen` — 13+ attestation gating + Collective-context copy.
+ * `AuthScreen` — 13+ attestation (sign-up only) + Collective-context copy.
  *
- * Covers the NET-NEW auth UX added on top of the LIVE `AuthScreen` surface
- * (`LoginForm`/`SignupForm` are dead code with zero imports — this is the
- * component every `/auth` route actually renders):
- *   - a required "I confirm I am 13 or older." checkbox renders ABOVE the
- *     email/password form
- *   - BOTH the email submit control AND the Google button stay disabled
- *     (no auth call fires) until the checkbox is checked
- *   - checking the box enables both controls
- *   - a successful email signup records the one-time attestation via
- *     `recordAgeAttestation`
+ * Covers the auth UX on the LIVE `AuthScreen` surface (`LoginForm`/`SignupForm`
+ * are dead code with zero imports — this is the component every `/auth` route
+ * actually renders):
+ *   - the "I confirm I am 13 or older." checkbox renders ONLY on the sign-up
+ *     tab, above the email/password form; the login tab has no checkbox and is
+ *     gated on nothing (every existing account attested when it was created)
+ *   - on sign-up, an unchecked box blocks BOTH the email submit and the Google
+ *     button — but the Google button is never rendered disabled/greyed: the
+ *     press is swallowed by its `canStart` gate and answered with the same
+ *     inline nudge the email submit uses
+ *   - a login never records an attestation and never queues the deferred
+ *     `pendingAgeAttestation$` marker
+ *   - a successful email/Google SIGN-UP records the one-time attestation
+ *   - switching tabs resets the checkbox and clears the nudge
  *   - a `gateContext="collective"` prop swaps the subtitle to the
  *     Collective-context copy; the default (no prop) subtitle is unchanged
  *
@@ -118,10 +122,14 @@ vi.mock('../components/DesignInput', () => ({
     }),
 }))
 
-// ─── GoogleSignInButton — stub exposing the `disabled` prop as a real DOM
-// disabled button so the gating behavior can be asserted without depending on the real
-// component's OAuth wiring (covered separately).
+// ─── GoogleSignInButton — stub reproducing the real control's press contract:
+// the `canStart` gate runs FIRST and a false return swallows the press entirely
+// (no OAuth, no post-auth callbacks). `googleStartSpy` therefore stands in for
+// "OAuth would have been initiated". The button's rendered `disabled` attribute
+// is asserted separately — the whole point of `canStart` is that the control
+// stays enabled-looking so a blocked tap can be explained.
 const googleButtonPropsSpy = vi.fn()
+const googleStartSpy = vi.fn()
 vi.mock('../components/GoogleSignInButton', () => ({
   GoogleSignInButton: (props: any) => {
     googleButtonPropsSpy(props)
@@ -132,10 +140,11 @@ vi.mock('../components/GoogleSignInButton', () => ({
         'data-testid': 'google-signin-button',
         disabled: !!props.disabled,
         onClick: () => {
-          if (!props.disabled) {
-            props.onAuthStart?.()
-            props.onSuccess?.()
-          }
+          if (props.canStart && props.canStart() === false) return
+          googleStartSpy()
+          props.onAuthStart?.()
+          // Native-only inline success path; the web variant never calls this.
+          props.onSuccess?.()
         },
       },
       'Continue with Google'
@@ -148,25 +157,38 @@ vi.mock('app/features/navigation/WordLinkNav', () => ({
   WordLinkNav: () => React.createElement('nav', { 'data-testid': 'word-link-nav' }),
 }))
 
-// ─── Real observable — same instance AuthScreen reads/writes, used to assert
-// the stale pendingCollectiveReturn$ marker self-heals on the next auth
-// attempt instead of only ever being set true. ─────────────────────────────
-import { pendingCollectiveReturn$ } from 'app/state/authReturn'
+// ─── Real observables — the same instances AuthScreen reads/writes ───────────
+import { pendingAgeAttestation$, pendingCollectiveReturn$ } from 'app/state/authReturn'
 
 // ─── Import under test ───────────────────────────────────────────────────────
 import { AuthScreen } from '../AuthScreen'
 
 const AGE_LABEL = /13 or older/i
+const NUDGE = /confirm you.re 13 or older to continue/i
 
 const goToSignupTab = () => {
   fireEvent.click(screen.getByText('Sign Up'))
 }
 
-const fillSignupFields = () => {
+const goToLoginTab = () => {
+  // The tab label is the FIRST "Log In" in DOM order; the submit control (which
+  // carries the same word in login mode) is the second.
+  fireEvent.click(screen.getAllByText('Log In')[0] as HTMLElement)
+}
+
+const clickLoginSubmit = () => {
+  fireEvent.click(screen.getAllByText('Log In')[1] as HTMLElement)
+}
+
+const fillLoginFields = () => {
   fireEvent.change(screen.getByLabelText('Email address'), {
     target: { value: 'daniel@example.com' },
   })
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
+}
+
+const fillSignupFields = () => {
+  fillLoginFields()
   fireEvent.change(screen.getByLabelText('Confirm Password'), {
     target: { value: 'password123' },
   })
@@ -175,6 +197,8 @@ const fillSignupFields = () => {
 const checkAgeBox = () => {
   fireEvent.click(screen.getByRole('checkbox', { name: AGE_LABEL }))
 }
+
+const googleButton = () => screen.getByTestId('google-signin-button') as HTMLButtonElement
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -186,6 +210,7 @@ beforeEach(() => {
   mockSignUpWithEmail.mockResolvedValue({ user: null, error: null })
   mockSignInWithEmail.mockResolvedValue({ user: null, error: null })
   pendingCollectiveReturn$.set(false)
+  pendingAgeAttestation$.set(false)
 })
 
 afterEach(() => {
@@ -193,16 +218,23 @@ afterEach(() => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Checkbox renders above the form
+// 1. The checkbox belongs to the sign-up tab only
 // ─────────────────────────────────────────────────────────────────────────────
 describe('13+ attestation checkbox placement', () => {
-  it('renders a checkbox labeled "I confirm I am 13 or older."', () => {
+  it('renders NO checkbox on the login tab', () => {
     render(React.createElement(AuthScreen))
+    expect(screen.queryByRole('checkbox', { name: AGE_LABEL })).toBeNull()
+  })
+
+  it('renders a checkbox labeled "I confirm I am 13 or older." on the sign-up tab', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
     expect(screen.getByRole('checkbox', { name: AGE_LABEL })).toBeTruthy()
   })
 
   it('renders the checkbox ABOVE the email field in DOM order', () => {
     render(React.createElement(AuthScreen))
+    goToSignupTab()
     const checkbox = screen.getByRole('checkbox', { name: AGE_LABEL })
     const emailInput = screen.getByLabelText('Email address')
     const allInputs = Array.from(document.body.querySelectorAll('input'))
@@ -214,15 +246,76 @@ describe('13+ attestation checkbox placement', () => {
 
   it('checkbox starts unchecked', () => {
     render(React.createElement(AuthScreen))
+    goToSignupTab()
     const checkbox = screen.getByRole('checkbox', { name: AGE_LABEL }) as HTMLInputElement
     expect(checkbox.checked).toBe(false)
+  })
+
+  it('renders the checkbox immediately when opened directly on the sign-up tab', () => {
+    render(React.createElement(AuthScreen, { initialTab: 'signup' } as any))
+    expect(screen.getByRole('checkbox', { name: AGE_LABEL })).toBeTruthy()
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Submit + Google gating while unchecked
+// 2. Login is gated on nothing — accounts attested when they were created
 // ─────────────────────────────────────────────────────────────────────────────
-describe('submit gating while the 13+ box is unchecked', () => {
+describe('login mode is not gated on the 13+ attestation', () => {
+  it('fires the email sign-in with no checkbox to check', () => {
+    render(React.createElement(AuthScreen))
+    fillLoginFields()
+    clickLoginSubmit()
+    expect(mockSignInWithEmail).toHaveBeenCalledWith('daniel@example.com', 'password123')
+  })
+
+  it('never surfaces the attestation nudge on the login tab', () => {
+    render(React.createElement(AuthScreen))
+    fillLoginFields()
+    clickLoginSubmit()
+    expect(screen.queryByText(NUDGE)).toBeNull()
+  })
+
+  it('does NOT record an attestation after a successful email login', async () => {
+    mockSignInWithEmail.mockResolvedValue({ user: { id: 'user-1' }, error: null })
+    render(React.createElement(AuthScreen))
+    fillLoginFields()
+    clickLoginSubmit()
+    await waitFor(() => expect(pushSpy).toHaveBeenCalledWith('/'))
+    expect(mockRecordAgeAttestation).not.toHaveBeenCalled()
+  })
+
+  it('starts Google auth on the login tab with no attestation to give', () => {
+    render(React.createElement(AuthScreen))
+    fireEvent.click(googleButton())
+    expect(googleStartSpy).toHaveBeenCalled()
+  })
+
+  it('does NOT queue the deferred attestation marker when starting Google auth from login', () => {
+    render(React.createElement(AuthScreen))
+    fireEvent.click(googleButton())
+    expect(pendingAgeAttestation$.get()).toBe(false)
+  })
+
+  it('clears a stale deferred attestation marker when starting Google auth from login', () => {
+    // Left behind by an abandoned earlier sign-up OAuth attempt: the marker is
+    // written pre-redirect, before any session exists.
+    pendingAgeAttestation$.set(true)
+    render(React.createElement(AuthScreen))
+    fireEvent.click(googleButton())
+    expect(pendingAgeAttestation$.get()).toBe(false)
+  })
+
+  it('does NOT record an attestation on the native inline Google success path', () => {
+    render(React.createElement(AuthScreen))
+    fireEvent.click(googleButton())
+    expect(mockRecordAgeAttestation).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. Sign-up gating while the 13+ box is unchecked
+// ─────────────────────────────────────────────────────────────────────────────
+describe('sign-up gating while the 13+ box is unchecked', () => {
   it('fires NO email auth call when submitting while unchecked', () => {
     render(React.createElement(AuthScreen))
     goToSignupTab()
@@ -232,38 +325,59 @@ describe('submit gating while the 13+ box is unchecked', () => {
     expect(mockSignInWithEmail).not.toHaveBeenCalled()
   })
 
-  it('surfaces inline microcopy after a blocked submit attempt', () => {
+  it('surfaces the inline nudge after a blocked submit attempt', () => {
     render(React.createElement(AuthScreen))
     goToSignupTab()
     fillSignupFields()
     fireEvent.click(screen.getByText('Create Account'))
-    // Two matches expected once blocked: the checkbox's own label plus the
-    // inline requirement microcopy near it.
-    expect(screen.queryAllByText(AGE_LABEL).length).toBeGreaterThan(1)
+    expect(screen.getByText(NUDGE)).toBeTruthy()
   })
 
-  it('renders the Google button as disabled while unchecked', () => {
+  // The regression this replaces: the Google button used to render disabled and
+  // greyed, so a user with an unchecked box tapped a dead control and was told
+  // nothing.
+  it('renders the Google button ENABLED (never greyed) while unchecked', () => {
     render(React.createElement(AuthScreen))
-    expect((screen.getByTestId('google-signin-button') as HTMLButtonElement).disabled).toBe(true)
-  })
-
-  it('fires no Google OAuth call when the disabled Google button is pressed', () => {
-    render(React.createElement(AuthScreen))
-    fireEvent.click(screen.getByTestId('google-signin-button'))
-    expect(mockSignInWithGoogle).not.toHaveBeenCalled()
+    goToSignupTab()
+    expect(googleButton().disabled).toBe(false)
     const lastProps = googleButtonPropsSpy.mock.calls.at(-1)?.[0]
-    expect(lastProps?.disabled).toBe(true)
+    expect(lastProps?.disabled).toBeFalsy()
+  })
+
+  it('swallows the Google press while unchecked — no OAuth is initiated', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    fireEvent.click(googleButton())
+    expect(googleStartSpy).not.toHaveBeenCalled()
+    expect(mockSignInWithGoogle).not.toHaveBeenCalled()
+  })
+
+  it('answers a blocked Google press with the same inline nudge', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    expect(screen.queryByText(NUDGE)).toBeNull()
+    fireEvent.click(googleButton())
+    expect(screen.getByText(NUDGE)).toBeTruthy()
+  })
+
+  it('does NOT queue the deferred attestation marker on a blocked Google press', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    fireEvent.click(googleButton())
+    expect(pendingAgeAttestation$.get()).toBe(false)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Checking the box enables both controls
+// 4. Checking the box lets both controls through
 // ─────────────────────────────────────────────────────────────────────────────
-describe('checking the 13+ box enables both controls', () => {
-  it('enables the Google button once checked', () => {
+describe('checking the 13+ box lets both sign-up controls through', () => {
+  it('starts Google auth once checked', () => {
     render(React.createElement(AuthScreen))
+    goToSignupTab()
     checkAgeBox()
-    expect((screen.getByTestId('google-signin-button') as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(googleButton())
+    expect(googleStartSpy).toHaveBeenCalled()
   })
 
   it('allows email submit to fire the auth call once checked', () => {
@@ -274,12 +388,21 @@ describe('checking the 13+ box enables both controls', () => {
     fireEvent.click(screen.getByText('Create Account'))
     expect(mockSignUpWithEmail).toHaveBeenCalledWith('daniel@example.com', 'password123')
   })
+
+  it('clears the nudge as soon as the box is checked', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    fireEvent.click(googleButton())
+    expect(screen.getByText(NUDGE)).toBeTruthy()
+    checkAgeBox()
+    expect(screen.queryByText(NUDGE)).toBeNull()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. Attestation recorded on successful signup
+// 5. Attestation recorded on successful account creation
 // ─────────────────────────────────────────────────────────────────────────────
-describe('records the one-time 13+ attestation after successful signup', () => {
+describe('records the one-time 13+ attestation after a successful sign-up', () => {
   it('calls recordAgeAttestation with the new user id after a successful signup', async () => {
     mockSignUpWithEmail.mockResolvedValue({ user: { id: 'user-1' }, error: null })
     render(React.createElement(AuthScreen))
@@ -305,10 +428,65 @@ describe('records the one-time 13+ attestation after successful signup', () => {
     })
     expect(mockRecordAgeAttestation).not.toHaveBeenCalled()
   })
+
+  it('queues the deferred attestation marker before Google OAuth on the sign-up tab', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    checkAgeBox()
+    fireEvent.click(googleButton())
+    expect(pendingAgeAttestation$.get()).toBe(true)
+  })
+
+  it('records the attestation on the native inline Google success path', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    checkAgeBox()
+    fireEvent.click(googleButton())
+    expect(mockRecordAgeAttestation).toHaveBeenCalled()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. Collective-context copy
+// 6. Switching tabs resets the attestation state
+// ─────────────────────────────────────────────────────────────────────────────
+describe('switching tabs resets the attestation state', () => {
+  it('drops a check made before leaving the sign-up tab', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    checkAgeBox()
+    expect((screen.getByRole('checkbox', { name: AGE_LABEL }) as HTMLInputElement).checked).toBe(
+      true
+    )
+    goToLoginTab()
+    goToSignupTab()
+    expect((screen.getByRole('checkbox', { name: AGE_LABEL }) as HTMLInputElement).checked).toBe(
+      false
+    )
+  })
+
+  it('clears a pending nudge when the tab changes', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    fireEvent.click(googleButton())
+    expect(screen.getByText(NUDGE)).toBeTruthy()
+    goToLoginTab()
+    goToSignupTab()
+    expect(screen.queryByText(NUDGE)).toBeNull()
+  })
+
+  it('re-blocks a Google press after the check was reset by a tab switch', () => {
+    render(React.createElement(AuthScreen))
+    goToSignupTab()
+    checkAgeBox()
+    goToLoginTab()
+    goToSignupTab()
+    fireEvent.click(googleButton())
+    expect(googleStartSpy).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. Collective-context copy
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Collective-context copy', () => {
   it('shows the default "Accounts are optional" subtitle with no gateContext', () => {
@@ -328,7 +506,7 @@ describe('Collective-context copy', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. Stale pendingCollectiveReturn$ marker self-heals on the next auth attempt
+// 8. Stale pendingCollectiveReturn$ marker self-heals on the next auth attempt
 //
 // An abandoned Google-web OAuth from the Collective gate can leave
 // pendingCollectiveReturn$ stuck true (it's set pre-redirect, before a
@@ -349,6 +527,15 @@ describe('stale pendingCollectiveReturn$ marker self-heals on the next auth atte
     await waitFor(() => expect(pendingCollectiveReturn$.get()).toBe(false))
   })
 
+  it('resets a stale true marker to false after a successful email LOGIN with no collective context', async () => {
+    pendingCollectiveReturn$.set(true)
+    mockSignInWithEmail.mockResolvedValue({ user: { id: 'user-1' }, error: null })
+    render(React.createElement(AuthScreen))
+    fillLoginFields()
+    clickLoginSubmit()
+    await waitFor(() => expect(pendingCollectiveReturn$.get()).toBe(false))
+  })
+
   it('sets the marker true after a successful email auth initiated from the Collective gate', async () => {
     mockSignUpWithEmail.mockResolvedValue({ user: { id: 'user-1' }, error: null })
     render(React.createElement(AuthScreen, { gateContext: 'collective' } as any))
@@ -362,15 +549,20 @@ describe('stale pendingCollectiveReturn$ marker self-heals on the next auth atte
   it('resets a stale true marker to false when starting Google auth with no collective context', () => {
     pendingCollectiveReturn$.set(true) // simulates a marker left by an abandoned prior OAuth attempt
     render(React.createElement(AuthScreen))
-    checkAgeBox()
-    fireEvent.click(screen.getByTestId('google-signin-button'))
+    fireEvent.click(googleButton())
     expect(pendingCollectiveReturn$.get()).toBe(false)
   })
 
   it('sets the marker true when starting Google auth from the Collective gate', () => {
     render(React.createElement(AuthScreen, { gateContext: 'collective' } as any))
-    checkAgeBox()
-    fireEvent.click(screen.getByTestId('google-signin-button'))
+    fireEvent.click(googleButton())
     expect(pendingCollectiveReturn$.get()).toBe(true)
+  })
+
+  it('leaves the marker untouched when the sign-up Google press is blocked', () => {
+    render(React.createElement(AuthScreen, { gateContext: 'collective' } as any))
+    goToSignupTab()
+    fireEvent.click(googleButton())
+    expect(pendingCollectiveReturn$.get()).toBe(false)
   })
 })

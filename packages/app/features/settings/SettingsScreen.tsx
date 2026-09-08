@@ -8,6 +8,7 @@ import {
   ExpandingLineButton,
 } from '@my/ui'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
+import { useNavigateHome } from 'app/features/navigation/useNavigateHome'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import {
@@ -114,6 +115,7 @@ const SECTION_COUNT = 12
 
 export function SettingsScreen() {
   const router = useRouter()
+  const navigateHome = useNavigateHome()
   const isAuthenticated = use$(store$.session.isAuthenticated)
   const userId = use$(store$.session.userId)
   const syncEnabled = use$(store$.session.syncEnabled)
@@ -193,7 +195,7 @@ export function SettingsScreen() {
               letterSpacing={0.5}
               cursor="pointer"
               hoverStyle={{ color: '$color' }}
-              onPress={() => router.push('/')}
+              onPress={navigateHome}
             >
               Back to Home
             </Text>

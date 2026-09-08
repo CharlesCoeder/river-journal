@@ -158,6 +158,7 @@ vi.mock('@my/ui', async () => {
     XStack: passthrough('div'),
     YStack: passthrough('div'),
     useReducedMotion: () => false,
+    isWeb: false,
     StreakChip,
     CollectiveEntry,
   }

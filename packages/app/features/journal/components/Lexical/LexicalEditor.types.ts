@@ -41,6 +41,16 @@ export interface LexicalEditorNativeProps extends LexicalEditorBaseProps {
   /** Monotonic counter — when it changes, ContentSyncer re-applies content even if
    *  the string value is identical (handles '' → '' clears). */
   contentRevision?: number
+  /** Fires when the contenteditable gains or loses focus (keyboard up / down). */
+  onFocusChange?: (focused: boolean) => void
+  /** Monotonic counter — when it changes, the editor blurs itself (dismisses the keyboard). */
+  blurRequest?: number
+  /** Space (px) the document keeps clear above its first line and on either side,
+   *  so the host's frame can span the whole screen while the words start under the
+   *  chrome and inside the page margins — and the scrollbar rides the screen edge. */
+  documentInsets?: { top: number; sides: number }
+  /** Fires once `documentInsets` are in effect, with the values applied. */
+  onDocumentInsetsApplied?: (applied: { top: number; sides: number }) => void
 }
 
 // Union type for platform-specific usage

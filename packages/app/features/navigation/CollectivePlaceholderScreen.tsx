@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, YStack, XStack, Text, ScrollView } from '@my/ui'
-import { useRouter } from 'solito/navigation'
 import { WordLinkNav } from './WordLinkNav'
+import { useNavigateHome } from './useNavigateHome'
 
 // Temporary stand-in shown at /collective while the real CollectiveFeedScreen is being
 // re-styled. Restore the original route bodies in apps/{web,desktop}/app/collective/page.tsx
@@ -15,7 +15,7 @@ const GLIMPSES: ReadonlyArray<string> = [
 ]
 
 export function CollectivePlaceholderScreen() {
-  const router = useRouter()
+  const navigateHome = useNavigateHome()
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
@@ -61,7 +61,7 @@ export function CollectivePlaceholderScreen() {
             letterSpacing={0.5}
             cursor="pointer"
             hoverStyle={{ color: '$color' }}
-            onPress={() => router.push('/')}
+            onPress={navigateHome}
           >
             Back to Home
           </Text>

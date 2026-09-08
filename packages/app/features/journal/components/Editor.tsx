@@ -78,7 +78,11 @@ export const Editor = ({
     }
 
     // ReadOnly: render inline WebView within the normal layout flow
-    // matchContents auto-sizes the WebView to its HTML content height
+    // matchContents auto-sizes the WebView to its HTML content height, so the
+    // WebView never needs to scroll itself — and with its own scrolling off it
+    // stops swallowing the vertical pan, letting the surrounding ScrollView
+    // (e.g. CelebrationScreen's re-read section) scroll when the drag starts on
+    // the words.
     return (
       <View width="100%">
         <UniversalLexicalEditor
@@ -86,7 +90,7 @@ export const Editor = ({
           fontFamilies={fontFamilies}
           readOnly
           initialContent={initialContent}
-          dom={{ matchContents: true }}
+          dom={{ matchContents: true, scrollEnabled: false }}
         />
       </View>
     )

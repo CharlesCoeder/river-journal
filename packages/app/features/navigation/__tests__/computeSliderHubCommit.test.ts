@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// TDD red-phase: tests written BEFORE implementation of SliderHub.
-// All tests in this file should FAIL until packages/app/features/navigation/SliderHub.tsx
-// exports the pure `computeSliderHubCommit` function.
+// Contract tests for the pure commit decision behind SliderHub. Imported from
+// sliderHubUtils (not SliderHub.tsx, which also pulls in the store and the
+// gesture/animation runtime) so the suite stays a plain unit test.
 //
 // Function contract:
 //   computeSliderHubCommit(translationX: number, velocityX: number, screenWidth: number)
@@ -17,8 +17,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-// This import WILL FAIL in red-phase — SliderHub.tsx does not yet exist.
-import { computeSliderHubCommit } from '../SliderHub'
+import { computeSliderHubCommit } from '../sliderHubUtils'
 
 const SCREEN_WIDTH = 400 // px — a common test device width
 const COMMIT_THRESHOLD = SCREEN_WIDTH * 0.25 // 100px

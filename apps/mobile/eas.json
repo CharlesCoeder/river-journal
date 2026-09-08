@@ -3,6 +3,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "APP_VARIANT": "development"
+      },
       "android": {
         "buildType": "apk"
       },
@@ -13,6 +16,9 @@
     "simulator": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "APP_VARIANT": "development"
+      },
       "android": {
         "buildType": "apk"
       },
@@ -25,6 +31,7 @@
       "distribution": "internal",
       "autoIncrement": true,
       "env": {
+        "APP_VARIANT": "preview",
         "EXPO_PUBLIC_SUPABASE_URL": "https://bngglonhovkbfsbhghdu.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuZ2dsb25ob3ZrYmZzYmhnaGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTgwMDEsImV4cCI6MjA4NzQzNDAwMX0.KYbZJAJT3TxPAxOEW_-gi0M0bMendhJZz1hmn3oAzbc",
         "EXPO_PUBLIC_SENTRY_DSN": "https://dc47c13ae7ee3e6343f5886344858522@o4511757537312768.ingest.us.sentry.io/4511757574471680",

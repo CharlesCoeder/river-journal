@@ -8,11 +8,16 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
-import { $getRoot } from 'lexical'
+import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_LOW, FOCUS_COMMAND } from 'lexical'
 import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { ALL_TRANSFORMERS } from './transformers'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { injectFontCSS, injectFocusModeCSS, createMobileLexicalConfig } from './utils'
+import {
+  injectFontCSS,
+  injectFocusModeCSS,
+  createMobileLexicalConfig,
+  injectLayoutCSS,
+} from './utils'
 import type { LexicalEditorNativeProps } from './LexicalEditor.types'
 import { FocusModeParagraphPlugin } from './plugins/FocusModeParagraphPlugin'
 import { SentenceWrapPlugin } from './plugins/SentenceWrapPlugin'
@@ -77,11 +82,89 @@ const WordCountPlugin: React.FC<{
   }, [editor])
   return null
 }
+/**
+ * Reports focus/blur of the contenteditable across the bridge as a boolean.
+ * Lexical dispatches FOCUS_COMMAND / BLUR_COMMAND from the root element's
+ * native focus events, which is exactly when the soft keyboard shows / hides.
+ */
+const FocusReportPlugin: React.FC<{
+  onFocusChange: (focused: boolean) => void
+}> = ({ onFocusChange }) => {
+  const [editor] = useLexicalComposerContext()
+  const callbackRef = useRef(onFocusChange)
+  callbackRef.current = onFocusChange
+  useEffect(() => {
+    const unregisterFocus = editor.registerCommand(
+      FOCUS_COMMAND,
+      () => {
+        callbackRef.current(true)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+    const unregisterBlur = editor.registerCommand(
+      BLUR_COMMAND,
+      () => {
+        callbackRef.current(false)
+        return false
+      },
+      COMMAND_PRIORITY_LOW
+    )
+    return () => {
+      unregisterFocus()
+      unregisterBlur()
+    }
+  }, [editor])
+  return null
+}
+
+/**
+ * Blurs the editor whenever the `request` counter changes (not on mount).
+ * Blurring the contenteditable is what dismisses the soft keyboard inside a
+ * WebView — RN's Keyboard.dismiss() only knows about native TextInputs.
+ */
+const BlurRequestPlugin: React.FC<{ request: number }> = ({ request }) => {
+  const [editor] = useLexicalComposerContext()
+  const lastRequest = useRef(request)
+  useEffect(() => {
+    if (request === lastRequest.current) return
+    lastRequest.current = request
+    editor.blur()
+  }, [editor, request])
+  return null
+}
+
+/**
+ * Keeps `top` px clear above the document's first line and `sides` px on
+ * either side (the CSS variables injectLayoutCSS reads) and tells the host
+ * once they are in effect, so the host only reveals the page after the words
+ * are where it expects them.
+ */
+const DocumentInsetsPlugin: React.FC<{
+  top: number
+  sides: number
+  onApplied?: (applied: { top: number; sides: number }) => void
+}> = ({ top, sides, onApplied }) => {
+  const callbackRef = useRef(onApplied)
+  callbackRef.current = onApplied
+  useEffect(() => {
+    const root = document.documentElement.style
+    root.setProperty('--editor-top-inset', `${top}px`)
+    root.setProperty('--editor-side-inset', `${sides}px`)
+    callbackRef.current?.({ top, sides })
+  }, [top, sides])
+  return null
+}
+
 const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   placeholder = 'Start flowing...',
   className,
   onContentChange,
   onWordCountChange,
+  onFocusChange,
+  blurRequest,
+  documentInsets,
+  onDocumentInsetsApplied,
   initialContent,
   contentRevision,
   themeValues,
@@ -103,6 +186,12 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   // Inject focus-mode CSS into the WebView
   useEffect(() => {
     const cleanup = injectFocusModeCSS()
+    return cleanup
+  }, [])
+
+  // Zero the document's own margins so the first line sits at the container's top
+  useEffect(() => {
+    const cleanup = injectLayoutCSS()
     return cleanup
   }, [])
   return (
@@ -157,6 +246,19 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
         {/* Instant word count — computed inside WebView, only a number crosses the bridge */}
         {!readOnly && onWordCountChange ? (
           <WordCountPlugin onWordCountChange={onWordCountChange} />
+        ) : null}
+
+        {/* Room above the first line and beside the words, acknowledged back to the host */}
+        <DocumentInsetsPlugin
+          top={documentInsets?.top ?? 0}
+          sides={documentInsets?.sides ?? 0}
+          onApplied={onDocumentInsetsApplied}
+        />
+
+        {/* Focus reporting + blur-on-request — the keyboard's show/hide contract with native */}
+        {!readOnly && onFocusChange ? <FocusReportPlugin onFocusChange={onFocusChange} /> : null}
+        {!readOnly && blurRequest !== undefined ? (
+          <BlurRequestPlugin request={blurRequest} />
         ) : null}
 
         {/* Focus mode plugin — dims non-active paragraphs when enabled */}

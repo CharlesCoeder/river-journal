@@ -236,6 +236,28 @@ export interface PersistentEditorState {
   headerHeight: number
   /** Height of the bottom bar, used to inset editor above it on Android */
   bottomBarHeight: number
+  /**
+   * How the editor is anchored on screen.
+   *  - 'screen': the JournalScreen layout — anchored below `headerHeight`,
+   *    full width.
+   *  - 'inline': the home-screen writing area. Anchored below `expandedTop`
+   *    and inset by `insetX`; while collapsed it is pushed down to `inlineTop`
+   *    so it sits under the home chrome, and expanding slides it up as the
+   *    chrome fades out.
+   */
+  layoutMode: 'screen' | 'inline'
+  /** Inline mode: y (below the safe-area top) of the collapsed writing area. */
+  inlineTop: number
+  /** Inline mode: y (below the safe-area top) the editor slides up to when expanded. */
+  expandedTop: number
+  /** Inline mode: horizontal padding of the home chrome, so the editor text lines up with it. */
+  insetX: number
+  /** Inline mode: whether the editor is expanded into writing mode. */
+  expanded: boolean
+  /** Whether the WebView's contenteditable currently has focus (reported by the editor). */
+  isFocused: boolean
+  /** Monotonic counter; incrementing it asks the WebView to blur (dismiss the keyboard). */
+  blurRequest: number
 }
 
 // =================================================================
