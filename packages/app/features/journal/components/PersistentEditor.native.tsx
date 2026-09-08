@@ -8,7 +8,6 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useTheme, useReducedMotion } from '@my/ui'
 import { X } from '@tamagui/lucide-icons'
-import { BlurView } from 'expo-blur'
 import { use$ } from '@legendapp/state/react'
 import { useEffect, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -72,16 +71,6 @@ const INLINE_SLIDE_SPRING = { stiffness: 80, damping: 20, mass: 1 }
  * geometry in — so reported anchors apply directly. Do not add the insets
  * again (that once placed the frame a status bar too low).
  */
-/** Whether a hex colour reads as dark — picks the blur material that suits the page. */
-const isDarkColor = (color: string): boolean => {
-  const hex = color.trim().match(/^#([0-9a-f]{6})/i)?.[1]
-  if (!hex) return false
-  const r = Number.parseInt(hex.slice(0, 2), 16)
-  const g = Number.parseInt(hex.slice(2, 4), 16)
-  const b = Number.parseInt(hex.slice(4, 6), 16)
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.5
-}
-
 export const PersistentEditor = () => {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -251,18 +240,13 @@ export const PersistentEditor = () => {
     zIndex: 101,
   }
 
-  // ── The frosted band (inline writing mode) ──────────────────────────────
-  // A system material blurs the WebView's text that has scrolled under the
-  // status bar — only the strip the OS draws in (clock, signal, the
-  // back-to-app link), not the top row below it, which is clear until the ×
-  // needs it and by then there is nothing to scroll. A wash of the page
-  // background on top keeps the band in the theme's colour and takes the
-  // words down to a murmur — still there as faint shapes, the way a
-  // translucent bar does. Sits between the
+  // ── The band (inline writing mode) ──────────────────────────────────────
+  // A wash of the page's own colour over the strip the OS draws in (clock,
+  // signal, the back-to-app link), so words that scroll up under it go
+  // beneath the same colour and drop to a faint version of themselves —
+  // still sharp, still readable, never a different tint. Sits between the
   // WebView and the ×, fades with writing mode, and lets touches through.
-  // Collapsed, the clip hides everything above the hero anyway. (Android's
-  // expo-blur renders a plain translucent wash unless its experimental
-  // renderer is opted into.)
+  // Collapsed, the clip hides everything above the hero anyway.
   const pageBackground = theme.background?.val ?? '#ffffff'
   const bandVisible = isInline && persistentEditor.expanded
   const bandOpacity = useSharedValue(0)
@@ -348,19 +332,8 @@ export const PersistentEditor = () => {
           style={[bandStyle, bandAnimatedStyle]}
           pointerEvents="none"
         >
-          <BlurView
-            // Full strength on purpose: below 100 expo-blur freezes a system
-            // animator part-way, which leaves the words dark and smeared.
-            // The chrome material is what the system's own bars use — a wide,
-            // soft blur that lifts what is beneath into pale ghosts.
-            intensity={100}
-            tint={
-              isDarkColor(pageBackground) ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'
-            }
-            style={StyleSheet.absoluteFill}
-          />
           <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: pageBackground, opacity: 0.2 }]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: pageBackground, opacity: 0.72 }]}
           />
         </Animated.View>
       ) : null}
