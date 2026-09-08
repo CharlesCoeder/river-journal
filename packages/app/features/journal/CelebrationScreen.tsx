@@ -6,7 +6,13 @@
  *
  *  - Handoff variant: serif word count, streak day, "The Collective is open."
  *    microcopy + Visit, optional UnlockNotification, Done dismiss.
- *  - Quieter variant: word count only, auto-dismisses ~2s or on tap.
+ *  - Quieter variant: the same summary in a quieter register — word count and
+ *    a Done dismiss.
+ *
+ * Both variants show THIS flow's word count (never the day's total — the day's
+ * running total is a separate, clearly-labelled secondary line) and both put the
+ * saved flow below the fold in a read-only Editor so the writing can be re-read
+ * and scrolled. Neither variant auto-dismisses: the user leaves via Done.
  *
  * Focus trap note: this is a full-page route, not an overlay modal.
  * There is no underlying page content for focus to leak into — the browser's
@@ -30,6 +36,7 @@ import {
   View,
   ExpandingLineButton,
   useReducedMotion,
+  isWeb,
 } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useNavigateHome } from 'app/features/navigation/useNavigateHome'
@@ -47,6 +54,13 @@ import { chooseCelebrationVariant } from './celebrationVariant'
 import { UnlockNotification } from 'app/features/streak/UnlockNotification'
 import { Editor } from './components/Editor'
 
+/**
+ * DOM id of the quieter variant's dismiss control. ExpandingLineButton forwards
+ * `id` to its root <button>, which is natively focusable — unlike the wrapper
+ * <div> the handoff variant's ref points at — so mount focus can land on it.
+ */
+const QUIETER_DISMISS_ID = 'celebration-dismiss'
+
 export function CelebrationScreen() {
   const router = useRouter()
   const navigateHome = useNavigateHome()
@@ -61,7 +75,18 @@ export function CelebrationScreen() {
 
   // Refs for focus management
   const visitButtonRef = useRef<any>(null)
-  const quieterRef = useRef<any>(null)
+
+  // Measured height of the scroll viewport. Native has no viewport units — Yoga
+  // silently drops `minHeight: '100vh'`, which collapsed the hero to its content
+  // height and pinned the summary to the very top of the scroll content. We size
+  // the hero from the ScrollView's own frame instead, so the summary is centred
+  // in the first screenful on device and the saved flow sits below the fold.
+  const [viewportHeight, setViewportHeight] = useState(0)
+
+  const onScrollViewLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height
+    if (h > 0) setViewportHeight((prev) => (prev === h ? prev : h))
+  }, [])
 
   const onNudgeLayout = useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height
@@ -80,6 +105,13 @@ export function CelebrationScreen() {
   const todayJournalDay = getTodayJournalDayString()
   const todayEntry = use$(store$.views.entryByDate(todayJournalDay))
   const variant = chooseCelebrationVariant(lastSavedFlow, todayEntry ?? null, todayJournalDay)
+
+  // The day's running total, which is NOT the same number as the just-saved
+  // flow's word count. `saveActiveFlowSession` has already committed the flow,
+  // so this total includes it. Subscribe to the whole computed object — the
+  // function-shaped-computed rule above applies to statsByDate too.
+  const todayStats = use$(store$.views.statsByDate(todayJournalDay))
+  const dayTotalWords = (todayStats as any)?.totalWords ?? 0
 
   // streak is a function-shaped computed view: subscribe as whole object, then destructure.
   // CRITICAL: use$(store$.views.streak.currentStreak) is NOT valid — sub-field subscriptions
@@ -120,8 +152,10 @@ export function CelebrationScreen() {
         requestAnimationFrame(() => {
           if (variant === 'handoff' && visitButtonRef.current?.focus) {
             visitButtonRef.current.focus()
-          } else if (variant !== 'handoff' && quieterRef.current?.focus) {
-            quieterRef.current.focus()
+          } else if (variant !== 'handoff' && typeof document !== 'undefined') {
+            // `document` is undefined on native (where `window` is not) — the
+            // guard keeps this web-only.
+            document.getElementById(QUIETER_DISMISS_ID)?.focus()
           }
         })
       }
@@ -129,13 +163,8 @@ export function CelebrationScreen() {
     return () => clearTimeout(t)
   }, [showUnlock, latestEarnedMilestone]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-dismiss for quieter variant
-  useEffect(() => {
-    if (variant !== 'handoff') {
-      const t = setTimeout(() => handleDismiss(), 2000)
-      return () => clearTimeout(t)
-    }
-  }, [variant]) // eslint-disable-line react-hooks/exhaustive-deps
+  // No auto-dismiss on either variant: the saved flow is rendered below the fold
+  // for re-reading, so the screen must stay put until the user taps Done.
 
   useEffect(() => {
     if (!lastSavedFlow) {
@@ -173,6 +202,11 @@ export function CelebrationScreen() {
 
   const { wordCount, content } = lastSavedFlow
 
+  // Only worth showing the day's total when it says something the headline
+  // doesn't — i.e. when this flow wasn't the only writing today.
+  const showDayTotal = dayTotalWords > wordCount
+  const hasContent = typeof content === 'string' && content.trim().length > 0
+
   // Fallback: if variant is handoff but streak hasn't recomputed yet, render quieter.
   // This handles the async subscription race on cold mount.
   const effectiveVariant = variant === 'handoff' && currentStreak >= 1 ? 'handoff' : variant
@@ -191,13 +225,18 @@ export function CelebrationScreen() {
       : 'designEnter'
   const unlockTransition = reduceMotion ? '100ms' : undefined // passed to UnlockNotification
 
+  // Web keeps the CSS viewport unit (correct through SSR, no measurement pass);
+  // native uses the measured scroll viewport. See `viewportHeight` above.
+  const heroMinHeight = isWeb ? '100vh' : viewportHeight || undefined
+
   return (
     <ScrollView
       flex={1}
       backgroundColor="$background"
       contentContainerStyle={{ flexGrow: 1 }}
+      onLayout={onScrollViewLayout}
     >
-      {/* Hero section — takes full viewport height, centers celebration content */}
+      {/* Hero section — one screenful tall, centers the celebration summary */}
       <AnimatePresence>
         {mounted && (
           <YStack
@@ -216,7 +255,7 @@ export function CelebrationScreen() {
             maxWidth={672}
             alignSelf="center"
             paddingHorizontal="$4"
-            minHeight="100vh"
+            minHeight={heroMinHeight}
             justifyContent="center"
             alignItems="center"
             position="relative"
@@ -233,16 +272,33 @@ export function CelebrationScreen() {
                   alignItems="center"
                   gap="$6"
                 >
-                  {/* Word count — serif $8; id for aria-labelledby */}
-                  <Text
-                    id="celebration-wordcount"
-                    fontFamily="$journal"
-                    fontSize="$8"
-                    color="$color"
-                    letterSpacing={-0.5}
+                  {/* This flow's word count — serif $8; id for aria-labelledby.
+                      The optional line beneath is the DAY's running total, a
+                      different number, and is labelled as such. */}
+                  <YStack
+                    alignItems="center"
+                    gap="$2"
                   >
-                    {wordCount} words.
-                  </Text>
+                    <Text
+                      id="celebration-wordcount"
+                      fontFamily="$journal"
+                      fontSize="$8"
+                      color="$color"
+                      letterSpacing={-0.5}
+                    >
+                      {wordCount} words.
+                    </Text>
+                    {showDayTotal && (
+                      <Text
+                        fontFamily="$body"
+                        fontSize={13}
+                        color="$color8"
+                        letterSpacing={0.5}
+                      >
+                        {dayTotalWords} words today.
+                      </Text>
+                    )}
+                  </YStack>
 
                   {/* Streak day — Outfit sans $4 */}
                   <Text
@@ -378,19 +434,15 @@ export function CelebrationScreen() {
                   alignItems="center"
                   gap="$6"
                 >
-                  {/* Tap-to-dismiss wrapper */}
-                  <View
-                    role="button"
-                    aria-label="Dismiss"
-                    onPress={handleDismiss}
-                    cursor="pointer"
-                    tabIndex={0}
-                    onKeyDown={(e: any) => {
-                      if (e.key === 'Enter' || e.key === ' ') handleDismiss()
-                    }}
-                    ref={quieterRef}
+                  {/* Tap-to-dismiss is deliberately gone: the saved flow now sits
+                      below the fold, and a screen-sized dismiss target next to a
+                      scrollable re-read is an accidental exit waiting to happen.
+                      Done below is the way out. */}
+                  <YStack
+                    alignItems="center"
+                    gap="$2"
                   >
-                    {/* Word count only — body sans; aria-live for screen reader announce */}
+                    {/* THIS flow's word count — body sans; aria-live announces it */}
                     <Text
                       fontFamily="$body"
                       fontSize={18}
@@ -399,15 +451,37 @@ export function CelebrationScreen() {
                       aria-live="polite"
                       role="status"
                     >
-                      {wordCount} words today.
+                      {wordCount} words.
                     </Text>
+                    {/* The day's running total — a different number, said plainly */}
+                    {showDayTotal && (
+                      <Text
+                        fontFamily="$body"
+                        fontSize={13}
+                        color="$color8"
+                        letterSpacing={0.5}
+                      >
+                        {dayTotalWords} words today.
+                      </Text>
+                    )}
+                  </YStack>
+
+                  <View marginTop={16}>
+                    <ExpandingLineButton
+                      id={QUIETER_DISMISS_ID}
+                      size="default"
+                      onPress={handleDismiss}
+                    >
+                      Done
+                    </ExpandingLineButton>
                   </View>
                 </YStack>
               )}
             </AnimatePresence>
 
-            {/* Scroll indicator — pinned to bottom of hero viewport (handoff only) */}
-            {effectiveVariant === 'handoff' && (
+            {/* Scroll indicator — pinned to the bottom of the hero viewport, on
+                both variants, whenever there are words to scroll down to */}
+            {hasContent && (
               <YStack
                 position="absolute"
                 bottom={40}
@@ -439,8 +513,8 @@ export function CelebrationScreen() {
         )}
       </AnimatePresence>
 
-      {/* Re-read section — below the fold (handoff variant only; quieter auto-dismisses) */}
-      {effectiveVariant === 'handoff' && (
+      {/* Re-read section — the finished flow, below the fold, on both variants */}
+      {hasContent && (
         <YStack
           width="100%"
           maxWidth={672}
