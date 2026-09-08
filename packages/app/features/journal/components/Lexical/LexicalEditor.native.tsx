@@ -12,7 +12,12 @@ import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_LOW, FOCUS_COMMAND } from 'lex
 import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { ALL_TRANSFORMERS } from './transformers'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { injectFontCSS, injectFocusModeCSS, createMobileLexicalConfig } from './utils'
+import {
+  injectFontCSS,
+  injectFocusModeCSS,
+  createMobileLexicalConfig,
+  injectLayoutCSS,
+} from './utils'
 import type { LexicalEditorNativeProps } from './LexicalEditor.types'
 import { FocusModeParagraphPlugin } from './plugins/FocusModeParagraphPlugin'
 import { SentenceWrapPlugin } from './plugins/SentenceWrapPlugin'
@@ -157,6 +162,12 @@ const LexicalEditor: React.FC<LexicalEditorNativeProps> = ({
   // Inject focus-mode CSS into the WebView
   useEffect(() => {
     const cleanup = injectFocusModeCSS()
+    return cleanup
+  }, [])
+
+  // Zero the document's own margins so the first line sits at the container's top
+  useEffect(() => {
+    const cleanup = injectLayoutCSS()
     return cleanup
   }, [])
   return (

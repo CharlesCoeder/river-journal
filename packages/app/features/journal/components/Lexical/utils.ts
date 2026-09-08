@@ -205,3 +205,41 @@ export const createMobileLexicalConfig = (): InitialConfigType => {
     theme: {},
   }
 }
+
+/**
+ * Zeroes the WebView document's own spacing so the editor's first line sits
+ * at the top of its container: the browser's default 8px body margin and the
+ * 1em paragraph margins Lexical's <p> elements would otherwise inherit. The
+ * web editor gets the same from lexical-theme.css, which never reaches the
+ * WebView; the native container positions the text against the home chrome
+ * to the pixel, so the document must not add spacing of its own.
+ */
+export const injectLayoutCSS = (): (() => void) => {
+  const styleId = 'expo-dom-layout'
+
+  const existingStyle = document.getElementById(styleId)
+  if (existingStyle) {
+    return () => {
+      existingStyle.remove()
+    }
+  }
+
+  const css = `
+    body {
+      margin: 0;
+    }
+    .lex-root p,
+    .lex-paragraph {
+      margin: 0;
+    }
+  `
+
+  const style = document.createElement('style')
+  style.id = styleId
+  style.textContent = css
+  document.head.appendChild(style)
+
+  return () => {
+    style.remove()
+  }
+}

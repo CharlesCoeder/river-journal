@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { BackHandler } from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { BackHandler, useWindowDimensions } from 'react-native'
+import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import type { LayoutChangeEvent } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { YStack, XStack, Text, View, StreakChip, CollectiveEntry, useReducedMotion } from '@my/ui'
@@ -39,6 +40,7 @@ import { OrphanFlowsDialog } from 'app/features/home/components/OrphanFlowsDialo
 import { LapsedPrompt } from 'app/features/home/components/LapsedPrompt'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
 import { useHubPager } from 'app/features/navigation/hubPagerContext'
+import { hubPagerX } from 'app/features/navigation/hubPagerState'
 import { ModerationReceiptGate } from 'app/features/moderation-receipts/ModerationReceiptGate'
 import { StreakReminderPermissionGate } from 'app/features/notifications/StreakReminderPermissionGate'
 import { InAppReminderGate } from 'app/features/notifications/InAppReminderGate'
@@ -61,13 +63,15 @@ import {
 //   • editor rests under the chrome      • editor slides up to the top row
 //                                        • close (×) replaces the menu link
 //
-// Leaving writing mode is deliberately easy while nothing has been written:
-// dismissing the keyboard (blur) with an empty page collapses straight back
-// to home, as does the × or Android back. Once there are words, the keyboard
-// can go up and down freely; the × pauses the session (content stays, the
-// collapsed page still shows it) and Finish Session ends it — the same
-// "<50 words → confirm" rule as JournalScreen, except a confirmed discard
-// really does clear the page, since the editor stays on screen afterwards.
+// A flow is written once, so leaving writing mode without keeping the words
+// is offered only while there is nothing much to lose: the × abandons the
+// page — clears it and collapses back to home — and fades away once the page
+// is longer than a few words, returning if they are deleted again. Dismissing
+// the keyboard (blur) with an empty page collapses straight back to home too,
+// as does Android back (which merely pauses: content stays). Past that,
+// Finish Session is the way out — the same "<50 words → confirm" rule as
+// JournalScreen, except a confirmed discard really does clear the page, since
+// the editor stays on screen afterwards.
 //
 // Geometry: the header block reports its height (collapsed anchor), the top
 // row reports its bottom (expanded anchor) and the hero its x (text inset);
@@ -75,7 +79,10 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Breathing room between the top row and the expanded editor's first line. */
-const EXPANDED_TOP_GAP = 8
+const EXPANDED_TOP_GAP = 4
+
+/** The × (abandon the page) is offered while the page is at most this long. */
+const CLOSE_WORD_LIMIT = 5
 
 export function InlineHomeScreen() {
   const router = useRouter()
@@ -100,6 +107,9 @@ export function InlineHomeScreen() {
   const isFocused = use$(ephemeral$.persistentEditor.isFocused)
   const focusMode = use$(store$.profile?.editor?.focusMode) ?? false
   const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false)
+  // The × is an exit that keeps nothing, so it is only offered while the page
+  // is short enough to abandon without ceremony (and returns if the words go).
+  const closeVisible = expanded && wordCount <= CLOSE_WORD_LIMIT
 
   // ── Carry-overs from HomeScreen (home is the post-auth landing surface) ──
   // Mount-once (empty dep list is deliberate): an app-open refresh, not a
@@ -122,14 +132,29 @@ export function InlineHomeScreen() {
   // The inline editor exists only while home is the focused route: pushing
   // the menu, settings or the celebration hides it (flushing typed words into
   // activeFlow), and coming back re-shows it with that content.
+  const bottomBarHeightRef = useRef(0)
+  const hasContentRef = useRef(hasContent)
+  hasContentRef.current = hasContent
   useFocusEffect(
     useCallback(() => {
       showInlineEditor({ content: store$.activeFlow.content.get() || '' })
+      // Hiding on blur zeroes the height reserved for the bottom bar, but the
+      // bar itself stays mounted while there are words and so never reports
+      // again — restore it, or the editor would sit over its own controls.
+      if (hasContentRef.current && bottomBarHeightRef.current > 0) {
+        updatePersistentEditorBottomBarHeight(bottomBarHeightRef.current)
+      }
       return () => {
         hidePersistentEditor()
       }
     }, [])
   )
+
+  // No bar, no reservation: once the page is empty again the editor gets the
+  // space back.
+  useEffect(() => {
+    if (!hasContent) updatePersistentEditorBottomBarHeight(0)
+  }, [hasContent])
 
   // Focus (keyboard up) → writing mode.
   useEffect(() => {
@@ -166,7 +191,9 @@ export function InlineHomeScreen() {
     setInlineEditorGeometry({ insetX: e.nativeEvent.layout.x })
   }, [])
   const handleBottomBarLayout = useCallback((e: LayoutChangeEvent) => {
-    updatePersistentEditorBottomBarHeight(e.nativeEvent.layout.height)
+    const { height } = e.nativeEvent.layout
+    bottomBarHeightRef.current = height
+    updatePersistentEditorBottomBarHeight(height)
   }, [])
 
   // ── Finishing a session ──────────────────────────────────────────────────
@@ -240,6 +267,16 @@ export function InlineHomeScreen() {
   const chromeTransition = reduceMotion ? '100ms' : 'designEnter'
   const chromeHidden = expanded
 
+  // As the menu pane is pulled in, the link that opens it dissolves — the
+  // pane's own close control takes its place — and it returns as the pane
+  // leaves. Driven by the pager's track on the UI thread, so it tracks the
+  // finger.
+  const { width: windowWidth } = useWindowDimensions()
+  const menuLinkSlideStyle = useAnimatedStyle(() => {
+    const progress = Math.min(1, Math.max(0, -hubPagerX.value / windowWidth))
+    return { opacity: 1 - progress }
+  }, [windowWidth])
+
   return (
     <YStack
       flex={1}
@@ -254,8 +291,8 @@ export function InlineHomeScreen() {
         paddingHorizontal="$6"
       >
         {/* Top row: streak chip ⟷ Menu. The menu link sits on the right, the
-            side its pane slides in from; in writing mode it yields to the
-            close control. */}
+            side its pane slides in from; in writing mode the × (abandon the
+            page) takes its place while the page is still short. */}
         <XStack
           onLayout={handleTopRowLayout}
           minHeight={44}
@@ -279,24 +316,26 @@ export function InlineHomeScreen() {
             minHeight={44}
             justifyContent="center"
           >
-            <View
-              opacity={chromeHidden ? 0 : 1}
-              transition={chromeTransition}
-              pointerEvents={chromeHidden ? 'none' : 'auto'}
-            >
-              <MenuWordLink onPress={handleMenuPress} />
-            </View>
+            <Animated.View style={menuLinkSlideStyle}>
+              <View
+                opacity={chromeHidden ? 0 : 1}
+                transition={chromeTransition}
+                pointerEvents={chromeHidden ? 'none' : 'auto'}
+              >
+                <MenuWordLink onPress={handleMenuPress} />
+              </View>
+            </Animated.View>
             <View
               position="absolute"
               right={-12}
               top={0}
               bottom={0}
               justifyContent="center"
-              opacity={chromeHidden ? 1 : 0}
+              opacity={closeVisible ? 1 : 0}
               transition={chromeTransition}
-              pointerEvents={chromeHidden ? 'auto' : 'none'}
+              pointerEvents={closeVisible ? 'auto' : 'none'}
             >
-              <CloseEditorButton onPress={collapseInlineEditor} />
+              <CloseEditorButton onPress={discardAndCollapse} />
             </View>
           </View>
         </XStack>
@@ -418,12 +457,12 @@ function MenuWordLink({ onPress }: { onPress: () => void }) {
   )
 }
 
-/** Puts the page back: collapses the editor and dismisses the keyboard. Words stay. */
+/** Abandons the page: clears the words, collapses the editor, dismisses the keyboard. */
 function CloseEditorButton({ onPress }: { onPress: () => void }) {
   return (
     <View
       role="button"
-      aria-label="Close editor"
+      aria-label="Discard and close"
       cursor="pointer"
       width={44}
       height={44}

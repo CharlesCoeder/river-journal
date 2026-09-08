@@ -28,13 +28,6 @@ import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
 const INLINE_SLIDE_SPRING = { stiffness: 80, damping: 20, mass: 1 }
 
 /**
- * The DOM WebView's document keeps the browser's default 8px body margin, so
- * the editor text already sits 8px in from the container edge. Inline mode
- * subtracts it when lining the text up with the home chrome's padding.
- */
-const WEBVIEW_BODY_MARGIN = 8
-
-/**
  * Persistent Lexical editor that remains mounted at root layout level.
  * Visibility and content are controlled via Legend State.
  *
@@ -135,7 +128,9 @@ export const PersistentEditor = () => {
     isInline && !persistentEditor.expanded
       ? Math.max(0, persistentEditor.inlineTop - persistentEditor.expandedTop)
       : 0
-  const insetX = isInline ? Math.max(0, persistentEditor.insetX - WEBVIEW_BODY_MARGIN) : 0
+  // The WebView document carries no margin of its own (see injectLayoutCSS),
+  // so the container edge IS the text edge.
+  const insetX = isInline ? persistentEditor.insetX : 0
 
   // ── Animation ───────────────────────────────────────────────────────────
   const opacity = useSharedValue(0)

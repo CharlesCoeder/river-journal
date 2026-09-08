@@ -1,13 +1,13 @@
-import { Text, View, XStack, YStack } from '@my/ui'
+import { View, XStack, YStack } from '@my/ui'
 import { X } from '@tamagui/lucide-icons'
 import { useRouter } from 'solito/navigation'
 import { MenuSurface } from './MenuSurface'
 import { useHubPager } from './hubPagerContext'
 
 /**
- * The mobile menu: a quiet header with a close control above the menu
- * surface. Inside the hub pager (home's right-hand pane) closing slides home;
- * as a plain route it pops.
+ * The mobile menu: a close control above the menu surface. Inside the hub
+ * pager (home's right-hand pane) closing slides home; as a plain route it
+ * pops.
  */
 export function MenuScreen() {
   const router = useRouter()
@@ -26,22 +26,16 @@ export function MenuScreen() {
       flex={1}
       backgroundColor="$background"
     >
+      {/* No title: the word "Menu" is the link on home that pulls this pane in,
+          and mid-slide the two would sit side by side. The close control takes
+          the link's place as the pane arrives. */}
       <XStack
         paddingHorizontal="$6"
         paddingTop="$3"
         alignItems="center"
-        justifyContent="space-between"
+        justifyContent="flex-end"
+        minHeight={44}
       >
-        <Text
-          fontFamily="$body"
-          fontSize={14}
-          color="$color8"
-          letterSpacing={1}
-          textTransform="uppercase"
-          paddingLeft="$2"
-        >
-          Menu
-        </Text>
         <View
           role="button"
           aria-label="Close menu"
