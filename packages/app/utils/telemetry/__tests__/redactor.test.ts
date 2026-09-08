@@ -200,11 +200,11 @@ describe('redactEvent — request.url is normalized to its route pattern', () =>
     expect(result.user.id).toBe('user-abc-123')
   })
 
-  it('does not rewrite URLs outside request.url (breadcrumb urls stay as-is)', () => {
+  it('applies the same normalization to breadcrumb urls', () => {
     const result = redactEvent({
       breadcrumbs: [{ category: 'http', data: { url: 'https://example.com/api/123' } }],
     }) as any
-    expect(result.breadcrumbs[0].data.url).toBe('https://example.com/api/123')
+    expect(result.breadcrumbs[0].data.url).toBe('https://example.com/api/[id]')
   })
 })
 
@@ -249,15 +249,78 @@ describe('redactEvent — the culture context is dropped', () => {
   })
 })
 
+describe('redactEvent — breadcrumb urls are route-normalized', () => {
+  it('drops the PostgREST filter that pairs a row id with the user id', () => {
+    const rowId = 'dab3036b-7eb7-4e5f-8c8f-16cc43155d33'
+    const result = redactEvent({
+      user: { id: 'user-abc-123' },
+      breadcrumbs: [
+        {
+          category: 'fetch',
+          data: {
+            method: 'PATCH',
+            url: `https://proj.supabase.co/rest/v1/trusted_browsers?id=eq.${rowId}`,
+            status_code: 204,
+          },
+        },
+      ],
+    }) as any
+    expect(result.breadcrumbs[0].data.url).toBe('https://proj.supabase.co/rest/v1/trusted_browsers')
+    expect(containsLeak(result, rowId)).toBe(false)
+    // The endpoint itself survives — that is the debugging signal worth keeping.
+    expect(containsLeak(result, 'trusted_browsers')).toBe(true)
+    expect(result.breadcrumbs[0].data.status_code).toBe(204)
+  })
+
+  it('drops a sync timestamp carried in the query string', () => {
+    const result = redactEvent({
+      breadcrumbs: [
+        {
+          category: 'fetch',
+          data: {
+            url: 'https://proj.supabase.co/rest/v1/flows?select=*&updated_at=gt.2026-08-31T18:18:45.440Z',
+          },
+        },
+      ],
+    }) as any
+    expect(result.breadcrumbs[0].data.url).toBe('https://proj.supabase.co/rest/v1/flows')
+    expect(containsLeak(result, '2026-08-31')).toBe(false)
+  })
+
+  it('normalizes navigation crumb from/to paths', () => {
+    const uuid = '0b8f4d0e-2f6a-4a4e-9c1d-3a7b8c9d0e1f'
+    const result = redactEvent({
+      breadcrumbs: [
+        { category: 'navigation', data: { from: '/collective', to: `/collective/thread/${uuid}` } },
+      ],
+    }) as any
+    expect(result.breadcrumbs[0].data.from).toBe('/collective')
+    expect(result.breadcrumbs[0].data.to).toBe('/collective/thread/[id]')
+    expect(containsLeak(result, uuid)).toBe(false)
+  })
+
+  it('handles the { values: [...] } breadcrumb envelope', () => {
+    const result = redactEvent({
+      breadcrumbs: { values: [{ category: 'fetch', data: { url: '/api/user/42' } }] },
+    }) as any
+    expect(result.breadcrumbs.values[0].data.url).toBe('/api/user/[id]')
+  })
+
+  it('leaves crumbs without a data object alone', () => {
+    expect(() => redactEvent({ breadcrumbs: [{ category: 'nav' }] })).not.toThrow()
+    expect(() => redactEvent({ breadcrumbs: [null, 'nonsense'] } as any)).not.toThrow()
+  })
+})
+
 describe('redactEvent — non-content fields are preserved', () => {
-  it('leaves a Supabase user id and a url untouched', () => {
+  it('leaves a Supabase user id and an id-free url untouched', () => {
     const event = {
       user: { id: 'user-abc-123' },
-      breadcrumbs: [{ category: 'http', data: { url: 'https://example.com' } }],
+      breadcrumbs: [{ category: 'http', data: { url: 'https://example.com/journal' } }],
     }
     const result = redactEvent(event) as any
     expect(result.user.id).toBe('user-abc-123')
-    expect(result.breadcrumbs[0].data.url).toBe('https://example.com')
+    expect(result.breadcrumbs[0].data.url).toBe('https://example.com/journal')
   })
 })
 

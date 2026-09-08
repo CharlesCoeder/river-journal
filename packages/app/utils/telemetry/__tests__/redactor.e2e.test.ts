@@ -265,7 +265,7 @@ describe('redactEvent — full workflow: a realistic journal-crash event leaks n
       },
       breadcrumbs: [
         { category: 'console', message: secret, data: { note: secret } },
-        { category: 'http', data: { url: 'https://example.com' } },
+        { category: 'http', data: { url: 'https://example.com/journal/save' } },
       ],
       exception: {
         values: [{ type: 'Error', value: `Save failed: ${secret}` }],
@@ -279,6 +279,6 @@ describe('redactEvent — full workflow: a realistic journal-crash event leaks n
     // Non-content fields survive untouched — this is a redactor, not a
     // full-event scrubber. user.id (Supabase user id, not PII) must remain.
     expect((result as any).user?.id).toBe('user-abc-123')
-    expect((result as any).breadcrumbs?.[1]?.data?.url).toBe('https://example.com')
+    expect((result as any).breadcrumbs?.[1]?.data?.url).toBe('https://example.com/journal/save')
   })
 })

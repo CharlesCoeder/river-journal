@@ -124,6 +124,52 @@ function normalizeRequestUrl(scrubbed: LooseEvent): void {
   }
 }
 
+const BREADCRUMB_URL_FIELDS = ['url', 'from', 'to'] as const
+
+/**
+ * Post-scrub step: route-normalize the URLs the SDK auto-captures into
+ * breadcrumbs (`data.url` on fetch/xhr crumbs, `data.from`/`data.to` on
+ * navigation crumbs).
+ *
+ * WHY: `normalizeRequestUrl` exists so `user.id` cannot be paired with a
+ * concrete resource identity — but the SAME pairing arrives through
+ * breadcrumbs, which the fetch instrumentation records verbatim. A PostgREST
+ * call carries its filter in the query string
+ * (`/rest/v1/trusted_browsers?id=eq.<uuid>`,
+ * `/rest/v1/flows?select=*&updated_at=gt.<timestamp>`), so an un-normalized
+ * crumb ships a row id and a precise sync time next to the user id. That is
+ * the exact exposure `normalizeRequestUrl` was written to prevent, so the same
+ * treatment applies here.
+ *
+ * `normalizeUrlToRoutePattern` drops the query string wholesale and replaces
+ * id-shaped path segments, which leaves the debugging signal that matters
+ * (which endpoint was called, in which order) while removing the identifiers.
+ *
+ * Accepts both breadcrumb shapes — a bare array and the `{ values: [...] }`
+ * envelope — and leaves a crumb without a `data` object untouched.
+ */
+function normalizeBreadcrumbUrls(scrubbed: LooseEvent): void {
+  const raw = scrubbed.breadcrumbs
+  const list = Array.isArray(raw)
+    ? raw
+    : raw !== null && typeof raw === 'object' && Array.isArray((raw as LooseEvent).values)
+      ? ((raw as LooseEvent).values as unknown[])
+      : undefined
+  if (!list) return
+
+  for (const crumb of list) {
+    if (crumb === null || typeof crumb !== 'object') continue
+    const data = (crumb as LooseEvent).data
+    if (data === null || typeof data !== 'object') continue
+    for (const field of BREADCRUMB_URL_FIELDS) {
+      const value = (data as LooseEvent)[field]
+      if (typeof value === 'string') {
+        ;(data as LooseEvent)[field] = normalizeUrlToRoutePattern(value)
+      }
+    }
+  }
+}
+
 /**
  * Post-scrub step: drop the SDK's `contexts.culture` block (locale, timezone,
  * calendar).
@@ -161,7 +207,8 @@ function dropCultureContext(scrubbed: LooseEvent): void {
  * `/collective/thread/[id]`, query string dropped) so the event's `user.id`
  * cannot be paired with a concrete resource identity. A second targeted
  * exception: `contexts.culture` (locale/timezone/calendar) is dropped
- * outright — see `dropCultureContext`.
+ * outright — see `dropCultureContext`. Breadcrumb urls get the same route
+ * normalization as `request.url` — see `normalizeBreadcrumbUrls`.
  *
  * ROBUSTNESS: never throws (a throwing `beforeSend` drops the event, or
  * worse in some SDK versions sends it un-scrubbed), guards circular references,
@@ -182,6 +229,7 @@ export function redactEvent<T>(event: T): T {
     if (scrubbed !== null && typeof scrubbed === 'object' && !Array.isArray(scrubbed)) {
       normalizeRequestUrl(scrubbed as LooseEvent)
       dropCultureContext(scrubbed as LooseEvent)
+      normalizeBreadcrumbUrls(scrubbed as LooseEvent)
     }
     return scrubbed as T
   } catch {
