@@ -101,7 +101,14 @@ module.exports = {
         },
       ],
       'expo-document-picker',
-      '@sentry/react-native/expo',
+      [
+        '@sentry/react-native/expo',
+        {
+          organization: 'charlescoeder',
+          project: 'react-native',
+          url: 'https://sentry.io/',
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
