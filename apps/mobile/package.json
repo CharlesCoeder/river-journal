@@ -9,7 +9,10 @@
     "ios": "yarn fix-xcode-env && APP_VARIANT=development npx expo run:ios",
     "eject": "npx expo eject",
     "fix-xcode-env": "node scripts/fix-xcode-env.mjs",
-    "prebuild": "yarn expo prebuild"
+    "prebuild": "yarn expo prebuild",
+    "build:prod": "npx eas-cli build --platform ios --profile production --auto-submit",
+    "update:prod": "npx eas-cli update --channel production --environment production --platform ios",
+    "update:preview": "npx eas-cli update --channel preview --environment preview --platform ios"
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",
