@@ -3,6 +3,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "env": {
         "APP_VARIANT": "development"
       },
@@ -30,6 +31,7 @@
     "preview": {
       "distribution": "internal",
       "autoIncrement": true,
+      "channel": "preview",
       "env": {
         "APP_VARIANT": "preview",
         "EXPO_PUBLIC_SUPABASE_URL": "https://bngglonhovkbfsbhghdu.supabase.co",
@@ -47,6 +49,7 @@
     "production": {
       "distribution": "store",
       "autoIncrement": true,
+      "channel": "production",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://bngglonhovkbfsbhghdu.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuZ2dsb25ob3ZrYmZzYmhnaGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTgwMDEsImV4cCI6MjA4NzQzNDAwMX0.KYbZJAJT3TxPAxOEW_-gi0M0bMendhJZz1hmn3oAzbc",
@@ -66,7 +69,9 @@
   },
   "submit": {
     "production": {
-      "ios": {}
+      "ios": {
+        "ascAppId": "6785681591"
+      }
     }
   }
 }

@@ -15,6 +15,9 @@ import {
   requestPersistentEditorBlur,
   setPersistentEditorFocused,
   clearPersistentEditorContent,
+  discardInlineSession,
+  updateActiveFlowContent,
+  store$,
 } from '../store'
 
 beforeEach(() => {
@@ -85,6 +88,15 @@ describe('expand / collapse', () => {
     expect(ephemeral$.persistentEditor.blurRequest.get()).toBe(1)
   })
 
+  it('collapseInlineEditor drops focus without waiting for the WebView blur report', () => {
+    // Otherwise "focused && !expanded → expand" re-expands before BLUR arrives.
+    expandInlineEditor()
+    setPersistentEditorFocused(true)
+    collapseInlineEditor()
+    expect(ephemeral$.persistentEditor.isFocused.get()).toBe(false)
+    expect(ephemeral$.persistentEditor.expanded.get()).toBe(false)
+  })
+
   it('requestPersistentEditorBlur is monotonic', () => {
     requestPersistentEditorBlur()
     requestPersistentEditorBlur()
@@ -123,6 +135,25 @@ describe('hidePersistentEditor', () => {
     // Geometry survives so a re-show on the same layout does not flash.
     expect(s.inlineTop).toBe(300)
     expect(s.expandedTop).toBe(60)
+  })
+})
+
+describe('discardInlineSession', () => {
+  it('drops a typed-then-emptied flow and leaves writing mode while still focused', () => {
+    showInlineEditor()
+    expandInlineEditor()
+    setPersistentEditorFocused(true)
+    updateActiveFlowContent('hello')
+    updateActiveFlowContent('')
+    const rev = ephemeral$.persistentEditor.initialContentRevision.get()
+
+    discardInlineSession()
+
+    const s = ephemeral$.persistentEditor.get()
+    expect(store$.activeFlow.get()).toBeNull()
+    expect(s.expanded).toBe(false)
+    expect(s.isFocused).toBe(false)
+    expect(s.initialContentRevision).toBe(rev + 1)
   })
 })
 

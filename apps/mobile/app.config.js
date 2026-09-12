@@ -45,8 +45,18 @@ module.exports = {
       resizeMode: 'contain',
       backgroundColor: '#ffffff',
     },
+    // EAS Update. `runtimeVersion` uses the appVersion policy: every build with
+    // the same `version` shares a runtime, so JS-only changes ship with
+    // `yarn update:prod` and are picked up on the next cold launch. Anything
+    // that changes native code (new native module, plugin/config change,
+    // SDK bump) needs a version bump *and* a new `eas build`, otherwise the
+    // update would be delivered to a binary that can't run it.
     updates: {
+      url: 'https://u.expo.dev/67d505a1-7f11-4db3-bffd-0a58015f5fcd',
       fallbackToCacheTimeout: 0,
+    },
+    runtimeVersion: {
+      policy: 'appVersion',
     },
     assetBundlePatterns: ['**/*'],
     ios: {
@@ -91,7 +101,14 @@ module.exports = {
         },
       ],
       'expo-document-picker',
-      '@sentry/react-native/expo',
+      [
+        '@sentry/react-native/expo',
+        {
+          organization: 'charlescoeder',
+          project: 'react-native',
+          url: 'https://sentry.io/',
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
