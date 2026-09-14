@@ -37,7 +37,8 @@ vi.mock('@legendapp/state/react', () => ({
 }))
 
 // ─── Frozen date ──────────────────────────────────────────────────────────────
-vi.mock('app/state/date-utils', () => ({
+vi.mock('app/state/date-utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('app/state/date-utils')>()),
   getTodayJournalDayString: () => TODAY,
 }))
 

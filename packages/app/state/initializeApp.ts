@@ -3,6 +3,7 @@ import { syncState, when, observe } from '@legendapp/state'
 import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
 import { configurePersistence } from './persistConfig'
+import { STORE_PERSIST_TRANSFORM } from './storePersistTransform'
 import { store$, ephemeral$, countUndecidedOrphans } from './store'
 import { billingReceipt$ } from './billing'
 import { scheduleAppOpenReValidation } from './appOpenReValidation'
@@ -39,11 +40,15 @@ export const appStatus$ = observable({
 function setupPersistence() {
   // Persist the core store only (session, profile, activeFlow, lastSavedFlow).
   // flows$ and entries$ handle their own persistence via syncedSupabase({ persist }).
+  // The derived `store$.views` subtree is dropped at the persistence boundary
+  // (see state/storePersistTransform.ts) so a snapshot of yesterday's streak
+  // can never hydrate over today's live computed.
   syncObservable(
     store$,
     configurePersistence({
       persist: {
         name: 'app-state',
+        transform: STORE_PERSIST_TRANSFORM,
       },
     })
   )
@@ -249,6 +254,14 @@ export async function initializePersistence() {
     setupAttestationFlush()
     setupTimezoneSync()
 
+    // Start the midnight-rollover tick so streak/day surfaces recompute when the
+    // local clock crosses midnight (and on app foreground) rather than freezing
+    // until the next remount. Deliberately BEFORE the persistence await below:
+    // the tick has no persistence dependency, and arming it after the await
+    // would freeze the day-key for the whole session if any persist promise
+    // hung. Idempotent; see state/today.ts.
+    startTodayTracking()
+
     const persistencePromises = [
       when(syncState(store$).isPersistLoaded),
       when(syncState(flows$).isPersistLoaded),
@@ -299,11 +312,6 @@ export async function initializePersistence() {
     // session asynchronously, so firing before the JWT exists would 401 as a
     // silent no-op on a cold boot). Never awaited on the boot path.
     scheduleAppOpenReValidation()
-
-    // Start the midnight-rollover tick so streak/day surfaces recompute when the
-    // local clock crosses midnight (and on app foreground) rather than freezing
-    // until the next remount. Idempotent; see state/today.ts.
-    startTodayTracking()
 
     // Dev flag: auto-enable sync via env var so developers can test sync
     // without waiting for the UI toggle story. Add to your .env.local:

@@ -218,6 +218,15 @@ describe('boot wiring — call-site placement inside initializePersistence()', (
   it('never awaits the boot-resume helper on the boot critical path', () => {
     expect(SOURCE).not.toMatch(/await\s+resumePendingAccountCleanupIfNeeded\s*\(/)
   })
+
+  it('arms the midnight day-key tick BEFORE awaiting persistence (a hung persist promise must not freeze the day-key for the session)', () => {
+    const tickIdx = SOURCE.indexOf('startTodayTracking()')
+    const awaitIdx = SOURCE.indexOf('await Promise.all(persistencePromises)')
+
+    expect(tickIdx, 'startTodayTracking() call site not found').toBeGreaterThanOrEqual(0)
+    expect(awaitIdx, 'persistence await not found').toBeGreaterThanOrEqual(0)
+    expect(tickIdx).toBeLessThan(awaitIdx)
+  })
 })
 
 describe('persistence store registration — every persisted store is a declared IndexedDB object store', () => {

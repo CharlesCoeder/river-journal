@@ -172,7 +172,8 @@ vi.mock('app/state/store', () => ({
   },
 }))
 
-vi.mock('app/state/date-utils', () => ({
+vi.mock('app/state/date-utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('app/state/date-utils')>()),
   getTodayJournalDayString: () => '2026-05-04',
 }))
 

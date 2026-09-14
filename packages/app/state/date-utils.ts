@@ -34,3 +34,19 @@ export const getJournalDayString = (date: Date): string => {
 export const getTodayJournalDayString = (): string => {
   return getJournalDayString(new Date())
 }
+
+/**
+ * Formats a 'YYYY-MM-DD' Journal Day for the home date hero, e.g.
+ * "Sunday, September 13". Parses as LOCAL midnight — a bare 'YYYY-MM-DD' is
+ * UTC per ISO 8601 and would render as the previous day west of UTC.
+ * Surfaces should feed this the reactive `useToday()` key rather than
+ * `new Date()` so the hero and the streak math can never disagree about what
+ * day it is.
+ */
+export const formatJournalDayLong = (yyyymmdd: string): string => {
+  return new Date(`${yyyymmdd}T00:00:00`).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+}

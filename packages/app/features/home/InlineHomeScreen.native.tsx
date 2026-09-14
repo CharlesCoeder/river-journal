@@ -26,6 +26,7 @@ import { isSyncReady$ } from 'app/state/syncConfig'
 import { pendingCollectiveReturn$ } from 'app/state/authReturn'
 import type { StreakState } from 'app/state/streak'
 import { useToday } from 'app/state/today'
+import { formatJournalDayLong } from 'app/state/date-utils'
 import { KeyboardOffsetView } from 'app/features/journal/components/KeyboardOffsetView'
 import {
   FlowSessionBottomBar,
@@ -247,11 +248,9 @@ export function InlineHomeScreen() {
   }
 
   // ── Presentation ─────────────────────────────────────────────────────────
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
+  // Derived from the same day-key the streak reads, so a stale key would be
+  // visible here instead of silently disagreeing with the chip.
+  const today = formatJournalDayLong(todayJournalDay)
   const streak = use$(store$.views.streak) as StreakState | undefined
   const currentStreak = streak?.currentStreak ?? 0
   const streakState = streak?.lastQualifyingDate === todayJournalDay ? 'active' : 'pending'
