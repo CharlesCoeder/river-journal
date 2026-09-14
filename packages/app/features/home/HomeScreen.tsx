@@ -26,6 +26,7 @@ import { StreakReminderPermissionGate } from 'app/features/notifications/StreakR
 import { InAppReminderGate } from 'app/features/notifications/InAppReminderGate'
 import { refreshReminderOffsetOnAppOpen } from 'app/features/notifications/reminderPreferences'
 import { useToday } from 'app/state/today'
+import { formatJournalDayLong } from 'app/state/date-utils'
 import { WordLinkNav } from 'app/features/navigation/WordLinkNav'
 import { useLapsedPrompt } from 'app/features/home/useLapsedPrompt'
 import {
@@ -76,11 +77,9 @@ export function HomeScreen() {
     router.replace('/collective')
   }, [isSyncReady, router])
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
+  // Derived from the same day-key the streak reads, so a stale key would be
+  // visible here instead of silently disagreeing with the chip.
+  const today = formatJournalDayLong(todayJournalDay)
 
   const handleBeginFlow = () => {
     if (showLapsed) dismissLapsed()
