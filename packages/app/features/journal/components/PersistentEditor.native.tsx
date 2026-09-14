@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native'
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -163,8 +164,10 @@ export const PersistentEditor = () => {
     (!isInline || persistentEditor.inlineTop > 0) &&
     insetReady
   // Inline + collapsed: how far below the expanded anchor the editor rests.
-  const collapsedOffset =
-    isInline && !persistentEditor.expanded
+  const inlineExpanded = isInline && persistentEditor.expanded
+  const collapsedOffset = inlineExpanded
+    ? 0
+    : isInline
       ? Math.max(0, persistentEditor.inlineTop - persistentEditor.expandedTop)
       : 0
   // Inline, the WebView spans the full width and the page margins are the
@@ -172,11 +175,19 @@ export const PersistentEditor = () => {
   // the screen edge instead of floating a margin in from it.
   // The clip: collapsed → the writing area under the hero; expanded → the
   // whole screen (above the safe area). Screen mode clips at its anchor.
-  const clipTop = isInline
-    ? persistentEditor.expanded
-      ? -insets.top
-      : persistentEditor.inlineTop
-    : anchorTop
+  //
+  // The clip opens the moment writing mode begins (what it uncovers above
+  // the writing area is the document's blank top inset) but closes only once
+  // the collapse slide has landed — by then the words sit under the hero and
+  // the region above them is blank again, so the snap is invisible. Closing
+  // it at the start would cut the page off at the writing area's edge in the
+  // first frame and have it re-emerge from under the hero at the last: the
+  // slide is meant to be the expand run backwards.
+  const [clipOpen, setClipOpen] = useState(false)
+  const clipTop = isInline ? (clipOpen ? -insets.top : persistentEditor.inlineTop) : anchorTop
+  // While the page slides back under the hero the clip still lets the
+  // WebView cover it; let taps there reach the hero rather than refocus.
+  const collapsing = isInline && clipOpen && !persistentEditor.expanded
   // Inline: the WebView is placed so its top is the top of the SCREEN whatever
   // the clip does, and sized down to the bar, so the switch never re-lays it out.
   const editorTop = isInline ? -(insets.top + clipTop) : 0
@@ -203,12 +214,22 @@ export const PersistentEditor = () => {
     wasShowingRef.current = shouldShow
     if (!animate) {
       translateY.value = collapsedOffset
+      setClipOpen(inlineExpanded)
       return
     }
+    if (inlineExpanded) setClipOpen(true)
+    // Collapsing: close the clip when the slide lands. An interrupted slide
+    // (re-expanded mid-way) reports finished=false and leaves it open.
+    const onLanded = inlineExpanded
+      ? undefined
+      : (finished?: boolean) => {
+          'worklet'
+          if (finished) runOnJS(setClipOpen)(false)
+        }
     translateY.value = reduceMotion
-      ? withTiming(collapsedOffset, { duration: 100 })
-      : withSpring(collapsedOffset, INLINE_SLIDE_SPRING)
-  }, [collapsedOffset, shouldShow, reduceMotion, translateY])
+      ? withTiming(collapsedOffset, { duration: 100 }, onLanded)
+      : withSpring(collapsedOffset, INLINE_SLIDE_SPRING, onLanded)
+  }, [collapsedOffset, inlineExpanded, shouldShow, reduceMotion, translateY])
 
   // Horizontally the overlay follows the hub pager (hubPagerState) by a
   // transform, so it slides with its page without re-laying-out the WebView.
@@ -306,7 +327,10 @@ export const PersistentEditor = () => {
   return (
     <>
       <Animated.View style={[containerStyle, containerAnimatedStyle]}>
-        <Animated.View style={[editorStyle, editorAnimatedStyle]}>
+        <Animated.View
+          style={[editorStyle, editorAnimatedStyle]}
+          pointerEvents={collapsing ? 'none' : 'auto'}
+        >
           <View style={styles.editorWrapper}>
             <UniversalLexicalEditor
               themeValues={themeValues}

@@ -1145,9 +1145,13 @@ export const expandInlineEditor = (): void => {
 /**
  * Inline mode: slide the editor back under the home chrome and dismiss the
  * keyboard. Content is NOT touched — an in-progress session simply pauses.
+ *
+ * Focus is dropped here rather than waiting for the WebView's BLUR report:
+ * until that crosses the bridge the editor still reads as focused, and the
+ * home screen's "focused → expand" rule would slide it straight back up.
  */
 export const collapseInlineEditor = (): void => {
-  ephemeral$.persistentEditor.expanded.set(false)
+  ephemeral$.persistentEditor.assign({ expanded: false, isFocused: false })
   requestPersistentEditorBlur()
 }
 

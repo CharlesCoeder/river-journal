@@ -8,7 +8,7 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin'
-import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_LOW, FOCUS_COMMAND } from 'lexical'
+import { $getRoot, $setSelection, BLUR_COMMAND, COMMAND_PRIORITY_LOW, FOCUS_COMMAND } from 'lexical'
 import { $convertFromMarkdownString, $convertToMarkdownString } from '@lexical/markdown'
 import { ALL_TRANSFORMERS } from './transformers'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
@@ -50,6 +50,11 @@ const ContentSyncer: React.FC<{
       lastRevision.current = revision
       editor.update(
         () => {
+          // A replaced document has no caret to keep. Carrying the old one
+          // over makes Lexical re-apply it to the DOM, which refocuses the
+          // page — undoing a blur requested in the same breath (the × clears
+          // the page and dismisses the keyboard together).
+          $setSelection(null)
           $getRoot().clear()
           if (content) {
             $convertFromMarkdownString(content, ALL_TRANSFORMERS, undefined, true)
