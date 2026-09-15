@@ -56,9 +56,13 @@ jobs:
         run: yarn install --immutable
 
       # Fail-closed forward-only gate — MUST pass before any apply. Rejects
-      # down/reverse migration markers and destructive DROP TABLE / DROP COLUMN.
-      # (`supabase db lint` validates SQL correctness, not directionality, so it
-      # is not a substitute for this check.)
+      # down/reverse migration markers and destructive migration-time SQL
+      # (DROP TABLE / DROP COLUMN / DROP SCHEMA / TRUNCATE / unfiltered DELETE /
+      # dynamic SQL in DO blocks) unless the file carries an explicit
+      # `-- destructive-migration: allow <rule> because <why>` annotation — see
+      # the linter header and docs/deployment-guide.md. (`supabase db lint`
+      # validates SQL correctness, not directionality, so it is not a
+      # substitute for this check.)
       - name: Forward-only migration lint
         run: yarn lint:forward-only-migrations
 
