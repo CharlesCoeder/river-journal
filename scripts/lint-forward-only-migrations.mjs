@@ -81,8 +81,27 @@ import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+function toPosix(p) {
+  return p.split(path.sep).join('/')
+}
+
 const ROOT = path.resolve(fileURLToPath(import.meta.url), '../..')
-const MIGRATIONS_DIR = path.join(ROOT, 'supabase/migrations')
+
+// `--migrations-dir <path>` points the scan at another directory. Exists for
+// the linter's own tests, which lint an isolated copy of the tree plus planted
+// fixtures instead of writing scratch files into the real migrations
+// directory (other test files spawn this linter against the real tree
+// concurrently). The scanned directory is echoed in the summary line so a CI
+// log always shows what was actually checked; migrations.yml passes no flag.
+function resolveMigrationsDir(argv) {
+  const flagIdx = argv.indexOf('--migrations-dir')
+  if (flagIdx !== -1 && argv[flagIdx + 1]) {
+    return path.resolve(argv[flagIdx + 1])
+  }
+  return path.join(ROOT, 'supabase/migrations')
+}
+const MIGRATIONS_DIR = resolveMigrationsDir(process.argv.slice(2))
+const MIGRATIONS_DIR_LABEL = toPosix(path.relative(ROOT, MIGRATIONS_DIR)) || '.'
 
 // Structured directional DOWN markers (goose / sql-migrate style). The leading
 // `+` is required so ordinary prose comments mentioning "down" or "rollback"
@@ -133,10 +152,6 @@ const RULE_IDS = new Set([
   'dynamic-sql',
   'destructive-function-call',
 ])
-
-function toPosix(p) {
-  return p.split(path.sep).join('/')
-}
 
 function lineAt(text, index) {
   let line = 1
@@ -435,7 +450,7 @@ function main() {
     // eslint-disable-next-line no-console
     console.error(
       `lint:forward-only-migrations FAILED — cannot read migrations directory ` +
-        `${toPosix(path.relative(ROOT, MIGRATIONS_DIR))} (fail-closed).`
+        `${MIGRATIONS_DIR_LABEL} (fail-closed).`
     )
     process.exit(2)
   }
@@ -446,7 +461,7 @@ function main() {
     // eslint-disable-next-line no-console
     console.error(
       `lint:forward-only-migrations FAILED — no *.sql migrations found under ` +
-        `supabase/migrations/ (fail-closed; refusing to pass on empty input).`
+        `${MIGRATIONS_DIR_LABEL}/ (fail-closed; refusing to pass on empty input).`
     )
     process.exit(2)
   }
@@ -462,7 +477,7 @@ function main() {
     } catch {
       continue
     }
-    const rel = `supabase/migrations/${name}`
+    const rel = `${MIGRATIONS_DIR_LABEL}/${name}`
     const { violations, suppressed, errors } = lintFile(text)
 
     for (const e of errors) problems.push(`${rel}:${e}`)
@@ -499,7 +514,7 @@ function main() {
   // eslint-disable-next-line no-console
   console.log(
     `lint:forward-only-migrations OK — scanned ${sqlFiles.length} migration ` +
-      `file(s); 0 violations` +
+      `file(s) under ${MIGRATIONS_DIR_LABEL}/; 0 violations` +
       (allowances.length > 0 ? `; ${allowances.length} annotated allowance(s).` : '.')
   )
   process.exit(0)
