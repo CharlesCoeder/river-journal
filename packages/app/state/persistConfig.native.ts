@@ -137,3 +137,14 @@ export async function resetSyncCursors(): Promise<void> {
     }
   }
 }
+
+/**
+ * Web-only cross-tab IndexedDB open/upgrade handshake (see persistConfig.ts).
+ * MMKV is a single-process store with no versioned open, so both are no-ops
+ * on native; exported so the shared boot sequence stays platform-agnostic.
+ */
+export function openPersistenceDatabase(): Promise<void> {
+  return Promise.resolve()
+}
+
+export function armPersistenceVersionChangeHandler(): void {}
