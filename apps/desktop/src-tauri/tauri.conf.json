@@ -20,7 +20,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://bngglonhovkbfsbhghdu.supabase.co wss://bngglonhovkbfsbhghdu.supabase.co https://o4511757537312768.ingest.us.sentry.io; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://bngglonhovkbfsbhghdu.supabase.co wss://bngglonhovkbfsbhghdu.supabase.co https://o4511757537312768.ingest.us.sentry.io; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "dangerousDisableAssetCspModification": ["script-src", "style-src"],
       "devCsp": "default-src 'self' http://localhost:3000; script-src 'self' 'unsafe-eval' 'unsafe-inline' http://localhost:3000; style-src 'self' 'unsafe-inline' http://localhost:3000; img-src 'self' data: blob: http://localhost:3000; font-src 'self' data: http://localhost:3000; connect-src 'self' ipc: http://ipc.localhost http://localhost:3000 ws://localhost:3000 http://localhost:54321 ws://localhost:54321 https://bngglonhovkbfsbhghdu.supabase.co wss://bngglonhovkbfsbhghdu.supabase.co https://o4511757537312768.ingest.us.sentry.io; worker-src 'self' blob:; object-src 'none'; base-uri 'self'"
     }
   },
