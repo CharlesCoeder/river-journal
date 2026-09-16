@@ -2,7 +2,11 @@ import { syncObservable } from '@legendapp/state/sync'
 import { syncState, when, observe } from '@legendapp/state'
 import { batch } from '@legendapp/state'
 import { observable } from '@legendapp/state'
-import { configurePersistence } from './persistConfig'
+import {
+  armPersistenceVersionChangeHandler,
+  configurePersistence,
+  openPersistenceDatabase,
+} from './persistConfig'
 import { STORE_PERSIST_TRANSFORM } from './storePersistTransform'
 import { store$, ephemeral$, countUndecidedOrphans } from './store'
 import { billingReceipt$ } from './billing'
@@ -249,18 +253,26 @@ export function applyBootTelemetryGate() {
 
 export async function initializePersistence() {
   try {
+    // Start the midnight-rollover tick so streak/day surfaces recompute when the
+    // local clock crosses midnight (and on app foreground) rather than freezing
+    // until the next remount. Deliberately BEFORE every persistence await below
+    // (including the pre-flight open, which legitimately waits while another
+    // tab blocks a schema upgrade): the tick has no persistence dependency, and
+    // arming it after an await would freeze the day-key for the whole session
+    // if any persist promise hung. Idempotent; see state/today.ts.
+    startTodayTracking()
+
+    // Web: open/upgrade the IndexedDB schema under our own handlers BEFORE the
+    // persist plugin opens it, so a stale tab blocking the upgrade is reported
+    // (persistenceStatus$.blockedByOtherTab) rather than hanging boot silently,
+    // and an open error rejects into the gate's error state instead of never
+    // settling. Native: no-op. See persistConfig.ts.
+    await openPersistenceDatabase()
+
     setupPersistence()
     setupSyncReadinessGate()
     setupAttestationFlush()
     setupTimezoneSync()
-
-    // Start the midnight-rollover tick so streak/day surfaces recompute when the
-    // local clock crosses midnight (and on app foreground) rather than freezing
-    // until the next remount. Deliberately BEFORE the persistence await below:
-    // the tick has no persistence dependency, and arming it after the await
-    // would freeze the day-key for the whole session if any persist promise
-    // hung. Idempotent; see state/today.ts.
-    startTodayTracking()
 
     const persistencePromises = [
       when(syncState(store$).isPersistLoaded),
@@ -278,6 +290,11 @@ export async function initializePersistence() {
     ]
 
     await Promise.all(persistencePromises)
+
+    // Now that the plugin holds its live connection, make this tab yield it
+    // to a future newer build instead of being the tab that blocks its boot.
+    armPersistenceVersionChangeHandler()
+
     ensureLocalSessionId()
     recordSessionOpen()
 

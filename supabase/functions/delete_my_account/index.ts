@@ -64,6 +64,7 @@
 import { createServiceRoleClient, getAuthenticatedUser } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
+import { readBodyWithLimit } from '../_shared/body.ts'
 import { ReceiptValidationError } from '../_shared/billing/types.ts'
 import {
   buildStripeClient,
@@ -132,15 +133,13 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
   // 2. Body — size guard ONLY. The content is never parsed: this action needs
   // no client input, and a client-supplied user_id would be ignored anyway
   // (never-trust-the-client). A missing/empty/non-JSON body is all fine.
-  let rawText: string
-  try {
-    rawText = await req.text()
-  } catch {
-    return err('invalid request body', { code: 'bad_request', status: 400 })
+  const body = await readBodyWithLimit(req, MAX_BODY_BYTES)
+  if (!body.ok) {
+    return body.reason === 'too_large'
+      ? err('request body too large', { code: 'bad_request', status: 400 })
+      : err('invalid request body', { code: 'bad_request', status: 400 })
   }
-  if (rawText.length > MAX_BODY_BYTES) {
-    return err('request body too large', { code: 'bad_request', status: 400 })
-  }
+  const rawText = body.text
 
   // 3. DB client — service-role, consulted ONLY to build the default
   // implementation of a DB-touching seam not explicitly overridden. Constructed

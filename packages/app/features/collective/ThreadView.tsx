@@ -40,6 +40,7 @@ import { AnimatePresence, View, XStack, YStack, Text, ExpandingLineButton } from
 import { ArrowLeft, CornerUpLeft } from '@tamagui/lucide-icons'
 import { useRouter, useSearchParams } from 'solito/navigation'
 import { useThread, useThreadRoot } from 'app/state/collective/thread'
+import { threadHref } from 'app/features/collective/threadHref'
 import type { ThreadPost } from 'app/state/collective/thread'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useIsSuspended } from 'app/state/collective/suspension'
@@ -391,7 +392,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
                   !isRoot
                     ? () => {
                         const rootId = focusedFromRoot ?? postId
-                        router.push(`/collective/thread/${post.id}?focusedFromRoot=${rootId}`)
+                        router.push(threadHref(post.id, { focusedFromRoot: rootId }))
                       }
                     : undefined
                 }
@@ -451,7 +452,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             <View
               onPress={() => {
                 const rootId = focusedFromRoot ?? postId
-                router.push(`/collective/thread/${post.id}?focusedFromRoot=${rootId}`)
+                router.push(threadHref(post.id, { focusedFromRoot: rootId }))
               }}
               cursor="pointer"
               marginTop="$4"
@@ -734,7 +735,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             onPress={() =>
               router.push(
                 focusedFromRoot && focusedFromRoot !== postId
-                  ? `/collective/thread/${focusedFromRoot}`
+                  ? threadHref(focusedFromRoot)
                   : '/collective/dev'
               )
             }
