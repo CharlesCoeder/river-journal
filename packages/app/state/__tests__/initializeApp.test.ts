@@ -35,6 +35,8 @@ const { storeState } = vi.hoisted(() => ({
 
 vi.mock('../persistConfig', () => ({
   configurePersistence: vi.fn(),
+  openPersistenceDatabase: vi.fn(() => Promise.resolve()),
+  armPersistenceVersionChangeHandler: vi.fn(),
 }))
 vi.mock('../store', () => ({
   store$: {
@@ -221,11 +223,29 @@ describe('boot wiring — call-site placement inside initializePersistence()', (
 
   it('arms the midnight day-key tick BEFORE awaiting persistence (a hung persist promise must not freeze the day-key for the session)', () => {
     const tickIdx = SOURCE.indexOf('startTodayTracking()')
+    const preflightIdx = SOURCE.indexOf('await openPersistenceDatabase()')
     const awaitIdx = SOURCE.indexOf('await Promise.all(persistencePromises)')
 
     expect(tickIdx, 'startTodayTracking() call site not found').toBeGreaterThanOrEqual(0)
+    expect(preflightIdx, 'pre-flight open await not found').toBeGreaterThanOrEqual(0)
     expect(awaitIdx, 'persistence await not found').toBeGreaterThanOrEqual(0)
+    // The pre-flight open can legitimately wait on another tab, so the tick
+    // must be armed before it, not just before the store loads.
+    expect(tickIdx).toBeLessThan(preflightIdx)
     expect(tickIdx).toBeLessThan(awaitIdx)
+  })
+
+  it("pre-flights the IndexedDB open BEFORE the persist plugin is wired (so blocked/error paths are ours, not the plugin's)", () => {
+    const preflightIdx = SOURCE.indexOf('await openPersistenceDatabase()')
+    const setupIdx = SOURCE.indexOf('setupPersistence()', preflightIdx)
+    expect(preflightIdx).toBeGreaterThanOrEqual(0)
+    expect(setupIdx).toBeGreaterThan(preflightIdx)
+  })
+
+  it('arms the versionchange yield handler AFTER persistence has loaded (the plugin only holds its connection then)', () => {
+    const awaitIdx = SOURCE.indexOf('await Promise.all(persistencePromises)')
+    const armIdx = SOURCE.indexOf('armPersistenceVersionChangeHandler()')
+    expect(armIdx).toBeGreaterThan(awaitIdx)
   })
 })
 
