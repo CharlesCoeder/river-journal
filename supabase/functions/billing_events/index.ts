@@ -57,6 +57,7 @@
 import { createServiceRoleClient } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
+import { readBodyWithLimit } from '../_shared/body.ts'
 import { ReceiptValidationError, type SubscriptionTier } from '../_shared/billing/types.ts'
 import {
   buildStripeClient,
@@ -124,15 +125,13 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
 
   // 2. Body — read ONCE (the exact string HMAC'd and later parsed), then the
   // byte-measured size guard. Both BEFORE verification / DB / provider call.
-  let rawBody: string
-  try {
-    rawBody = await req.text()
-  } catch {
-    return err('invalid request body', { code: 'bad_request', status: 400 })
+  const body = await readBodyWithLimit(req, MAX_BODY_BYTES)
+  if (!body.ok) {
+    return body.reason === 'too_large'
+      ? err('request body too large', { code: 'bad_request', status: 400 })
+      : err('invalid request body', { code: 'bad_request', status: 400 })
   }
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
-    return err('request body too large', { code: 'bad_request', status: 400 })
-  }
+  const rawBody = body.text
 
   // 3. Signature verification — the SOLE auth. On failure: generic 400, NO body
   // detail, NO DB read/write, NO provider call. An unset/empty
