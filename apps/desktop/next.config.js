@@ -2,9 +2,6 @@ const { withSentryConfig } = require('@sentry/nextjs')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   env: {
     NEXT_PUBLIC_IS_DESKTOP_APP: 'true',
   },

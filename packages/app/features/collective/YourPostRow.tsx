@@ -16,6 +16,7 @@
 import { View, Text, XStack, AuthorByline } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import type { YourPost } from 'app/state/collective/yourPosts'
+import { threadHref } from 'app/features/collective/threadHref'
 
 interface YourPostRowProps {
   post: YourPost
@@ -42,7 +43,7 @@ export function YourPostRow({ post }: YourPostRowProps) {
       : null
 
   function handlePress() {
-    router.push('/collective/thread/' + post.id)
+    router.push(threadHref(post.id))
   }
 
   return (

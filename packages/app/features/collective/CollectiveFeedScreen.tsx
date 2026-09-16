@@ -27,6 +27,7 @@ import {
 import { PenLine } from '@tamagui/lucide-icons'
 import { onlineManager } from '@tanstack/react-query'
 import { useFeed } from 'app/state/collective/feed'
+import { threadHref } from 'app/features/collective/threadHref'
 import { useIsSuspended } from 'app/state/collective/suspension'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { useLocallyHiddenPostIds } from 'app/state/collective/locallyHidden'
@@ -377,7 +378,7 @@ export default function CollectiveFeedScreen() {
                   <FeedPostRow
                     post={post}
                     currentUserId={currentUserId}
-                    onOpen={(id) => router.push(`/collective/thread/${id}`)}
+                    onOpen={(id) => router.push(threadHref(id))}
                   />
                   {index < allPosts.length - 1 ? (
                     <Separator
