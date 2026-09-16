@@ -51,6 +51,7 @@
 import { createServiceRoleClient, getAuthenticatedUser } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
+import { readBodyWithLimit } from '../_shared/body.ts'
 import { ReceiptValidationError } from '../_shared/billing/types.ts'
 import {
   buildStripeClient,
@@ -105,15 +106,13 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
   const callerUid = user.id
 
   // 2. Body — size guard, then JSON parse. Both BEFORE any DB or provider call.
-  let rawText: string
-  try {
-    rawText = await req.text()
-  } catch {
-    return err('invalid request body', { code: 'bad_request', status: 400 })
+  const body = await readBodyWithLimit(req, MAX_BODY_BYTES)
+  if (!body.ok) {
+    return body.reason === 'too_large'
+      ? err('request body too large', { code: 'bad_request', status: 400 })
+      : err('invalid request body', { code: 'bad_request', status: 400 })
   }
-  if (rawText.length > MAX_BODY_BYTES) {
-    return err('request body too large', { code: 'bad_request', status: 400 })
-  }
+  const rawText = body.text
   let payload: Record<string, unknown>
   try {
     payload = JSON.parse(rawText) as Record<string, unknown>
