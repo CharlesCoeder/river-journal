@@ -185,7 +185,12 @@ function buildMockClient(config: MockConfig) {
                       if (!config.update) {
                         throw new Error('receipt update not configured for this test')
                       }
-                      return Promise.resolve(config.update)
+                      return {
+                        select(cols: string) {
+                          assertEquals(cols, 'id')
+                          return Promise.resolve(config.update)
+                        },
+                      }
                     },
                   }
                 },
@@ -596,6 +601,30 @@ Deno.test('handler returns 500 (never a false success) when the Stripe cancel su
       Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END }),
   })
   assertEquals(response.status, 500)
+})
+
+Deno.test('handler still returns 200 (with a traceable log line) when the receipt UPDATE matches zero rows -- the row vanished between the ownership check and the write', async () => {
+  const originalLog = console.log
+  const lines: string[] = []
+  // deno-lint-ignore no-explicit-any
+  console.log = ((...args: any[]) => {
+    lines.push(String(args[0] ?? ''))
+  }) as typeof console.log
+  try {
+    const response = await handler(requestFor(basePayload()), {
+      resolveUser: resolveCaller,
+      client: buildMockClient({
+        ownership: { data: ownedRow(), error: null },
+        update: { data: [], error: null },
+      }),
+      cancelStripeSubscription: () =>
+        Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END }),
+    })
+    assertEquals(response.status, 200)
+    assertEquals(lines.some((line) => line.includes('subscription.cancel.no_row_matched')), true)
+  } finally {
+    console.log = originalLog
+  }
 })
 
 // ---------------------------------------------------------------------------

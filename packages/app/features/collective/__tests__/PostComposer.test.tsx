@@ -691,6 +691,23 @@ describe('t10 — error path', () => {
     expect(screen.getByText(/Couldn't post\. Try again\./i)).not.toBeNull()
   })
 
+  it('renders the gate-specific microcopy (draft kept) when the server refuses the insert with 42501', async () => {
+    mockMutateAsync.mockRejectedValueOnce({
+      code: '42501',
+      message: 'new row violates row-level security policy for table "collective_posts"',
+    })
+    render(React.createElement(PostComposer))
+    fireEvent.change(screen.getByLabelText('Letter title'), { target: { value: 'A title' } })
+    const editor = document.querySelector('[data-testid="lexical-content-editable"]')
+    fireEvent.input(editor!, { target: { innerText: 'test post body' } })
+    await act(async () => {
+      fireEvent.click(screen.getByText('Leave it for the room'))
+    })
+    expect(screen.getByText(/opens after today's 500 words/i)).not.toBeNull()
+    expect(screen.queryByText(/Couldn't post\. Try again\./i)).toBeNull()
+    expect(mockRouterPush).not.toHaveBeenCalled()
+  })
+
   it('composer does NOT auto-close on error (draft preserved, no navigation)', async () => {
     mockMutateAsync.mockRejectedValueOnce(new Error('error'))
     render(React.createElement(PostComposer))

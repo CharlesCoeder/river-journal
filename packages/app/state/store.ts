@@ -526,6 +526,10 @@ export interface LocallyExcludedEntrySummary {
  * on flows$ / entries$ at the call site and re-derive on change.
  */
 export const getLocallyExcludedEntries = (): LocallyExcludedEntrySummary[] => {
+  // Same visibility rule as the views: another account's local-only entries
+  // are not listed (or restorable) from this session.
+  const currentUserId = store$.session.userId.peek() ?? null
+
   const allFlows = flows$.peek() ?? {}
   const allEntries = entries$.peek() ?? {}
   const byEntry = new Map<string, LocallyExcludedEntrySummary>()
@@ -534,7 +538,7 @@ export const getLocallyExcludedEntries = (): LocallyExcludedEntrySummary[] => {
     const flow = allFlows[flowId]
     if (!flow || flow.sync_excluded !== true) continue
     const entry = allEntries[flow.dailyEntryId]
-    if (!entry) continue
+    if (!entry || !isVisibleToCurrentSession(entry, currentUserId)) continue
     const existing = byEntry.get(entry.id)
     if (existing) {
       existing.flowIds.push(flow.id)
@@ -1482,6 +1486,55 @@ export const isDarkTheme = (themeName: ThemeName | 'custom'): boolean => {
 // memoizes them. They only re-run when the underlying data they `get()` changes,
 // making them efficient.
 
+/**
+ * Per-user view scoping for the local pool (ADR-001, amended 2026-09-20).
+ *
+ *   signed-in  (currentUserId !== null): row.user_id === currentUserId OR row.user_id == null
+ *   signed-out (currentUserId === null): row.user_id == null
+ *
+ * In words: hide rows owned by a DIFFERENT account; never hide anonymous rows.
+ * Anonymous (`user_id` null/undefined) data is what you wrote before you had an
+ * account, or chose to keep local-only — signing in must never make it vanish
+ * (local-first; core writing never gated). Cross-account leakage on a shared
+ * device is the only thing this predicate exists to prevent. Same rule as the
+ * export/backup/search ownership filter (`filterExportableEntries`).
+ *
+ * Flows are NOT scoped by their own user_id; they inherit visibility from their
+ * parent entry (a flow's user_id may lag during the logout window, but the
+ * parent entry's ownership is the load-bearing identity).
+ *
+ * State-layer helper only (the streak view shares it). Feature code reads the
+ * local pool through `store$.views.*`, which is where this scoping lives.
+ */
+export const isVisibleToCurrentSession = (
+  row: { user_id?: string | null },
+  currentUserId: string | null
+): boolean => {
+  if (row.user_id == null) return true
+  return row.user_id === currentUserId
+}
+
+/** Entries visible to the current session (see isVisibleToCurrentSession). */
+const visibleEntries = (): Entry[] => {
+  const currentUserId = store$.session.userId.get() ?? null
+  return Object.values(entries$.get() ?? {}).filter((entry) =>
+    isVisibleToCurrentSession(entry, currentUserId)
+  )
+}
+
+/**
+ * When a date has both an owned and an anonymous entry (an owned entry synced
+ * down beside one written before sign-in), the owned one is the day's entry:
+ * writing continues on it, and the anonymous one stays visible in the list
+ * views as history. Never merges or re-parents — that is adoption, and adoption
+ * stays behind the orphan-consent dialog.
+ */
+const preferOwned = (a: Entry, b: Entry, currentUserId: string | null): Entry => {
+  if (a.user_id === currentUserId && currentUserId) return a
+  if (b.user_id === currentUserId && currentUserId) return b
+  return a
+}
+
 store$.assign({
   views: {
     /**
@@ -1491,22 +1544,28 @@ store$.assign({
      * making date-to-ID lookups instantaneous.
      */
     entryIdsByDate: (): Record<string, string> => {
-      const allEntries = Object.values(entries$.get() ?? {})
-      // The `reduce` function efficiently transforms the array of entries
-      // into a simple { 'date': 'id' } map.
-      return allEntries.reduce(
-        (index, entry) => {
-          index[entry.entryDate] = entry.id
-          return index
-        },
-        {} as Record<string, string>
-      )
+      const currentUserId = store$.session.userId.get() ?? null
+      const byDate: Record<string, Entry> = {}
+      for (const entry of visibleEntries()) {
+        const existing = byDate[entry.entryDate]
+        byDate[entry.entryDate] = existing ? preferOwned(existing, entry, currentUserId) : entry
+      }
+      const index: Record<string, string> = {}
+      for (const date in byDate) index[date] = byDate[date]!.id
+      return index
     },
 
     /**
      * A highly efficient lookup table to get all flows for a specific entry ID.
      */
     flowsByEntryId: (entryId: string): Flow[] => {
+      // Visibility is inherited from the parent entry: an entry the current
+      // session cannot see has no visible flows, and once the parent passes
+      // the gate every flow under it is in scope regardless of its own user_id.
+      const parent = entries$.get()?.[entryId]
+      if (!parent || !isVisibleToCurrentSession(parent, store$.session.userId.get() ?? null)) {
+        return []
+      }
       const allFlows = Object.values(flows$.get() ?? {})
       return allFlows.filter((flow) => flow.dailyEntryId === entryId)
     },
@@ -1518,8 +1577,10 @@ store$.assign({
      * This is the most performant way to get data for a single item.
      */
     entryByDate: (date: string): DailyEntryView | null => {
-      const allEntries = Object.values(entries$.get() ?? {})
-      const entryData = allEntries.find((entry) => entry.entryDate === date)
+      // Resolve through entryIdsByDate so the owned-wins tiebreak here and in
+      // saveActiveFlowSession is one decision, not two.
+      const entryId = store$.views.entryIdsByDate.get()?.[date]
+      const entryData = entryId ? entries$.get()?.[entryId] : undefined
 
       if (!entryData) return null
 
@@ -1571,10 +1632,9 @@ store$.assign({
      * or flow is added, changed, or removed.
      */
     allEntriesSorted: (): DailyEntryView[] => {
-      const allEntries = Object.values(entries$.get() ?? {})
       const allFlows = Object.values(flows$.get() ?? {})
 
-      return allEntries
+      return visibleEntries()
         .map((entry) => {
           const flows = allFlows.filter((flow) => flow.dailyEntryId === entry.id)
           const totalWords = flows.reduce((sum, flow) => sum + flow.wordCount, 0)

@@ -12,7 +12,7 @@
 import { use$ } from '@legendapp/state/react'
 import type { Entry, Flow, GraceDay, ThemeName } from './types'
 import { THEME_NAMES } from './types'
-import { store$ } from './store'
+import { store$, isVisibleToCurrentSession } from './store'
 import { entries$ } from './entries'
 import { flows$ } from './flows'
 import { graceDays$ } from './grace_days'
@@ -280,10 +280,10 @@ store$.assign({
   views: {
     streak: () => {
       // Cross-user defense: scope the streak inputs to the current
-      // session user so a prior user's qualifying days on a shared device do
-      // not contribute to the displayed streak.
-      //   signed-in:  row.user_id === currentUserId
-      //   signed-out: row.user_id === null  (anonymous-only scope)
+      // session so a prior user's qualifying days on a shared device do
+      // not contribute to the displayed streak. Uses the same predicate as
+      // the store views (own + anonymous) so "goal reached today" and the
+      // streak can never disagree about which entries count.
       // Flows scope via parent-entry membership in the scoped entry set —
       // a flow's user_id may lag (logout-window) but its parent entry's
       // ownership is the load-bearing identity.
@@ -297,10 +297,7 @@ store$.assign({
       for (const id in allEntries) {
         const e = allEntries[id]
         if (!e) continue
-        const ownerMatches = currentUserId
-          ? e.user_id === currentUserId
-          : e.user_id === null || e.user_id === undefined
-        if (ownerMatches) scopedEntries[id] = e
+        if (isVisibleToCurrentSession(e, currentUserId ?? null)) scopedEntries[id] = e
       }
 
       const scopedFlows: Record<string, Flow> = {}

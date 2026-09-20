@@ -57,9 +57,19 @@ export type AuditLogItem = Database['public']['Tables']['moderation_actions']['R
 export type PostAdminDetail =
   Database['public']['Functions']['collective_post_admin_detail']['Returns'][number]
 
+/**
+ * Compound keyset cursor: the last rendered row's `(created_at, id)`. Both parts
+ * are needed — `created_at` alone is not unique, and an audit trail must never
+ * silently skip a row at a page boundary (see `fetchAuditLogPage`).
+ */
+export type AuditLogCursor = {
+  createdAt: string
+  id: string
+}
+
 export type AuditLogPage = {
   items: AuditLogItem[]
-  nextCursor: string | null
+  nextCursor: AuditLogCursor | null
 }
 
 /**
@@ -68,40 +78,39 @@ export type AuditLogPage = {
  * Direct newest-first SELECT on `moderation_actions` with the `+1` look-ahead
  * idiom used by `feed.ts` / `yourPosts.ts`: request PAGE_SIZE+1 rows; if more
  * than PAGE_SIZE came back there is another page — slice to PAGE_SIZE and set
- * `nextCursor` to the last VISIBLE row's `created_at`; otherwise `null`. When
- * `cursor` is non-null, `.lt('created_at', cursor)` fetches strictly-older rows.
+ * `nextCursor` from the last VISIBLE row; otherwise `null`.
  *
- * KEYSET CAVEAT — the cursor is `created_at`-only, which is fine at solo-operator
- * scale (two manual moderation actions never share a microsecond). The hardening
- * option — DO NOT build it now — is a `(created_at, id)` compound keyset plus
- * recomputing the cursor from the actually-rendered last row. It closes two
- * boundary hazards, and in an audit log a *silently dropped row* is the failure
- * that matters:
- *   (a) TIE-DROP: `.lt('created_at', cursor)` is strictly-less-than, so if a tie
- *       group straddles the page boundary — the sliced-off look-ahead row shares
- *       `created_at` with the last visible row — every tied row is SKIPPED by the
- *       next page (dropped, not duplicated). A `(created_at, id)` keyset closes
- *       this.
- *   (b) PREPEND-DISPLACEMENT: the 30s `refetchInterval` re-runs page 1 with
- *       `pageParam: null` (always "newest 20"); if a new action lands between
- *       polls, the row that was 20th-newest is displaced to 21st while page 2
- *       still keyset-reads `.lt(oldCursor)` and starts BELOW it — so that one
- *       boundary row is transiently absent from the flattened union until a
- *       manual reload. Recomputing the cursor from the rendered last row is the
- *       fix. Neither is fatal at solo cadence; both are named here so a future
- *       maintainer scaling this knows the `(created_at, id)` keyset is the answer.
+ * The keyset is the compound `(created_at DESC, id DESC)`, not `created_at`
+ * alone. A `created_at`-only strictly-less-than cursor silently SKIPS every row
+ * that shares the boundary row's timestamp (the look-ahead row is sliced off
+ * this page and is not strictly older than the cursor on the next) — and in an
+ * audit log a silently dropped row is the failure that matters. Ordering by
+ * `id` as the tiebreak and filtering with
+ *   `created_at < cursor.createdAt OR (created_at = cursor.createdAt AND id < cursor.id)`
+ * makes the position unambiguous regardless of how many actions share a
+ * microsecond (bulk/import-driven writes, a second moderator).
+ *
+ * The 30s poll is already safe against prepend displacement: TanStack Query
+ * refetches an infinite query's pages sequentially and re-derives each page's
+ * param from the freshly fetched previous page, so page 2 always starts from
+ * the row page 1 actually ended on.
  */
-export async function fetchAuditLogPage(cursor: string | null): Promise<AuditLogPage> {
+export async function fetchAuditLogPage(cursor: AuditLogCursor | null): Promise<AuditLogPage> {
   let query = supabase
     .from('moderation_actions')
     .select(
       'id,action_type,actor_user_id,target_post_id,target_user_id,reason,note,created_at,metadata'
     )
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(PAGE_SIZE + 1)
 
   if (cursor != null) {
-    query = query.lt('created_at', cursor)
+    // PostgREST `or` filter syntax; values are quoted so the timestamp's `+`
+    // and `:` are never re-tokenised.
+    query = query.or(
+      `created_at.lt."${cursor.createdAt}",and(created_at.eq."${cursor.createdAt}",id.lt."${cursor.id}")`
+    )
   }
 
   const { data, error } = await query
@@ -111,7 +120,8 @@ export async function fetchAuditLogPage(cursor: string | null): Promise<AuditLog
   const hasMore = rows.length > PAGE_SIZE
   const items = hasMore ? rows.slice(0, PAGE_SIZE) : rows
   // hasMore ⇒ rows.length > PAGE_SIZE, so index PAGE_SIZE-1 is always present.
-  const nextCursor = hasMore ? rows[PAGE_SIZE - 1]!.created_at : null
+  const last = hasMore ? rows[PAGE_SIZE - 1]! : null
+  const nextCursor = last ? { createdAt: last.created_at, id: last.id } : null
   return { items, nextCursor }
 }
 
@@ -130,8 +140,8 @@ export async function fetchAuditLogPage(cursor: string | null): Promise<AuditLog
 export function useAuditLog() {
   return useInfiniteQuery({
     queryKey: auditLogKey,
-    queryFn: ({ pageParam }: { pageParam: string | null }) => fetchAuditLogPage(pageParam),
-    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }: { pageParam: AuditLogCursor | null }) => fetchAuditLogPage(pageParam),
+    initialPageParam: null as AuditLogCursor | null,
     getNextPageParam: (lastPage: AuditLogPage) => lastPage.nextCursor,
     maxPages: 5,
     refetchInterval: 30_000,

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 // Mock Supabase client to prevent network requests during tests
 vi.mock('../../utils/supabase', () => {
@@ -35,6 +35,7 @@ import { flows$ } from '../flows'
 import { entries$ } from '../entries'
 import { graceDays$ } from '../grace_days'
 import { store$ } from '../store'
+import { getTodayJournalDayString } from '../date-utils'
 
 // ---------------------------------------------------------------------------
 // Shared test data helpers
@@ -337,6 +338,13 @@ describe('orphan-flow under adopted parent entry (logout-window regression)', ()
     entries$.set({})
     isSyncReady$.set(false)
     orphanFlowsPending$.set(null)
+    // The recovery surface is per-session scoped: this scenario is user-123
+    // back in their own session after the logout window.
+    store$.session.userId.set('user-123')
+  })
+
+  afterEach(() => {
+    store$.session.userId.set(null)
   })
 
   // The shared scenario builder: an adopted parent entry with a logged-out
@@ -1074,5 +1082,201 @@ describe('previousAccountBanner$ derivation', () => {
     const banner = previousAccountBanner$.get()
     expect(banner).not.toBeNull()
     expect(banner?.previousUserId).toBe('user-B')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Per-user view scoping (ADR-001 Phase 2, own + anonymous rule)
+// ---------------------------------------------------------------------------
+
+describe('Per-user view scoping (ADR-001 Phase 2)', () => {
+  let getLocallyExcludedEntries: () => Array<{ entryId: string }>
+  let countUndecidedOrphans: () => { flowCount: number; entryCount: number }
+
+  const DATE = '2026-05-13'
+
+  const seedUser = (user: string | null, suffix: string, words = 500) => {
+    const entryId = `e-${suffix}`
+    entries$![entryId]!.set(makeEntry(entryId, { user_id: user, entryDate: DATE }))
+    flows$![`f-${suffix}`]!.set(
+      makeFlow(`f-${suffix}`, { dailyEntryId: entryId, user_id: user, wordCount: words })
+    )
+    return entryId
+  }
+
+  const readViews = () => ({
+    byDate: store$.views.entryByDate(DATE),
+    idsByDate: store$.views.entryIdsByDate.get()!,
+    sorted: store$.views.allEntriesSorted.get()!.map((e) => e.id),
+    month: store$.views.entriesByMonth('2026-05').map((e) => e.id),
+    year: store$.views.entriesByYear('2026').map((e) => e.id),
+    stats: store$.views.statsByDate(DATE),
+  })
+
+  beforeEach(async () => {
+    const storeModule = await import('../store')
+    await import('../streak')
+    getLocallyExcludedEntries = storeModule.getLocallyExcludedEntries
+    countUndecidedOrphans = storeModule.countUndecidedOrphans
+    flows$.set({})
+    entries$.set({})
+    graceDays$.set({})
+    store$.profile.set({ word_goal: 500 } as any)
+    store$.session.userId.set(null)
+  })
+
+  afterEach(() => {
+    store$.session.userId.set(null)
+  })
+
+  it("(a) signed in as A: every view resolves to A's entry, not B's same-date entry", () => {
+    seedUser('user-A', 'A')
+    seedUser('user-B', 'B')
+    store$.session.userId.set('user-A')
+
+    const v = readViews()
+    expect(v.byDate?.id).toBe('e-A')
+    expect(v.idsByDate[DATE]).toBe('e-A')
+    expect(v.sorted).toEqual(['e-A'])
+    expect(v.month).toEqual(['e-A'])
+    expect(v.year).toEqual(['e-A'])
+    expect(v.stats.totalWords).toBe(500)
+  })
+
+  it('(b) flipping the session to B re-scopes every view without a remount; A stays on disk', () => {
+    seedUser('user-A', 'A')
+    seedUser('user-B', 'B')
+    store$.session.userId.set('user-A')
+    expect(readViews().byDate?.id).toBe('e-A')
+
+    store$.session.userId.set('user-B')
+    const v = readViews()
+    expect(v.byDate?.id).toBe('e-B')
+    expect(v.idsByDate[DATE]).toBe('e-B')
+    expect(v.sorted).toEqual(['e-B'])
+    expect(v.month).toEqual(['e-B'])
+    expect(v.year).toEqual(['e-B'])
+    expect(Object.keys(entries$.peek() ?? {}).sort()).toEqual(['e-A', 'e-B'])
+  })
+
+  it('(c) signed out: only the anonymous entry is visible', () => {
+    seedUser('user-A', 'A')
+    seedUser('user-B', 'B')
+    seedUser(null, 'anon')
+    store$.session.userId.set(null)
+
+    const v = readViews()
+    expect(v.byDate?.id).toBe('e-anon')
+    expect(v.idsByDate[DATE]).toBe('e-anon')
+    expect(v.sorted).toEqual(['e-anon'])
+  })
+
+  it('(d) user_id undefined is treated as anonymous alongside null', () => {
+    entries$!['e-undef']!.set(makeEntry('e-undef', { user_id: undefined, entryDate: '2026-05-12' }))
+    seedUser(null, 'anon')
+    store$.session.userId.set(null)
+    expect(store$.views.allEntriesSorted.get()!.map((e) => e.id)).toEqual(['e-anon', 'e-undef'])
+  })
+
+  it('(e) signed in: anonymous rows stay visible next to owned rows; only other accounts are hidden', () => {
+    seedUser('user-A', 'A')
+    entries$!['e-anon']!.set(makeEntry('e-anon', { user_id: null, entryDate: '2026-05-12' }))
+    seedUser('user-B', 'B')
+    store$.session.userId.set('user-A')
+
+    expect(store$.views.allEntriesSorted.get()!.map((e) => e.id)).toEqual(['e-A', 'e-anon'])
+    expect(store$.views.entryByDate('2026-05-12')?.id).toBe('e-anon')
+  })
+
+  it('(f) same date, owned + anonymous: the owned entry wins for entryByDate/entryIdsByDate, both stay listed', () => {
+    seedUser(null, 'anon')
+    seedUser('user-A', 'A')
+    store$.session.userId.set('user-A')
+
+    const v = readViews()
+    expect(v.byDate?.id).toBe('e-A')
+    expect(v.idsByDate[DATE]).toBe('e-A')
+    expect(v.sorted.sort()).toEqual(['e-A', 'e-anon'])
+    // Order of insertion must not matter for the tiebreak.
+    entries$.set({})
+    flows$.set({})
+    seedUser('user-A', 'A')
+    seedUser(null, 'anon')
+    expect(store$.views.entryIdsByDate.get()![DATE]).toBe('e-A')
+  })
+
+  it('(g) flowsByEntryId inherits visibility from the parent entry, not the flow user_id', () => {
+    seedUser('user-A', 'A')
+    flows$!['f-lag']!.set(makeFlow('f-lag', { dailyEntryId: 'e-A', user_id: null }))
+    seedUser('user-B', 'B')
+    store$.session.userId.set('user-A')
+
+    expect(
+      store$.views
+        .flowsByEntryId('e-A')
+        .map((f) => f.id)
+        .sort()
+    ).toEqual(['f-A', 'f-lag'])
+    expect(store$.views.flowsByEntryId('e-B')).toEqual([])
+  })
+
+  it('(h) flowsByEntryId returns [] for a flow whose parent entry is gone', () => {
+    flows$!['f-orphan']!.set(makeFlow('f-orphan', { dailyEntryId: 'missing', user_id: 'user-A' }))
+    store$.session.userId.set('user-A')
+    expect(store$.views.flowsByEntryId('missing')).toEqual([])
+  })
+
+  it("(i) getLocallyExcludedEntries lists own + anonymous excluded entries, never another account's", () => {
+    for (const [user, suffix] of [
+      ['user-A', 'A'],
+      ['user-B', 'B'],
+      [null, 'anon'],
+    ] as const) {
+      entries$![`e-${suffix}`]!.set(
+        makeEntry(`e-${suffix}`, {
+          user_id: user,
+          sync_excluded: true,
+          entryDate: `2026-05-1${suffix.length}`,
+        })
+      )
+      flows$![`f-${suffix}`]!.set(
+        makeFlow(`f-${suffix}`, { dailyEntryId: `e-${suffix}`, user_id: user, sync_excluded: true })
+      )
+    }
+    store$.session.userId.set('user-A')
+    expect(
+      getLocallyExcludedEntries()
+        .map((s) => s.entryId)
+        .sort()
+    ).toEqual(['e-A', 'e-anon'])
+
+    store$.session.userId.set(null)
+    expect(getLocallyExcludedEntries().map((s) => s.entryId)).toEqual(['e-anon'])
+  })
+
+  it('(j) countUndecidedOrphans is intentionally unscoped by session', () => {
+    entries$!['e-anon']!.set(makeEntry('e-anon', { user_id: null }))
+    flows$!['f-anon']!.set(makeFlow('f-anon', { dailyEntryId: 'e-anon', user_id: null }))
+    store$.session.userId.set('user-A')
+    expect(countUndecidedOrphans()).toEqual({ flowCount: 1, entryCount: 1 })
+  })
+
+  it("(k) streak agrees with the views: anonymous words count, another account's do not", () => {
+    const today = getTodayJournalDayString()
+    entries$!['e-anon']!.set(makeEntry('e-anon', { user_id: null, entryDate: today }))
+    flows$!['f-anon']!.set(
+      makeFlow('f-anon', { dailyEntryId: 'e-anon', user_id: null, wordCount: 500 })
+    )
+    store$.session.userId.set('user-A')
+    const withAnon = store$.views.streak.get()!.currentStreak
+    expect(store$.views.statsByDate(today).goalReached).toBe(true)
+    expect(withAnon).toBeGreaterThan(0)
+
+    entries$!['e-B']!.set(makeEntry('e-B', { user_id: 'user-B', entryDate: today }))
+    flows$!['f-B']!.set(makeFlow('f-B', { dailyEntryId: 'e-B', user_id: 'user-B', wordCount: 500 }))
+    expect(store$.views.streak.get()!.currentStreak).toBe(withAnon)
+
+    store$.session.userId.set('user-C')
+    expect(store$.views.streak.get()!.currentStreak).toBe(withAnon)
   })
 })

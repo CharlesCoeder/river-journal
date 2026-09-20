@@ -7,15 +7,19 @@
 // fanOutExpoPush helper. It is trigger-context: gated by a service-role bearer
 // (verify_jwt = false), DB access via the RLS-bypassing service-role client.
 //
-// IDEMPOTENCY — claim-first, at-most-once (deliberate). The FIRST DB write
-// claims the action in moderation_notification_log; a re-fired/duplicated
-// trigger inserts zero rows and short-circuits to a no-op BEFORE any preference
-// read / token lookup / send. The claim is never rolled back on a downstream or
-// Expo failure — so ANY post-claim failure permanently forgoes that one push.
-// This is the accepted trade against ever DOUBLE-notifying a moderated user
-// (who also sees the in-app receipt, so the push is not their sole channel).
-// The ledger is intentionally NOT evolved into a two-state sent/delivered
-// record; a dropped push is preferred to a duplicated one.
+// IDEMPOTENCY — resolve, then claim, at-most-once. The affected user is
+// resolved BEFORE the ledger claim: resolution is a read with no side effect,
+// and a transient failure there must surface as a retryable 500 rather than be
+// swallowed as "no target" behind an already-claimed row (which no retry could
+// ever recover). The claim in moderation_notification_log is then the FIRST DB
+// write; a re-fired/duplicated trigger inserts zero rows and short-circuits to
+// a no-op BEFORE any preference read / token lookup / send. The claim is never
+// rolled back on a downstream or Expo failure — so ANY post-claim failure
+// permanently forgoes that one push. This is the accepted trade against ever
+// DOUBLE-notifying a moderated user (who also sees the in-app receipt, so the
+// push is not their sole channel). The ledger is intentionally NOT evolved into
+// a two-state sent/delivered record; a dropped push is preferred to a
+// duplicated one.
 //
 // SECURITY POSTURE. The function is reachable at its public URL with only the
 // bearer check as a wall, so:
@@ -90,22 +94,29 @@ export function communityGuidelinesUrl(): string {
 // Action types whose affected user is derived from the target post's author.
 const POST_DERIVED_ACTIONS = new Set(['remove_post', 'reinstate'])
 
-// Resolve the affected user id:
+export type AffectedUserResolution =
+  | { status: 'resolved'; userId: string }
+  | { status: 'none' }
+  | { status: 'error' }
+
+// Resolve the affected user:
 //   - target_user_id wins when present (suspend_user);
 //   - otherwise, for remove_post / reinstate, derive it via a service-role
 //     SELECT of collective_posts.user_id for target_post_id;
-//   - a null/missing target_post_id, a hard-deleted post, or any query error
-//     resolves to null WITHOUT throwing.
-export async function resolveAffectedUserId(
+//   - a null/missing target_post_id, or a hard-deleted / authorless post, is
+//     'none' (nobody to notify — not a fault);
+//   - a query error or throw is 'error' — distinguishable so the handler can
+//     fail BEFORE claiming the ledger and let the trigger's retry recover it.
+export async function resolveAffectedUser(
   payload: Pick<ModerationActionPayload, 'action_type' | 'target_user_id' | 'target_post_id'>,
   client: SupabaseClient,
-): Promise<string | null> {
+): Promise<AffectedUserResolution> {
   if (payload.target_user_id) {
-    return payload.target_user_id
+    return { status: 'resolved', userId: payload.target_user_id }
   }
   const postId = payload.target_post_id
   if (!postId || !POST_DERIVED_ACTIONS.has(payload.action_type)) {
-    return null
+    return { status: 'none' }
   }
   try {
     const { data, error } = await client
@@ -113,13 +124,24 @@ export async function resolveAffectedUserId(
       .select('user_id')
       .eq('id', postId)
       .maybeSingle()
-    if (error || !data) {
-      return null
+    if (error) {
+      return { status: 'error' }
     }
-    return (data as { user_id: string | null }).user_id ?? null
+    const userId = (data as { user_id: string | null } | null)?.user_id ?? null
+    return userId ? { status: 'resolved', userId } : { status: 'none' }
   } catch {
-    return null
+    return { status: 'error' }
   }
+}
+
+// Null-collapsing convenience over resolveAffectedUser (kept for callers that
+// only care whether someone can be notified).
+export async function resolveAffectedUserId(
+  payload: Pick<ModerationActionPayload, 'action_type' | 'target_user_id' | 'target_post_id'>,
+  client: SupabaseClient,
+): Promise<string | null> {
+  const resolution = await resolveAffectedUser(payload, client)
+  return resolution.status === 'resolved' ? resolution.userId : null
 }
 
 function composeMessage(
@@ -261,8 +283,38 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
     return err('service misconfigured', { code: 'internal', status: 500 })
   }
 
-  // Insert-first idempotency (claim-first, at-most-once). The first DB write
-  // claims the action in the ledger; a re-fired/duplicated trigger inserts zero
+  // Resolve the affected user BEFORE claiming the ledger. Resolution is a pure
+  // read; a transient DB fault here returns 500 so the pg_net trigger records a
+  // retryable outcome and a later delivery can still land. Once the claim below
+  // is written, no retry can recover the notification — so nothing that can
+  // fail transiently belongs before it except this read.
+  const resolution = await resolveAffectedUser(payload, client)
+  if (resolution.status === 'error') {
+    logError(
+      'moderation.notify.resolve_error',
+      redactForLog({
+        action_type: payload.action_type,
+        target_post_id: payload.target_post_id ?? null,
+      }),
+    )
+    return err('could not resolve affected user', { code: 'internal', status: 500 })
+  }
+  if (resolution.status === 'none') {
+    // Genuinely nobody to notify (hard-deleted / authorless post, or no target
+    // on the payload). Metadata-only log, ok — not a fault, nothing to retry.
+    logInfo(
+      'moderation.notify.no_target',
+      redactForLog({
+        action_type: payload.action_type,
+        target_post_id: payload.target_post_id ?? null,
+      }),
+    )
+    return ok()
+  }
+  const affectedUserId = resolution.userId
+
+  // Claim-first, at-most-once. The first DB WRITE claims the action in the
+  // ledger; a re-fired/duplicated trigger inserts zero
   // rows and short-circuits to a no-op BEFORE any preference read / token lookup
   // / send. The claim is never rolled back on a downstream/Expo failure, and the
   // ledger is deliberately NOT a two-state sent/delivered record — a dropped push
@@ -292,21 +344,8 @@ export async function handler(req: Request, clientOverride?: SupabaseClient): Pr
   }
   if (!claimed || claimed.length === 0) {
     // Already processed — idempotent no-op (dedupe short-circuit). Return
-    // immediately without resolving the affected user, composing a
-    // notification, or logging a push-intent line.
-    return ok()
-  }
-
-  const affectedUserId = await resolveAffectedUserId(payload, client)
-  if (!affectedUserId) {
-    // No resolvable target (e.g. hard-deleted post): redacted warn, still ok.
-    logError(
-      'moderation.notify.no_target',
-      redactForLog({
-        action_type: payload.action_type,
-        target_post_id: payload.target_post_id ?? null,
-      }),
-    )
+    // immediately without reading preferences, composing a notification, or
+    // logging a push-intent line.
     return ok()
   }
 

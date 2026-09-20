@@ -12,11 +12,12 @@
  *     sharing the ['moderation'] prefix used by the queue/mutation keys).
  *   - `PAGE_SIZE === 20`.
  *   - `fetchAuditLogPage(cursor)`: a direct `moderation_actions` SELECT,
- *     newest-first, PAGE_SIZE+1 look-ahead, `.lt('created_at', cursor)`
- *     applied only when cursor is non-null; computes `nextCursor` from the
- *     look-ahead idiom; INCLUDING the boundary case where the sliced-off
- *     look-ahead row shares its timestamp with the last visible row (the
- *     tie-at-cursor hazard the implementation comment must call out).
+ *     newest-first on `(created_at, id)`, PAGE_SIZE+1 look-ahead, a compound
+ *     keyset `.or()` filter applied only when cursor is non-null; computes
+ *     `nextCursor` (`{ createdAt, id }`) from the look-ahead idiom; INCLUDING
+ *     the boundary case where the sliced-off look-ahead row shares its
+ *     timestamp with the last visible row (the tie the compound keyset exists
+ *     to disambiguate).
  *   - `useAuditLog()`: a `useInfiniteQuery` wrapper (queryKey, pageParam
  *     wiring, maxPages, calm cadence).
  *   - `usePostAdminDetail(targetPostId, enabled)`: a `useQuery` wrapper
@@ -57,7 +58,7 @@ vi.mock('@tanstack/react-query', () => ({
 // configured result -- mirrors how the real PostgREST query builder behaves.
 function makeQueryChain(result: { data: unknown; error: unknown }) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {}
-  for (const method of ['select', 'order', 'limit', 'lt', 'eq']) {
+  for (const method of ['select', 'order', 'limit', 'lt', 'or', 'eq']) {
     chain[method] = vi.fn(() => chain)
   }
   // biome-ignore lint/suspicious/noThenProperty: the mock must be awaitable to stand in for a thenable Supabase query builder
@@ -104,10 +105,11 @@ describe('fetchAuditLogPage() query shape', () => {
 
     expect(supabase.from).toHaveBeenCalledWith('moderation_actions')
     expect(chain.order).toHaveBeenCalledWith('created_at', { ascending: false })
+    expect(chain.order).toHaveBeenCalledWith('id', { ascending: false })
     expect(chain.limit).toHaveBeenCalledWith(PAGE_SIZE + 1)
   })
 
-  it('does NOT chain .lt() when cursor is null (first page)', async () => {
+  it('does NOT chain a keyset filter when cursor is null (first page)', async () => {
     const { supabase } = await import('../../../utils/supabase')
     const chain = makeQueryChain({ data: [], error: null })
     ;(supabase.from as ReturnType<typeof vi.fn>).mockReset()
@@ -117,19 +119,23 @@ describe('fetchAuditLogPage() query shape', () => {
     await fetchAuditLogPage(null)
 
     expect(chain.lt).not.toHaveBeenCalled()
+    expect(chain.or).not.toHaveBeenCalled()
   })
 
-  it('chains .lt("created_at", cursor) when a non-null cursor is supplied', async () => {
+  it('chains the compound (created_at, id) keyset filter when a non-null cursor is supplied', async () => {
     const { supabase } = await import('../../../utils/supabase')
     const chain = makeQueryChain({ data: [], error: null })
     ;(supabase.from as ReturnType<typeof vi.fn>).mockReset()
     ;(supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(chain)
 
     const { fetchAuditLogPage } = await import('../auditLog')
-    const cursor = '2026-07-01T12:00:00.000Z'
+    const cursor = { createdAt: '2026-07-01T12:00:00.000Z', id: 'action-19' }
     await fetchAuditLogPage(cursor)
 
-    expect(chain.lt).toHaveBeenCalledWith('created_at', cursor)
+    expect(chain.lt).not.toHaveBeenCalled()
+    expect(chain.or).toHaveBeenCalledWith(
+      'created_at.lt."2026-07-01T12:00:00.000Z",and(created_at.eq."2026-07-01T12:00:00.000Z",id.lt."action-19")'
+    )
   })
 
   it('returns { items: [], nextCursor: null } when the SELECT resolves with data: []', async () => {
@@ -170,7 +176,7 @@ describe('fetchAuditLogPage() query shape', () => {
     }
   }
 
-  it("slices to PAGE_SIZE items and sets nextCursor to the last VISIBLE row's created_at when PAGE_SIZE + 1 rows come back", async () => {
+  it("slices to PAGE_SIZE items and sets nextCursor to the last VISIBLE row's (created_at, id) when PAGE_SIZE + 1 rows come back", async () => {
     const { supabase } = await import('../../../utils/supabase')
     // Newest-first: row 0 is newest, row 20 is oldest (the look-ahead row).
     const rows = Array.from({ length: 21 }, (_, i) =>
@@ -186,7 +192,10 @@ describe('fetchAuditLogPage() query shape', () => {
     expect(page.items).toHaveLength(PAGE_SIZE)
     expect(page.items[0]!.id).toBe('action-0')
     expect(page.items[PAGE_SIZE - 1]!.id).toBe(`action-${PAGE_SIZE - 1}`)
-    expect(page.nextCursor).toBe(rows[PAGE_SIZE - 1]!.created_at)
+    expect(page.nextCursor).toEqual({
+      createdAt: rows[PAGE_SIZE - 1]!.created_at,
+      id: rows[PAGE_SIZE - 1]!.id,
+    })
   })
 
   it('returns { items: rows, nextCursor: null } when exactly PAGE_SIZE rows come back (last page)', async () => {
@@ -205,7 +214,7 @@ describe('fetchAuditLogPage() query shape', () => {
     expect(page.nextCursor).toBeNull()
   })
 
-  it("boundary hazard: when the sliced-off look-ahead row TIES the last visible row's created_at, nextCursor still equals that shared timestamp (documents the strictly-less-than tie-drop the implementation comments must warn about)", async () => {
+  it("boundary tie: when the sliced-off look-ahead row TIES the last visible row's created_at, nextCursor carries the last visible row's id so the next page can resume INSIDE the tie group", async () => {
     const { supabase } = await import('../../../utils/supabase')
     const tieAt = '2026-07-01T00:00:30.000Z'
     const rows = Array.from({ length: 21 }, (_, i) => {
@@ -222,12 +231,12 @@ describe('fetchAuditLogPage() query shape', () => {
     const page = await fetchAuditLogPage(null)
 
     // The tied look-ahead row (index 20, action-20) is sliced off as "has
-    // more", and nextCursor is the last VISIBLE row's created_at -- which is
-    // the same instant as the dropped row. A subsequent `.lt('created_at',
-    // nextCursor)` fetch would therefore skip the tied row entirely (it is
-    // neither on this page nor strictly-less-than the cursor on the next).
+    // more". A created_at-only cursor would skip it forever (it is neither on
+    // this page nor strictly older than the cursor); the compound cursor names
+    // action-19 explicitly, so the next page's
+    // `created_at = tieAt AND id < 'action-19'` branch picks action-20 up.
     expect(page.items).toHaveLength(PAGE_SIZE)
-    expect(page.nextCursor).toBe(tieAt)
+    expect(page.nextCursor).toEqual({ createdAt: tieAt, id: 'action-19' })
     expect(page.items[PAGE_SIZE - 1]!.created_at).toBe(tieAt)
   })
 
@@ -267,7 +276,8 @@ describe('useAuditLog() useInfiniteQuery config', () => {
     useAuditLog()
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
     expect(typeof opts.getNextPageParam).toBe('function')
-    expect(opts.getNextPageParam({ items: [], nextCursor: 'abc' })).toBe('abc')
+    const cursor = { createdAt: '2026-07-01T12:00:00.000Z', id: 'action-19' }
+    expect(opts.getNextPageParam({ items: [], nextCursor: cursor })).toBe(cursor)
     expect(opts.getNextPageParam({ items: [], nextCursor: null })).toBeNull()
   })
 
@@ -308,10 +318,12 @@ describe('useAuditLog() useInfiniteQuery config', () => {
     useAuditLog()
     const opts = useInfiniteQueryMock.mock.calls[0]![0]
 
-    const cursor = '2026-07-01T12:00:00.000Z'
+    const cursor = { createdAt: '2026-07-01T12:00:00.000Z', id: 'action-19' }
     await opts.queryFn({ pageParam: cursor })
 
-    expect(chain.lt).toHaveBeenCalledWith('created_at', cursor)
+    expect(chain.or).toHaveBeenCalledWith(
+      'created_at.lt."2026-07-01T12:00:00.000Z",and(created_at.eq."2026-07-01T12:00:00.000Z",id.lt."action-19")'
+    )
   })
 })
 

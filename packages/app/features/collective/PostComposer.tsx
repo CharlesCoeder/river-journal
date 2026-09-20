@@ -43,6 +43,11 @@ export interface PostComposerProps {
 
 // ─── PostComposer ─────────────────────────────────────────────────────────────
 
+// PostgREST surfaces an RLS WITH CHECK failure on INSERT as SQLSTATE 42501.
+function isRlsGateRejection(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && (e as { code?: unknown }).code === '42501'
+}
+
 export default function PostComposer({
   compact = false,
   replyContext,
@@ -65,7 +70,14 @@ export default function PostComposer({
   // ─── Local state ──────────────────────────────────────────────────────────
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [showError, setShowError] = useState(false)
+  // 'generic' = network / unknown failure; 'gated' = the server's RLS gate
+  // refused the INSERT (42501): today's 500 words aren't done, the account is
+  // paused, or a reply crosses a block. The route-level eligibility gate
+  // normally keeps an ineligible user out of the editor entirely; this is the
+  // safety net for the race where eligibility changes between mount and
+  // submit (e.g. words deleted back under 500), so the letter is never lost
+  // to a silent 403.
+  const [showError, setShowError] = useState<false | 'generic' | 'gated'>(false)
   // Initialize lazily to avoid render-flash of composer body before first ack check.
   const [showDisclosure, setShowDisclosure] = useState(() => !hasAcknowledgedBoundaryA())
   // Controls whether the currently-mounted disclosure renders in review vs first-time mode.
@@ -181,10 +193,10 @@ export default function PostComposer({
       setTitle('')
       setBody('')
       router.push('/collective')
-    } catch {
+    } catch (e) {
       // Failure: STAY on the composer with the draft intact and surface the
       // error microcopy. Never discard the letter on a rejected insert.
-      setShowError(true)
+      setShowError(isRlsGateRejection(e) ? 'gated' : 'generic')
     } finally {
       submittingRef.current = false
     }
@@ -207,8 +219,8 @@ export default function PostComposer({
       )
       setBody('')
       onSubmitted?.()
-    } catch {
-      setShowError(true)
+    } catch (e) {
+      setShowError(isRlsGateRejection(e) ? 'gated' : 'generic')
     } finally {
       submittingRef.current = false
     }
@@ -351,13 +363,23 @@ export default function PostComposer({
           )}
 
           {/* Error microcopy — generic, no body content logged */}
-          {showError && (
+          {showError === 'generic' && (
             <Text
               fontSize="$2"
               color="$color11"
               paddingTop="$2"
             >
               Couldn't post. Try again.
+            </Text>
+          )}
+          {showError === 'gated' && (
+            <Text
+              fontSize="$2"
+              color="$color11"
+              paddingTop="$2"
+            >
+              Couldn't post — the Collective opens after today's 500 words, and posting pauses while
+              an account is suspended. Your draft is kept here.
             </Text>
           )}
 
