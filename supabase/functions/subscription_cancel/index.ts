@@ -277,18 +277,30 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
   // return 500 (never a false success). The write is idempotent by natural key,
   // so a client retry converges.
   try {
-    const { error: updateError } = await client
+    const { data: updated, error: updateError } = await client
       .from('subscription_receipts')
       .update(patch)
       .eq('provider', providerLiteral)
       .eq('provider_subscription_id', subscriptionId)
       .eq('user_id', callerUid)
+      .select('id')
     if (updateError) {
       logError('subscription.cancel.write_error', {
         user_id: callerUid,
         provider: providerLiteral,
       })
       return err('subscription write failed', { code: 'internal', status: 500 })
+    }
+    if (!updated || updated.length === 0) {
+      // The row passed the ownership check above but is gone now — the only
+      // path that removes a receipt out from under its owner is the account-
+      // deletion cascade, which cancels subscriptions itself. The provider
+      // cancel already succeeded, so this is still a success for the caller;
+      // log it so a stuck ledger can be traced.
+      logInfo('subscription.cancel.no_row_matched', {
+        user_id: callerUid,
+        provider: providerLiteral,
+      })
     }
   } catch {
     logError('subscription.cancel.write_error', {
