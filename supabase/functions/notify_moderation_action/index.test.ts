@@ -316,8 +316,13 @@ Deno.test('handler short-circuits on ledger conflict (dedupe): returns ok withou
             },
           }
         }
-        // Any further table access (e.g. collective_posts, to resolve the
-        // affected user before composing) would mean the short-circuit
+        if (table === 'collective_posts') {
+          // Resolution runs BEFORE the claim (a pure read); the author lookup
+          // is expected. Only what follows the claim must be short-circuited.
+          return fakeServiceRoleClient({ 'post-1': 'author-1' }).from(table)
+        }
+        // Any further table access (users / user_push_tokens, i.e. the
+        // preference read and token lookup) would mean the short-circuit
         // failed to prevent the rest of the handler from running.
         throw new Error(`unexpected access to table "${table}" after dedupe short-circuit`)
       },
@@ -339,6 +344,83 @@ Deno.test('handler short-circuits on ledger conflict (dedupe): returns ok withou
     assertEquals(body.ok, true)
     // No push-intent (or any other) notification line was logged.
     assertEquals(lines.some((line) => line.includes('push_intent')), false)
+  })
+})
+
+Deno.test('handler returns 500 BEFORE claiming the ledger when the author lookup itself errors (retryable, never swallowed as no_target)', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    let ledgerTouched = false
+    const client = {
+      from(table: string) {
+        if (table === 'collective_posts') {
+          return {
+            select(_cols: string) {
+              return {
+                eq(_col: string, _value: string) {
+                  return {
+                    maybeSingle() {
+                      return Promise.resolve({
+                        data: null,
+                        error: { code: '57P01', message: 'terminating connection' },
+                      })
+                    },
+                  }
+                },
+              }
+            },
+          }
+        }
+        if (table === 'moderation_notification_log') {
+          ledgerTouched = true
+        }
+        throw new Error(`unexpected access to table "${table}" after a resolution error`)
+      },
+      // deno-lint-ignore no-explicit-any
+    } as any
+
+    const { response, lines } = await captureConsole('error', () =>
+      handler(
+        moderationRequest({
+          id: '00000000-0000-0000-0000-000000000001',
+          action_type: 'remove_post',
+          target_post_id: 'post-1',
+        }),
+        client,
+      ))
+
+    assertEquals(response.status, 500)
+    assertEquals(ledgerTouched, false)
+    assertEquals(lines.some((line) => line.includes('moderation.notify.resolve_error')), true)
+    assertEquals(lines.some((line) => line.includes('moderation.notify.no_target')), false)
+  })
+})
+
+Deno.test('handler returns ok without claiming the ledger when the target post has no resolvable author (hard-deleted): nobody to notify, nothing to retry', async () => {
+  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+    let ledgerTouched = false
+    const posts = fakeServiceRoleClient({ 'post-gone': null })
+    const client = {
+      from(table: string) {
+        if (table === 'collective_posts') return posts.from(table)
+        if (table === 'moderation_notification_log') ledgerTouched = true
+        throw new Error(`unexpected access to table "${table}" with no target`)
+      },
+      // deno-lint-ignore no-explicit-any
+    } as any
+
+    const { response, lines } = await captureConsole('log', () =>
+      handler(
+        moderationRequest({
+          id: '00000000-0000-0000-0000-000000000001',
+          action_type: 'remove_post',
+          target_post_id: 'post-gone',
+        }),
+        client,
+      ))
+
+    assertEquals(response.status, 200)
+    assertEquals(ledgerTouched, false)
+    assertEquals(lines.some((line) => line.includes('moderation.notify.no_target')), true)
   })
 })
 
@@ -386,6 +468,9 @@ Deno.test('handler returns 400 (not 500) when the ledger insert hits a foreign-k
       moderationRequest({
         id: '00000000-0000-0000-0000-000000000099',
         action_type: 'remove_post',
+        // A direct target resolves without any post lookup, so the ledger is
+        // the first table the handler touches.
+        target_user_id: '00000000-0000-0000-0000-0000000000aa',
       }),
       client,
     )
@@ -418,6 +503,9 @@ Deno.test('handler returns 500 for a genuine ledger write failure (non-FK error)
       moderationRequest({
         id: '00000000-0000-0000-0000-000000000098',
         action_type: 'remove_post',
+        // A direct target resolves without any post lookup, so the ledger is
+        // the first table the handler touches.
+        target_user_id: '00000000-0000-0000-0000-0000000000aa',
       }),
       client,
     )
