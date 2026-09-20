@@ -35,7 +35,7 @@ const FEATURES_DIR = path.resolve(__dirname, '..')
 const SCREEN_PATH = path.join(FEATURES_DIR, 'AuditLogScreen.tsx')
 
 // ─── Controlled mock state — useAuditLog() (infinite query shape) ─────────
-let mockPages: { items: any[]; nextCursor: string | null }[] | undefined = undefined
+let mockPages: { items: any[]; nextCursor: any }[] | undefined = undefined
 let mockIsLoading = false
 let mockIsError = false
 let mockHasNextPage = false
@@ -271,7 +271,7 @@ describe('populated list', () => {
           makeAuditItem({ id: 'a1', note: 'first note' }),
           makeAuditItem({ id: 'a2', note: 'second note' }),
         ],
-        nextCursor: 'cursor-1',
+        nextCursor: { createdAt: '2026-07-01T00:00:00.000Z', id: 'a2' },
       },
       { items: [makeAuditItem({ id: 'a3', note: 'third note' })], nextCursor: null },
     ]
