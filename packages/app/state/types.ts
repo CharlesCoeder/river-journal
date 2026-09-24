@@ -89,8 +89,10 @@ export interface CustomThemeDef {
 }
 
 /**
- * For all user-specific settings and preferences. This entire object will be synced
- * to the 'profiles' table in Supabase.
+ * For all user-specific settings and preferences. Persisted on-device; the
+ * account-level subset (see `SyncedPreferencesDoc`) syncs to `users.preferences`
+ * through state/preferencesSync.ts. Hotkeys, `appearanceScope` and the push
+ * prompt timestamps stay on this device.
  */
 export interface UserProfile {
   word_goal: number
@@ -124,7 +126,9 @@ export interface UserProfile {
   unlockedThemes?: ThemeName[]
 
   /**
-   * Server-synced versioned preference shapes. The full shape is documented in
+   * Account preferences, synced to `users.preferences` by state/preferencesSync.ts
+   * (except the push-prompt timestamps under `reminders.streak`, which are
+   * device-local). The server shape is documented in
    * packages/app/types/database.ts users.preferences JSONB JSDoc.
    * Optional at the type level for backward compat with persisted profiles
    * created before this field was added; consumers read with `?.collective_post_v1`.
@@ -141,7 +145,7 @@ export interface UserProfile {
     /** Default false (undefined). When true, AuthorByline displays tenure tier in feed and composer preview. */
     collective_show_tenure_tier?: boolean
     /**
-     * Post ids the local user has hidden via the report flow. Server-synced via users.preferences.
+     * Post ids the local user has hidden via the report flow. Synced to users.preferences.
      * Optional at the type level for backward compat with persisted profiles created before this field was added.
      */
     locallyHiddenPosts?: string[]
@@ -150,7 +154,7 @@ export interface UserProfile {
      * Per-receipt acknowledgment timestamps for the in-app moderation receipt UX.
      * Keyed by a stable composite receiptId — `removed_post:<postId>:<removed_at>`
      * (the RAW removed_at from the RPC, so a re-removal after reinstatement yields
-     * a fresh key) and `suspension:<suspensionId>`. Server-synced via
+     * a fresh key) and `suspension:<suspensionId>`. Synced to
      * users.preferences, mirroring the disclosures precedent, so a receipt
      * acknowledged on one device never re-surfaces on another. Optional for
      * back-compat with profiles created before this field existed; consumers
@@ -165,7 +169,8 @@ export interface UserProfile {
      *
      * The push-permission-prompt path only WRITES `streak.permissionPromptSeenAt`
      * (the one-time in-app ask answered) and `streak.permissionLastDeniedAt` (the
-     * OS-deny cooldown). The rest of the shape is declared now so the
+     * OS-deny cooldown). Those two are DEVICE-LOCAL — OS notification permission
+     * is per device — and are never synced. The rest of the shape is declared now so the
      * reminder-settings surface has a stable contract; `streak.enabled` /
      * `streak.local_time` / `streak.last_local_offset_minutes` are written by the
      * reminder-settings surface, and `replies` / `moderation` are reserved for the
@@ -203,12 +208,67 @@ export interface UserProfile {
    */
   subscription_tier?: SubscriptionTier
 
-  sync: {
-    word_goal: boolean
-    themeName: boolean
-    customTheme: boolean
-    fontPairing: boolean
+  /**
+   * Whether this device's look (theme, custom theme, font pairing, focus mode)
+   * follows the account or is kept to this device. Device-local — never synced.
+   * Absent means 'account'. See state/preferencesSync.ts.
+   */
+  appearanceScope?: AppearanceScope
+
+  /**
+   * Bookkeeping for state/preferencesSync.ts: the account's preferences document
+   * as last confirmed by the server, and whose account it belongs to. Local
+   * changes are found by diffing against it. Kept on the profile (not the
+   * session) on purpose: wiping the profile must also forget the base, or the
+   * next sync would push the freshly reset defaults over the account.
+   */
+  preferencesSyncBase?: PreferencesSyncBase | null
+}
+
+export type AppearanceScope = 'account' | 'device'
+
+/**
+ * The account-level preferences document stored in `users.preferences` — what
+ * syncs between a user's devices. Field names are the server's; the mapping
+ * to and from `UserProfile` lives in state/preferencesSync.ts.
+ *
+ * Deliberately NOT here (device-local): hotkey overrides, `appearanceScope`,
+ * and the push-permission prompt timestamps
+ * (`reminders.streak.permissionPromptSeenAt` / `permissionLastDeniedAt`) —
+ * notification permission is granted per device, so a prompt answered on one
+ * device must not suppress it on another.
+ */
+export interface SyncedPreferencesDoc {
+  word_goal?: number
+  unlockedThemes?: ThemeName[]
+  appearance?: {
+    themeName?: ThemeName | 'custom'
+    customTheme?: CustomThemeDef | null
+    fontPairing?: FontPairingId
+    focusMode?: boolean
+    focusGranularity?: 'paragraph' | 'sentence'
   }
+  disclosures?: NonNullable<UserProfile['preferences']>['disclosures']
+  collective_show_tenure_tier?: boolean
+  locallyHiddenPosts?: string[]
+  moderationReceipts?: Record<string, { acknowledged_at: string }>
+  reminders?: {
+    streak?: {
+      enabled?: boolean
+      local_time?: string
+      last_local_offset_minutes?: number
+    }
+    replies?: { enabled?: boolean }
+    moderation?: { enabled?: boolean }
+    repliesLastSeenAt?: string
+  }
+  /** Server-seeded, pulled only — clients never write it. */
+  feature_flags?: { external_billing_link_enabled?: boolean }
+}
+
+export interface PreferencesSyncBase {
+  userId: string
+  doc: SyncedPreferencesDoc
 }
 
 /**

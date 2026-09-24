@@ -35,7 +35,6 @@ const BASE_PROFILE = {
   customTheme: null,
   fontPairing: 'outfit-newsreader',
   hotkeyOverrides: {},
-  sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
 } as const
 
 describe('reminderPreferences — markStreakPromptSeen / setPushPermissionDenied / hasSeenStreakPrompt', () => {

@@ -37,11 +37,6 @@ describe('setFontPairing', () => {
     warnSpy.mockRestore()
   })
 
-  it('includes fontPairing in sync defaults', () => {
-    setFontPairing('outfit-newsreader')
-    expect(store$.profile.sync.fontPairing.get()).toBe(true)
-  })
-
   it('defaults to outfit-newsreader', () => {
     expect(DEFAULT_FONT_PAIRING).toBe('outfit-newsreader')
   })

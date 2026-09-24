@@ -11,14 +11,14 @@
 //
 // Rationale:
 //   - locallyHiddenPosts is genuinely user-preference state that lives on the
-//     Legend-State side (persisted to users.preferences JSONB via syncedSupabase).
+//     Legend-State side (synced to users.preferences by state/preferencesSync.ts).
 //   - The bridge is read-only and one-way: the feed screen reads the set;
 //     nothing in the TQ side writes to it.
 //   - The exception lives in its own file so the boundary-rule test can cover
 //     it in a dedicated describe block (mirroring the feed.ts exception block).
 //
-// The local-hide set is owned by Legend-State (server-synced via
-// users.preferences). On cold start, the persisted Legend-State array
+// The local-hide set is owned by Legend-State (synced to users.preferences
+// by state/preferencesSync.ts). On cold start, the persisted Legend-State array
 // re-materializes independently of the TQ mutation queue replay.
 //
 // No other state/collective/ file may import Legend-State.

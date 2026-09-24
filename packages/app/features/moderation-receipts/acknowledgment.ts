@@ -9,7 +9,7 @@
  *
  * Acknowledgment is stored on
  * `store$.profile.preferences.moderationReceipts.<receiptId> = { acknowledged_at }`
- * — server-synced, so a receipt acknowledged on one device never re-surfaces on
+ * — synced to users.preferences by state/preferencesSync.ts, so a receipt acknowledged on one device never re-surfaces on
  * another. The write is local-first (durable across an app restart before it
  * syncs), so an offline dismiss suppresses the receipt immediately and survives
  * a force-quit.

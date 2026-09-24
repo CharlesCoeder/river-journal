@@ -8,8 +8,10 @@
  *
  * Writes are stored under
  * `store$.profile.preferences.reminders.streak.{permissionPromptSeenAt,permissionLastDeniedAt}`
- * — server-synced, so a prompt answered on one device never re-surfaces on
- * another. Both writers are idempotent (write-once, never clobber an existing
+ * — device-local (state/preferencesSync.ts never syncs them): notification
+ * permission is granted per device, so a new device must still be asked. The
+ * rest of the `reminders` slice (category flags, send time, offset, replies
+ * bound) is account-level and syncs. Both prompt writers are idempotent (write-once, never clobber an existing
  * timestamp) and null-safe (no throw when `store$.profile` is null). The write
  * uses the whole-object read-merge-write pattern (mirrors `acknowledgeReceipt`
  * / `addLocallyHiddenPost`) through the known optional `reminders` property —

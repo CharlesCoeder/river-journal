@@ -40,7 +40,6 @@ describe('hasAcknowledgedBoundaryA — returns false when unset', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
       // No preferences field
     })
     expect(hasAcknowledgedBoundaryA()).toBe(false)
@@ -53,7 +52,6 @@ describe('hasAcknowledgedBoundaryA — returns false when unset', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
       preferences: {},
     })
     expect(hasAcknowledgedBoundaryA()).toBe(false)
@@ -66,7 +64,6 @@ describe('hasAcknowledgedBoundaryA — returns false when unset', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
       preferences: {
         disclosures: {},
       },
@@ -83,7 +80,6 @@ describe('hasAcknowledgedBoundaryA — returns true when acknowledged_at is set'
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
       preferences: {
         disclosures: {
           collective_post_v1: { acknowledged_at: '2026-05-06T12:00:00.000Z' },
@@ -101,7 +97,6 @@ describe('hasAcknowledgedBoundaryA — returns true when acknowledged_at is set'
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
     })
     const now = new Date().toISOString()
     // Write via same deep-set path the wrapper uses
