@@ -47,6 +47,8 @@ const CATEGORY_LABELS: Record<ReminderCategory, string> = {
 
 const MOBILE_ONLY_HEADLINE = 'Push notifications are mobile-only at launch.'
 const MOBILE_ONLY_DETAIL = 'Web and desktop see in-app reminders when you open the app.'
+const SYNC_OFF_NOTE =
+  'Push notifications reach this device only while Cloud Sync is on. These settings still apply to your other devices.'
 
 function isNativePlatform(): boolean {
   return Platform.OS === 'ios' || Platform.OS === 'android'
@@ -93,6 +95,11 @@ export function ReminderSettings() {
     use$(store$.profile?.preferences?.reminders?.moderation?.enabled) ?? false
   const streakTime =
     use$(store$.profile?.preferences?.reminders?.streak?.local_time) ?? DEFAULT_STREAK_TIME
+
+  // Push tokens register with the server only through journal sync, so a device
+  // with Cloud Sync off receives no pushes. The settings themselves are account
+  // preferences and still apply to the user's other devices.
+  const syncEnabled = use$(store$.session.syncEnabled) ?? false
 
   const [permissionDenied, setPermissionDenied] = useState(false)
 
@@ -169,6 +176,16 @@ export function ReminderSettings() {
             {MOBILE_ONLY_DETAIL}
           </Text>
         </YStack>
+      )}
+
+      {isNativePlatform() && !syncEnabled && (
+        <Text
+          fontFamily="$body"
+          fontSize={13}
+          color="$color8"
+        >
+          {SYNC_OFF_NOTE}
+        </Text>
       )}
 
       {isNativePlatform() && permissionDenied && (

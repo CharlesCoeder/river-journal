@@ -75,9 +75,15 @@ let mockReminders: {
   replies?: { enabled?: boolean }
   moderation?: { enabled?: boolean }
 } = {}
+let mockSyncEnabled = true
 
 vi.mock('app/state/store', () => ({
   store$: {
+    session: {
+      get syncEnabled() {
+        return { get: () => mockSyncEnabled }
+      },
+    },
     profile: {
       get preferences() {
         return {
@@ -227,6 +233,7 @@ import { ReminderSettings } from '../ReminderSettings'
 beforeEach(() => {
   mockPlatformOS = 'ios'
   mockReminders = {}
+  mockSyncEnabled = true
   setReminderCategoryEnabledMock.mockReset()
   setStreakReminderTimeMock.mockReset()
   requestAndRegisterPushTokenMock.mockReset().mockResolvedValue({ outcome: 'granted' })
@@ -509,5 +516,40 @@ describe('Mobile — denied-permission microcopy', () => {
     // An explicit toggle attempts registration regardless of the earlier
     // denied read (bypasses the automatic-gate cooldown).
     expect(requestAndRegisterPushTokenMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Mobile — Cloud Sync off note', () => {
+  const NOTE = /Push notifications reach this device only while Cloud Sync is on\./
+
+  it('explains that push needs Cloud Sync when sync is off on native', () => {
+    mockPlatformOS = 'ios'
+    mockSyncEnabled = false
+    render(<ReminderSettings />)
+    expect(screen.getByText(NOTE)).toBeTruthy()
+  })
+
+  it('shows no note when sync is on', () => {
+    mockPlatformOS = 'android'
+    mockSyncEnabled = true
+    render(<ReminderSettings />)
+    expect(screen.queryByText(NOTE)).toBeNull()
+  })
+
+  it('shows no note on web, where push is not delivered at all', () => {
+    mockPlatformOS = 'web'
+    mockSyncEnabled = false
+    render(<ReminderSettings />)
+    expect(screen.queryByText(NOTE)).toBeNull()
+  })
+
+  it('keeps the toggles working with sync off — they are account settings', async () => {
+    mockPlatformOS = 'ios'
+    mockSyncEnabled = false
+    render(<ReminderSettings />)
+    fireEvent.click(screen.getByRole('switch', { name: 'Collective replies' }))
+    await waitFor(() =>
+      expect(setReminderCategoryEnabledMock).toHaveBeenCalledWith('replies', true)
+    )
   })
 })
