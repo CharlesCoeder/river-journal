@@ -224,7 +224,11 @@ describe('syncPreferencesNow — incremental', () => {
 
   it('a pull applies another device’s changes and keeps this device’s prompt state', async () => {
     store$.profile.preferences.reminders.set({
-      streak: { enabled: true, local_time: '20:00', permissionPromptSeenAt: '2026-09-01T00:00:00Z' },
+      streak: {
+        enabled: true,
+        local_time: '20:00',
+        permissionPromptSeenAt: '2026-09-01T00:00:00Z',
+      },
     })
     markSynced(USER_A)
     serverDoc = fakeMerge(serverDoc, {

@@ -129,8 +129,11 @@ export function projectProfile(profile: UserProfile | null | undefined): SyncedP
     const { streak, ...rest } = prefs.reminders
     const reminders: NonNullable<SyncedPreferencesDoc['reminders']> = { ...rest }
     if (streak) {
-      const { permissionPromptSeenAt: _seen, permissionLastDeniedAt: _denied, ...accountStreak } =
-        streak
+      const {
+        permissionPromptSeenAt: _seen,
+        permissionLastDeniedAt: _denied,
+        ...accountStreak
+      } = streak
       if (Object.keys(accountStreak).length > 0) reminders.streak = accountStreak
     }
     doc.reminders = reminders
@@ -318,14 +321,16 @@ function setIfChanged<T>(obs: { peek(): T; set(value: T): void }, value: T) {
 
 function applyAppearance(appearance: NonNullable<SyncedPreferencesDoc['appearance']>) {
   const profile$ = store$.profile
-  if (appearance.customTheme !== undefined) setIfChanged(profile$.customTheme, appearance.customTheme)
+  if (appearance.customTheme !== undefined)
+    setIfChanged(profile$.customTheme, appearance.customTheme)
   if (appearance.themeName !== undefined) {
     // Never select 'custom' without a custom theme to show.
     if (appearance.themeName !== 'custom' || profile$.customTheme.peek()) {
       setIfChanged(profile$.themeName, appearance.themeName)
     }
   }
-  if (appearance.fontPairing !== undefined) setIfChanged(profile$.fontPairing, appearance.fontPairing)
+  if (appearance.fontPairing !== undefined)
+    setIfChanged(profile$.fontPairing, appearance.fontPairing)
   if (appearance.focusMode !== undefined || appearance.focusGranularity !== undefined) {
     const editor = profile$.editor.peek() ?? { focusMode: false, focusGranularity: 'paragraph' }
     setIfChanged(profile$.editor, {
@@ -421,8 +426,7 @@ async function runSyncRound(pull: boolean): Promise<{ again: boolean }> {
     server = await callMerge(patch ?? {})
   } else {
     const lastAuthedUserId = deviceState$.lastAuthedUserId.peek()
-    const deviceIsThisUsers =
-      !base && (lastAuthedUserId === null || lastAuthedUserId === userId)
+    const deviceIsThisUsers = !base && (lastAuthedUserId === null || lastAuthedUserId === userId)
     if (deviceIsThisUsers) {
       mode = 'seed'
       const current = await callMerge({})
