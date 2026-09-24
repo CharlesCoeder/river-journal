@@ -545,29 +545,35 @@ export type Database = {
         ]
       }
       /**
-       * users.preferences JSONB documented shape (client-known keys; server tolerates extra):
+       * users.preferences JSONB documented shape (client-known keys; server tolerates extra).
+       * Written only through the merge_my_preferences RPC (state/preferencesSync.ts) —
+       * see SyncedPreferencesDoc in state/types.ts for the client mapping:
        *   {
-       *     unlockedThemes?: string[]   // ThemeName[]; user-chosen unlock tokens (Model B)
+       *     word_goal?: number
+       *     unlockedThemes?: string[]   // ThemeName[]; user-chosen unlock tokens (Model B); server-unioned
+       *     appearance?: {              // absent keys = device default; a device may opt out (appearanceScope)
+       *       themeName?: string; customTheme?: { bg, text, stone } | null; fontPairing?: string
+       *       focusMode?: boolean; focusGranularity?: 'paragraph' | 'sentence'
+       *     }
        *     disclosures?: {
        *       collective_post_v1?: { acknowledged_at: string }
        *       ai_cloud_v1?:        { acknowledged_at: string }   // reserved (Growth phase)
        *     }
        *     collective_show_tenure_tier?: boolean   // Default false; when true, AuthorByline displays tenure tier in feed/preview
-       *     locallyHiddenPosts?: string[]   // post ids the local user has hidden via report
+       *     locallyHiddenPosts?: string[]   // post ids the user has hidden via report; server-unioned
        *     moderationReceipts?: { [receiptId: string]: { acknowledged_at: string } }   // in-app moderation receipt acks
        *     reminders?: {                   // notification-reminder prefs (all fields optional)
        *       streak?: {
        *         enabled?: boolean
        *         local_time?: string                 // 'HH:mm' local; default handled by the reminder-settings surface
        *         last_local_offset_minutes?: number   // written by the reminder-settings surface; used by the streak cron
-       *         permissionLastDeniedAt?: string      // ISO; OS-deny cooldown
-       *         permissionPromptSeenAt?: string      // ISO; one-time in-app ask answered
+       *         // permissionPromptSeenAt / permissionLastDeniedAt live on the client profile only (per device)
        *       }
-       *       replies?: { enabled?: boolean }        // reserved (reply notifications)
-       *       moderation?: { enabled?: boolean }     // reserved (moderation notifications)
+       *       replies?: { enabled?: boolean }        // reply notifications
+       *       moderation?: { enabled?: boolean }     // moderation notifications
+       *       repliesLastSeenAt?: string             // ISO; in-app unread-replies bound
        *     }
-       *     feature_flags?: { external_billing_link_enabled?: boolean }   // UI-surface control only; server gates paid features via subscription_tier
-       *     // ...other client-extensible keys (e.g. focusMode is local-only on UserProfile, NOT server-persisted today)
+       *     feature_flags?: { external_billing_link_enabled?: boolean }   // server-seeded; the RPC strips client writes; UI-surface control only
        *   }
        *
        * The Database['public']['Tables']['users'].Row.preferences field stays typed as `Json`
@@ -786,6 +792,7 @@ export type Database = {
       delete_my_post: { Args: { post_id: string }; Returns: undefined }
       is_active_suspension: { Args: { uid: string; kind_param: string }; Returns: boolean }
       is_eligible_to_post: { Args: Record<string, never>; Returns: boolean }
+      merge_my_preferences: { Args: { patch: Json }; Returns: Json }
       reinstate_post: {
         Args: { target_post_id: string; reason?: string | null }
         Returns: undefined
