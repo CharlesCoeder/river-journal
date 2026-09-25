@@ -201,7 +201,6 @@ describe('review mode: no acknowledgment write, calls onClose', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
       preferences: {
         disclosures: {
           collective_post_v1: { acknowledged_at: seedTimestamp },

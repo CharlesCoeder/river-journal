@@ -29,6 +29,7 @@ import { TrustedBrowsersList } from 'app/features/home/components/TrustedBrowser
 import { LinkedProviders } from 'app/features/auth/components/LinkedProviders'
 import { ThemePicker } from './components/ThemePicker'
 import { FontPicker } from './components/FontPicker'
+import { DeviceAppearanceToggle } from './components/DeviceAppearanceToggle'
 import { ExportJournal } from './components/ExportJournal'
 import { KeyboardShortcutsSection } from './components/KeyboardShortcutsSection'
 import { PreviousAccountBanner } from './PreviousAccountBanner'
@@ -402,6 +403,8 @@ export function SettingsScreen() {
                     <View height={16} />
                     <SectionHeader>Font</SectionHeader>
                     <FontPicker />
+                    <View height={16} />
+                    <DeviceAppearanceToggle />
                   </YStack>
                 )}
 

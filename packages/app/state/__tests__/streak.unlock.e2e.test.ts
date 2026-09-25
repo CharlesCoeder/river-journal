@@ -103,7 +103,6 @@ describe('chosenUnlocks wiring', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       unlockedThemes: [],
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     const streakState = store$.views.streak.get()
@@ -125,7 +124,6 @@ describe('chosenUnlocks wiring', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       unlockedThemes: [],
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     // Initially []
@@ -153,7 +151,6 @@ describe('chosenUnlocks wiring', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       unlockedThemes: ['not-a-theme' as any, 'forest-morning'],
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     // computeStreakState does NOT validate chosenUnlocks — passes through verbatim
@@ -181,7 +178,6 @@ describe('spendUnlockToken action', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       unlockedThemes: [],
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     spendUnlockToken('forest-morning')
@@ -198,7 +194,6 @@ describe('spendUnlockToken action', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       unlockedThemes: [],
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     spendUnlockToken('forest-morning')
@@ -216,7 +211,6 @@ describe('spendUnlockToken action', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       unlockedThemes: ['fireside'],
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     spendUnlockToken('forest-morning')
@@ -249,7 +243,6 @@ describe('ensureProfile backfill', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       // unlockedThemes deliberately absent
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     // Trigger any action that calls ensureProfile

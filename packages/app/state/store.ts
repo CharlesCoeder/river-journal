@@ -1261,12 +1261,6 @@ export const ensureProfile = () => {
       editor: { focusMode: false, focusGranularity: 'paragraph' },
       unlockedThemes: [],
       subscription_tier: 'free',
-      sync: {
-        word_goal: true,
-        themeName: true,
-        customTheme: true,
-        fontPairing: true,
-      },
     })
   } else {
     if (!store$.profile.editor.get()) {
@@ -1311,7 +1305,7 @@ export const setFocusGranularity = (value: 'paragraph' | 'sentence'): void => {
 /**
  * Adds a post id to the local-hide set in users.preferences.locallyHiddenPosts.
  * Idempotent — re-adding the same id is a no-op.
- * Persisted to server via users.preferences syncedSupabase mechanism.
+ * Synced to the account by state/preferencesSync.ts (the server unions the set).
  */
 export const addLocallyHiddenPost = (postId: string): void => {
   ensureProfile()

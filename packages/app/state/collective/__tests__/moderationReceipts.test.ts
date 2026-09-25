@@ -447,7 +447,6 @@ describe('acknowledgeReceipt / hasAcknowledgedReceipt', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
       preferences: {},
     } as any)
     const { hasAcknowledgedReceipt } = await import(
@@ -463,7 +462,6 @@ describe('acknowledgeReceipt / hasAcknowledgedReceipt', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
     } as any)
     const { acknowledgeReceipt } = await import(
       '../../../features/moderation-receipts/acknowledgment'
@@ -484,7 +482,6 @@ describe('acknowledgeReceipt / hasAcknowledgedReceipt', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
     } as any)
     const { acknowledgeReceipt, hasAcknowledgedReceipt } = await import(
       '../../../features/moderation-receipts/acknowledgment'
@@ -502,7 +499,6 @@ describe('acknowledgeReceipt / hasAcknowledgedReceipt', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
     } as any)
     const { acknowledgeReceipt } = await import(
       '../../../features/moderation-receipts/acknowledgment'
@@ -528,7 +524,6 @@ describe('acknowledgeReceipt / hasAcknowledgedReceipt', () => {
       customTheme: null,
       fontPairing: 'outfit-newsreader',
       hotkeyOverrides: {},
-      sync: { word_goal: false, themeName: false, customTheme: false, fontPairing: false },
     } as any)
     const { acknowledgeReceipt, hasAcknowledgedReceipt } = await import(
       '../../../features/moderation-receipts/acknowledgment'

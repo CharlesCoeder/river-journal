@@ -28,6 +28,7 @@ import { lapsed$, recordSessionOpen } from './lapsed'
 import { onboarding$ } from './onboarding'
 import { authReturn$, flushPendingAgeAttestation } from './authReturn'
 import { syncDeviceTimezone } from './timezoneSync'
+import { startPreferencesSync } from './preferencesSync'
 import { startTodayTracking } from './today'
 import { appLock$ } from './appLock'
 import { startAppLockTracking } from './appLockTracking'
@@ -313,6 +314,11 @@ export async function initializePersistence() {
       ephemeral$.isLocked.set(true)
     }
     startAppLockTracking()
+
+    // Account preferences sync (independent of journal sync). Started after
+    // persistence load so its first round sees the persisted profile and sync
+    // base, and before the auth listener so a persisted session pulls at once.
+    startPreferencesSync()
 
     // Initialize auth listener — fires INITIAL_SESSION immediately to hydrate
     // session state, then handles SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, etc.

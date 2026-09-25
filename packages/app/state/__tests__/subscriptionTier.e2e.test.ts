@@ -53,7 +53,6 @@ describe('ensureProfile — subscription_tier default', () => {
       hotkeyOverrides: {},
       editor: { focusMode: false },
       unlockedThemes: [],
-      sync: { word_goal: true, themeName: true, customTheme: true, fontPairing: true },
     } as any)
 
     expect(store$.profile.subscription_tier.get() ?? 'free').toBe('free')
