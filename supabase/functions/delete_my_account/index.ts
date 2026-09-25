@@ -34,13 +34,16 @@
 //     still-billing receipts (status IN ('active','past_due','pending')); cancel
 //     each Stripe one via the SHARED _shared/billing/stripe.ts helper (the same
 //     provider call subscription_cancel makes — NOT an internal HTTP re-invoke
-//     of that function). active/past_due cancel at period end keeping paid time;
-//     a 'pending'/incomplete sub has no collected payment, so the same call
-//     voids an unpaid sub and closes the ghost-billing hole where a pending sub
-//     could activate and bill AFTER the row is hard-deleted. An already-
-//     cancelled/missing Stripe
-//     subscription (typed provider_resource_missing) is treated as SUCCESS
-//     (idempotent-cancel — a retry after a prior cancel), not a hard failure.
+//     of that function). active/past_due cancel at period end keeping paid time.
+//     A 'pending' row (Stripe `incomplete`: first payment never collected) goes
+//     through resolvePendingStripeSubscription instead, which reads Stripe's
+//     live status and voids it with an immediate cancel — closing the
+//     ghost-billing hole where it could complete payment and bill AFTER the row
+//     is hard-deleted — or, if the row is stale, recognizes it already expired
+//     (so a stale row never blocks deletion) or already turned paid (period-end
+//     cancel). An already-cancelled/missing Stripe subscription (typed
+//     provider_resource_missing) is treated as SUCCESS (idempotent-cancel — a
+//     retry after a prior cancel), not a hard failure.
 //     Any other typed error, or an unexpected throw, ABORTS the saga before the
 //     cascade — the DB is still untouched so a retry can cascade later.
 //     Apple/Play have no server cancel API: no provider call, and the response
@@ -69,6 +72,9 @@ import { ReceiptValidationError } from '../_shared/billing/types.ts'
 import {
   buildStripeClient,
   cancelStripeSubscriptionAtPeriodEnd,
+  type PendingStripeResolution,
+  resolvePendingStripeSubscription,
+  type StripeClientSeam,
 } from '../_shared/billing/stripe.ts'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -76,10 +82,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // is a raw string (one of the subscription_receipts.provider CHECK values —
 // 'stripe' | 'apple_iap' | 'play_iap') and is compared exactly below; only
 // 'stripe' has a server cancel API, every other value routes to the
-// native-action branch.
+// native-action branch. `status` is the receipt status ('active' | 'past_due' |
+// 'pending') and picks the Stripe cancel path.
 interface CancelableReceipt {
   provider: string
   provider_subscription_id: string
+  status: string
 }
 
 export interface HandlerDeps {
@@ -108,6 +116,9 @@ export interface HandlerDeps {
   // SAME shared helper subscription_cancel calls). Injected so handler-logic
   // tests never fake live Stripe HTTP traffic.
   cancelStripeSubscription?: (id: string) => Promise<{ current_period_end: string }>
+  // Falls back to the shared resolvePendingStripeSubscription over the real
+  // Stripe dispatch. Used for 'pending' Stripe receipts only.
+  resolvePendingStripeSubscription?: (id: string) => Promise<PendingStripeResolution>
   // Wraps client.rpc('delete_my_account', { p_user_id }) — the single atomic
   // DB-side cascade.
   runCascade?: (userId: string) => Promise<{ error: unknown }>
@@ -172,6 +183,8 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
   const listCancelableReceipts = deps.listCancelableReceipts ??
     defaultListCancelableReceipts(client as SupabaseClient)
   const cancelStripeSubscription = deps.cancelStripeSubscription ?? defaultStripeCancel()
+  const resolvePendingStripe = deps.resolvePendingStripeSubscription ??
+    defaultResolvePendingStripe()
   const runCascade = deps.runCascade ?? defaultRunCascade(client as SupabaseClient)
   const deleteAuthUser = deps.deleteAuthUser ?? defaultDeleteAuthUser(client as SupabaseClient)
 
@@ -220,8 +233,19 @@ export async function handler(req: Request, deps: HandlerDeps = {}): Promise<Res
   for (const receipt of receipts) {
     if (receipt.provider === 'stripe') {
       try {
-        await cancelStripeSubscription(receipt.provider_subscription_id)
-        cancelledCount += 1
+        if (receipt.status === 'pending') {
+          const outcome = await resolvePendingStripe(receipt.provider_subscription_id)
+          logInfo('account.delete.pending_resolved', {
+            user_id: callerUid,
+            provider: receipt.provider,
+            outcome,
+            duration_ms: Date.now() - started,
+          })
+          if (outcome !== 'already_gone') cancelledCount += 1
+        } else {
+          await cancelStripeSubscription(receipt.provider_subscription_id)
+          cancelledCount += 1
+        }
       } catch (thrown) {
         if (thrown instanceof ReceiptValidationError) {
           // provider_resource_missing is the idempotent-cancel case: Stripe
@@ -351,7 +375,7 @@ function defaultListCancelableReceipts(
   return async (userId: string) => {
     const { data, error } = await client
       .from('subscription_receipts')
-      .select('provider, provider_subscription_id')
+      .select('provider, provider_subscription_id, status')
       .eq('user_id', userId)
       .in('status', ['active', 'past_due', 'pending'])
     if (error) {
@@ -383,25 +407,36 @@ function defaultDeleteAuthUser(
   }
 }
 
-// Production Stripe dispatch: build the shared thin fetch adapter from the
-// env-provisioned STRIPE_SECRET_KEY and cancel-at-period-end via the shared
-// helper. Tests inject deps.cancelStripeSubscription and never reach this.
-function defaultStripeCancel(): (id: string) => Promise<{ current_period_end: string }> {
-  return (id: string) => {
-    const secretKey = Deno.env.get('STRIPE_SECRET_KEY') ?? ''
-    // An unset/empty key would produce `Authorization: Bearer ` and a Stripe
-    // 401, which the fault mapping would misreport as a provider outage. This
-    // is OUR misconfiguration — fail closed to a config 500 BEFORE any network
-    // call (status override, since the fault union has no config member).
-    if (secretKey.trim() === '') {
-      throw new ReceiptValidationError('account deletion is not configured', {
-        code: 'internal',
-        fault: 'provider',
-        status: 500,
-      })
-    }
-    return cancelStripeSubscriptionAtPeriodEnd(id, { stripeClient: buildStripeClient(secretKey) })
+// The shared thin fetch adapter built from the env-provisioned
+// STRIPE_SECRET_KEY. Only reached in production.
+function stripeClientFromEnv(): StripeClientSeam {
+  const secretKey = Deno.env.get('STRIPE_SECRET_KEY') ?? ''
+  // An unset/empty key would produce `Authorization: Bearer ` and a Stripe
+  // 401, which the fault mapping would misreport as a provider outage. This
+  // is OUR misconfiguration — fail closed to a config 500 BEFORE any network
+  // call (status override, since the fault union has no config member).
+  if (secretKey.trim() === '') {
+    throw new ReceiptValidationError('account deletion is not configured', {
+      code: 'internal',
+      fault: 'provider',
+      status: 500,
+    })
   }
+  return buildStripeClient(secretKey)
+}
+
+// Production Stripe dispatch: cancel-at-period-end via the shared helper.
+// Tests inject deps.cancelStripeSubscription and never reach this.
+function defaultStripeCancel(): (id: string) => Promise<{ current_period_end: string }> {
+  return (id: string) =>
+    cancelStripeSubscriptionAtPeriodEnd(id, { stripeClient: stripeClientFromEnv() })
+}
+
+// Production dispatch for a 'pending' Stripe receipt. Tests inject
+// deps.resolvePendingStripeSubscription and never reach this.
+function defaultResolvePendingStripe(): (id: string) => Promise<PendingStripeResolution> {
+  return (id: string) =>
+    resolvePendingStripeSubscription(id, { stripeClient: stripeClientFromEnv() })
 }
 
 // Bind the server only as the program entry point (the Edge Runtime runs this
