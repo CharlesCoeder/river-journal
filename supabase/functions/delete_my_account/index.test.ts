@@ -186,10 +186,12 @@ function neverConfiguredClient(): unknown {
 // production status set is asserted, not a hand-fed seam.
 function fakeReceiptClient(
   captureStatuses: (statuses: unknown) => void,
-  rows: Array<{ provider: string; provider_subscription_id: string }>,
+  rows: Array<{ provider: string; provider_subscription_id: string; status?: string }>,
+  captureColumns?: (columns: string) => void,
 ): unknown {
   const builder = {
-    select() {
+    select(columns: string) {
+      captureColumns?.(columns)
       return builder
     },
     eq() {
@@ -222,7 +224,7 @@ function refusingMark() {
 }
 
 function refusingListReceipts() {
-  return (): Promise<Array<{ provider: string; provider_subscription_id: string }>> => {
+  return (): Promise<Array<{ provider: string; provider_subscription_id: string; status: string }>> => {
     throw new Error('listCancelableReceipts must never be called for this test')
   }
 }
@@ -236,6 +238,12 @@ function refusingClear() {
 function refusingCancel() {
   return (): Promise<{ current_period_end: string }> => {
     throw new Error('cancelStripeSubscription must never be called for this test')
+  }
+}
+
+function refusingResolvePending() {
+  return (): Promise<'already_gone' | 'voided' | 'cancelled_at_period_end'> => {
+    throw new Error('resolvePendingStripeSubscription must never be called for this test')
   }
 }
 
@@ -293,6 +301,7 @@ function happyPathDeps(overrides: Record<string, unknown> = {}) {
     clearDeletionRequested: refusingClear(),
     listCancelableReceipts: () => Promise.resolve([]),
     cancelStripeSubscription: refusingCancel(),
+    resolvePendingStripeSubscription: refusingResolvePending(),
     runCascade: okCascade(),
     deleteAuthUser: okDeleteAuthUser(),
     ...overrides,
@@ -378,7 +387,7 @@ Deno.test('marker-first: markDeletionRequested is called BEFORE cancelStripeSubs
     happyPathDeps({
       markDeletionRequested: okMark(() => callOrder.push('mark')),
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: () => {
         callOrder.push('cancel')
         return Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END })
@@ -449,7 +458,7 @@ Deno.test('happy path: an active Stripe receipt is cancelled, the cascade runs, 
     requestFor({}),
     happyPathDeps({
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: (id: string) => {
         cancelledId = id
         return Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END })
@@ -464,9 +473,10 @@ Deno.test('happy path: an active Stripe receipt is cancelled, the cascade runs, 
   assertEquals(cancelledId, STRIPE_SUBSCRIPTION_ID)
 })
 
-Deno.test('the default receipt read includes pending: the still-billing status filter is active/past_due/pending, and a pending Stripe sub is cancelled', async () => {
+Deno.test('the default receipt read includes pending and selects status: a pending Stripe row goes to the pending resolver, not cancel-at-period-end', async () => {
   let capturedStatuses: unknown = null
-  let cancelledId: string | null = null
+  let capturedColumns: string | null = null
+  let resolvedId: string | null = null
   const response = await handler(
     requestFor({}),
     // Leave listCancelableReceipts un-injected so the REAL default seam runs
@@ -474,19 +484,99 @@ Deno.test('the default receipt read includes pending: the still-billing status f
     // only ever touched by the receipt read.
     happyPathDeps({
       listCancelableReceipts: undefined,
-      client: fakeReceiptClient((statuses) => {
-        capturedStatuses = statuses
-      }, [{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]) as never,
-      cancelStripeSubscription: (id: string) => {
-        cancelledId = id
-        return Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END })
+      client: fakeReceiptClient(
+        (statuses) => {
+          capturedStatuses = statuses
+        },
+        [{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'pending' }],
+        (columns) => {
+          capturedColumns = columns
+        },
+      ) as never,
+      resolvePendingStripeSubscription: (id: string) => {
+        resolvedId = id
+        return Promise.resolve('voided' as const)
       },
     }),
   )
   assertEquals(response.status, 200)
   // The exact production still-billing set — pending is what closes ghost billing.
   assertEquals(capturedStatuses, ['active', 'past_due', 'pending'])
-  assertEquals(cancelledId, STRIPE_SUBSCRIPTION_ID)
+  assertEquals(capturedColumns, 'provider, provider_subscription_id, status')
+  assertEquals(resolvedId, STRIPE_SUBSCRIPTION_ID)
+})
+
+Deno.test('a stale pending row that Stripe already expired (already_gone) does not block deletion', async () => {
+  let cascadeRan = false
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      listCancelableReceipts: () =>
+        Promise.resolve([
+          { provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'pending' },
+        ]),
+      resolvePendingStripeSubscription: () => Promise.resolve('already_gone' as const),
+      runCascade: okCascade(() => {
+        cascadeRan = true
+      }),
+    }),
+  )
+  assertEquals(response.status, 200)
+  assertEquals(cascadeRan, true)
+})
+
+Deno.test('a pending receipt whose live state cannot be read aborts BEFORE the cascade and clears the marker -- it may still be able to bill', async () => {
+  let cleared = false
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      listCancelableReceipts: () =>
+        Promise.resolve([
+          { provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'pending' },
+        ]),
+      resolvePendingStripeSubscription: () =>
+        Promise.reject(
+          new ReceiptValidationError('stripe could not retrieve the subscription', {
+            code: 'provider_retrieve_failed',
+            fault: 'provider',
+          }),
+        ),
+      clearDeletionRequested: okClear(() => {
+        cleared = true
+      }),
+      runCascade: refusingCascade(),
+      deleteAuthUser: refusingDeleteAuthUser(),
+    }),
+  )
+  assertEquals(response.status, 502)
+  assertEquals(cleared, true)
+})
+
+Deno.test('active and pending Stripe receipts each take their own path in one deletion', async () => {
+  const periodEndCancelled: string[] = []
+  const pendingResolved: string[] = []
+  const response = await handler(
+    requestFor({}),
+    happyPathDeps({
+      listCancelableReceipts: () =>
+        Promise.resolve([
+          { provider: 'stripe', provider_subscription_id: 'sub_active', status: 'active' },
+          { provider: 'stripe', provider_subscription_id: 'sub_pending', status: 'pending' },
+          { provider: 'stripe', provider_subscription_id: 'sub_past_due', status: 'past_due' },
+        ]),
+      cancelStripeSubscription: (id: string) => {
+        periodEndCancelled.push(id)
+        return Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END })
+      },
+      resolvePendingStripeSubscription: (id: string) => {
+        pendingResolved.push(id)
+        return Promise.resolve('voided' as const)
+      },
+    }),
+  )
+  assertEquals(response.status, 200)
+  assertEquals(periodEndCancelled, ['sub_active', 'sub_past_due'])
+  assertEquals(pendingResolved, ['sub_pending'])
 })
 
 Deno.test('an apple_iap receipt: NO provider call is made, and requires_native_subscription_action is true', async () => {
@@ -524,7 +614,7 @@ Deno.test('a mix of a cancelled Stripe receipt and an apple_iap receipt: Stripe 
     happyPathDeps({
       listCancelableReceipts: () =>
         Promise.resolve([
-          { provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID },
+          { provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' },
           { provider: 'apple_iap', provider_subscription_id: 'apple-tx-003' },
         ]),
       cancelStripeSubscription: () => {
@@ -581,7 +671,7 @@ Deno.test('a Stripe-cancel HARD failure (untyped throw) aborts the saga BEFORE t
     requestFor({}),
     happyPathDeps({
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: () => Promise.reject(new Error('unexpected SDK crash')),
       clearDeletionRequested: okClear(),
       runCascade: refusingCascade(),
@@ -596,7 +686,7 @@ Deno.test('a Stripe-cancel typed failure OTHER than provider_resource_missing (e
     requestFor({}),
     happyPathDeps({
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: () =>
         Promise.reject(
           new ReceiptValidationError('stripe could not cancel the subscription', {
@@ -617,7 +707,7 @@ Deno.test('a Stripe-cancel typed failure honors an explicit status override (e.g
     requestFor({}),
     happyPathDeps({
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: () =>
         Promise.reject(
           new ReceiptValidationError('provider returned a contract-violating payload', {
@@ -640,7 +730,7 @@ Deno.test('an already-cancelled/missing Stripe subscription (provider_resource_m
     requestFor({}),
     happyPathDeps({
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: () =>
         Promise.reject(
           new ReceiptValidationError('stripe reports no matching subscription to cancel', {
@@ -721,7 +811,7 @@ Deno.test('a Stripe-cancel HARD failure clears the deletion marker BEFORE return
     requestFor({}),
     happyPathDeps({
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: () => {
         callOrder.push('cancel')
         return Promise.reject(new Error('unexpected SDK crash'))
@@ -746,7 +836,7 @@ Deno.test('a Stripe-cancel typed failure (other than provider_resource_missing) 
     requestFor({}),
     happyPathDeps({
       listCancelableReceipts: () =>
-        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID }]),
+        Promise.resolve([{ provider: 'stripe', provider_subscription_id: STRIPE_SUBSCRIPTION_ID, status: 'active' }]),
       cancelStripeSubscription: () =>
         Promise.reject(
           new ReceiptValidationError('stripe could not cancel the subscription', {
@@ -822,6 +912,7 @@ Deno.test('a marker-clear FAILURE on a pre-cascade abort still returns the ORIGI
           Promise.resolve([{
             provider: 'stripe',
             provider_subscription_id: STRIPE_SUBSCRIPTION_ID,
+            status: 'active',
           }]),
         cancelStripeSubscription: () =>
           Promise.reject(
@@ -956,6 +1047,7 @@ Deno.test('a full success run logs metadata-only lines -- every field key is on 
           Promise.resolve([{
             provider: 'stripe',
             provider_subscription_id: STRIPE_SUBSCRIPTION_ID,
+            status: 'active',
           }]),
         cancelStripeSubscription: () =>
           Promise.resolve({ current_period_end: PROVIDER_FRESH_PERIOD_END }),

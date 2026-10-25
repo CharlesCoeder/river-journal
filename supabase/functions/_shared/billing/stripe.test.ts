@@ -141,7 +141,9 @@ import {
   cancelStripeSubscriptionAtPeriodEnd,
   mapStripeStatus,
   normalizeStripeTimestamp,
+  buildStripeClient,
   refreshStripeSubscriptionState,
+  resolvePendingStripeSubscription,
   validateStripeReceipt,
   verifyStripeWebhookSignature,
 } from './stripe.ts'
@@ -192,6 +194,7 @@ function stripeClientStub(config: {
     params: Record<string, unknown>,
     signal?: AbortSignal,
   ) => Promise<unknown>
+  cancelSubscription?: (id: string, signal?: AbortSignal) => Promise<unknown>
 }) {
   return {
     subscriptions: {
@@ -206,6 +209,12 @@ function stripeClientStub(config: {
           throw new Error('subscriptions.update not configured for this test')
         }
         return config.updateSubscription(id, params, signal)
+      },
+      cancel(id: string, signal?: AbortSignal) {
+        if (!config.cancelSubscription) {
+          throw new Error('subscriptions.cancel not configured for this test')
+        }
+        return config.cancelSubscription(id, signal)
       },
     },
     checkout: {
@@ -1128,4 +1137,133 @@ Deno.test('refreshStripeSubscriptionState maps a retrieve call that never settle
   )
   assertEquals((error as ReceiptValidationError).code, 'provider_timeout')
   assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+// ---------------------------------------------------------------------------
+// resolvePendingStripeSubscription -- a receipt row recorded as 'pending'
+// (Stripe `incomplete`) is resolved from Stripe's LIVE status, never the row.
+// ---------------------------------------------------------------------------
+
+const stripeHttpError = (status: number) =>
+  Object.assign(new Error(`stripe api responded ${status}`), { status })
+
+Deno.test('resolvePendingStripeSubscription voids a still-incomplete subscription with an immediate cancel, never cancel_at_period_end', async () => {
+  const cancelled: string[] = []
+  const client = stripeClientStub({
+    retrieveSubscription: () => Promise.resolve(subscriptionFixture({ status: 'incomplete' })),
+    cancelSubscription: (id) => {
+      cancelled.push(id)
+      return Promise.resolve(subscriptionFixture({ status: 'canceled' }))
+    },
+    // updateSubscription left unconfigured: calling it throws.
+  })
+  const outcome = await resolvePendingStripeSubscription(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(outcome, 'voided')
+  assertEquals(cancelled, [SUBSCRIPTION_ID])
+})
+
+for (const status of ['incomplete_expired', 'canceled']) {
+  Deno.test(`resolvePendingStripeSubscription treats a stale row whose Stripe status is ${status} as already gone, with no mutation`, async () => {
+    const client = stripeClientStub({
+      retrieveSubscription: () => Promise.resolve(subscriptionFixture({ status })),
+      // update and cancel left unconfigured: any mutation throws.
+    })
+    const outcome = await resolvePendingStripeSubscription(SUBSCRIPTION_ID, {
+      stripeClient: client,
+    })
+    assertEquals(outcome, 'already_gone')
+  })
+}
+
+for (const status of ['active', 'trialing', 'past_due']) {
+  Deno.test(`resolvePendingStripeSubscription cancels at period end when the first payment completed after all (Stripe status ${status})`, async () => {
+    let updateParams: Record<string, unknown> | null = null
+    const client = stripeClientStub({
+      retrieveSubscription: () => Promise.resolve(subscriptionFixture({ status })),
+      updateSubscription: (_id, params) => {
+        updateParams = params
+        return Promise.resolve(subscriptionFixture({ status, cancel_at_period_end: true }))
+      },
+      // cancel left unconfigured: paid time must be preserved, never voided.
+    })
+    const outcome = await resolvePendingStripeSubscription(SUBSCRIPTION_ID, {
+      stripeClient: client,
+    })
+    assertEquals(outcome, 'cancelled_at_period_end')
+    assertEquals(updateParams, { cancel_at_period_end: true })
+  })
+}
+
+Deno.test('resolvePendingStripeSubscription treats a 404 on retrieve as already gone', async () => {
+  const client = stripeClientStub({
+    retrieveSubscription: () => Promise.reject(stripeHttpError(404)),
+  })
+  const outcome = await resolvePendingStripeSubscription(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(outcome, 'already_gone')
+})
+
+Deno.test('resolvePendingStripeSubscription treats a 404 on the void as already gone (it vanished between the two calls)', async () => {
+  const client = stripeClientStub({
+    retrieveSubscription: () => Promise.resolve(subscriptionFixture({ status: 'incomplete' })),
+    cancelSubscription: () => Promise.reject(stripeHttpError(404)),
+  })
+  const outcome = await resolvePendingStripeSubscription(SUBSCRIPTION_ID, { stripeClient: client })
+  assertEquals(outcome, 'already_gone')
+})
+
+Deno.test('resolvePendingStripeSubscription maps a non-404 retrieve failure to a provider-fault error -- the subscription may still be live', async () => {
+  const client = stripeClientStub({
+    retrieveSubscription: () => Promise.reject(stripeHttpError(503)),
+  })
+  const error = await assertRejects(
+    () => resolvePendingStripeSubscription(SUBSCRIPTION_ID, { stripeClient: client }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_retrieve_failed')
+  assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+Deno.test('resolvePendingStripeSubscription maps a non-404 void failure to a provider-fault provider_cancel_failed', async () => {
+  const client = stripeClientStub({
+    retrieveSubscription: () => Promise.resolve(subscriptionFixture({ status: 'incomplete' })),
+    cancelSubscription: () => Promise.reject(stripeHttpError(500)),
+  })
+  const error = await assertRejects(
+    () => resolvePendingStripeSubscription(SUBSCRIPTION_ID, { stripeClient: client }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_cancel_failed')
+  assertEquals((error as ReceiptValidationError).fault, 'provider')
+})
+
+Deno.test('resolvePendingStripeSubscription maps a void that never settles within the timeout budget to a provider-fault timeout, never a hang', async () => {
+  const client = stripeClientStub({
+    retrieveSubscription: () => Promise.resolve(subscriptionFixture({ status: 'incomplete' })),
+    cancelSubscription: () => new Promise(() => {}), // never resolves
+  })
+  const error = await assertRejects(
+    () =>
+      resolvePendingStripeSubscription(SUBSCRIPTION_ID, { stripeClient: client, timeoutMs: 15 }),
+    ReceiptValidationError,
+  )
+  assertEquals((error as ReceiptValidationError).code, 'provider_timeout')
+})
+
+Deno.test('buildStripeClient voids a subscription with DELETE /v1/subscriptions/{id} and no body', async () => {
+  const originalFetch = globalThis.fetch
+  let seen: { url: string; method?: string; body?: unknown } | null = null
+  globalThis.fetch = ((url: string, init?: RequestInit) => {
+    seen = { url, method: init?.method, body: init?.body }
+    return Promise.resolve(new Response(JSON.stringify({ id: SUBSCRIPTION_ID }), { status: 200 }))
+  }) as typeof fetch
+  try {
+    await buildStripeClient('sk_test_x').subscriptions.cancel(SUBSCRIPTION_ID)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+  assertEquals(seen, {
+    url: `https://api.stripe.com/v1/subscriptions/${SUBSCRIPTION_ID}`,
+    method: 'DELETE',
+    body: undefined,
+  })
 })

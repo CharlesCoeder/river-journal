@@ -38,11 +38,14 @@ import {
 // Every seam method takes an OPTIONAL trailing AbortSignal so withTimeout's
 // signal is threaded through to the underlying fetch — an in-flight provider
 // request is actually torn down on a fired timeout, not just abandoned. The
-// mutation method `subscriptions.update` powers the cancel-at-period-end path.
+// mutation method `subscriptions.update` powers the cancel-at-period-end path;
+// `subscriptions.cancel` is Stripe's immediate cancel, used only to void a
+// subscription whose first payment never completed.
 export interface StripeClientSeam {
   subscriptions: {
     retrieve(id: string, signal?: AbortSignal): Promise<unknown>
     update(id: string, params: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
+    cancel(id: string, signal?: AbortSignal): Promise<unknown>
   }
   checkout: { sessions: { retrieve(id: string, signal?: AbortSignal): Promise<unknown> } }
 }
@@ -348,6 +351,88 @@ export async function cancelStripeSubscriptionAtPeriodEnd(
   return { current_period_end: normalizePeriodEndOr502(currentPeriodEnd) }
 }
 
+// What resolvePendingStripeSubscription did with a subscription our receipt
+// row records as 'pending' (Stripe `incomplete`).
+export type PendingStripeResolution = 'already_gone' | 'voided' | 'cancelled_at_period_end'
+
+// Stripe statuses after which a subscription can never charge again.
+const TERMINAL_STRIPE_STATUSES = new Set(['canceled', 'incomplete_expired'])
+
+// Resolve a subscription our receipt row records as 'pending' — Stripe
+// `incomplete`: created at checkout, first payment not yet collected — so it
+// can never bill after the caller's account is gone. The row can be stale (the
+// billing_events webhook may have missed a transition), so this reads Stripe's
+// LIVE status first and acts on that, never on the row:
+//   - canceled / incomplete_expired → nothing to do ('already_gone'). A stale
+//     row must never block an account deletion.
+//   - incomplete → void it with an immediate cancel ('voided'). There is no
+//     paid time to preserve, and cancel_at_period_end is the wrong tool for a
+//     subscription whose first invoice is still open.
+//   - anything else (the payment completed after all: active / trialing /
+//     past_due / unpaid / paused) → the same cancel-at-period-end as a paid
+//     subscription, keeping the time the user paid for
+//     ('cancelled_at_period_end').
+//   - a 404 at either step → the subscription no longer exists
+//     ('already_gone').
+// Any other failure throws a PROVIDER-fault error (provider_retrieve_failed /
+// provider_cancel_failed): the subscription may still be live, so the caller
+// must not proceed as if it were resolved.
+export async function resolvePendingStripeSubscription(
+  id: string,
+  deps: { stripeClient: StripeClientSeam; timeoutMs?: number },
+): Promise<PendingStripeResolution> {
+  const timeoutMs = deps.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS
+  const statusOf = (error: unknown) => (error as { status?: unknown } | null)?.status
+
+  let subscription: StripeSubscription
+  try {
+    subscription = (await withTimeout(
+      (signal) => Promise.resolve(deps.stripeClient.subscriptions.retrieve(id, signal)),
+      timeoutMs,
+    )) as StripeSubscription
+  } catch (error) {
+    if (error instanceof ReceiptValidationError) {
+      throw error
+    }
+    if (statusOf(error) === 404) {
+      return 'already_gone'
+    }
+    throw new ReceiptValidationError('stripe could not retrieve the subscription', {
+      code: 'provider_retrieve_failed',
+      fault: 'provider',
+    })
+  }
+
+  const status = String(subscription.status)
+  if (TERMINAL_STRIPE_STATUSES.has(status)) {
+    return 'already_gone'
+  }
+
+  if (status !== 'incomplete') {
+    await cancelStripeSubscriptionAtPeriodEnd(id, deps)
+    return 'cancelled_at_period_end'
+  }
+
+  try {
+    await withTimeout(
+      (signal) => Promise.resolve(deps.stripeClient.subscriptions.cancel(id, signal)),
+      timeoutMs,
+    )
+  } catch (error) {
+    if (error instanceof ReceiptValidationError) {
+      throw error
+    }
+    if (statusOf(error) === 404) {
+      return 'already_gone'
+    }
+    throw new ReceiptValidationError('stripe could not void the incomplete subscription', {
+      code: 'provider_cancel_failed',
+      fault: 'provider',
+    })
+  }
+  return 'voided'
+}
+
 // A ReceiptValidationError (timeout, contract violation) passes through
 // untouched. Any other SDK rejection is treated as a client fault — the caller's
 // id does not correspond to a retrievable Stripe resource (not-found / bad id).
@@ -536,8 +621,8 @@ export async function refreshStripeSubscriptionState(
 // the account default (2025-03-31.basil reports current_period_end at the
 // line-item level; the resolvers read that first with a top-level fallback).
 //
-// The withTimeout-provided AbortSignal is threaded into EVERY fetch (both the
-// GETs and the cancel POST) so an in-flight request is actually torn down on a
+// The withTimeout-provided AbortSignal is threaded into EVERY fetch (the GETs,
+// the cancel-at-period-end POST and the immediate-cancel DELETE) so an in-flight request is actually torn down on a
 // fired timeout. A non-2xx response throws an Error carrying the numeric `status`
 // so cancelStripeSubscriptionAtPeriodEnd can distinguish a 404 desync from a 5xx.
 export function buildStripeClient(secretKey: string): StripeClientSeam {
@@ -548,7 +633,7 @@ export function buildStripeClient(secretKey: string): StripeClientSeam {
   }
   const request = async (
     path: string,
-    init: { method: 'GET' | 'POST'; body?: string; signal?: AbortSignal },
+    init: { method: 'GET' | 'POST' | 'DELETE'; body?: string; signal?: AbortSignal },
   ): Promise<unknown> => {
     const response = await fetch(`${base}${path}`, {
       method: init.method,
@@ -575,6 +660,8 @@ export function buildStripeClient(secretKey: string): StripeClientSeam {
           body: encodeStripeForm(params),
           signal,
         }),
+      cancel: (id: string, signal?: AbortSignal) =>
+        request(`/subscriptions/${encodeURIComponent(id)}`, { method: 'DELETE', signal }),
     },
     checkout: {
       sessions: {
