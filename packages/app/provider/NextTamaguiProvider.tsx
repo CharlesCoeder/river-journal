@@ -64,6 +64,12 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
 function SetHTMLBackgroundColor() {
   const theme = useTheme()
 
+  // Tamagui 3 disables every CSS transition under .t_unmounted, so the class added
+  // during SSR above can only stay until the page has mounted.
+  useEffect(() => {
+    document.documentElement.classList.remove('t_unmounted')
+  }, [])
+
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const backgroundColor = theme.background?.val
