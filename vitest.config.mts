@@ -31,6 +31,10 @@ export default defineConfig({
         import.meta.dirname,
         'packages/app/features/navigation/__mocks__/tamagui-lucide-icons.ts'
       ),
+      '@tamagui/tailwind': path.resolve(
+        import.meta.dirname,
+        'packages/app/features/navigation/__mocks__/tamagui-tailwind.tsx'
+      ),
       '@my/ui': path.resolve(
         import.meta.dirname,
         'packages/app/features/navigation/__mocks__/my-ui.ts'

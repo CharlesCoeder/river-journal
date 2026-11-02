@@ -1,4 +1,5 @@
-import { AlertDialog, Button, Text, XStack } from '@my/ui'
+import { AlertDialog, Button } from '@my/ui'
+import { Text, View } from '@tamagui/tailwind'
 import type { Flow } from 'app/state/types'
 
 interface DeleteFlowDialogProps {
@@ -55,31 +56,22 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
           >
             {flow && getFlowPreview(flow.content)}
           </AlertDialog.Description>
-          <XStack
-            gap="3"
-            justifyContent="flex-end"
-          >
+          <View className="flex-row gap-3 justify-end">
             <AlertDialog.Cancel asChild>
               <Button
                 variant="quiet"
                 borderWidth={1}
                 borderColor="border-color"
               >
-                <Text fontFamily="body">Cancel</Text>
+                <Text className="font-body text-color">Cancel</Text>
               </Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
               <Button onPress={onConfirm}>
-                <Text
-                  fontFamily="body"
-                  fontWeight="600"
-                  color="white"
-                >
-                  Delete
-                </Text>
+                <Text className="font-body font-semibold text-[#ffffff]">Delete</Text>
               </Button>
             </AlertDialog.Action>
-          </XStack>
+          </View>
         </AlertDialog.Content>
       </AlertDialog.Portal>
     </AlertDialog>
