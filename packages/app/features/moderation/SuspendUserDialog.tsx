@@ -156,6 +156,7 @@ export function SuspendUserDialog({
           </Dialog.Title>
           <Dialog.Description
             fontSize="2"
+            lineHeight="2"
             color="color11"
           >
             {SCOPE_WARNING}

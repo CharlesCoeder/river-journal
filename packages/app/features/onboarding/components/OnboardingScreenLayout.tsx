@@ -57,6 +57,7 @@ export function OnboardingScreenLayout({
       >
         <Text
           render="h1"
+          fontWeight="400"
           id={headlineId}
           tabIndex={-1}
           fontFamily="journal"

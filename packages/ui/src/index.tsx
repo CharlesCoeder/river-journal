@@ -1,4 +1,7 @@
 export * from 'tamagui'
+export { Button } from './components/Button'
+export { Input, TextArea } from './components/Input'
+export { Label } from './components/Label'
 export * from './MyComponent'
 export { config, type Conf } from '@my/config'
 export * from './CustomToast'

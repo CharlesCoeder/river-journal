@@ -151,6 +151,7 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
       >
         <Text
           render="h2"
+          fontWeight="400"
           fontFamily="journal"
           fontSize="8"
           lineHeight="8"

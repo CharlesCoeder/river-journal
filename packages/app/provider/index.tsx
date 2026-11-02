@@ -43,7 +43,7 @@ import { queryClient, dehydrateOptions, QUERY_PERSIST_KEY } from 'app/state/quer
 import { queryStorage } from 'app/state/queryStorage'
 import { DEFAULT_THEME, DEFAULT_FONT_PAIRING } from 'app/state/types'
 import type { FontPairingId } from 'app/state/types'
-import { generatePalette, withHyphenatedThemeKeys } from '@my/config/src/themes'
+import { generatePalette, withAppThemeKeys } from '@my/config/src/themes'
 
 const FONT_VARIANT_MAP = {
   'outfit-newsreader': 'default',
@@ -52,7 +52,7 @@ const FONT_VARIANT_MAP = {
 } as const
 
 function buildCustomThemeTokens(palette: string[]) {
-  return withHyphenatedThemeKeys({
+  return withAppThemeKeys({
     color1: palette[0],
     color2: palette[1],
     color3: palette[2],

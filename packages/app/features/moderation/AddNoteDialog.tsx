@@ -101,6 +101,7 @@ export function AddNoteDialog({ open, onOpenChange, postId, mutation }: AddNoteD
           </Dialog.Title>
           <Dialog.Description
             fontSize="2"
+            lineHeight="2"
             color="color11"
           >
             {DISCLOSURE}

@@ -16,6 +16,8 @@ export function UserDetailScreen({ id }: { id: string }) {
       backgroundColor="background"
     >
       <Paragraph
+        fontSize={16}
+        lineHeight="web:normal"
         textAlign="center"
         fontWeight="700"
         color="blue10"

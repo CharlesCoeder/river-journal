@@ -304,6 +304,7 @@ export function FlagAffordance({
             </Dialog.Title>
             <Dialog.Description
               fontSize="2"
+              lineHeight="2"
               color="color11"
             >
               Reports are confidential. Reported posts disappear from your feed.
@@ -403,6 +404,7 @@ export function FlagAffordance({
             </Dialog.Title>
             <Dialog.Description
               fontSize="2"
+              lineHeight="2"
               color="color11"
             >
               {"The text will be replaced with '[deleted]'. Replies under it will remain visible."}

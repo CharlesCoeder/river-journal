@@ -240,9 +240,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
         marginBottom="4"
       >
         <Button
-          size={false}
-          variant="quiet"
-          borderWidth={0}
+          unstyled
           aria-label="Previous month"
           onPress={handlePrevMonth}
         >
@@ -260,9 +258,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
         </Text>
 
         <Button
-          size={false}
-          variant="quiet"
-          borderWidth={0}
+          unstyled
           aria-label="Next month"
           onPress={handleNextMonth}
         >
@@ -302,8 +298,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
             return (
               <Button
                 key={cell.date}
-                size={false}
-                variant="quiet"
+                unstyled
                 width="14.2857%"
                 height={48}
                 alignItems="center"

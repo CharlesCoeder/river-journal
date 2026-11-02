@@ -196,10 +196,19 @@ const HYPHENATED_THEME_KEYS = {
   shadowColor: 'shadow-color',
 } as const
 
-export function withHyphenatedThemeKeys<T extends Record<string, unknown>>(theme: T): T {
+// Palette names the app authors but the themes have never defined. Under Tamagui 2
+// they resolved to nothing, so error text and links rendered in the normal text
+// color. Tamagui 3 would pass the unknown name through as invalid CSS, so these keep
+// that appearance explicitly. To introduce a real error color, change it here.
+const UNDEFINED_PALETTE_KEYS = ['blue10', 'red10', 'red11'] as const
+
+export function withAppThemeKeys<T extends Record<string, unknown>>(theme: T): T {
   const next: Record<string, unknown> = { ...theme }
   for (const [camel, hyphenated] of Object.entries(HYPHENATED_THEME_KEYS)) {
     if (camel in theme) next[hyphenated] = theme[camel]
+  }
+  for (const key of UNDEFINED_PALETTE_KEYS) {
+    if (!(key in theme)) next[key] = theme.color
   }
   return next as T
 }
@@ -212,7 +221,7 @@ export const themes: TamaguiThemes =
     : (Object.fromEntries(
         Object.entries(generatedThemes).map(([name, theme]) => [
           name,
-          withHyphenatedThemeKeys(theme as Record<string, unknown>),
+          withAppThemeKeys(theme as Record<string, unknown>),
         ])
       ) as any)
 

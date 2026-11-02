@@ -49,6 +49,8 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
           </AlertDialog.Title>
           <AlertDialog.Description
             fontFamily="body"
+            fontSize={16}
+            lineHeight="web:normal"
             color="color10"
           >
             {flow && getFlowPreview(flow.content)}
@@ -67,10 +69,7 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
               </Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
-              <Button
-                backgroundColor="red10 hover:red11 press:red11"
-                onPress={onConfirm}
-              >
+              <Button onPress={onConfirm}>
                 <Text
                   fontFamily="body"
                   fontWeight="600"

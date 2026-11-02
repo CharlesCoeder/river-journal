@@ -195,7 +195,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
               right="2"
               top="50%"
               transform={[{ translateY: -18 }]}
-              size="md"
+              compact
               variant="quiet"
               onPress={() => setShowCurrentPassword(!showCurrentPassword)}
               icon={showCurrentPassword ? EyeOff : Eye}
@@ -246,7 +246,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             right="2"
             top="50%"
             transform={[{ translateY: -18 }]}
-            size="md"
+            compact
             variant="quiet"
             onPress={() => setShowPassword(!showPassword)}
             icon={showPassword ? EyeOff : Eye}
@@ -305,7 +305,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             right="2"
             top="50%"
             transform={[{ translateY: -18 }]}
-            size="md"
+            compact
             variant="quiet"
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             icon={showConfirmPassword ? EyeOff : Eye}
@@ -342,7 +342,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
         marginTop="2"
       >
         <Button
-          size="md"
+          compact
           variant="outlined"
           onPress={onCancel}
           disabled={isLoading}
@@ -350,7 +350,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
           <Text fontFamily="body">Cancel</Text>
         </Button>
         <Button
-          size="md"
+          compact
           backgroundColor="color10 hover:color9 press:color8"
           onPress={handleSubmit}
           disabled={isLoading}

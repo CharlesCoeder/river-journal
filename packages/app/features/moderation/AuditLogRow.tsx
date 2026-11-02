@@ -232,6 +232,7 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
                 {detail.title != null ? (
                   <Text
                           render="h4"
+                          fontWeight="400"
                           fontFamily="journal"
                           fontSize="5"
                           color="color12"

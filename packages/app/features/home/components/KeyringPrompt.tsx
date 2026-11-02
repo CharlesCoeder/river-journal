@@ -112,7 +112,7 @@ export function KeyringPrompt() {
               <Button
                 testID="keyring-dismiss"
                 variant="outlined"
-                size="md"
+                compact
                 fontFamily="body"
                 onPress={handleDismiss}
               >
@@ -120,7 +120,7 @@ export function KeyringPrompt() {
               </Button>
               <Button
                 testID="keyring-retry"
-                size="md"
+                compact
                 fontFamily="body"
                 onPress={handleAccept}
               >
@@ -138,7 +138,7 @@ export function KeyringPrompt() {
             <Button
               testID="keyring-decline"
               variant="outlined"
-              size="md"
+              compact
               fontFamily="body"
               onPress={handleDecline}
             >
@@ -146,7 +146,7 @@ export function KeyringPrompt() {
             </Button>
             <Button
               testID="keyring-accept"
-              size="md"
+              compact
               fontFamily="body"
               onPress={handleAccept}
             >

@@ -143,6 +143,7 @@ export function FlowExitConfirmDialog({
           <Dialog.Description
             fontFamily="body"
             fontSize="3"
+            lineHeight="3"
             color="color8"
           >
             Exit without saving? Your words won't be kept.

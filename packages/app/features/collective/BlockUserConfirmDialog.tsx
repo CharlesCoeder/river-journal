@@ -93,6 +93,7 @@ export function BlockUserConfirmDialog({
           </Dialog.Title>
           <Dialog.Description
             fontSize="2"
+            lineHeight="2"
             color="color11"
           >
             Block {anonymizedId}? You won&apos;t see their posts and they won&apos;t see yours.

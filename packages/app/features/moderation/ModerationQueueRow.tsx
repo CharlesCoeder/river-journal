@@ -248,6 +248,7 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
         {item.title != null ? (
           <Text
             render="h3"
+            fontWeight="400"
             fontFamily="journal"
             fontSize="6"
             color="color12"

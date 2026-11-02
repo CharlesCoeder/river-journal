@@ -235,7 +235,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         {customTheme && (
           <Button
             testID="delete-custom-theme"
-            size="md"
+            compact
             variant="outlined"
             onPress={handleDelete}
           >
@@ -244,7 +244,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         )}
         <Button
           testID="cancel-custom-theme"
-          size="md"
+          compact
           variant="outlined"
           onPress={onClose}
         >
@@ -252,7 +252,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         </Button>
         <Button
           testID="save-custom-theme"
-          size="md"
+          compact
           opacity={allValid ? 1 : 0.5}
           disabled={!allValid}
           onPress={handleSave}

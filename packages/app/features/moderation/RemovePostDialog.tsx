@@ -121,6 +121,7 @@ export function RemovePostDialog({ open, onOpenChange, postId, mutation }: Remov
           </Dialog.Title>
           <Dialog.Description
             fontSize="2"
+            lineHeight="2"
             color="color11"
           >
             The post is removed for everyone and its open reports are resolved.

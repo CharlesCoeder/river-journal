@@ -223,6 +223,7 @@ export default function BlockedUsersScreen() {
                     </Dialog.Title>
                     <Dialog.Description
                       fontSize="2"
+                      lineHeight="2"
                       color="color11"
                     >
                       They&apos;ll be able to see your posts and you&apos;ll see theirs again.

@@ -170,7 +170,7 @@ export function PrivacyTierExplainer({
         <YStack gap="2">
           <Button
             testID="learn-more-toggle"
-            size="md"
+            compact
             alignSelf="flex-start"
             variant="quiet"
             onPress={() => setLearnMoreOpen((prev) => !prev)}
@@ -226,7 +226,7 @@ export function PrivacyTierExplainer({
                 {privacyCenterLink && (
                   <Button
                     testID="privacy-center-link"
-                    size="md"
+                    compact
                     fontFamily="body"
                     alignSelf="flex-start"
                     variant="outlined"
