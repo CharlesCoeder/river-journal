@@ -133,14 +133,14 @@ vi.mock('@my/ui', async () => {
   return {
     AnimatePresence: ({ children }: any) => children,
 
-    Text: ({ children, tag, ...props }: any) => {
+    Text: ({ children, render: tag, ...props }: any) => {
       const htmlTag = typeof tag === 'string' ? tag : 'span'
       return ReactModule.createElement(htmlTag, mapA11y(props), children)
     },
 
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       accessible,
       accessibilityRole,
@@ -197,7 +197,7 @@ vi.mock('@my/ui', async () => {
       ),
 
     useReducedMotion: () => false,
-    useToastController: () => ({ show: vi.fn() }),
+    toast: vi.fn(),
   }
 })
 

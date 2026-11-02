@@ -1,7 +1,7 @@
 import type React from 'react'
 import { useMemo, useRef, useState } from 'react'
 import { Button, ExpandingLineButton, XStack, YStack, Text, View, useReducedMotion } from '@my/ui'
-import { ChevronLeft, ChevronRight } from '@tamagui/lucide-icons'
+import { ChevronLeft, ChevronRight } from '@my/icons'
 import { use$ } from '@legendapp/state/react'
 import { useRouter } from 'solito/navigation'
 import { store$ } from 'app/state/store'
@@ -240,7 +240,9 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
         marginBottom="4"
       >
         <Button
-          unstyled
+          size={false}
+          variant="quiet"
+          borderWidth={0}
           aria-label="Previous month"
           onPress={handlePrevMonth}
         >
@@ -258,7 +260,9 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
         </Text>
 
         <Button
-          unstyled
+          size={false}
+          variant="quiet"
+          borderWidth={0}
           aria-label="Next month"
           onPress={handleNextMonth}
         >
@@ -298,7 +302,8 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
             return (
               <Button
                 key={cell.date}
-                unstyled
+                size={false}
+                variant="quiet"
                 width="14.2857%"
                 height={48}
                 alignItems="center"
@@ -306,9 +311,9 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
                 {...(cell.date === focusedDate ? ({ 'aria-current': 'date' } as any) : {})}
                 {...(isToday ? ({ 'data-today': 'true' } as any) : {})}
                 data-calendar-cell={idx}
-                color={`${!cell.inMonth ? "color6" : entry ? "color" : "color8"}`}
+                color={!cell.inMonth ? 'color6' : entry ? 'color' : 'color8'}
                 borderWidth={isToday ? 1 : 0}
-                borderColor={`${isToday ? "color" : undefined}`}
+                borderColor={isToday ? 'color' : undefined}
                 disabled={!cell.inMonth}
                 aria-label={ariaLabel}
                 onPress={() => handleCellPress(cell)}
@@ -319,7 +324,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
                   <Text
                     fontFamily="body"
                     fontSize="3"
-                    color={`${!cell.inMonth ? "color6" : entry ? "color" : "color8"}`}
+                    color={!cell.inMonth ? 'color6' : entry ? 'color' : 'color8'}
                   >
                     {new Date(cell.date + 'T00:00:00').getDate()}
                   </Text>

@@ -121,7 +121,7 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
-    // The list eases in via AnimatePresence + enterStyle; in tests we render
+    // The list eases in via AnimatePresence + `enter:` values; in tests we render
     // children straight through so assertions see the content synchronously.
     AnimatePresence: ({ children }: any) => children,
 
@@ -130,7 +130,7 @@ vi.mock('@my/ui', async () => {
 
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       accessible,
       accessibilityRole,

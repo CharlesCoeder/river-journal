@@ -6,11 +6,11 @@ import { Text, View, YStack } from '@my/ui'
 // onboarding sub-screens (Practice / Community / Progression).
 //
 // Typography carries the screens: a Newsreader serif headline in the date-hero
-// register (fontFamily="$journal") over a small Outfit sans body. No imagery,
+// register (fontFamily="journal") over a small Outfit sans body. No imagery,
 // no icons — just calm type and generous whitespace.
 //
 // This layout is also the animated element for the sequence: it owns the
-// `transition` / `enterStyle` so each screen springs in when it mounts. The
+// `transition` / `enter:` values so each screen springs in when it mounts. The
 // container swaps which screen renders (one at a time) and AnimatePresence
 // drives the enter/exit.
 // ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ export function OnboardingScreenLayout({
 }: OnboardingScreenLayoutProps) {
   return (
     <YStack
-      tag="section"
+      render="section"
       aria-labelledby={headlineId}
       transition={transition}
       opacity="1 enter:0"
@@ -56,7 +56,7 @@ export function OnboardingScreenLayout({
         width="100%"
       >
         <Text
-          tag="h1"
+          render="h1"
           id={headlineId}
           tabIndex={-1}
           fontFamily="journal"
@@ -112,7 +112,7 @@ export interface OnboardingSkipButtonProps {
 export function OnboardingSkipButton({ onPress, label = 'Skip' }: OnboardingSkipButtonProps) {
   return (
     <Text
-      tag="button"
+      render="button"
       aria-label={label}
       onPress={onPress}
       fontFamily="body"

@@ -37,7 +37,7 @@ function safeFlushSync(fn: () => void): void {
   }
 }
 import { AnimatePresence, View, XStack, YStack, Text, ExpandingLineButton } from '@my/ui'
-import { ArrowLeft, CornerUpLeft } from '@tamagui/lucide-icons'
+import { ArrowLeft, CornerUpLeft } from '@my/icons'
 import { useRouter, useSearchParams } from 'solito/navigation'
 import { useThread, useThreadRoot } from 'app/state/collective/thread'
 import { threadHref } from 'app/features/collective/threadHref'
@@ -199,7 +199,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
 
   // Ease the thread in on mount — mirrors the feed/Settings entrance so opening a
   // letter fades into view rather than popping in. The `mounted` gate forces a
-  // genuine client-side mount so Tamagui replays `enterStyle` reliably.
+  // genuine client-side mount so Tamagui replays `enter:` values reliably.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
@@ -296,7 +296,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
       const nodeContent = selfDeleted ? (
         <Text
           fontFamily="journal"
-          fontSize={`${isRoot ? "6" : "5"}`}
+          fontSize={isRoot ? '6' : '5'}
           color="color8"
           fontStyle="italic"
         >
@@ -306,7 +306,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         <YStack gap="3">
           {isRoot && post.title ? (
             <Text
-                tag="h1"
+                render="h1"
                 fontFamily="journal"
                 fontSize="9"
                 lineHeight="9"
@@ -321,7 +321,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           />
           <Text
               fontFamily="journal"
-              fontSize={`${isRoot ? "6" : "5"}`}
+              fontSize={isRoot ? '6' : '5'}
               color="color12"
               whiteSpace="pre-wrap"
             >
@@ -538,7 +538,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           {/* Children rendering — only when not at cap and not collapsed */}
           {!atCap && !isCollapsed && (allLoaded || (isExpanded && hasUnloaded)) ? (
             <View
-              tag="ul"
+              render="ul"
               role="group"
               marginTop="6"
             >
@@ -570,7 +570,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         return (
           <View
             key={post.id}
-            tag="li"
+            render="li"
             role="treeitem"
             aria-level={depth + 1}
             marginTop="8"
@@ -615,7 +615,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
       return (
         <View
           key={post.id}
-          tag="li"
+          render="li"
           role="treeitem"
           aria-level={1}
           {...(ariaExpanded !== undefined ? { 'aria-expanded': ariaExpanded } : {})}
@@ -645,7 +645,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   if (rootQuery.isLoading && !rootQuery.data) {
     return (
       <View
-        tag="ul"
+        render="ul"
         role="tree"
         maxWidth={720}
         marginHorizontal="auto"
@@ -661,7 +661,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   if (rootQuery.error && !rootQuery.data) {
     return (
       <View
-        tag="ul"
+        render="ul"
         role="tree"
         maxWidth={720}
         marginHorizontal="auto"
@@ -687,7 +687,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
   if (rootQuery.data === null) {
     return (
       <View
-        tag="ul"
+        render="ul"
         role="tree"
         maxWidth={720}
         marginHorizontal="auto"
@@ -762,7 +762,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
 
           {/* Root letter at depth 0; its descendants rendered recursively via renderPost */}
           <View
-            tag="ul"
+            render="ul"
             role="tree"
           >
             {rootPost ? renderPost(rootPost, 0, true) : null}

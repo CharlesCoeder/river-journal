@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BackHandler, useWindowDimensions } from 'react-native'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
-import type { LayoutChangeEvent } from 'react-native'
+import type { ViewLayoutEvent } from '@my/ui'
 import { useFocusEffect } from '@react-navigation/native'
 import { YStack, XStack, Text, View, StreakChip, CollectiveEntry, useReducedMotion } from '@my/ui'
 import { useRouter } from 'solito/navigation'
@@ -177,18 +177,18 @@ export function InlineHomeScreen() {
   // ── Geometry reports → PersistentEditor ──────────────────────────────────
   // All y values are relative to this screen's root, which sits at the
   // safe-area top; PersistentEditor adds insets.top itself.
-  const handleTopRowLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleTopRowLayout = useCallback((e: ViewLayoutEvent) => {
     const { y, height } = e.nativeEvent.layout
     setInlineEditorGeometry({ expandedTop: y + height + INLINE_EXPANDED_TOP_GAP })
   }, [])
-  const handleHeaderLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleHeaderLayout = useCallback((e: ViewLayoutEvent) => {
     const { y, height } = e.nativeEvent.layout
     setInlineEditorGeometry({ inlineTop: y + height })
   }, [])
-  const handleHeroLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleHeroLayout = useCallback((e: ViewLayoutEvent) => {
     setInlineEditorGeometry({ insetX: e.nativeEvent.layout.x })
   }, [])
-  const handleBottomBarLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleBottomBarLayout = useCallback((e: ViewLayoutEvent) => {
     const { height } = e.nativeEvent.layout
     bottomBarHeightRef.current = height
     updatePersistentEditorBottomBarHeight(height)

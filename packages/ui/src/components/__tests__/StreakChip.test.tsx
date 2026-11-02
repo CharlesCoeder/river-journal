@@ -25,7 +25,7 @@ vi.mock('tamagui', () => {
     testID,
     animation,
     transition,
-    enterStyle,
+    opacity,
     exitStyle,
     role,
     color,
@@ -40,7 +40,9 @@ vi.mock('tamagui', () => {
         // Surface animation/transition props as data attrs so tests can assert absence
         ...(animation !== undefined ? { 'data-animation': String(animation) } : {}),
         ...(transition !== undefined ? { 'data-transition': String(transition) } : {}),
-        ...(enterStyle !== undefined ? { 'data-enter-style': 'present' } : {}),
+        ...(typeof opacity === 'string' && opacity.includes('enter:')
+          ? { 'data-enter-style': 'present' }
+          : {}),
         ...(exitStyle !== undefined ? { 'data-exit-style': 'present' } : {}),
         // Surface color prop for state-prop assertions
         ...(color !== undefined ? { 'data-color': String(color) } : {}),
@@ -148,22 +150,22 @@ describe('StreakChip accessibility', () => {
 // 4. state prop controls color token
 // ─────────────────────────────────────────────────────────────────────────────
 describe('StreakChip state prop controls color', () => {
-  it('state="pending" (default) uses $color8 (stone)', () => {
+  it('state="pending" (default) uses color8 (stone)', () => {
     render(React.createElement(StreakChip, { dayCount: 5 }))
     const chip = screen.getByText('Day 5')
-    expect(chip.getAttribute('data-color')).toBe('$color8')
+    expect(chip.getAttribute('data-color')).toBe('color8')
   })
 
-  it('state="pending" explicit uses $color8', () => {
+  it('state="pending" explicit uses color8', () => {
     render(React.createElement(StreakChip, { dayCount: 5, state: 'pending' }))
     const chip = screen.getByText('Day 5')
-    expect(chip.getAttribute('data-color')).toBe('$color8')
+    expect(chip.getAttribute('data-color')).toBe('color8')
   })
 
-  it('state="active" uses $color (text token — higher contrast)', () => {
+  it('state="active" uses color (text token — higher contrast)', () => {
     render(React.createElement(StreakChip, { dayCount: 5, state: 'active' }))
     const chip = screen.getByText('Day 5')
-    expect(chip.getAttribute('data-color')).toBe('$color')
+    expect(chip.getAttribute('data-color')).toBe('color')
   })
 
   it('state="active" renders different color than state="pending"', () => {

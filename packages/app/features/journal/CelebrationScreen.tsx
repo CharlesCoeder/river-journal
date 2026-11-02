@@ -26,7 +26,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { LayoutChangeEvent } from 'react-native'
+import type { ViewLayoutEvent } from '@my/ui'
 import {
   AnimatePresence,
   YStack,
@@ -83,12 +83,12 @@ export function CelebrationScreen() {
   // in the first screenful on device and the saved flow sits below the fold.
   const [viewportHeight, setViewportHeight] = useState(0)
 
-  const onScrollViewLayout = useCallback((e: LayoutChangeEvent) => {
+  const onScrollViewLayout = useCallback((e: ViewLayoutEvent) => {
     const h = e.nativeEvent.layout.height
     if (h > 0) setViewportHeight((prev) => (prev === h ? prev : h))
   }, [])
 
-  const onNudgeLayout = useCallback((e: LayoutChangeEvent) => {
+  const onNudgeLayout = useCallback((e: ViewLayoutEvent) => {
     const h = e.nativeEvent.layout.height
     if (h > 0) nudgeHeight.current = h
   }, [])
@@ -241,7 +241,7 @@ export function CelebrationScreen() {
         {mounted && (
           <YStack
             key="celebration-content"
-            tag="div"
+            render="div"
             role="dialog"
             aria-modal={true}
             {...(effectiveVariant === 'handoff'

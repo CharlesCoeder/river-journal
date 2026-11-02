@@ -19,7 +19,7 @@
  *   t10 — Reduced-motion: animation props undefined on overlay/content
  *   t11 — Source grep: FlagAffordance.tsx has no console.*+note or Sentry+note
  *
- * Mock strategy: vi.mock for useReportPost, addLocallyHiddenPost, @my/ui, @tamagui/lucide-icons.
+ * Mock strategy: vi.mock for useReportPost, addLocallyHiddenPost, @my/ui, @my/icons.
  * Mirrors ReactionStrip.test.tsx + CollectiveFeedScreen.test.tsx patterns.
  */
 
@@ -78,7 +78,7 @@ vi.mock('@my/ui', async () => {
   return {
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       'aria-label': ariaLabel,
       'aria-haspopup': ariaHasPopup,
@@ -319,7 +319,7 @@ vi.mock('@my/ui', async (importOriginal) => {
   return {
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       'aria-label': ariaLabel,
       'aria-haspopup': ariaHasPopup,
@@ -396,8 +396,8 @@ vi.mock('@my/ui', async (importOriginal) => {
   }
 })
 
-// ─── @tamagui/lucide-icons mock ───────────────────────────────────────────────
-vi.mock('@tamagui/lucide-icons', () => ({
+// ─── @my/icons mock ───────────────────────────────────────────────
+vi.mock('@my/icons', () => ({
   MoreHorizontal: ({ size, ...props }: any) =>
     React.createElement('span', { 'data-icon': 'MoreHorizontal', 'data-size': size, ...props }),
 }))

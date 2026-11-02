@@ -50,8 +50,8 @@ function PrivacyModeCard({
       flex={1}
       padding="6"
       borderWidth={1}
-      borderColor={`${isActive ? "color" : "color2"}`}
-      backgroundColor={`${isActive ? "color1" : "transparent"}`}
+      borderColor={isActive ? 'color' : 'color2'}
+      backgroundColor={isActive ? 'color1' : 'transparent'}
       borderRadius="2"
     >
       <Text
@@ -204,7 +204,7 @@ function PostureLine({
                   }
                 },
                 cursor: 'pointer',
-                hoverStyle: { opacity: 0.8 },
+                opacity: 'hover:0.8',
               }
             : {})}
     >

@@ -1,5 +1,5 @@
 import { View, XStack, YStack } from '@my/ui'
-import { X } from '@tamagui/lucide-icons'
+import { X } from '@my/icons'
 import { useRouter } from 'solito/navigation'
 import { MenuSurface } from './MenuSurface'
 import { useHubPager } from './hubPagerContext'

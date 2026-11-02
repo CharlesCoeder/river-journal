@@ -54,7 +54,7 @@ function ModeCard({
       width="100%"
       borderWidth={1}
       borderColor={`${selected ? "color8" : "color3"} hover:color6`}
-      backgroundColor={`${selected ? "color1" : "transparent"}`}
+      backgroundColor={selected ? 'color1' : 'transparent'}
       cursor="pointer"
       gap="3"
       onPress={() => onSelect(mode)}
@@ -237,10 +237,9 @@ export function EncryptionModeDialog() {
                           fontSize={11}
                           letterSpacing={2}
                           textTransform="uppercase"
-                          color={`${selectedMode ? "color" : "color8"}`}
-                          opacity={selectedMode ? 1 : 0.5}
+                          color={selectedMode ? 'color' : 'color8'}
+                          opacity={selectedMode ? '1 hover:0.7' : 0.5}
                           cursor={selectedMode ? 'pointer' : 'default'}
-                          hoverStyle={selectedMode ? { opacity: 0.7 } : {}}
                           onPress={
                                                     selectedMode ? () => void confirmEncryptionModeSelection() : undefined
                                                   }
@@ -408,9 +407,8 @@ export function EncryptionModeDialog() {
                             fontSize={11}
                             letterSpacing={2}
                             textTransform="uppercase"
-                            color="color8"
+                            color={isTrusting ? 'color8' : 'color8 hover:color'}
                             cursor={isTrusting ? 'default' : 'pointer'}
-                            hoverStyle={isTrusting ? {} : { color: '$color' }}
                             onPress={isTrusting ? undefined : declineBrowserTrust}
                           >
                             Skip
@@ -426,7 +424,7 @@ export function EncryptionModeDialog() {
                             borderColor="color5"
                             paddingBottom={2}
                             cursor={isTrusting ? 'default' : 'pointer'}
-                            hoverStyle={isTrusting ? {} : { opacity: 0.7 }}
+                            opacity={isTrusting ? undefined : 'hover:0.7'}
                             onPress={isTrusting ? undefined : handleAcceptTrust}
                           >
                             Trust Browser

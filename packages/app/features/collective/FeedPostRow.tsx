@@ -23,7 +23,7 @@
 //   - normal           → title + author byline + reaction tally
 
 import { View, Text, XStack } from '@my/ui'
-import { Heart, Sparkles, Flame, Leaf, Waves, ArrowRight } from '@tamagui/lucide-icons'
+import { Heart, Sparkles, Flame, Leaf, Waves, ArrowRight } from '@my/icons'
 import type { Post } from 'app/state/collective/feed'
 import type { ReactionKind } from 'app/state/collective/types'
 import { timeAgoCasual } from './_shared'
@@ -59,7 +59,7 @@ function ReactionTally({ reactions }: { reactions: { [key: string]: number } }) 
         >
           <Icon
             size={13}
-            color="$color9"
+            color="color9"
           />
           <Text
             fontSize="1"
@@ -116,7 +116,7 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
   if (selfDeleted) {
     return (
       <View
-        tag="article"
+        render="article"
         role="article"
         aria-label={a11yLabel}
         paddingVertical="5"
@@ -136,7 +136,7 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
   // ─── Title-led row ──────────────────────────────────────────────────────────
   return (
     <View
-      tag="article"
+      render="article"
       role="article"
       aria-label={a11yLabel}
       onPress={onOpen ? () => onOpen(post.id) : undefined}
@@ -150,7 +150,7 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
         gap="4"
       >
         <Text
-          tag="h2"
+          render="h2"
           fontFamily="journal"
           fontSize="8"
           lineHeight="8"

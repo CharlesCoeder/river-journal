@@ -123,7 +123,7 @@ export default function AuditLogScreen() {
 
           {hasNextPage ? (
             <View
-                tag="button"
+                render="button"
                 role="button"
                 data-testid="audit-log-load-more"
                 alignSelf="center"

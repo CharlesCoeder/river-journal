@@ -20,7 +20,7 @@ import path from 'node:path'
 const FEATURES_DIR = path.resolve(__dirname, '..')
 const SCREEN_PATH = path.join(FEATURES_DIR, 'CollectiveLockedScreen.tsx')
 
-vi.mock('@tamagui/lucide-icons', () => {
+vi.mock('@my/icons', () => {
   const stub = () => () => null
   return {
     Lock: stub(),

@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Text, XStack, YStack, View, ExpandingLineButton, useToastController } from '@my/ui'
+import { Text, XStack, YStack, View, ExpandingLineButton, toast } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { useRouter } from 'solito/navigation'
 import { store$, applySubscriptionTierFromServer } from 'app/state/store'
@@ -32,7 +32,7 @@ import { resolvePurchasePlatform, resolveStorefrontCountryCode } from './storefr
 type SurfaceState = 'idle' | 'purchasing' | 'purchased' | 'error'
 
 // The warm error indicator draws from the active theme (never a fixed red).
-const ERROR_DOT_COLOR = '$color9'
+const ERROR_DOT_COLOR = 'color9'
 
 /**
  * Reads the external-billing feature flag defensively (never throws). The flag
@@ -53,7 +53,6 @@ function readExternalBillingFlag(): boolean {
 
 export function PaidTierPurchaseSurface() {
   const router = useRouter()
-  const toast = useToastController()
 
   const tier = (use$(store$.profile.subscription_tier) as string | undefined) ?? 'free'
   const userId = use$(store$.session.userId) as string | null
@@ -85,8 +84,8 @@ export function PaidTierPurchaseSurface() {
 
       // Validation failure — calm, generic, no owner/account leak. The same
       // message covers every failure code (including 409 ownership conflict).
-      toast.show('That subscription could not be applied', {
-        message: 'Please try again.',
+      toast('That subscription could not be applied', {
+        description: 'Please try again.',
       })
       setState('error')
     } catch {
@@ -95,12 +94,12 @@ export function PaidTierPurchaseSurface() {
       // malformed payment-link) would otherwise leave the surface stuck in the
       // disabled `purchasing` state with an unhandled rejection. Surface the
       // same calm generic message and drop to the error state so Retry engages.
-      toast.show('That subscription could not be applied', {
-        message: 'Please try again.',
+      toast('That subscription could not be applied', {
+        description: 'Please try again.',
       })
       setState('error')
     }
-  }, [userId, toast])
+  }, [userId])
 
   // On the Stripe (web/desktop) success return leg the user lands back on the
   // surface at `?session_id=cs_...` — auto-drive the validate → purchased flow
@@ -129,7 +128,7 @@ export function PaidTierPurchaseSurface() {
         width="100%"
       >
         <Text
-          tag="h1"
+          render="h1"
           fontFamily="journal"
           fontSize="8 sm:7"
           color="color"
@@ -161,7 +160,7 @@ export function PaidTierPurchaseSurface() {
           role="status"
         >
           <Text
-            tag="h1"
+            render="h1"
             fontFamily="journal"
             fontSize="8 sm:7"
             color="color"
@@ -199,7 +198,7 @@ export function PaidTierPurchaseSurface() {
       width="100%"
     >
       <Text
-        tag="h1"
+        render="h1"
         fontFamily="journal"
         fontSize="8 sm:7"
         color="color"

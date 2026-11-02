@@ -25,7 +25,7 @@ import {
   ExpandingLineButton,
   useReducedMotion,
 } from '@my/ui'
-import { MoreHorizontal } from '@tamagui/lucide-icons'
+import { MoreHorizontal } from '@my/icons'
 import { useReportPost, useDeleteOwnPost } from 'app/state/collective/mutations'
 import type { ReportPostVars } from 'app/state/collective/mutations'
 import { addLocallyHiddenPost } from 'app/state/store'
@@ -204,7 +204,7 @@ export function FlagAffordance({
       >
         <Popover.Trigger asChild>
           <View
-            tag="button"
+            render="button"
             role="button"
             aria-label={triggerAriaLabel}
             aria-haspopup="menu"
@@ -223,12 +223,11 @@ export function FlagAffordance({
           backgroundColor="background"
           borderColor="color3"
           borderWidth={1}
-          elevate
         >
           <YStack>
             {canFocus ? (
               <View
-                tag="button"
+                render="button"
                 role="menuitem"
                 onPress={handleFocus}
                 paddingHorizontal="3"
@@ -239,7 +238,7 @@ export function FlagAffordance({
             ) : null}
             {canReport ? (
               <View
-                tag="button"
+                render="button"
                 role="menuitem"
                 onPress={openReportDialog}
                 paddingHorizontal="3"
@@ -250,7 +249,7 @@ export function FlagAffordance({
             ) : null}
             {canBlock ? (
               <View
-                tag="button"
+                render="button"
                 role="menuitem"
                 onPress={openBlockDialog}
                 paddingHorizontal="3"
@@ -261,7 +260,7 @@ export function FlagAffordance({
             ) : null}
             {canSelfDelete ? (
               <View
-                tag="button"
+                render="button"
                 role="menuitem"
                 onPress={openDeleteDialog}
                 paddingHorizontal="3"

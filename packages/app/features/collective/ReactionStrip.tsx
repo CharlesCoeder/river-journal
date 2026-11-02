@@ -7,7 +7,7 @@
 // Returns null when userId is null (anonymous viewer).
 
 import { XStack, View, Text, useReducedMotion } from '@my/ui'
-import { Heart, Sparkles, Flame, Leaf, Waves } from '@tamagui/lucide-icons'
+import { Heart, Sparkles, Flame, Leaf, Waves } from '@my/icons'
 import { useToggleReaction } from 'app/state/collective/mutations'
 import { usePostReactions } from 'app/state/collective/reactions'
 import type { ReactionKind } from 'app/state/collective/types'
@@ -97,12 +97,12 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
       {REACTIONS.map(({ kind, Icon, label }) => {
         const isReacted = userReactions[kind] !== null
         const count = counts[kind] ?? 0
-        const iconColor = isReacted ? '$color12' : '$color9'
+        const iconColor = isReacted ? 'color12' : 'color9'
 
         return (
           <View
             key={kind}
-            tag="button"
+            render="button"
             role="button"
             aria-pressed={isReacted}
             aria-label={`${label} reaction (${count})`}

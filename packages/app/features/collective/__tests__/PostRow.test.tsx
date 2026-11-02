@@ -37,7 +37,7 @@ vi.mock('app/features/collective/FlagAffordance', () => ({
 vi.mock('@my/ui', async () => {
   const ReactModule = await import('react')
   return {
-    View: ({ children, tag, role, 'aria-label': ariaLabel, ...props }: any) => {
+    View: ({ children, render: tag, role, 'aria-label': ariaLabel, ...props }: any) => {
       const htmlTag = tag === 'article' ? 'article' : 'div'
       const a11y: Record<string, unknown> = {}
       if (role) a11y['role'] = role

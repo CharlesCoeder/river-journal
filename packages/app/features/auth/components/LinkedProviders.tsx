@@ -11,7 +11,7 @@
 import { useState, useCallback } from 'react'
 import { YStack, XStack, Text, Separator } from '@my/ui'
 import Svg, { Path } from 'react-native-svg'
-import { Mail } from '@tamagui/lucide-icons'
+import { Mail } from '@my/icons'
 import { useIdentityLinking } from 'app/hooks/useIdentityLinking'
 import { AddPasswordForm } from './AddPasswordForm'
 
@@ -75,7 +75,7 @@ function ProviderRow({
               fontSize="5"
               fontFamily="body"
               fontWeight={isConnected ? '600' : '400'}
-              color={`${isConnected ? "color" : "color9"}`}
+              color={isConnected ? 'color' : 'color9'}
             >
               {label}
             </Text>
@@ -157,7 +157,7 @@ export function LinkedProviders() {
         icon={
           <Mail
             size={16}
-            color={`${isLoading ? "color8" : hasPassword ? "color" : "color8"}`}
+            color={isLoading ? 'color8' : hasPassword ? 'color' : 'color8'}
           />
         }
         label="Email / Password"

@@ -57,16 +57,14 @@ function FontPairingRow({
       <Text
         fontFamily={pairing.uiFont}
         fontSize={20}
-        color={`${isSelected ? "color" : "color8"}`}
-        {...(isWeb && { hoverStyle: { color: '$color' } })}
+        color={`${isSelected ? 'color' : 'color8'} web:hover:color`}
       >
         {pairing.uiLabel}
       </Text>
       <Text
         fontFamily={pairing.contentFont}
         fontSize={20}
-        color={`${isSelected ? "color" : "color8"}`}
-        {...(isWeb && { hoverStyle: { color: '$color' } })}
+        color={`${isSelected ? 'color' : 'color8'} web:hover:color`}
       >
         {pairing.contentLabel}
       </Text>

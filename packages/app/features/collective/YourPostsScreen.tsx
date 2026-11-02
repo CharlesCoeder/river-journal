@@ -52,7 +52,7 @@ export default function YourPostsScreen() {
 
   // Ease the list in on mount — mirrors the feed/thread/Settings entrance so the
   // screen fades into view rather than popping in. The `mounted` gate forces a
-  // genuine client-side mount so Tamagui replays `enterStyle` reliably.
+  // genuine client-side mount so Tamagui replays `enter:` values reliably.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)

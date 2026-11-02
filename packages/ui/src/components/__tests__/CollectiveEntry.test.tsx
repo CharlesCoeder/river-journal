@@ -18,8 +18,6 @@ vi.mock('tamagui', () => {
     onPress,
     animation,
     transition,
-    enterStyle,
-    exitStyle,
     ...rest
   }: any) =>
     ReactModule.createElement(
@@ -33,8 +31,12 @@ vi.mock('tamagui', () => {
         // Surface animation/transition props as data attrs so tests can assert absence
         ...(animation !== undefined ? { 'data-animation': String(animation) } : {}),
         ...(transition !== undefined ? { 'data-transition': String(transition) } : {}),
-        ...(enterStyle !== undefined ? { 'data-enter-style': 'present' } : {}),
-        ...(exitStyle !== undefined ? { 'data-exit-style': 'present' } : {}),
+        ...(Object.values(rest).some((v) => typeof v === 'string' && v.includes('enter:'))
+          ? { 'data-enter-style': 'present' }
+          : {}),
+        ...(Object.values(rest).some((v) => typeof v === 'string' && v.includes('exit:'))
+          ? { 'data-exit-style': 'present' }
+          : {}),
       },
       children
     )

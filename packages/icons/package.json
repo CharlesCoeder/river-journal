@@ -1,0 +1,10 @@
+{
+  "name": "@my/icons",
+  "version": "0.0.1",
+  "private": true,
+  "types": "./src",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@tamagui/helpers-icon": "3.1.10"
+  }
+}

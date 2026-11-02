@@ -24,7 +24,7 @@ import {
   ExpandingLineButton,
   useReducedMotion,
 } from '@my/ui'
-import { PenLine } from '@tamagui/lucide-icons'
+import { PenLine } from '@my/icons'
 import { onlineManager } from '@tanstack/react-query'
 import { useFeed } from 'app/state/collective/feed'
 import { threadHref } from 'app/features/collective/threadHref'
@@ -66,7 +66,7 @@ export default function CollectiveFeedScreen() {
 
   // Ease the room in on mount — mirrors the Settings/Preferences entrance so the
   // Collective screen fades into view rather than popping in. The `mounted` gate
-  // forces a genuine client-side mount so Tamagui replays `enterStyle` reliably.
+  // forces a genuine client-side mount so Tamagui replays `enter:` values reliably.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)

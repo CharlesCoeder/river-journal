@@ -50,7 +50,7 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
   // Render at every width and let the XStack wrap on narrow viewports. (Previously this returned
   // null below Tamagui's `lg` breakpoint, which left mobile with no visible primary nav.)
 
-  const fontSize = variant === 'home' ? '$3' : '$2'
+  const fontSize = variant === 'home' ? '3' : '2'
 
   // Normalize pathname for comparison (strip trailing slash)
   function normalizeRoute(route: string): string {
@@ -116,10 +116,10 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
 
   return (
     <View
-      tag="nav"
+      render="nav"
       aria-label="Primary navigation"
       role="navigation"
-      marginBottom={variant === 'browse' ? '$8' : 0}
+      marginBottom={variant === 'browse' ? '8' : 0}
     >
       <XStack
         columnGap="4"
@@ -133,12 +133,12 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
           const resolvedLabel: string =
             item.key === 'log-in-out' ? (isAuthenticated ? 'Log out' : 'Log in') : item.label
 
-          const color = active ? '$color' : '$color8'
+          const color = active ? 'color' : 'color8'
 
           return (
             <Text
               key={item.key}
-              tag="a"
+              render="a"
               href={item.route}
               aria-current={active ? 'page' : undefined}
               data-active={active ? 'true' : undefined}
@@ -146,8 +146,7 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
               fontFamily="body"
               fontSize={fontSize}
               letterSpacing={0.5}
-              color={color}
-              hoverStyle={reduceMotion ? undefined : { color: '$color' }}
+              color={reduceMotion ? color : `${color} hover:color`}
               outlineWidth="focus-visible:2px"
               outlineStyle="focus-visible:solid"
               outlineColor="focus-visible:color"

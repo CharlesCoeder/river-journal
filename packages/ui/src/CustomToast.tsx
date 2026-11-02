@@ -1,24 +1,35 @@
-import { NativeToast as Toast } from './NativeToast'
+import { isWeb, Toast, YStack } from 'tamagui'
 
-// Platform detection without expo-constants to avoid warnings on web/desktop
-const isExpo = (() => {
-  try {
-    // Only import expo-constants in React Native environments
-    if (typeof window === 'undefined' && typeof navigator !== 'undefined') {
-      // We're in React Native
-      const Constants = require('expo-constants')
-      return Constants?.executionEnvironment === 'storeClient'
-    }
-    return false
-  } catch {
-    // If expo-constants is not available, we're not in Expo
-    return false
-  }
-})()
-
-export const CustomToast = () => {
-  if (isExpo) {
-    return null
-  }
-  return <Toast />
-}
+// Mount once inside TamaguiProvider; `toast()` then works from anywhere. Native
+// shows the OS toast through burnt. Web keeps the app's own toast surface.
+export const CustomToast = () => (
+  <Toast
+    position="top-center"
+    duration={6000}
+    native={!isWeb}
+  >
+    <Toast.Viewport offset={10}>
+      <Toast.List
+        renderItem={({ toast, index }) => (
+          <Toast.Item
+            key={toast.id}
+            toast={toast}
+            index={index}
+            backgroundColor="color6"
+            borderRadius="4"
+            paddingHorizontal="4"
+            paddingVertical="3"
+          >
+            <YStack
+              paddingVertical="1-5"
+              paddingHorizontal="2"
+            >
+              <Toast.Title lineHeight="20px">{toast.title}</Toast.Title>
+              {!!toast.description && <Toast.Description>{toast.description}</Toast.Description>}
+            </YStack>
+          </Toast.Item>
+        )}
+      />
+    </Toast.Viewport>
+  </Toast>
+)

@@ -4295,14 +4295,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@my/icons@npm:0.0.1, @my/icons@workspace:packages/icons":
+  version: 0.0.0-use.local
+  resolution: "@my/icons@workspace:packages/icons"
+  dependencies:
+    "@tamagui/helpers-icon": "npm:3.1.10"
+  languageName: unknown
+  linkType: soft
+
 "@my/ui@npm:0.0.1, @my/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@my/ui@workspace:packages/ui"
   dependencies:
     "@my/config": "npm:0.0.1"
     "@tamagui/build": "npm:3.1.10"
-    "@tamagui/helpers-icon": "npm:3.1.10"
-    "@tamagui/toast": "npm:3.1.10"
     tamagui: "npm:3.1.10"
   languageName: unknown
   linkType: soft
@@ -11211,6 +11217,7 @@ __metadata:
   dependencies:
     "@legendapp/state": "npm:^3.0.0-beta.31"
     "@lexical/react": "npm:^0.33.1"
+    "@my/icons": "npm:0.0.1"
     "@my/ui": "npm:0.0.1"
     "@noble/ciphers": "npm:^2.1.1"
     "@noble/hashes": "npm:^2.0.1"
@@ -18094,6 +18101,7 @@ __metadata:
     "@react-navigation/native": "npm:^7.0.14"
     "@react-navigation/native-stack": "npm:^7.3.25"
     "@sentry/react-native": "npm:8.18.0"
+    "@tamagui/native": "npm:3.1.10"
     "@types/react": "npm:~19.1.10"
     app: "npm:0.0.0"
     babel-plugin-module-resolver: "npm:^5.0.2"

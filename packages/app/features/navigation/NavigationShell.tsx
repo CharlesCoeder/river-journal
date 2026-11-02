@@ -1,5 +1,5 @@
 import { YStack, XStack, Text, useMedia } from '@my/ui'
-import { Home, PenLine, BookOpen, Settings, PanelLeftClose, PanelLeft } from '@tamagui/lucide-icons'
+import { Home, PenLine, BookOpen, Settings, PanelLeftClose, PanelLeft } from '@my/icons'
 import { useRouter } from 'solito/navigation'
 import { useState } from 'react'
 
@@ -68,7 +68,7 @@ function SidebarLayout({
         borderRightWidth={1}
         borderRightColor="color4"
         paddingVertical="4"
-        paddingHorizontal={`${showLabels ? "3" : "0"}`}
+        paddingHorizontal={showLabels ? '3' : '0'}
         justifyContent="space-between"
         transition="quick"
       >
@@ -76,7 +76,7 @@ function SidebarLayout({
           {/* Collapse toggle */}
           {defaultShowLabels && (
             <XStack
-              paddingHorizontal={`${showLabels ? "3" : "0"}`}
+              paddingHorizontal={showLabels ? '3' : '0'}
               paddingBottom="4"
               justifyContent={showLabels ? 'flex-end' : 'center'}
             >
@@ -120,14 +120,14 @@ function SidebarLayout({
               >
                 <Icon
                   size={20}
-                  color={isActive ? '$color' : '$color9'}
+                  color={isActive ? 'color' : 'color9'}
                 />
                 {showLabels && (
                   <Text
                     fontSize="3"
                     fontFamily="body"
                     fontWeight={isActive ? '600' : '400'}
-                    color={`${isActive ? "color" : "color9"}`}
+                    color={isActive ? 'color' : 'color9'}
                   >
                     {item.label}
                   </Text>
@@ -195,12 +195,12 @@ function BottomTabLayout({
             >
               <Icon
                 size={20}
-                color={isActive ? '$color' : '$color9'}
+                color={isActive ? 'color' : 'color9'}
               />
               <Text
                 fontSize={11}
                 fontFamily="body"
-                color={`${isActive ? "color" : "color9"}`}
+                color={isActive ? 'color' : 'color9'}
                 fontWeight={isActive ? '600' : '400'}
               >
                 {item.label}

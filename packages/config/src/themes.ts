@@ -1,4 +1,4 @@
-import { createThemes, defaultComponentThemes } from '@tamagui/config-v5/builder'
+import { createThemes, defaultComponentThemes } from '@tamagui/config-v5'
 
 // -----------------------------------------------------------------
 // Named theme palettes — 12-step gradient from bg → text
@@ -175,12 +175,46 @@ const generatedThemes = createThemes({
   },
 })
 
+// Tamagui 3 components read hyphenated theme keys, and a missing key is dropped
+// without a warning. The v5 builder only emits camelCase, so each theme carries
+// both spellings, the same way Tamagui's own frozen v5 pack does.
+const HYPHENATED_THEME_KEYS = {
+  accentBackground: 'accent-background',
+  accentColor: 'accent-color',
+  backgroundFocus: 'background-focus',
+  backgroundHover: 'background-hover',
+  backgroundPress: 'background-press',
+  borderColor: 'border-color',
+  borderColorFocus: 'border-color-focus',
+  borderColorHover: 'border-color-hover',
+  borderColorPress: 'border-color-press',
+  colorFocus: 'color-focus',
+  colorHover: 'color-hover',
+  colorPress: 'color-press',
+  outlineColor: 'outline-color',
+  placeholderColor: 'placeholder-color',
+  shadowColor: 'shadow-color',
+} as const
+
+export function withHyphenatedThemeKeys<T extends Record<string, unknown>>(theme: T): T {
+  const next: Record<string, unknown> = { ...theme }
+  for (const [camel, hyphenated] of Object.entries(HYPHENATED_THEME_KEYS)) {
+    if (camel in theme) next[hyphenated] = theme[camel]
+  }
+  return next as T
+}
+
 export type TamaguiThemes = typeof generatedThemes
 
 export const themes: TamaguiThemes =
   process.env.TAMAGUI_ENVIRONMENT === 'client' && process.env.NODE_ENV === 'production'
     ? ({} as any)
-    : (generatedThemes as any)
+    : (Object.fromEntries(
+        Object.entries(generatedThemes).map(([name, theme]) => [
+          name,
+          withHyphenatedThemeKeys(theme as Record<string, unknown>),
+        ])
+      ) as any)
 
 // Re-export theme definitions for UI (e.g. ThemePicker)
 export { THEME_DEFS }

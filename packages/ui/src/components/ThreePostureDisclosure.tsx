@@ -167,8 +167,10 @@ function BoundaryADialog({
         <Dialog.Content
           key="content"
           aria-labelledby={TITLE_ID}
-          animateOnly={['transform', 'opacity']}
-          transition={reduceMotion ? '100ms' : 'designModal'}
+          transition={{
+            preset: reduceMotion ? '100ms' : 'designModal',
+            properties: 'transform, opacity',
+          }}
           y="enter:-10px exit:10px"
           opacity="enter:0 exit:0"
           backgroundColor="background"
@@ -203,7 +205,7 @@ function BoundaryADialog({
               valid runtime prop on web. We use a TextAny alias (cast once, above) to
               suppress the typecheck error while keeping the correct semantic tag. */}
           <TextAny
-            tag="a"
+            render="a"
             role="link"
             tabIndex={0}
             onKeyDown={(e: any) => {

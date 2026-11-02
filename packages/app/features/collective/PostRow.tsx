@@ -42,7 +42,7 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
 
   return (
     <View
-      tag="article"
+      render="article"
       role="article"
       aria-label={a11yLabel}
     >

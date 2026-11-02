@@ -296,8 +296,8 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
   // default dismissal at the source per the Tamagui Dialog (Radix) API.
   const dismissDisabled = isDeleting || isTerminal
   const preventImplicitDismiss = useCallback(
-    (event: { preventDefault: () => void }) => {
-      if (dismissDisabled) event.preventDefault()
+    (details: { cancel: () => void }) => {
+      if (dismissDisabled) details.cancel()
     },
     [dismissDisabled]
   )

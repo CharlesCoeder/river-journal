@@ -67,7 +67,7 @@ vi.mock('@my/ui', async () => {
       'aria-label': ariaLabel,
       accessibilityRole,
       role,
-      tag,
+      render: tag,
       href,
       onClick,
       'aria-current': ariaCurrent,
@@ -122,10 +122,10 @@ vi.mock('@my/ui', async () => {
 })
 
 // ---------------------------------------------------------------------------
-// @tamagui/lucide-icons stubs — not used by WordLinkNav (no icons) but may be
+// @my/icons stubs — not used by WordLinkNav (no icons) but may be
 // transitively imported.
 // ---------------------------------------------------------------------------
-vi.mock('@tamagui/lucide-icons', () => ({}))
+vi.mock('@my/icons', () => ({}))
 
 // ---------------------------------------------------------------------------
 // app/utils — spy-able signOut
@@ -478,13 +478,13 @@ describe('focus-visible styling: links expose :focus-visible variant, not bare :
     renderNav('home')
     const links = screen.getAllByRole('link')
     // The real implementation must use :focus-visible either via className or
-    // a focusVisibleStyle prop. We verify a non-empty set of anchor elements
+    // a focus-visible: style clause. We verify a non-empty set of anchor elements
     // that carry the expected indicator.
     for (const link of links) {
       const hasFocusVisible =
         (link.getAttribute('class') ?? '').includes('focus-visible') ||
         link.hasAttribute('data-focus-visible') ||
-        // Tamagui encodes :focus-visible via focusVisibleStyle prop which
+        // Tamagui encodes :focus-visible via a focus-visible: clause which
         // the real component will pass; verify the attribute is present.
         link.hasAttribute('data-focusvisible') ||
         // At minimum the element must be focusable (tabIndex >= 0 or anchor)

@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react'
 import { Button, Card, Separator, Text, XStack, YStack } from '@my/ui'
-import { useToastController } from '@tamagui/toast'
+import { toast } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import {
   acceptKeyringPersistence,
@@ -21,12 +21,11 @@ export function KeyringPrompt() {
   const persistSuccess = use$(keyringPersistResult$.success)
   const persistResultError = use$(keyringPersistResult$.error)
 
-  const toast = useToastController()
 
   useEffect(() => {
     if (persistSuccess) {
-      toast.show('Encryption key saved', {
-        message: 'Your encryption key has been stored in the device keychain.',
+      toast('Encryption key saved', {
+        description: 'Your encryption key has been stored in the device keychain.',
         duration: 4000,
       })
       keyringPersistResult$.success.set(false)
@@ -35,8 +34,8 @@ export function KeyringPrompt() {
 
   useEffect(() => {
     if (persistResultError) {
-      toast.show('Keychain storage failed', {
-        message: "Could not save to keychain — you'll need to enter your password next time.",
+      toast('Keychain storage failed', {
+        description: "Could not save to keychain — you'll need to enter your password next time.",
         duration: 6000,
       })
       keyringPersistResult$.error.set(null)
@@ -113,7 +112,7 @@ export function KeyringPrompt() {
               <Button
                 testID="keyring-dismiss"
                 variant="outlined"
-                size="3"
+                size="md"
                 fontFamily="body"
                 onPress={handleDismiss}
               >
@@ -121,7 +120,7 @@ export function KeyringPrompt() {
               </Button>
               <Button
                 testID="keyring-retry"
-                size="3"
+                size="md"
                 fontFamily="body"
                 onPress={handleAccept}
               >
@@ -139,7 +138,7 @@ export function KeyringPrompt() {
             <Button
               testID="keyring-decline"
               variant="outlined"
-              size="3"
+              size="md"
               fontFamily="body"
               onPress={handleDecline}
             >
@@ -147,7 +146,7 @@ export function KeyringPrompt() {
             </Button>
             <Button
               testID="keyring-accept"
-              size="3"
+              size="md"
               fontFamily="body"
               onPress={handleAccept}
             >

@@ -52,7 +52,7 @@ export function CollectiveEligibilityGate({
     return (
       <YStack
         gap="2"
-        padding={`${compact ? "2" : "4"}`}
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-loading"
       >
         <YStack
@@ -72,7 +72,7 @@ export function CollectiveEligibilityGate({
     return (
       <YStack
         gap="2"
-        padding={`${compact ? "2" : "4"}`}
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-unauthenticated"
       >
         <Text>Sign in to post.</Text>
@@ -89,7 +89,7 @@ export function CollectiveEligibilityGate({
     return (
       <YStack
         gap="2"
-        padding={`${compact ? "2" : "4"}`}
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-suspended"
       >
         <Text>Posting and reacting are paused for this account.</Text>
@@ -115,7 +115,7 @@ export function CollectiveEligibilityGate({
     return (
       <YStack
         gap="2"
-        padding={`${compact ? "2" : "4"}`}
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-sync-disabled"
       >
         <Text fontSize="5">Sync needs to be on to post.</Text>
@@ -141,7 +141,7 @@ export function CollectiveEligibilityGate({
     return (
       <YStack
         gap="2"
-        padding={`${compact ? "2" : "4"}`}
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-not-qualified"
       >
         <Text fontSize="5">Write 500 words today to post to the Collective.</Text>

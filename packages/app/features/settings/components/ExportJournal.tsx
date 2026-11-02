@@ -60,12 +60,12 @@ function RadioRow({
         size={10}
         borderWidth={1}
         borderColor="color5"
-        backgroundColor={`${selected ? "color" : "transparent"}`}
+        backgroundColor={selected ? 'color' : 'transparent'}
       />
       <Text
         fontFamily="body"
         fontSize={13}
-        color={`${selected ? "color" : "color8"}`}
+        color={selected ? 'color' : 'color8'}
       >
         {label}
       </Text>

@@ -8,7 +8,7 @@
 
 import { useState, useCallback } from 'react'
 import { YStack, XStack, Input, Button, Text, Spinner } from '@my/ui'
-import { Eye, EyeOff } from '@tamagui/lucide-icons'
+import { Eye, EyeOff } from '@my/icons'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
 import { updatePassword, signInWithEmail } from 'app/utils'
@@ -184,7 +184,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
               secureTextEntry={!showCurrentPassword}
               autoCapitalize="none"
               autoComplete="password"
-              borderColor={`${errors.currentPassword ? "red10" : undefined}`}
+              borderColor={errors.currentPassword ? 'red10' : undefined}
               flex={1}
               paddingRight="10"
               disabled={isLoading}
@@ -195,8 +195,8 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
               right="2"
               top="50%"
               transform={[{ translateY: -18 }]}
-              size="3"
-              chromeless
+              size="md"
+              variant="quiet"
               onPress={() => setShowCurrentPassword(!showCurrentPassword)}
               icon={showCurrentPassword ? EyeOff : Eye}
               disabled={isLoading}
@@ -235,7 +235,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             secureTextEntry={!showPassword}
             autoCapitalize="none"
             autoComplete="password-new"
-            borderColor={`${errors.password ? "red10" : undefined}`}
+            borderColor={errors.password ? 'red10' : undefined}
             flex={1}
             paddingRight="10"
             disabled={isLoading}
@@ -246,8 +246,8 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             right="2"
             top="50%"
             transform={[{ translateY: -18 }]}
-            size="3"
-            chromeless
+            size="md"
+            variant="quiet"
             onPress={() => setShowPassword(!showPassword)}
             icon={showPassword ? EyeOff : Eye}
             disabled={isLoading}
@@ -293,7 +293,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             secureTextEntry={!showConfirmPassword}
             autoCapitalize="none"
             autoComplete="password-new"
-            borderColor={`${errors.confirmPassword ? "red10" : undefined}`}
+            borderColor={errors.confirmPassword ? 'red10' : undefined}
             flex={1}
             paddingRight="10"
             disabled={isLoading}
@@ -305,8 +305,8 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             right="2"
             top="50%"
             transform={[{ translateY: -18 }]}
-            size="3"
-            chromeless
+            size="md"
+            variant="quiet"
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             icon={showConfirmPassword ? EyeOff : Eye}
             disabled={isLoading}
@@ -342,7 +342,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
         marginTop="2"
       >
         <Button
-          size="3"
+          size="md"
           variant="outlined"
           onPress={onCancel}
           disabled={isLoading}
@@ -350,7 +350,7 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
           <Text fontFamily="body">Cancel</Text>
         </Button>
         <Button
-          size="3"
+          size="md"
           backgroundColor="color10 hover:color9 press:color8"
           onPress={handleSubmit}
           disabled={isLoading}

@@ -21,7 +21,7 @@ export function GraceDayInventory() {
   const count = available.length
   const text =
     count === 0 ? 'No grace days yet.' : `${count} grace ${count === 1 ? 'day' : 'days'} available.`
-  const color = count === 0 ? '$color8' : '$color'
+  const color = count === 0 ? 'color8' : 'color'
 
   return (
     <View

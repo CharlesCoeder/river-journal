@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { View, XStack, YStack, Text } from '@my/ui'
-import { BookOpen, Users, Settings, LogIn, LogOut, FileText } from '@tamagui/lucide-icons'
+import { BookOpen, Users, Settings, LogIn, LogOut, FileText } from '@my/icons'
 import { useRouter } from 'solito/navigation'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -118,7 +118,7 @@ export function MenuSurface() {
 
   return (
     <View
-      tag="ul"
+      render="ul"
       aria-label="Main menu"
       role="menu"
       paddingVertical="4"
@@ -138,7 +138,7 @@ export function MenuSurface() {
             icon={
               <Icon
                 size={20}
-                color="$color9"
+                color="color9"
               />
             }
             isVisible={isVisible}
@@ -174,7 +174,7 @@ function MenuRow({ label, icon, isVisible, reduceMotion, onPress }: MenuRowProps
 
   return (
     <View
-      tag="li"
+      render="li"
       role="menuitem"
       data-hidden={!isVisible ? 'true' : undefined}
       minHeight={44}
@@ -183,7 +183,7 @@ function MenuRow({ label, icon, isVisible, reduceMotion, onPress }: MenuRowProps
       transform={[{ translateY }]}
     >
       <View
-        tag="button"
+        render="button"
         role="button"
         cursor="pointer"
         minHeight={44}

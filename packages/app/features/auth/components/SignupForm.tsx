@@ -232,11 +232,11 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
       <XStack
         onPress={canSubmit ? handleSubmit : undefined}
         borderWidth={1}
-        borderColor={`${canSubmit ? "color" : "color3"}`}
+        borderColor={canSubmit ? 'color' : 'color3'}
         paddingVertical="3"
         justifyContent="center"
         cursor={canSubmit ? 'pointer' : 'not-allowed'}
-        hoverStyle={canSubmit ? { backgroundColor: '$color' } : {}}
+        backgroundColor={canSubmit ? 'hover:color' : undefined}
         marginTop="3"
         group={'submitBtn' as never}
       >
@@ -248,8 +248,7 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
               fontSize={12}
               letterSpacing={3}
               textTransform="uppercase"
-              color={`${canSubmit ? "color" : "color7"}`}
-              {...(canSubmit ? { '$group-submitBtn-hover': { color: '$background' } } : {})}
+              color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
             >
             Create Account
           </Text>

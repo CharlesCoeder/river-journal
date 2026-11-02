@@ -44,7 +44,7 @@ vi.mock('app/features/collective/CollectiveFeedScreen', () => ({
   default: () => React.createElement('div', { 'data-testid': FEED_TESTID }, 'FEED'),
 }))
 
-vi.mock('@tamagui/lucide-icons', () => {
+vi.mock('@my/icons', () => {
   const stub = () => () => null
   return {
     Lock: stub(),

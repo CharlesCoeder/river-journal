@@ -430,8 +430,8 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                           size="4"
                           borderRadius={0}
                           borderWidth={1}
-                          borderColor={`${attestError ? "color" : "color6"}`}
-                          backgroundColor={`${ageAttested ? "color" : "transparent"}`}
+                          borderColor={attestError ? 'color' : 'color6'}
+                          backgroundColor={ageAttested ? 'color' : 'transparent'}
                           disabled={isLoading}
                         />
                       </View>
@@ -558,11 +558,11 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                 <XStack
                   onPress={handleSubmitPress}
                   borderWidth={1}
-                  borderColor={`${canSubmit ? "color" : "color3"}`}
+                  borderColor={canSubmit ? 'color' : 'color3'}
                   paddingVertical="3"
                   justifyContent="center"
                   cursor={canSubmit ? 'pointer' : 'not-allowed'}
-                  hoverStyle={canSubmit ? { backgroundColor: '$color' } : {}}
+                  backgroundColor={canSubmit ? 'hover:color' : undefined}
                   marginTop="5"
                   group={'submitBtn' as never}
                 >
@@ -574,8 +574,7 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                         fontSize={12}
                         letterSpacing={3}
                         textTransform="uppercase"
-                        color={`${canSubmit ? "color" : "color7"}`}
-                        {...(canSubmit ? { '$group-submitBtn-hover': { color: '$background' } } : {})}
+                        color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
                       >
                       {isSignup ? 'Create Account' : 'Log In'}
                     </Text>

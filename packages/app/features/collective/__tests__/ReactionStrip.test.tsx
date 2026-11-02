@@ -87,13 +87,13 @@ vi.mock('@my/ui', async () => {
     if (props.transition !== undefined) mapped['data-transition'] = props.transition ?? 'none'
 
     // Remove non-HTML props
-    const { onPress, tag, gap, fontSize, color, opacity, role: _role, ...rest } = mapped
+    const { onPress, render: tag, gap, fontSize, color, opacity, role: _role, ...rest } = mapped
     return { ...rest }
   }
 
   const makeElement =
     (tag: keyof HTMLElementTagNameMap) =>
-    ({ children, role, tag: htmlTag, onPress, ...props }: any) => {
+    ({ children, role, render: htmlTag, onPress, ...props }: any) => {
       const htmlProps = mapProps({ onPress, role, ...props })
       // If tag="button", render as button for keyboard semantics
       const elementTag = htmlTag === 'button' ? 'button' : tag
@@ -105,7 +105,7 @@ vi.mock('@my/ui', async () => {
       ReactModule.createElement('span', mapProps(props), children),
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       'aria-pressed': ariaPressed,
       'aria-disabled': ariaDisabled,
@@ -141,8 +141,8 @@ vi.mock('@my/ui', async () => {
   }
 })
 
-// ─── @tamagui/lucide-icons mock — stub icon components with stable identifiers ─
-vi.mock('@tamagui/lucide-icons', () => ({
+// ─── @my/icons mock — stub icon components with stable identifiers ─
+vi.mock('@my/icons', () => ({
   Heart: ({ size, color, ...props }: any) =>
     React.createElement('span', { 'data-icon': 'Heart', 'data-size': size, ...props }),
   Sparkles: ({ size, color, ...props }: any) =>

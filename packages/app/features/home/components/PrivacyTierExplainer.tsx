@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, Button, Card, Text, XStack, YStack } from '@my/ui'
-import { Shield, Lock } from '@tamagui/lucide-icons'
+import { Shield, Lock } from '@my/icons'
 import type { EncryptionMode } from 'app/types/index'
 
 const TIER_CONTENT = {
@@ -62,15 +62,15 @@ function TierCard({
   onSelect?: (mode: EncryptionMode) => void
 }) {
   const Icon = content.icon
-  const bulletColor = selected ? '$color' : '$color11'
+  const bulletColor = selected ? 'color' : 'color11'
 
   return (
     <Card
       testID={`privacy-tier-${mode}`}
       padding="4"
-      backgroundColor={`${selected ? "color3" : "color2"}`}
+      backgroundColor={selected ? 'color3' : 'color2'}
       borderWidth={1}
-      borderColor={`${selected ? "color8" : "color4"}`}
+      borderColor={selected ? 'color8' : 'color4'}
       borderRadius="4"
       transition={interactive ? 'quick' : null}
       cursor={interactive ? 'pointer' : 'default'}
@@ -83,7 +83,7 @@ function TierCard({
         >
           <Icon
             size={20}
-            color={selected ? '$accentColor' : '$color11'}
+            color={selected ? 'accentColor' : 'color11'}
           />
           <Text
             fontSize="4"
@@ -170,9 +170,9 @@ export function PrivacyTierExplainer({
         <YStack gap="2">
           <Button
             testID="learn-more-toggle"
-            size="3"
+            size="md"
             alignSelf="flex-start"
-            chromeless
+            variant="quiet"
             onPress={() => setLearnMoreOpen((prev) => !prev)}
           >
             <Text
@@ -226,7 +226,7 @@ export function PrivacyTierExplainer({
                 {privacyCenterLink && (
                   <Button
                     testID="privacy-center-link"
-                    size="3"
+                    size="md"
                     fontFamily="body"
                     alignSelf="flex-start"
                     variant="outlined"

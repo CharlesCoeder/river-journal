@@ -163,10 +163,9 @@ export function E2EPasswordForm({
           fontSize={11}
           letterSpacing={2}
           textTransform="uppercase"
-          color={`${isSaving ? "color8" : "color"}`}
-          opacity={isSaving ? 0.5 : 1}
+          color={isSaving ? 'color8' : 'color'}
+          opacity={isSaving ? 0.5 : '1 hover:0.7'}
           cursor={isSaving ? 'default' : 'pointer'}
-          hoverStyle={isSaving ? {} : { opacity: 0.7 }}
           onPress={isSaving ? undefined : handleSubmit}
         >
           {isSaving ? 'Saving…' : submitLabel}

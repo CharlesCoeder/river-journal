@@ -61,7 +61,7 @@ export function ExpandingLineButton({
 
   return (
     <View
-      tag="button"
+      render="button"
       role={(accessibilityRole ?? 'button') as 'button'}
       id={id}
       testID={testID}
@@ -99,7 +99,7 @@ export function ExpandingLineButton({
       {/* Label */}
       <Text
         fontFamily="body"
-        fontSize={`${size === 'cta' ? "6" : "4"}`}
+        fontSize={size === 'cta' ? '6' : '4'}
         color="color"
         letterSpacing={0.5}
         paddingRight="2"

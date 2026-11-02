@@ -7,8 +7,8 @@ import {
   isWeb,
   useReducedMotion,
 } from '@my/ui'
-import { Eye, EyeOff } from '@tamagui/lucide-icons'
-import type { LayoutChangeEvent } from 'react-native'
+import { Eye, EyeOff } from '@my/icons'
+import type { ViewLayoutEvent } from '@my/ui'
 
 // ---------------------------------------------------------------------------
 // Flow-session chrome shared by every surface that hosts the editor: the
@@ -26,7 +26,7 @@ export interface FlowSessionBottomBarProps {
   onToggleFocusMode: () => void
   onFinish: () => void
   /** Native: reports the bar's height so the persistent editor can inset above it. */
-  onLayout?: (e: LayoutChangeEvent) => void
+  onLayout?: (e: ViewLayoutEvent) => void
 }
 
 export function FlowSessionBottomBar({
@@ -118,8 +118,10 @@ export function FlowExitConfirmDialog({
         />
         <Dialog.Content
           key="content"
-          animateOnly={['transform', 'opacity']}
-          transition={reduceMotion ? '100ms' : 'designModal'}
+          transition={{
+            preset: reduceMotion ? '100ms' : 'designModal',
+            properties: 'transform, opacity',
+          }}
           y="enter:-10px exit:10px"
           opacity="enter:0 exit:0"
           backgroundColor="background"

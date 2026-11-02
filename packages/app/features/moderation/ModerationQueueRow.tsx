@@ -28,7 +28,7 @@
 // button carries the expand toggle's `aria-expanded` semantics.
 
 import { useRef, useState } from 'react'
-import { View, Text, XStack, YStack, useToastController } from '@my/ui'
+import { View, Text, XStack, YStack, toast } from '@my/ui'
 import type { ModerationQueueItem } from 'app/state/collective/moderation'
 import {
   useRemovePost,
@@ -76,7 +76,6 @@ function RemoveAction({ postId, mutation }: { postId: string; mutation: RemoveMu
   // tamagui View forwards to the DOM node on web; typed `any` to match the
   // codebase's focus-ref pattern (see CelebrationScreen).
   const affordanceRef = useRef<any>(null)
-  const toast = useToastController()
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -91,8 +90,8 @@ function RemoveAction({ postId, mutation }: { postId: string; mutation: RemoveMu
     mutate: (vars: { target_post_id: string; reason_code: string; custom_note: string | null }) => {
       mutation.mutate(vars, {
         onError: () =>
-          toast.show("Couldn't remove that post", {
-            message: 'It has been restored. Try again.',
+          toast("Couldn't remove that post", {
+            description: 'It has been restored. Try again.',
           }),
       })
     },
@@ -102,7 +101,7 @@ function RemoveAction({ postId, mutation }: { postId: string; mutation: RemoveMu
     <>
       <View
         ref={affordanceRef}
-        tag="button"
+        render="button"
         data-testid="moderation-action-remove"
         cursor="pointer"
         onPress={(e) => {
@@ -143,7 +142,7 @@ function NoteAction({ postId, mutation }: { postId: string; mutation: NoteMutati
     <>
       <View
         ref={affordanceRef}
-        tag="button"
+        render="button"
         data-testid="moderation-action-add-note"
         cursor="pointer"
         onPress={(e) => {
@@ -187,7 +186,7 @@ function SuspendAction({
     <>
       <View
         ref={affordanceRef}
-        tag="button"
+        render="button"
         data-testid="moderation-action-suspend"
         cursor="pointer"
         onPress={(e) => {
@@ -239,7 +238,7 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
 
   return (
     <View
-      tag="article"
+      render="article"
       role="article"
       paddingVertical="5"
       gap="3"
@@ -248,7 +247,7 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
       <YStack gap="2">
         {item.title != null ? (
           <Text
-            tag="h3"
+            render="h3"
             fontFamily="journal"
             fontSize="6"
             color="color12"
@@ -340,7 +339,7 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
 
       {/* ─── Dedicated expand toggle (button semantics + aria-expanded) ─────── */}
       <View
-        tag="button"
+        render="button"
         role="button"
         data-testid="moderation-row-expand-toggle"
         aria-expanded={expanded}
@@ -430,7 +429,7 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
             resolved via remove_post, or dismissed by a future change). Inert
             stub — stopPropagation only, no handler. */}
         <View
-          tag="button"
+          render="button"
           data-testid="moderation-action-dismiss"
           onPress={stop}
           cursor="pointer"

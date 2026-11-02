@@ -5,7 +5,7 @@ export interface WordCounterProps {
 }
 
 export function WordCounter({ count }: WordCounterProps) {
-  const color = count < 450 ? '$color8' : '$color'
+  const color = count < 450 ? 'color8' : 'color'
 
   return (
     <Text

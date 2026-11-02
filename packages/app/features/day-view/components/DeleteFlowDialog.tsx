@@ -59,7 +59,7 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
           >
             <AlertDialog.Cancel asChild>
               <Button
-                chromeless
+                variant="quiet"
                 borderWidth={1}
                 borderColor="border-color"
               >

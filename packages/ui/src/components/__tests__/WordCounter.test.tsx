@@ -90,60 +90,60 @@ describe('WordCounter renders count with correct singular/plural unit (C1)', () 
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C2 — Color is $color8 (stone) when count < 450
+// C2 — Color is color8 (stone) when count < 450
 // ─────────────────────────────────────────────────────────────────────────────
-describe('WordCounter uses stone color ($color8) when count is below 450 (C2)', () => {
-  it('has data-color="$color8" when count={0}', () => {
+describe('WordCounter uses stone color (color8) when count is below 450 (C2)', () => {
+  it('has data-color="color8" when count={0}', () => {
     render(React.createElement(WordCounter, { count: 0 }))
     const el = screen.getByText('0 words')
-    expect(el.getAttribute('data-color')).toBe('$color8')
+    expect(el.getAttribute('data-color')).toBe('color8')
   })
 
-  it('has data-color="$color8" when count={100}', () => {
+  it('has data-color="color8" when count={100}', () => {
     render(React.createElement(WordCounter, { count: 100 }))
     const el = screen.getByText('100 words')
-    expect(el.getAttribute('data-color')).toBe('$color8')
+    expect(el.getAttribute('data-color')).toBe('color8')
   })
 
-  it('has data-color="$color8" when count={449} — boundary: one below threshold', () => {
+  it('has data-color="color8" when count={449} — boundary: one below threshold', () => {
     render(React.createElement(WordCounter, { count: 449 }))
     const el = screen.getByText('449 words')
-    expect(el.getAttribute('data-color')).toBe('$color8')
+    expect(el.getAttribute('data-color')).toBe('color8')
   })
 
-  it('does NOT have data-color="$color" when count is below 450', () => {
+  it('does NOT have data-color="color" when count is below 450', () => {
     render(React.createElement(WordCounter, { count: 100 }))
     const el = screen.getByText('100 words')
-    expect(el.getAttribute('data-color')).not.toBe('$color')
+    expect(el.getAttribute('data-color')).not.toBe('color')
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C3 — Color is $color (text) when count >= 450
+// C3 — Color is color (text) when count >= 450
 // ─────────────────────────────────────────────────────────────────────────────
-describe('WordCounter uses text color ($color) when count is at or above 450 (C3)', () => {
-  it('has data-color="$color" when count={450} — exact threshold', () => {
+describe('WordCounter uses text color (color) when count is at or above 450 (C3)', () => {
+  it('has data-color="color" when count={450} — exact threshold', () => {
     render(React.createElement(WordCounter, { count: 450 }))
     const el = screen.getByText('450 words')
-    expect(el.getAttribute('data-color')).toBe('$color')
+    expect(el.getAttribute('data-color')).toBe('color')
   })
 
-  it('has data-color="$color" when count={500}', () => {
+  it('has data-color="color" when count={500}', () => {
     render(React.createElement(WordCounter, { count: 500 }))
     const el = screen.getByText('500 words')
-    expect(el.getAttribute('data-color')).toBe('$color')
+    expect(el.getAttribute('data-color')).toBe('color')
   })
 
-  it('has data-color="$color" when count={1000}', () => {
+  it('has data-color="color" when count={1000}', () => {
     render(React.createElement(WordCounter, { count: 1000 }))
     const el = screen.getByText('1000 words')
-    expect(el.getAttribute('data-color')).toBe('$color')
+    expect(el.getAttribute('data-color')).toBe('color')
   })
 
-  it('does NOT have data-color="$color8" when count is at or above 450', () => {
+  it('does NOT have data-color="color8" when count is at or above 450', () => {
     render(React.createElement(WordCounter, { count: 450 }))
     const el = screen.getByText('450 words')
-    expect(el.getAttribute('data-color')).not.toBe('$color8')
+    expect(el.getAttribute('data-color')).not.toBe('color8')
   })
 })
 
@@ -151,26 +151,26 @@ describe('WordCounter uses text color ($color) when count is at or above 450 (C3
 // C4 — Color reverts to stone when count drops back below 450
 // ─────────────────────────────────────────────────────────────────────────────
 describe('WordCounter color reverts to stone when count drops below 450 — pure function (C4)', () => {
-  it('switches from $color to $color8 when count drops from 500 to 449', () => {
+  it('switches from color to color8 when count drops from 500 to 449', () => {
     const { rerender } = render(React.createElement(WordCounter, { count: 500 }))
     // First assert: at 500, color is text
-    expect(screen.getByText('500 words').getAttribute('data-color')).toBe('$color')
+    expect(screen.getByText('500 words').getAttribute('data-color')).toBe('color')
 
     // Rerender with count below threshold
     rerender(React.createElement(WordCounter, { count: 449 }))
     // Color must revert — no latching behavior
-    expect(screen.getByText('449 words').getAttribute('data-color')).toBe('$color8')
+    expect(screen.getByText('449 words').getAttribute('data-color')).toBe('color8')
   })
 
   it('cycles correctly across the threshold boundary (450 → 449 → 450)', () => {
     const { rerender } = render(React.createElement(WordCounter, { count: 450 }))
-    expect(screen.getByText('450 words').getAttribute('data-color')).toBe('$color')
+    expect(screen.getByText('450 words').getAttribute('data-color')).toBe('color')
 
     rerender(React.createElement(WordCounter, { count: 449 }))
-    expect(screen.getByText('449 words').getAttribute('data-color')).toBe('$color8')
+    expect(screen.getByText('449 words').getAttribute('data-color')).toBe('color8')
 
     rerender(React.createElement(WordCounter, { count: 450 }))
-    expect(screen.getByText('450 words').getAttribute('data-color')).toBe('$color')
+    expect(screen.getByText('450 words').getAttribute('data-color')).toBe('color')
   })
 })
 

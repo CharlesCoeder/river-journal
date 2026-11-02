@@ -70,22 +70,22 @@ vi.mock('@my/ui', async () => {
     return out
   }
 
-  const Text = ({ children, tag, ...props }: any) => {
+  const Text = ({ children, render: tag, ...props }: any) => {
     const htmlTag = typeof tag === 'string' ? tag : 'span'
     return ReactModule.createElement(htmlTag, mapCommon(props), children)
   }
 
-  const View = ({ children, tag, ...props }: any) => {
+  const View = ({ children, render: tag, ...props }: any) => {
     const htmlTag = typeof tag === 'string' ? tag : 'div'
     return ReactModule.createElement(htmlTag, mapCommon(props), children)
   }
 
-  const YStack = ({ children, tag, ...props }: any) => {
+  const YStack = ({ children, render: tag, ...props }: any) => {
     const htmlTag = typeof tag === 'string' ? tag : 'div'
     return ReactModule.createElement(htmlTag, { 'data-stack': 'y', ...mapCommon(props) }, children)
   }
 
-  const XStack = ({ children, tag, ...props }: any) => {
+  const XStack = ({ children, render: tag, ...props }: any) => {
     const htmlTag = typeof tag === 'string' ? tag : 'div'
     return ReactModule.createElement(htmlTag, { 'data-stack': 'x', ...mapCommon(props) }, children)
   }

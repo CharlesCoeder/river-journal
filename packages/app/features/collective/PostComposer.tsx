@@ -236,8 +236,8 @@ export default function PostComposer({
         maxWidth: 720,
         width: '100%',
         marginHorizontal: 'auto',
-        padding: '$4',
-        gap: '$3',
+        padding: '4',
+        gap: '3',
       }
 
   return (

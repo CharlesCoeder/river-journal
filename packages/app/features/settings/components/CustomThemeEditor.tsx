@@ -78,7 +78,7 @@ function ColorInput({
           placeholder="#F9F6F0"
           fontFamily="body"
           fontSize={15}
-          borderColor={`${isValid || value.length === 0 ? "color5" : "red10"}`}
+          borderColor={isValid || value.length === 0 ? 'color5' : 'red10'}
           maxLength={7}
           autoCapitalize="none"
           autoCorrect={false}
@@ -235,7 +235,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         {customTheme && (
           <Button
             testID="delete-custom-theme"
-            size="3"
+            size="md"
             variant="outlined"
             onPress={handleDelete}
           >
@@ -244,7 +244,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         )}
         <Button
           testID="cancel-custom-theme"
-          size="3"
+          size="md"
           variant="outlined"
           onPress={onClose}
         >
@@ -252,7 +252,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         </Button>
         <Button
           testID="save-custom-theme"
-          size="3"
+          size="md"
           opacity={allValid ? 1 : 0.5}
           disabled={!allValid}
           onPress={handleSave}

@@ -97,7 +97,7 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
 
   return (
     <View
-      tag="article"
+      render="article"
       role="article"
       paddingVertical="5"
       gap="3"
@@ -137,7 +137,7 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
         {/* Absolute ISO instant preserved on aria-label so the relative label
             never hides the precise moment (forensic legibility / handoff). */}
         <Text
-          tag="span"
+          render="span"
           data-testid="audit-row-timestamp"
           fontFamily="body"
           fontSize="1"
@@ -171,7 +171,7 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
       {/* ─── Expand toggle (only when there is a target to detail) ──────────── */}
       {hasTarget ? (
         <View
-          tag="button"
+          render="button"
           role="button"
           data-testid="audit-row-expand-toggle"
           aria-expanded={expanded}
@@ -231,7 +231,7 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
               <YStack gap="2">
                 {detail.title != null ? (
                   <Text
-                          tag="h4"
+                          render="h4"
                           fontFamily="journal"
                           fontSize="5"
                           color="color12"

@@ -181,7 +181,7 @@ vi.mock('@my/ui', async () => {
         children
       ),
     useReducedMotion: () => false,
-    useToastController: () => ({ show: vi.fn() }),
+    toast: vi.fn(),
   }
 })
 

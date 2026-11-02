@@ -24,7 +24,7 @@
  *     mocked here as a spy).
  *   - The calm warm-dot error indicator renders with
  *     `data-testid="billing-error-dot"` and forwards its `backgroundColor`
- *     prop for inspection — asserting it is a `$color*` theme token, never
+ *     prop for inspection — asserting it is a `color*` theme token, never
  *     a `$red*` literal.
  *
  * Red-phase: `packages/app/features/paid/PaidTierPurchaseSurface.tsx` does
@@ -152,7 +152,7 @@ vi.mock('@my/ui', async () => {
     View,
     ExpandingLineButton,
     isWeb: true,
-    useToastController: () => ({ show: mockToastShow }),
+    toast: (...args: unknown[]) => mockToastShow(...args),
   }
 })
 
@@ -432,7 +432,7 @@ describe('Validation-failure error state — calm warm-dot toast + Retry', () =>
     expect(screen.getByText('$4.99 / month')).toBeTruthy()
   })
 
-  it('the warm error indicator uses a $color* theme token, never a fixed $red*', async () => {
+  it('the warm error indicator uses a color* theme token, never a fixed red*', async () => {
     attemptPurchaseMock.mockResolvedValue({
       status: 'success',
       outcome: { provider: 'stripe', raw_receipt: 'cs_test_abc123' },
@@ -445,8 +445,8 @@ describe('Validation-failure error state — calm warm-dot toast + Retry', () =>
     await waitFor(() => expect(screen.getByTestId('billing-error-dot')).toBeTruthy())
     const dot = screen.getByTestId('billing-error-dot')
     const bg = dot.getAttribute('data-bg') ?? ''
-    expect(bg).toMatch(/^\$color(8|9|10|11|12)$/)
-    expect(bg).not.toMatch(/^\$red/)
+    expect(bg).toMatch(/^color(8|9|10|11|12)$/)
+    expect(bg).not.toMatch(/^red/)
   })
 
   it('clicking Retry re-attempts the purchase', async () => {
@@ -479,8 +479,8 @@ describe('Validation-failure error state — calm warm-dot toast + Retry', () =>
     fireEvent.click(screen.getByRole('button', { name: /subscribe/i }))
 
     await waitFor(() => expect(mockToastShow).toHaveBeenCalledTimes(1))
-    const [, options] = mockToastShow.mock.calls[0] as [string, { message?: string }]
-    const renderedMessage = `${mockToastShow.mock.calls[0]?.[0] ?? ''} ${options?.message ?? ''}`
+    const [, options] = mockToastShow.mock.calls[0] as [string, { description?: string }]
+    const renderedMessage = `${mockToastShow.mock.calls[0]?.[0] ?? ''} ${options?.description ?? ''}`
     // No account/owner-specific leak — the generic no-oracle message only.
     expect(renderedMessage).not.toMatch(/owner|another account|already claimed by/i)
   })

@@ -26,7 +26,6 @@ const nextConfig = {
     'expo-modules-core',
     '@tamagui/react-native-svg',
     '@tamagui/next-theme',
-    '@tamagui/lucide-icons',
   ],
   turbopack: {
     resolveAlias: {

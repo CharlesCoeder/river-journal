@@ -55,8 +55,7 @@ function ThemeRow({
         <Text
           fontFamily="journal"
           fontSize={20}
-          color={`${isSelected ? "color" : "color8"}`}
-          {...(isWeb && { hoverStyle: { color: '$color' } })}
+          color={`${isSelected ? 'color' : 'color8'} web:hover:color`}
         >
           {THEME_LABELS[name]}
         </Text>
@@ -215,8 +214,7 @@ export function ThemePicker() {
           <Text
             fontFamily="journal"
             fontSize={20}
-            color={`${isCustomSelected ? "color" : "color8"}`}
-            {...(isWeb && { hoverStyle: { color: '$color' } })}
+            color={`${isCustomSelected ? 'color' : 'color8'} web:hover:color`}
             flex={1}
           >
             My Theme
@@ -225,9 +223,9 @@ export function ThemePicker() {
             testID="edit-custom-theme"
             fontFamily="body"
             fontSize={13}
-            color="color8"
+            color="color8 web:hover:color"
+            opacity="native:press:0.7"
             cursor="pointer"
-            {...(isWeb ? { hoverStyle: { color: '$color' } } : { pressStyle: { opacity: 0.7 } })}
             onPress={(e: any) => {
                         e.stopPropagation?.()
                         setEditorOpen(true)
@@ -254,8 +252,7 @@ export function ThemePicker() {
           <Text
               fontFamily="journal"
               fontSize={20}
-              color="color8"
-              {...(isWeb && { hoverStyle: { color: '$color' } })}
+              color="color8 web:hover:color"
             >
             Create Custom Theme
           </Text>

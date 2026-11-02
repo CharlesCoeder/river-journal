@@ -1,5 +1,5 @@
 /**
- * Minimal stub for @tamagui/lucide-icons in Vitest/Node.js environments.
+ * Minimal stub for @my/icons in Vitest/Node.js environments.
  * The real implementation uses react-native-svg for native and SVG for web.
  */
 export const ChevronLeft = () => null

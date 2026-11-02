@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Text, XStack, YStack } from '@my/ui'
-import type { LayoutChangeEvent } from 'react-native'
+import type { ViewLayoutEvent } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import {
   fetchTrustedBrowsers,
@@ -39,7 +39,7 @@ function Collapsible({
   const [height, setHeight] = useState<number | 'auto'>(open ? 'auto' : 0)
   const hasAnimated = useRef(false)
 
-  const onLayout = useCallback((e: LayoutChangeEvent) => {
+  const onLayout = useCallback((e: ViewLayoutEvent) => {
     const h = e.nativeEvent.layout.height
     if (h > 0) measuredHeight.current = h
   }, [])

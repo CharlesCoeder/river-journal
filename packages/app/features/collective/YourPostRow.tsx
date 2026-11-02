@@ -48,7 +48,7 @@ export function YourPostRow({ post }: YourPostRowProps) {
 
   return (
     <View
-      tag="article"
+      render="article"
       role="article"
       aria-label={a11yLabel}
       onPress={handlePress}

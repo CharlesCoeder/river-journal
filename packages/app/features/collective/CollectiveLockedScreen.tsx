@@ -28,7 +28,7 @@ import {
   UserCircle,
   CloudUpload,
   PenLine,
-} from '@tamagui/lucide-icons'
+} from '@my/icons'
 import type { Post } from 'app/state/collective/feed'
 import { timeAgoCasual } from './_shared'
 
@@ -302,8 +302,8 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
                 borderWidth={1}
                 alignItems="center"
                 justifyContent="center"
-                borderColor={`${step.done ? "color12" : active ? "color12" : "color3"}`}
-                backgroundColor={`${step.done ? "color12" : "transparent"}`}
+                borderColor={step.done ? 'color12' : active ? 'color12' : 'color3'}
+                backgroundColor={step.done ? 'color12' : 'transparent'}
               >
                 {step.done ? (
                   <Check
@@ -313,7 +313,7 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
                 ) : (
                   <step.Icon
                     size={15}
-                    color={active ? '$color12' : '$color4'}
+                    color={active ? 'color12' : 'color4'}
                   />
                 )}
               </View>
@@ -322,7 +322,7 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
                 fontSize="2"
                 textTransform="uppercase"
                 letterSpacing={1.1}
-                color={`${step.done ? "color7" : active ? "color12" : "color4"}`}
+                color={step.done ? 'color7' : active ? 'color12' : 'color4'}
               >
                 {step.label}
               </Text>
@@ -331,7 +331,7 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
               <View
                 height={1}
                 width={24}
-                backgroundColor={`${step.done ? "color6" : "color3"}`}
+                backgroundColor={step.done ? 'color6' : 'color3'}
               />
             ) : null}
           </XStack>
@@ -681,7 +681,7 @@ function DemoToggle({
           width={40}
           height={20}
           borderRadius={100}
-          backgroundColor={`${checked ? "color12" : "color3"}`}
+          backgroundColor={checked ? 'color12' : 'color3'}
           justifyContent="center"
         >
           <View
@@ -769,8 +769,8 @@ export function CollectiveLockedScreen({
         flex={1}
         contentContainerStyle={{ flexGrow: 1 }}
       >
-        {/* NOTE: no root `enterStyle` entrance fade here. With the motion
-            animation driver, an `enterStyle` opacity/translate needs an
+        {/* NOTE: no root `enter:` entrance fade here. With the motion
+            animation driver, an `enter:` opacity/translate needs an
             <AnimatePresence> ancestor to animate out of the enter state;
             without one the container stays stuck at opacity 0 (invisible
             content). The smaller in-place animations below (the pulse ring, the
