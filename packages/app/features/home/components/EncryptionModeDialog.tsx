@@ -149,7 +149,7 @@ export function EncryptionModeDialog() {
               paddingHorizontal="5 sm:8 md:10 lg:12"
               paddingTop="5 md:8 lg:12"
               paddingBottom={96}
-              transition="designEnter"
+              transition={{ preset: 'designEnter', properties: 'transform, opacity' }}
               opacity="1 enter:0"
             >
               {/* Cancel button — top right */}

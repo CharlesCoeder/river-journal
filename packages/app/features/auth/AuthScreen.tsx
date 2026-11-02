@@ -321,7 +321,7 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
         {mounted && (
           <YStack
             key="auth-content"
-            transition="designModal"
+            transition={{ preset: 'designModal', properties: 'transform, opacity' }}
             opacity="1 enter:0"
             scale="1 enter:0.98"
             flex={1}

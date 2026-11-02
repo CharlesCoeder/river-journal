@@ -102,7 +102,7 @@ export function JournalScreen() {
         {mounted && (
           <YStack
             key="journal-content"
-            transition="designEnterSlow"
+            transition={{ preset: 'designEnterSlow', properties: 'transform, opacity' }}
             opacity="1 enter:0"
             flex={1}
             width="100%"

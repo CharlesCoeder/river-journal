@@ -137,7 +137,7 @@ export function HomeScreen() {
           {mounted && (
             <YStack
               key="home-content"
-              transition="designEnter"
+              transition={{ preset: 'designEnter', properties: 'transform, opacity' }}
               opacity="1 enter:0"
               y="0 enter:15px"
               width="100%"
@@ -260,7 +260,7 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
       fontSize="36px sm:30px"
       color="color"
       cursor="pointer"
-      transition={reduceMotion ? undefined : 'ctaSpring'}
+      transition={reduceMotion ? undefined : { preset: 'ctaSpring', properties: 'transform' }}
       x={!reduceMotion && active ? 5 : 0}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}

@@ -170,7 +170,7 @@ export function DayViewScreen() {
                       (index < visibleCount || index >= MAX_STAGGER) && (
                         <XStack
                           key={entry.id}
-                          transition="designEnter"
+                          transition={{ preset: 'designEnter', properties: 'transform, opacity' }}
                           opacity="1 enter:0"
                           y="0 enter:10px"
                           flexDirection="column md:row"

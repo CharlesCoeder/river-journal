@@ -66,7 +66,7 @@ vi.mock('@my/ui', async () => {
         ...(onHoverOut ? { onMouseLeave: onHoverOut } : {}),
         ...(onPressIn ? { onMouseDown: onPressIn } : {}),
         ...(onPressOut ? { onMouseUp: onPressOut } : {}),
-        ...(transition !== undefined ? { 'data-transition': transition ?? 'none' } : {}),
+        ...(transition !== undefined ? { 'data-transition': transition?.preset ?? transition ?? 'none' } : {}),
         ...(x !== undefined ? { 'data-x': String(x) } : {}),
       },
       children

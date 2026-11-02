@@ -40,7 +40,7 @@ export function OnboardingScreenLayout({
       render="section"
       aria-labelledby={headlineId}
       // Works at runtime, but Tailwind components leave transition out of their types.
-      {...({ transition } as object)}
+      {...({ transition: { preset: transition, properties: 'transform, opacity' } } as object)}
       className="flex-1 w-full max-w-[1024px] self-center justify-center items-start bg-background px-4 sm:px-6 md:px-8 lg:px-12 opacity-100 enter:opacity-0 translate-y-0 enter:translate-y-[15px]"
     >
       <View className="gap-5 w-full">

@@ -42,7 +42,7 @@ export function FlowSessionBottomBar({
       {visible && (
         <XStack
           key="bottom-bar"
-          transition="designEnter"
+          transition={{ preset: 'designEnter', properties: 'transform, opacity' }}
           opacity="1 enter:0 exit:0"
           y="0 enter:10px exit:10px"
           position={isWeb ? ('fixed' as any) : 'absolute'}
