@@ -151,12 +151,12 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
 
   return (
     <YStack
-      gap="$3"
+      gap="3"
       width="100%"
     >
       <Text
-        fontSize="$5"
-        fontFamily="$body"
+        fontSize="5"
+        fontFamily="body"
         fontWeight="600"
       >
         {title}
@@ -164,11 +164,11 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
 
       {/* Current Password — change mode only */}
       {mode === 'change' && (
-        <YStack gap="$2">
+        <YStack gap="2">
           <Text
-            fontSize="$3"
-            fontFamily="$body"
-            color="$color11"
+            fontSize="3"
+            fontFamily="body"
+            color="color11"
           >
             Current Password
           </Text>
@@ -184,18 +184,18 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
               secureTextEntry={!showCurrentPassword}
               autoCapitalize="none"
               autoComplete="password"
-              borderColor={errors.currentPassword ? '$red10' : undefined}
-              disabled={isLoading}
+              borderColor={`${errors.currentPassword ? "red10" : undefined}`}
               flex={1}
-              paddingRight="$10"
+              paddingRight="10"
+              disabled={isLoading}
               returnKeyType="next"
             />
             <Button
               position="absolute"
-              right="$2"
+              right="2"
               top="50%"
               transform={[{ translateY: -18 }]}
-              size="$3"
+              size="3"
               chromeless
               onPress={() => setShowCurrentPassword(!showCurrentPassword)}
               icon={showCurrentPassword ? EyeOff : Eye}
@@ -204,9 +204,9 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
           </XStack>
           {errors.currentPassword && (
             <Text
-              fontSize="$2"
-              color="$red10"
-              fontFamily="$body"
+              fontSize="2"
+              color="red10"
+              fontFamily="body"
             >
               {errors.currentPassword}
             </Text>
@@ -215,11 +215,11 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
       )}
 
       {/* New Password */}
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontSize="$3"
-          fontFamily="$body"
-          color="$color11"
+          fontSize="3"
+          fontFamily="body"
+          color="color11"
         >
           New Password
         </Text>
@@ -235,18 +235,18 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             secureTextEntry={!showPassword}
             autoCapitalize="none"
             autoComplete="password-new"
-            borderColor={errors.password ? '$red10' : undefined}
-            disabled={isLoading}
+            borderColor={`${errors.password ? "red10" : undefined}`}
             flex={1}
-            paddingRight="$10"
+            paddingRight="10"
+            disabled={isLoading}
             returnKeyType="next"
           />
           <Button
             position="absolute"
-            right="$2"
+            right="2"
             top="50%"
             transform={[{ translateY: -18 }]}
-            size="$3"
+            size="3"
             chromeless
             onPress={() => setShowPassword(!showPassword)}
             icon={showPassword ? EyeOff : Eye}
@@ -255,29 +255,29 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
         </XStack>
         {errors.password ? (
           <Text
-            fontSize="$2"
-            color="$red10"
-            fontFamily="$body"
+            fontSize="2"
+            color="red10"
+            fontFamily="body"
           >
             {errors.password}
           </Text>
         ) : (
           <Text
-            fontSize="$2"
-            color="$color10"
-            fontFamily="$body"
-          >
+              fontSize="2"
+              color="color10"
+              fontFamily="body"
+            >
             Must be at least {MIN_PASSWORD_LENGTH} characters
           </Text>
         )}
       </YStack>
 
       {/* Confirm Password */}
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontSize="$3"
-          fontFamily="$body"
-          color="$color11"
+          fontSize="3"
+          fontFamily="body"
+          color="color11"
         >
           Confirm Password
         </Text>
@@ -293,19 +293,19 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             secureTextEntry={!showConfirmPassword}
             autoCapitalize="none"
             autoComplete="password-new"
-            borderColor={errors.confirmPassword ? '$red10' : undefined}
-            disabled={isLoading}
+            borderColor={`${errors.confirmPassword ? "red10" : undefined}`}
             flex={1}
-            paddingRight="$10"
+            paddingRight="10"
+            disabled={isLoading}
             returnKeyType="done"
             onSubmitEditing={handleSubmit}
           />
           <Button
             position="absolute"
-            right="$2"
+            right="2"
             top="50%"
             transform={[{ translateY: -18 }]}
-            size="$3"
+            size="3"
             chromeless
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             icon={showConfirmPassword ? EyeOff : Eye}
@@ -314,9 +314,9 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
         </XStack>
         {errors.confirmPassword && (
           <Text
-            fontSize="$2"
-            color="$red10"
-            fontFamily="$body"
+            fontSize="2"
+            color="red10"
+            fontFamily="body"
           >
             {errors.confirmPassword}
           </Text>
@@ -326,9 +326,9 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
       {/* General Error */}
       {errors.general && (
         <Text
-          fontSize="$3"
-          color="$red10"
-          fontFamily="$body"
+          fontSize="3"
+          color="red10"
+          fontFamily="body"
           textAlign="center"
         >
           {errors.general}
@@ -337,37 +337,35 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
 
       {/* Actions */}
       <XStack
-        gap="$3"
+        gap="3"
         justifyContent="flex-end"
-        marginTop="$2"
+        marginTop="2"
       >
         <Button
-          size="$3"
+          size="3"
           variant="outlined"
           onPress={onCancel}
           disabled={isLoading}
         >
-          <Text fontFamily="$body">Cancel</Text>
+          <Text fontFamily="body">Cancel</Text>
         </Button>
         <Button
-          size="$3"
+          size="3"
+          backgroundColor="color10 hover:color9 press:color8"
           onPress={handleSubmit}
           disabled={isLoading}
-          backgroundColor="$color10"
-          hoverStyle={{ backgroundColor: '$color9' }}
-          pressStyle={{ backgroundColor: '$color8' }}
         >
           {isLoading ? (
             <Spinner
-              color="$color1"
+              color="color1"
               size="small"
             />
           ) : (
             <Text
-              fontFamily="$body"
-              fontWeight="600"
-              color="$color1"
-            >
+                fontFamily="body"
+                fontWeight="600"
+                color="color1"
+              >
               {title}
             </Text>
           )}

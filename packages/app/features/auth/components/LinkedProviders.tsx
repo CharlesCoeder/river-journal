@@ -60,29 +60,29 @@ function ProviderRow({
   return (
     <YStack>
       <XStack
-        paddingVertical="$4"
+        paddingVertical="4"
         alignItems="center"
         justifyContent="space-between"
       >
         <XStack
-          gap="$3"
+          gap="3"
           alignItems="center"
           flex={1}
         >
           {icon}
-          <YStack gap="$1">
+          <YStack gap="1">
             <Text
-              fontSize="$5"
-              fontFamily="$body"
+              fontSize="5"
+              fontFamily="body"
               fontWeight={isConnected ? '600' : '400'}
-              color={isConnected ? '$color' : '$color9'}
+              color={`${isConnected ? "color" : "color9"}`}
             >
               {label}
             </Text>
             <Text
-              fontSize="$2"
-              fontFamily="$body"
-              color="$color8"
+              fontSize="2"
+              fontFamily="body"
+              color="color8"
             >
               {status}
             </Text>
@@ -90,10 +90,10 @@ function ProviderRow({
         </XStack>
         {isConnected && !actionLabel && (
           <Text
-            fontSize="$1"
-            fontFamily="$body"
+            fontSize="1"
+            fontFamily="body"
             fontWeight="700"
-            color="$blue10"
+            color="blue10"
             textTransform="uppercase"
             letterSpacing={1.5}
           >
@@ -102,18 +102,17 @@ function ProviderRow({
         )}
         {actionLabel && onAction && (
           <Text
-            fontSize="$2"
-            fontFamily="$body"
-            color="$color9"
+            fontSize="2"
+            fontFamily="body"
+            color="color9 hover:color"
             cursor="pointer"
             onPress={onAction}
-            hoverStyle={{ color: '$color' }}
           >
             {actionLabel}
           </Text>
         )}
       </XStack>
-      <Separator borderColor="$color2" />
+      <Separator borderColor="color2" />
     </YStack>
   )
 }
@@ -141,13 +140,13 @@ export function LinkedProviders() {
 
   return (
     <YStack
-      gap="$3"
+      gap="3"
       width="100%"
     >
       <Text
-        fontSize="$2"
-        fontFamily="$body"
-        color="$color9"
+        fontSize="2"
+        fontFamily="body"
+        color="color9"
         textTransform="uppercase"
         letterSpacing={2}
       >
@@ -158,7 +157,7 @@ export function LinkedProviders() {
         icon={
           <Mail
             size={16}
-            color={isLoading ? '$color8' : hasPassword ? '$color' : '$color8'}
+            color={`${isLoading ? "color8" : hasPassword ? "color" : "color8"}`}
           />
         }
         label="Email / Password"
@@ -189,9 +188,9 @@ export function LinkedProviders() {
 
       {error && (
         <Text
-          fontSize="$2"
-          color="$red10"
-          fontFamily="$body"
+          fontSize="2"
+          color="red10"
+          fontFamily="body"
         >
           {error}
         </Text>

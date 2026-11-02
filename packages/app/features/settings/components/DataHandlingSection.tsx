@@ -27,11 +27,11 @@ export function DataHandlingSection() {
   return (
     <YStack
       testID="data-handling-section"
-      gap="$3"
+      gap="3"
     >
       <Text
-        fontSize="$6"
-        fontFamily="$body"
+        fontSize="6"
+        fontFamily="body"
         fontWeight="600"
       >
         What we can and cannot access
@@ -39,19 +39,19 @@ export function DataHandlingSection() {
       {DATA_HANDLING_CONTENT.map((item) => (
         <YStack
           key={item.label}
-          gap="$1"
+          gap="1"
         >
           <Text
-            fontSize="$4"
-            fontFamily="$body"
+            fontSize="4"
+            fontFamily="body"
             fontWeight="600"
           >
             {item.label}
           </Text>
           <Text
-            fontSize="$3"
-            fontFamily="$body"
-            color="$color11"
+            fontSize="3"
+            fontFamily="body"
+            color="color11"
           >
             {item.detail}
           </Text>

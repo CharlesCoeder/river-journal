@@ -70,7 +70,7 @@ export function DayViewScreen() {
   return (
     <ScrollView
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ flexGrow: 1 }}
     >
@@ -78,36 +78,31 @@ export function DayViewScreen() {
         width="100%"
         maxWidth={1024}
         alignSelf="center"
-        paddingHorizontal="$4"
-        paddingTop="$4"
+        paddingHorizontal="4 sm:6 md:8 lg:12"
+        paddingTop="4 md:8 lg:12"
         paddingBottom={96}
-        $sm={{ paddingHorizontal: '$6' }}
-        $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
-        $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
         <WordLinkNav variant="browse" />
         {/* Header */}
         <XStack
           justifyContent="space-between"
           alignItems="center"
-          marginBottom={64}
-          $md={{ marginBottom: 96 }}
+          marginBottom="64px md:96px"
         >
           <Text
-            fontFamily="$journalItalic"
+            fontFamily="journalItalic"
             fontStyle="italic"
             fontSize={30}
-            color="$color"
+            color="color"
           >
             Past Entries
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={14}
-            color="$color8"
+            color="color8 hover:color"
             letterSpacing={0.5}
             cursor="pointer"
-            hoverStyle={{ color: '$color' }}
             onPress={navigateHome}
           >
             Back to Home
@@ -120,12 +115,11 @@ export function DayViewScreen() {
         <PastEntriesSearch entries={allEntries ?? []}>
           {/* View-mode toggle */}
           <XStack
-            gap="$3"
-            marginBottom="$6"
+            gap="3"
+            marginBottom="6"
             transition="designEnter"
-            enterStyle={{ opacity: 0, y: 10 }}
-            opacity={1}
-            y={0}
+            opacity="1 enter:0"
+            y="0 enter:10px"
           >
             <ExpandingLineButton
               {...({
@@ -160,11 +154,11 @@ export function DayViewScreen() {
                 paddingVertical={96}
               >
                 <Text
-                  fontFamily="$journal"
-                  fontSize={20}
-                  color="$color8"
-                  fontStyle="italic"
-                >
+                fontFamily="journal"
+                fontSize={20}
+                color="color8"
+                fontStyle="italic"
+              >
                   No journals yet. The river is dry.
                 </Text>
               </YStack>
@@ -177,33 +171,30 @@ export function DayViewScreen() {
                         <XStack
                           key={entry.id}
                           transition="designEnter"
-                          enterStyle={{ opacity: 0, y: 10 }}
-                          opacity={1}
-                          y={0}
-                          flexDirection="column"
-                          gap="$3"
-                          $md={{ flexDirection: 'row', gap: '$8' }}
-                          $lg={{ gap: '$12' }}
+                          opacity="1 enter:0"
+                          y="0 enter:10px"
+                          flexDirection="column md:row"
+                          gap="3 md:8 lg:12"
                         >
                           {/* Date column */}
                           <YStack
-                            $md={{ width: 128 }}
+                            width="md:128px"
                             flexShrink={0}
                             paddingTop={4}
                           >
                             <Text
-                              fontFamily="$body"
+                              fontFamily="body"
                               fontSize={14}
-                              color="$color8"
+                              color="color8"
                               letterSpacing={0.5}
                             >
                               {formatDate(entry.entryDate)}
                             </Text>
                             <Text
-                              fontFamily="$body"
+                              fontFamily="body"
                               fontSize={12}
-                              color="$color7"
-                              marginTop="$1"
+                              color="color7"
+                              marginTop="1"
                             >
                               {entry.totalWords} words
                             </Text>
@@ -225,17 +216,16 @@ export function DayViewScreen() {
                                   {fIndex > 0 && (
                                     <View
                                       height={1}
-                                      backgroundColor="$color3"
-                                      marginVertical="$4"
+                                      backgroundColor="color3"
+                                      marginVertical="4"
                                       width={40}
                                     />
                                   )}
                                   <Text
-                                    fontFamily="$journal"
-                                    fontSize={20}
-                                    $md={{ fontSize: 24, lineHeight: 38 }}
-                                    color="$color"
-                                    lineHeight={32}
+                                    fontFamily="journal"
+                                    fontSize="20px md:24px"
+                                    lineHeight="32px md:38px"
+                                    color="color"
                                   >
                                     {flow.content}
                                   </Text>

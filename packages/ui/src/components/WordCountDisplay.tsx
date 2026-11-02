@@ -11,9 +11,9 @@ export function WordCountDisplay({ currentCount }: WordCountDisplayProps) {
 
   return (
     <Text
-      fontSize="$3"
-      fontFamily="$body"
-      color="$color10"
+      fontSize="3"
+      fontFamily="body"
+      color="color10"
       fontWeight="400"
     >
       {currentCount} {wordText}

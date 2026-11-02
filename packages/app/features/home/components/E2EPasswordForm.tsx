@@ -38,30 +38,30 @@ export function E2EPasswordForm({
   return (
     <YStack gap={48}>
       {/* Title & description */}
-      <YStack gap="$3">
+      <YStack gap="3">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={30}
-          color="$color"
+          color="color"
           letterSpacing={-0.5}
         >
           {title}
         </Text>
-        <YStack gap="$1">
+        <YStack gap="1">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={14}
-            color="$color8"
-            lineHeight={22}
+            color="color8"
+            lineHeight="22px"
           >
             {description}
           </Text>
           {descriptionWarning && (
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color"
-              lineHeight={22}
+              color="color"
+              lineHeight="22px"
             >
               {descriptionWarning}
             </Text>
@@ -71,16 +71,16 @@ export function E2EPasswordForm({
 
       {/* Input fields */}
       <YStack
-        gap="$6"
+        gap="6"
         maxWidth={384}
       >
-        <YStack gap="$2">
+        <YStack gap="2">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={11}
             letterSpacing={2}
             textTransform="uppercase"
-            color="$color8"
+            color="color8"
           >
             Password
           </Text>
@@ -97,25 +97,25 @@ export function E2EPasswordForm({
             backgroundColor="transparent"
             borderWidth={0}
             borderBottomWidth={1}
-            borderColor="$color5"
+            borderColor="color5 focus:color"
             borderRadius={0}
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color="$color"
+            color="color"
             paddingHorizontal={0}
-            paddingVertical="$2"
-            focusStyle={{ borderColor: '$color', outlineStyle: 'none' }}
+            paddingVertical="2"
+            outlineStyle="focus:none"
           />
         </YStack>
 
         {requireConfirmation && (
-          <YStack gap="$2">
+          <YStack gap="2">
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={11}
               letterSpacing={2}
               textTransform="uppercase"
-              color="$color8"
+              color="color8"
             >
               Confirm Password
             </Text>
@@ -132,23 +132,23 @@ export function E2EPasswordForm({
               backgroundColor="transparent"
               borderWidth={0}
               borderBottomWidth={1}
-              borderColor="$color5"
+              borderColor="color5 focus:color"
               borderRadius={0}
-              fontFamily="$journal"
+              fontFamily="journal"
               fontSize={20}
-              color="$color"
+              color="color"
               paddingHorizontal={0}
-              paddingVertical="$2"
-              focusStyle={{ borderColor: '$color', outlineStyle: 'none' }}
+              paddingVertical="2"
+              outlineStyle="focus:none"
             />
           </YStack>
         )}
 
         {errorMessage && (
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={12}
-            color="$red10"
+            color="red10"
           >
             {errorMessage}
           </Text>
@@ -156,14 +156,14 @@ export function E2EPasswordForm({
       </YStack>
 
       {/* Submit action */}
-      <YStack paddingTop="$4">
+      <YStack paddingTop="4">
         <Text
           testID="e2e-password-submit"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={11}
           letterSpacing={2}
           textTransform="uppercase"
-          color={isSaving ? '$color8' : '$color'}
+          color={`${isSaving ? "color8" : "color"}`}
           opacity={isSaving ? 0.5 : 1}
           cursor={isSaving ? 'default' : 'pointer'}
           hoverStyle={isSaving ? {} : { opacity: 0.7 }}

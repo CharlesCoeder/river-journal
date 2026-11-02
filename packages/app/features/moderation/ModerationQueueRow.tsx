@@ -112,9 +112,9 @@ function RemoveAction({ postId, mutation }: { postId: string; mutation: RemoveMu
         }}
       >
         <Text
-          fontFamily="$body"
-          fontSize="$2"
-          color="$color10"
+          fontFamily="body"
+          fontSize="2"
+          color="color10"
         >
           Remove
         </Text>
@@ -153,9 +153,9 @@ function NoteAction({ postId, mutation }: { postId: string; mutation: NoteMutati
         }}
       >
         <Text
-          fontFamily="$body"
-          fontSize="$2"
-          color="$color10"
+          fontFamily="body"
+          fontSize="2"
+          color="color10"
         >
           Add note
         </Text>
@@ -197,9 +197,9 @@ function SuspendAction({
         }}
       >
         <Text
-          fontFamily="$body"
-          fontSize="$2"
-          color="$color10"
+          fontFamily="body"
+          fontSize="2"
+          color="color10"
         >
           Suspend author
         </Text>
@@ -241,17 +241,17 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
     <View
       tag="article"
       role="article"
-      paddingVertical="$5"
-      gap="$3"
+      paddingVertical="5"
+      gap="3"
     >
       {/* ─── Title + body preview ──────────────────────────────────────────── */}
-      <YStack gap="$2">
+      <YStack gap="2">
         {item.title != null ? (
           <Text
             tag="h3"
-            fontFamily="$journal"
-            fontSize="$6"
-            color="$color12"
+            fontFamily="journal"
+            fontSize="6"
+            color="color12"
             textDecorationLine={item.is_removed ? 'line-through' : 'none'}
             opacity={item.is_removed ? 0.5 : 1}
           >
@@ -259,9 +259,9 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
           </Text>
         ) : null}
         <Text
-          fontFamily="$body"
-          fontSize="$3"
-          color="$color11"
+          fontFamily="body"
+          fontSize="3"
+          color="color11"
           textDecorationLine={item.is_removed ? 'line-through' : 'none'}
           opacity={item.is_removed ? 0.5 : 1}
         >
@@ -272,56 +272,56 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
       {/* ─── Metadata line: author · time · flag count · markers ───────────── */}
       <XStack
         alignItems="center"
-        gap="$3"
+        gap="3"
         flexWrap="wrap"
       >
         <Text
-          fontFamily="$body"
-          fontSize="$1"
-          color="$color9"
+          fontFamily="body"
+          fontSize="1"
+          color="color9"
           textTransform="uppercase"
           letterSpacing={1}
         >
           {author}
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$1"
-          color="$color9"
+          fontFamily="body"
+          fontSize="1"
+          color="color9"
         >
           {timeAgoCasual(item.post_created_at)}
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$1"
-          color="$color11"
+          fontFamily="body"
+          fontSize="1"
+          color="color11"
           fontWeight="600"
         >
           {flagLabel}
         </Text>
         {item.is_removed ? (
           <Text
-            fontFamily="$body"
-            fontSize="$1"
-            color="$color9"
+            fontFamily="body"
+            fontSize="1"
+            color="color9"
           >
             Removed
           </Text>
         ) : null}
         {selfDeleted ? (
           <Text
-            fontFamily="$body"
-            fontSize="$1"
-            color="$color9"
+            fontFamily="body"
+            fontSize="1"
+            color="color9"
           >
             Author self-deleted
           </Text>
         ) : accountDeleted ? (
           <Text
-            fontFamily="$body"
-            fontSize="$1"
-            color="$color9"
-          >
+              fontFamily="body"
+              fontSize="1"
+              color="color9"
+            >
             Author deleted account
           </Text>
         ) : null}
@@ -329,9 +329,9 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
 
       {/* ─── Latest-report preview (collapsed) ─────────────────────────────── */}
       <Text
-        fontFamily="$body"
-        fontSize="$2"
-        color="$color10"
+        fontFamily="body"
+        fontSize="2"
+        color="color10"
       >
         {item.latest_report_note != null
           ? `${item.latest_report_reason} · ${item.latest_report_note}`
@@ -353,9 +353,9 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
         }}
       >
         <Text
-          fontFamily="$body"
-          fontSize="$1"
-          color="$color9"
+          fontFamily="body"
+          fontSize="1"
+          color="color9"
         >
           {expanded ? 'Hide reports' : 'Show reports'}
         </Text>
@@ -365,38 +365,38 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
       {expanded ? (
         <YStack
           data-testid="moderation-row-reports"
-          gap="$2"
-          paddingLeft="$3"
+          gap="2"
+          paddingLeft="3"
         >
           {reports.map((r) => (
             <YStack
               key={r.id}
-              gap="$1"
+              gap="1"
             >
               <XStack
-                gap="$2"
+                gap="2"
                 alignItems="center"
               >
                 <Text
-                  fontFamily="$body"
-                  fontSize="$2"
-                  color="$color11"
+                  fontFamily="body"
+                  fontSize="2"
+                  color="color11"
                 >
                   {r.reason_code}
                 </Text>
                 <Text
-                  fontFamily="$body"
-                  fontSize="$1"
-                  color="$color9"
+                  fontFamily="body"
+                  fontSize="1"
+                  color="color9"
                 >
                   {timeAgoCasual(r.created_at)}
                 </Text>
               </XStack>
               {r.note != null ? (
                 <Text
-                  fontFamily="$body"
-                  fontSize="$2"
-                  color="$color10"
+                  fontFamily="body"
+                  fontSize="2"
+                  color="color10"
                 >
                   {r.note}
                 </Text>
@@ -408,7 +408,7 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
 
       {/* ─── Action affordances ────────────────────────────────────────────── */}
       <XStack
-        gap="$4"
+        gap="4"
         flexWrap="wrap"
       >
         <RemoveAction
@@ -436,9 +436,9 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
           cursor="pointer"
         >
           <Text
-            fontFamily="$body"
-            fontSize="$2"
-            color="$color10"
+            fontFamily="body"
+            fontSize="2"
+            color="color10"
           >
             Dismiss reports
           </Text>

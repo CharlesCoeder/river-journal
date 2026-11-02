@@ -33,16 +33,15 @@ export function UnlockNotification({
       <YStack
         key="unlock-notification"
         transition={enterTransition as any}
-        enterStyle={{ opacity: 0, y: 20 }}
-        opacity={1}
-        y={0}
-        gap="$3"
+        opacity="1 enter:0"
+        y="0 enter:20px"
+        gap="3"
         alignItems="center"
       >
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={14}
-          color="$color"
+          color="color"
           letterSpacing={0.5}
         >
           You've earned an unlock — choose a theme.

@@ -179,14 +179,14 @@ function InAppReminderCard() {
   return (
     <YStack
       testID="in-app-reminder-card"
-      gap="$2"
-      marginHorizontal="$4"
-      marginBottom="$4"
-      padding="$4"
-      borderRadius="$4"
+      gap="2"
+      marginHorizontal="4"
+      marginBottom="4"
+      padding="4"
+      borderRadius="4"
       borderWidth={1}
-      borderColor="$color4"
-      backgroundColor="$color2"
+      borderColor="color4"
+      backgroundColor="color2"
     >
       {streakPending && (
         <XStack
@@ -199,9 +199,9 @@ function InAppReminderCard() {
           aria-label="Finish today's writing"
         >
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={15}
-            color="$color12"
+            color="color12"
           >
             Finish today's writing
           </Text>
@@ -219,9 +219,9 @@ function InAppReminderCard() {
           aria-label="See new replies in the Collective"
         >
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={15}
-            color="$color12"
+            color="color12"
           >
             You have new replies in the Collective
           </Text>
@@ -239,9 +239,9 @@ function InAppReminderCard() {
           aria-label="Review a moderation update"
         >
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={15}
-            color="$color12"
+            color="color12"
           >
             You have a moderation update to review
           </Text>
@@ -251,15 +251,15 @@ function InAppReminderCard() {
       <Text
         testID="reminder-dismiss"
         cursor="pointer"
+        fontFamily="body"
+        fontSize={13}
+        color="color9"
+        alignSelf="flex-end"
         onPress={() => ephemeral$.reminderCardDismissed.set(true)}
         onKeyDown={onActivateKey(() => ephemeral$.reminderCardDismissed.set(true))}
         role="button"
         tabIndex={0}
         aria-label="Dismiss reminders"
-        fontFamily="$body"
-        fontSize={13}
-        color="$color9"
-        alignSelf="flex-end"
       >
         Dismiss
       </Text>

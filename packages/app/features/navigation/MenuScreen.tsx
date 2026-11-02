@@ -24,14 +24,14 @@ export function MenuScreen() {
   return (
     <YStack
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       {/* No title: the word "Menu" is the link on home that pulls this pane in,
           and mid-slide the two would sit side by side. The close control takes
           the link's place as the pane arrives. */}
       <XStack
-        paddingHorizontal="$6"
-        paddingTop="$3"
+        paddingHorizontal="6"
+        paddingTop="3"
         alignItems="center"
         justifyContent="flex-end"
         minHeight={44}
@@ -45,12 +45,12 @@ export function MenuScreen() {
           marginRight={-12}
           alignItems="center"
           justifyContent="center"
-          pressStyle={{ opacity: 0.6 }}
+          opacity="press:0.6"
           onPress={close}
         >
           <X
             size={20}
-            color="$color9"
+            color="color9"
           />
         </View>
       </XStack>

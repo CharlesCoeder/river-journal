@@ -78,31 +78,30 @@ export function AddNoteDialog({ open, onOpenChange, postId, mutation }: AddNoteD
       <Dialog.Portal>
         <Dialog.Overlay
           key="overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={420}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             Add a note
           </Dialog.Title>
           <Dialog.Description
-            fontSize="$2"
-            color="$color11"
+            fontSize="2"
+            color="color11"
           >
             {DISCLOSURE}
           </Dialog.Description>
@@ -114,23 +113,23 @@ export function AddNoteDialog({ open, onOpenChange, postId, mutation }: AddNoteD
             maxLength={500}
             multiline
             numberOfLines={4}
-            fontSize="$2"
-            borderColor="$color3"
+            fontSize="2"
+            borderColor="color3"
           />
 
           {mutation.error ? (
             <Text
-              fontSize="$2"
-              color="$color9"
+              fontSize="2"
+              color="color9"
             >
               {GENERIC_ERROR_COPY}
             </Text>
           ) : null}
 
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             <ExpandingLineButton onPress={() => handleOpenChange(false)}>
               Cancel

@@ -123,17 +123,16 @@ export function PaidTierPurchaseSurface() {
   if (isSubscribed) {
     return (
       <YStack
-        gap="$5"
-        padding="$5"
+        gap="5"
+        padding="5"
         maxWidth={560}
         width="100%"
       >
         <Text
           tag="h1"
-          fontFamily="$journal"
-          fontSize="$8"
-          $sm={{ fontSize: '$7' }}
-          color="$color"
+          fontFamily="journal"
+          fontSize="8 sm:7"
+          color="color"
         >
           You're already subscribed.
         </Text>
@@ -151,22 +150,21 @@ export function PaidTierPurchaseSurface() {
   if (state === 'purchased') {
     return (
       <YStack
-        gap="$5"
-        padding="$5"
+        gap="5"
+        padding="5"
         maxWidth={560}
         width="100%"
       >
         <YStack
-          gap="$3"
+          gap="3"
           aria-live="polite"
           role="status"
         >
           <Text
             tag="h1"
-            fontFamily="$journal"
-            fontSize="$8"
-            $sm={{ fontSize: '$7' }}
-            color="$color"
+            fontFamily="journal"
+            fontSize="8 sm:7"
+            color="color"
           >
             Thanks. Everything's unlocked.
           </Text>
@@ -195,64 +193,63 @@ export function PaidTierPurchaseSurface() {
   // ── Idle / purchasing / error ───────────────────────────────────────────────
   return (
     <YStack
-      gap="$5"
-      padding="$5"
+      gap="5"
+      padding="5"
       maxWidth={560}
       width="100%"
     >
       <Text
         tag="h1"
-        fontFamily="$journal"
-        fontSize="$8"
-        $sm={{ fontSize: '$7' }}
-        color="$color"
+        fontFamily="journal"
+        fontSize="8 sm:7"
+        color="color"
       >
         Unlock every theme
       </Text>
 
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
         >
           Instantly unlock every cosmetic theme
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
         >
           A higher AI quota when AI features arrive
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
         >
           Support an indie product
         </Text>
       </YStack>
 
-      <YStack gap="$1">
+      <YStack gap="1">
         <Text
-          fontFamily="$journal"
-          fontSize="$6"
-          color="$color"
+          fontFamily="journal"
+          fontSize="6"
+          color="color"
         >
           $4.99 / month
         </Text>
         <Text
-          fontFamily="$journal"
-          fontSize="$6"
-          color="$color"
+          fontFamily="journal"
+          fontSize="6"
+          color="color"
         >
           $39.99 / year
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$3"
-          color="$color8"
+          fontFamily="body"
+          fontSize="3"
+          color="color8"
         >
           33% saving on twelve monthly payments
         </Text>
@@ -262,7 +259,7 @@ export function PaidTierPurchaseSurface() {
 
       {isError && (
         <XStack
-          gap="$2"
+          gap="2"
           alignItems="center"
           aria-live="polite"
           role="status"
@@ -275,9 +272,9 @@ export function PaidTierPurchaseSurface() {
             backgroundColor={ERROR_DOT_COLOR}
           />
           <Text
-            fontFamily="$body"
-            fontSize="$3"
-            color="$color11"
+            fontFamily="body"
+            fontSize="3"
+            color="color11"
           >
             That didn't go through.
           </Text>

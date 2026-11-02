@@ -34,8 +34,8 @@ export default function AuditLogScreen() {
         width="100%"
         maxWidth={720}
         marginHorizontal="auto"
-        paddingHorizontal="$5"
-        paddingVertical="$8"
+        paddingHorizontal="5"
+        paddingVertical="8"
       >
         <SkeletonRows reducedMotion={reducedMotion} />
       </YStack>
@@ -50,14 +50,14 @@ export default function AuditLogScreen() {
         width="100%"
         maxWidth={720}
         marginHorizontal="auto"
-        paddingHorizontal="$5"
-        paddingVertical="$8"
+        paddingHorizontal="5"
+        paddingVertical="8"
       >
         <Text
-          fontSize="$2"
-          color="$color9"
+          fontSize="2"
+          color="color9"
           textAlign="center"
-          paddingVertical="$4"
+          paddingVertical="4"
         >
           Couldn&apos;t load the audit log. Try again shortly.
         </Text>
@@ -76,15 +76,15 @@ export default function AuditLogScreen() {
       width="100%"
       maxWidth={720}
       marginHorizontal="auto"
-      paddingHorizontal="$5"
-      paddingVertical="$8"
+      paddingHorizontal="5"
+      paddingVertical="8"
     >
       {showErrorStrip ? (
         <Text
-          fontSize="$1"
-          color="$color9"
+          fontSize="1"
+          color="color9"
           textAlign="center"
-          paddingVertical="$2"
+          paddingVertical="2"
         >
           Couldn&apos;t refresh. Showing the last update.
         </Text>
@@ -92,13 +92,13 @@ export default function AuditLogScreen() {
 
       {isEmpty ? (
         <YStack
-          paddingVertical="$8"
+          paddingVertical="8"
           alignItems="center"
         >
           <Text
-            fontFamily="$journal"
-            fontSize="$6"
-            color="$color10"
+            fontFamily="journal"
+            fontSize="6"
+            color="color10"
             fontStyle="italic"
           >
             No moderation actions yet.
@@ -114,7 +114,7 @@ export default function AuditLogScreen() {
               />
               {index < items.length - 1 ? (
                 <Separator
-                  borderColor="$color3"
+                  borderColor="color3"
                   borderBottomWidth={1}
                 />
               ) : null}
@@ -123,23 +123,23 @@ export default function AuditLogScreen() {
 
           {hasNextPage ? (
             <View
-              tag="button"
-              role="button"
-              data-testid="audit-log-load-more"
-              alignSelf="center"
-              cursor="pointer"
-              marginTop="$5"
-              disabled={isFetchingNextPage}
-              opacity={isFetchingNextPage ? 0.4 : 1}
-              onPress={() => {
-                if (!isFetchingNextPage) fetchNextPage()
-              }}
-            >
-              <Text
-                fontFamily="$body"
-                fontSize="$2"
-                color="$color10"
+                tag="button"
+                role="button"
+                data-testid="audit-log-load-more"
+                alignSelf="center"
+                cursor="pointer"
+                marginTop="5"
+                opacity={isFetchingNextPage ? 0.4 : 1}
+                disabled={isFetchingNextPage}
+                onPress={() => {
+                              if (!isFetchingNextPage) fetchNextPage()
+                            }}
               >
+              <Text
+                  fontFamily="body"
+                  fontSize="2"
+                  color="color10"
+                >
                 {isFetchingNextPage ? 'Loading…' : 'Load more'}
               </Text>
             </View>

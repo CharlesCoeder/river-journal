@@ -90,7 +90,7 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
 
   return (
     <XStack
-      gap="$2"
+      gap="2"
       role="group"
       aria-label="Reactions"
     >
@@ -107,34 +107,32 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
             aria-pressed={isReacted}
             aria-label={`${label} reaction (${count})`}
             aria-disabled={disabled || undefined}
-            width="$4"
-            height="$4"
+            width="4"
+            height="4"
             alignItems="center"
             justifyContent="center"
             flexDirection="row"
-            gap="$1"
+            gap="1"
             backgroundColor="transparent"
             borderWidth={0}
             padding={0}
             cursor={disabled ? 'not-allowed' : 'pointer'}
             opacity={disabled ? 0.4 : 1}
             transition={tintTransition as any}
-            focusVisibleStyle={{
-              outlineWidth: 1,
-              outlineColor: '$color12',
-              outlineStyle: 'solid',
-            }}
+            outlineWidth="focus-visible:1px"
+            outlineColor="focus-visible:color12"
+            outlineStyle="focus-visible:solid"
             onPress={disabled ? undefined : () => handlePress(kind)}
             onKeyDown={
-              disabled
-                ? undefined
-                : (e: any) => {
-                    if (e.key === ' ' || e.key === 'Enter') {
-                      e.preventDefault()
-                      handlePress(kind)
-                    }
-                  }
-            }
+                        disabled
+                          ? undefined
+                          : (e: any) => {
+                              if (e.key === ' ' || e.key === 'Enter') {
+                                e.preventDefault()
+                                handlePress(kind)
+                              }
+                            }
+                      }
           >
             <Icon
               size={16}
@@ -142,8 +140,8 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
             />
             {count > 0 ? (
               <Text
-                fontSize="$1"
-                color="$color9"
+                fontSize="1"
+                color="color9"
               >
                 {count}
               </Text>

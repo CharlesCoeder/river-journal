@@ -95,7 +95,7 @@ export function JournalScreen() {
   return (
     <YStack
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       {/* Writing surface — maximized, full-screen feel */}
       <AnimatePresence>
@@ -103,21 +103,16 @@ export function JournalScreen() {
           <YStack
             key="journal-content"
             transition="designEnterSlow"
-            enterStyle={{ opacity: 0 }}
-            opacity={1}
+            opacity="1 enter:0"
             flex={1}
             width="100%"
             maxWidth={896}
             alignSelf="center"
-            paddingHorizontal="$4"
-            $md={{ paddingHorizontal: '$8' }}
-            $lg={{ paddingHorizontal: '$12' }}
+            paddingHorizontal="4 md:8 lg:12"
           >
             {/* Top spacer — measured for persistent editor positioning on native */}
             <View
-              height="$4"
-              $md={{ height: '$8' }}
-              $lg={{ height: '$12' }}
+              height="4 md:8 lg:12"
               onLayout={handleHeaderLayout}
             />
             <Editor

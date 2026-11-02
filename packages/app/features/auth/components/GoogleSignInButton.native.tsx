@@ -92,15 +92,12 @@ export function GoogleSignInButton({ onSuccess, canStart, onAuthStart }: GoogleS
       <Button
         onPress={handlePress}
         disabled={isLoading}
-        backgroundColor="#FFFFFF"
+        backgroundColor="#FFFFFF press:#E8E8E8"
         borderColor="#747775"
         borderWidth={1}
-        pressStyle={{
-          backgroundColor: '#E8E8E8',
-          opacity: 0.9,
-        }}
-        height="$5"
-        borderRadius="$4"
+        opacity="press:0.9"
+        height="5"
+        borderRadius="4"
       >
         <__ReactNativeView style={_sheet['0']}>
           {isLoading ? (

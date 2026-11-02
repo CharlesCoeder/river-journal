@@ -55,13 +55,13 @@ export default function GoogleAuthCallback() {
       flex={1}
       alignItems="center"
       justifyContent="center"
-      gap="$4"
+      gap="4"
     >
       <Spinner size="large" />
       <Text
-        fontFamily="$body"
-        color="$color"
-        fontSize="$4"
+        fontFamily="body"
+        color="color"
+        fontSize="4"
       >
         Completing sign in...
       </Text>

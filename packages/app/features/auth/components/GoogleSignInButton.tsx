@@ -87,16 +87,14 @@ export function GoogleSignInButton({ canStart, onAuthStart }: GoogleSignInButton
         onPress={handlePress}
         disabled={isLoading}
         backgroundColor="transparent"
-        borderColor="$color3"
+        borderColor="color3 hover:color"
         borderWidth={1}
-        hoverStyle={{ borderColor: '$color' }}
-        pressStyle={{ opacity: 0.8 }}
-        paddingVertical="$3"
+        opacity={`${isLoading ? 0.5 : 1} press:0.8`}
+        paddingVertical="3"
         justifyContent="center"
         alignItems="center"
-        gap="$3"
+        gap="3"
         cursor={isLoading ? 'not-allowed' : 'pointer'}
-        opacity={isLoading ? 0.5 : 1}
       >
         {isLoading ? (
           <Spinner size="small" />
@@ -104,12 +102,12 @@ export function GoogleSignInButton({ canStart, onAuthStart }: GoogleSignInButton
           <>
             <GoogleLogo size={16} />
             <Text
-              fontFamily="$body"
-              fontSize={12}
-              letterSpacing={3}
-              textTransform="uppercase"
-              color="$color"
-            >
+                fontFamily="body"
+                fontSize={12}
+                letterSpacing={3}
+                textTransform="uppercase"
+                color="color"
+              >
               Continue with Google
             </Text>
           </>
@@ -117,11 +115,11 @@ export function GoogleSignInButton({ canStart, onAuthStart }: GoogleSignInButton
       </XStack>
       {error && (
         <Text
-          fontSize="$2"
-          color="$red10"
-          fontFamily="$body"
+          fontSize="2"
+          color="red10"
+          fontFamily="body"
           textAlign="center"
-          marginTop="$1"
+          marginTop="1"
         >
           {error}
         </Text>

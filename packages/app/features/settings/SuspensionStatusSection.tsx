@@ -30,22 +30,22 @@ export function SuspensionStatusSection({ userId }: { userId: string | null }) {
   return (
     <YStack
       testID="settings-suspension-status"
-      gap="$3"
+      gap="3"
     >
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={11}
         textTransform="uppercase"
         letterSpacing={2}
-        color="$color8"
+        color="color8"
       >
         Account Status
       </Text>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={14}
-        color="$color"
-        lineHeight={22}
+        color="color"
+        lineHeight="22px"
       >
         Your ability to post and react is paused until {humanDate(suspension.ends_at)}. You can
         still write and read.
@@ -53,9 +53,9 @@ export function SuspensionStatusSection({ userId }: { userId: string | null }) {
       {reason ? (
         <Text
           testID="settings-suspension-reason"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Reason: {reason}
         </Text>

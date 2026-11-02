@@ -73,6 +73,11 @@ export function ExpandingLineButton({
       flexDirection="row-reverse"
       flexShrink={0}
       opacity={disabled ? 0.4 : 1}
+      backgroundColor="transparent"
+      borderWidth={0}
+      padding={0}
+      outlineWidth="0px focus:0px focus-visible:0px"
+      outlineStyle="focus:none focus-visible:none"
       disabled={disabled}
       onHoverIn={disabled ? undefined : () => setIsHovered(true)}
       onHoverOut={disabled ? undefined : () => setIsHovered(false)}
@@ -81,37 +86,23 @@ export function ExpandingLineButton({
       onPress={disabled ? undefined : () => onPress?.()}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
-      // Remove default button chrome
-      backgroundColor="transparent"
-      borderWidth={0}
-      padding={0}
-      outlineWidth={0}
-      // Suppress browser default outline; underline growth serves as the focus indicator
-      focusStyle={{
-        outlineWidth: 0,
-        outlineStyle: 'none',
-      }}
-      focusVisibleStyle={{
-        outlineWidth: 0,
-        outlineStyle: 'none',
-      }}
     >
       {/* Expanding underline */}
       <View
         width={lineWidth}
         height={1}
-        backgroundColor="$color"
+        backgroundColor="color"
         flexShrink={0}
         pointerEvents="none"
         transition={reduceMotion ? undefined : 'smoothCollapse'}
       />
       {/* Label */}
       <Text
-        fontFamily="$body"
-        fontSize={size === 'cta' ? '$6' : '$4'}
-        color="$color"
+        fontFamily="body"
+        fontSize={`${size === 'cta' ? "6" : "4"}`}
+        color="color"
         letterSpacing={0.5}
-        paddingRight="$2"
+        paddingRight="2"
         pointerEvents="none"
         numberOfLines={1}
         whiteSpace="nowrap"

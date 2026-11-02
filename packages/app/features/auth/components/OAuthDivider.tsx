@@ -8,14 +8,14 @@ export function OAuthDivider() {
   return (
     <XStack
       alignItems="center"
-      gap="$3"
+      gap="3"
       width="100%"
     >
       <Separator flex={1} />
       <Text
-        fontSize="$3"
-        color="$color10"
-        fontFamily="$body"
+        fontSize="3"
+        color="color10"
+        fontFamily="body"
       >
         or
       </Text>

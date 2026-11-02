@@ -23,13 +23,13 @@ type ExportMode = 'idle' | 'options' | 'select-months' | 'exporting' | 'done' | 
 function OptionLabel({ children }: { children: string }) {
   return (
     <Text
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={11}
       textTransform="uppercase"
       letterSpacing={2}
-      color="$color8"
-      marginTop="$3"
-      marginBottom="$1"
+      color="color8"
+      marginTop="3"
+      marginBottom="1"
     >
       {children}
     </Text>
@@ -51,22 +51,21 @@ function RadioRow({
     <XStack
       testID={testID}
       alignItems="center"
-      gap="$3"
+      gap="3"
       cursor="pointer"
+      opacity="hover:0.8 press:0.7"
       onPress={onPress}
-      hoverStyle={{ opacity: 0.8 }}
-      pressStyle={{ opacity: 0.7 }}
     >
       <Circle
         size={10}
         borderWidth={1}
-        borderColor="$color5"
-        backgroundColor={selected ? '$color' : 'transparent'}
+        borderColor="color5"
+        backgroundColor={`${selected ? "color" : "transparent"}`}
       />
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={13}
-        color={selected ? '$color' : '$color8'}
+        color={`${selected ? "color" : "color8"}`}
       >
         {label}
       </Text>
@@ -88,11 +87,10 @@ function CheckboxRow({
   return (
     <Text
       testID={testID}
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={13}
-      color={checked ? '$color' : '$color8'}
+      color={`${checked ? "color" : "color8"} hover:color`}
       cursor="pointer"
-      hoverStyle={{ color: '$color' }}
       onPress={onPress}
     >
       {checked ? '☑' : '☐'} {label}
@@ -226,18 +224,18 @@ export function ExportJournal() {
 
   if (!hasEntries) {
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color8"
+          color="color8"
         >
           Export Journal
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           No journal entries to export.
         </Text>
@@ -247,19 +245,19 @@ export function ExportJournal() {
 
   if (mode === 'exporting') {
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
         >
           Export Journal
         </Text>
         <Text
           testID="export-progress"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Exporting {progress.done} of {progress.total} entries…
         </Text>
@@ -269,43 +267,42 @@ export function ExportJournal() {
 
   if (mode === 'error') {
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
         >
           Export Journal
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Export failed. Please try again.
         </Text>
         {errorMessage && (
           <Text
             testID="export-error-detail"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={12}
-            color="$color"
-            marginTop="$1"
+            color="color"
+            marginTop="1"
           >
             {errorMessage}
           </Text>
         )}
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={11}
           letterSpacing={2}
           textTransform="uppercase"
-          color="$color8"
+          color="color8 hover:color"
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
-          onPress={handleReset}
           alignSelf="flex-start"
-          marginTop="$1"
+          marginTop="1"
+          onPress={handleReset}
         >
           Try Again
         </Text>
@@ -315,33 +312,32 @@ export function ExportJournal() {
 
   if (mode === 'done') {
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
         >
           Export Journal
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Exported {exportedCount} {exportedCount === 1 ? 'entry' : 'entries'}.
         </Text>
         <Text
           testID="export-done-reset"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={11}
           letterSpacing={2}
           textTransform="uppercase"
-          color="$color8"
+          color="color8 hover:color"
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
-          onPress={handleReset}
           alignSelf="flex-start"
-          marginTop="$1"
+          marginTop="1"
+          onPress={handleReset}
         >
           Export Again
         </Text>
@@ -353,24 +349,23 @@ export function ExportJournal() {
     const allSelected = selectedMonths.size === availableMonths.length
 
     return (
-      <YStack gap="$3">
+      <YStack gap="3">
         <XStack
           justifyContent="space-between"
           alignItems="center"
         >
           <Text
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color="$color"
+            color="color"
           >
             Select Months
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={12}
-            color="$color8"
+            color="color8 hover:color"
             cursor="pointer"
-            hoverStyle={{ color: '$color' }}
             onPress={() => setMode('options')}
           >
             Cancel
@@ -379,28 +374,26 @@ export function ExportJournal() {
 
         <Text
           testID="export-select-all"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color={allSelected ? '$color' : '$color8'}
+          color={`${allSelected ? "color" : "color8"} hover:color`}
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
           onPress={toggleAll}
         >
           {allSelected ? '☑ All Months' : '☐ Select All'}
         </Text>
 
-        <YStack gap="$2">
+        <YStack gap="2">
           {availableMonths.map((m) => {
             const isSelected = selectedMonths.has(m.key)
             return (
               <Text
                 key={m.key}
                 testID={`export-month-${m.key}`}
-                fontFamily="$body"
+                fontFamily="body"
                 fontSize={13}
-                color={isSelected ? '$color' : '$color8'}
+                color={`${isSelected ? "color" : "color8"} hover:color`}
                 cursor="pointer"
-                hoverStyle={{ color: '$color' }}
                 onPress={() => toggleMonth(m.key)}
               >
                 {isSelected ? '☑' : '☐'} {m.label}
@@ -412,19 +405,19 @@ export function ExportJournal() {
         {selectedMonths.size > 0 && (
           <Text
             testID="export-selected-confirm"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={11}
             letterSpacing={3}
             fontWeight="500"
             textTransform="uppercase"
-            color="$color"
+            color="color"
             borderBottomWidth={2}
-            borderColor="$color10"
+            borderColor="color10"
             paddingBottom={6}
             alignSelf="flex-start"
-            marginTop="$1"
+            marginTop="1"
             cursor="pointer"
-            hoverStyle={{ opacity: 0.7 }}
+            opacity="hover:0.7"
             onPress={handleExportSelected}
           >
             Export {selectedMonths.size} {selectedMonths.size === 1 ? 'Month' : 'Months'}
@@ -440,22 +433,22 @@ export function ExportJournal() {
 
   if (mode === 'idle') {
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
           testID="export-journal-open"
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
           cursor="pointer"
-          hoverStyle={{ opacity: 0.7 }}
+          opacity="hover:0.7"
           onPress={() => setMode('options')}
         >
           Export Journal
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Download your entries as Markdown files.
         </Text>
@@ -468,24 +461,23 @@ export function ExportJournal() {
   // ---------------------------------------------------------------------------
 
   return (
-    <YStack gap="$2">
+    <YStack gap="2">
       <XStack
         justifyContent="space-between"
         alignItems="center"
       >
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
         >
           Export Journal
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={12}
-          color="$color8"
+          color="color8 hover:color"
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
           onPress={() => setMode('idle')}
         >
           Cancel
@@ -494,7 +486,7 @@ export function ExportJournal() {
 
       {/* Format */}
       <OptionLabel>Format</OptionLabel>
-      <YStack gap="$2">
+      <YStack gap="2">
         <RadioRow
           testID="export-format-zip"
           label="Separate files (ZIP)"
@@ -511,7 +503,7 @@ export function ExportJournal() {
 
       {/* Options */}
       <OptionLabel>Options</OptionLabel>
-      <YStack gap="$2">
+      <YStack gap="2">
         <CheckboxRow
           testID="export-opt-headings"
           label="Time headings"
@@ -527,13 +519,13 @@ export function ExportJournal() {
         {options.showSeparators && (
           <XStack
             alignItems="center"
-            gap="$2"
-            paddingLeft="$4"
+            gap="2"
+            paddingLeft="4"
           >
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={13}
-              color="$color8"
+              color="color8"
             >
               Separator:
             </Text>
@@ -541,14 +533,14 @@ export function ExportJournal() {
               testID="export-separator-input"
               value={options.separatorText}
               onChangeText={(text: string) => setOption('separatorText', text)}
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={13}
-              maxLength={80}
               width={120}
-              paddingVertical="$1"
-              paddingHorizontal="$2"
-              borderColor="$color5"
-              color="$color"
+              paddingVertical="1"
+              paddingHorizontal="2"
+              borderColor="color5"
+              color="color"
+              maxLength={80}
             />
           </XStack>
         )}
@@ -564,40 +556,40 @@ export function ExportJournal() {
 
       {/* Export buttons */}
       <XStack
-        gap="$4"
-        marginTop="$3"
+        gap="4"
+        marginTop="3"
         flexWrap="wrap"
       >
         <Text
           testID="export-all"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={11}
           letterSpacing={3}
           fontWeight="500"
           textTransform="uppercase"
-          color="$color"
+          color="color"
           borderBottomWidth={2}
-          borderColor="$color10"
+          borderColor="color10"
           paddingBottom={6}
           cursor="pointer"
-          hoverStyle={{ opacity: 0.7 }}
+          opacity="hover:0.7"
           onPress={handleExportAll}
         >
           Export All
         </Text>
         <Text
           testID="export-select-months"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={11}
           letterSpacing={3}
           fontWeight="500"
           textTransform="uppercase"
-          color="$color"
+          color="color"
           borderBottomWidth={2}
-          borderColor="$color10"
+          borderColor="color10"
           paddingBottom={6}
           cursor="pointer"
-          hoverStyle={{ opacity: 0.7 }}
+          opacity="hover:0.7"
           onPress={() => setMode('select-months')}
         >
           Select Months

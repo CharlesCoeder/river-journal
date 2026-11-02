@@ -58,7 +58,7 @@ function getActiveTier(isAuthenticated: boolean, currentMode: string | null): Ti
 
 function PrivacyTierList({ activeTier }: { activeTier: TierKey }) {
   return (
-    <YStack gap="$2">
+    <YStack gap="2">
       {TIERS.map((tier) => {
         const isActive = tier.key === activeTier
         return (
@@ -67,17 +67,17 @@ function PrivacyTierList({ activeTier }: { activeTier: TierKey }) {
             opacity={isActive ? 1 : 0.4}
           >
             <Text
-              fontFamily="$journal"
+              fontFamily="journal"
               fontSize={24}
               fontWeight={isActive ? '500' : '400'}
-              color="$color"
+              color="color"
             >
               {tier.label}
             </Text>
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={13}
-              color="$color7"
+              color="color7"
               marginTop={2}
             >
               {tier.description}
@@ -96,11 +96,11 @@ function PrivacyTierList({ activeTier }: { activeTier: TierKey }) {
 function SectionHeader({ children }: { children: string }) {
   return (
     <Text
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={11}
       textTransform="uppercase"
       letterSpacing={2}
-      color="$color8"
+      color="color8"
     >
       {children}
     </Text>
@@ -154,7 +154,7 @@ export function SettingsScreen() {
   return (
     <View
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       <ScrollView
         flex={1}
@@ -165,37 +165,32 @@ export function SettingsScreen() {
           width="100%"
           maxWidth={1024}
           alignSelf="center"
-          paddingHorizontal="$4"
-          paddingTop="$4"
+          paddingHorizontal="4 sm:6 md:8 lg:12"
+          paddingTop="4 md:8 lg:12"
           paddingBottom={96}
-          $sm={{ paddingHorizontal: '$6' }}
-          $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
-          $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
         >
           <WordLinkNav variant="browse" />
           {/* Header */}
           <XStack
             justifyContent="space-between"
             alignItems="center"
-            marginBottom={64}
-            $md={{ marginBottom: 96 }}
+            marginBottom="64px md:96px"
           >
             <Text
-              fontFamily="$journalItalic"
+              fontFamily="journalItalic"
               fontStyle="italic"
               fontSize={30}
-              color="$color"
+              color="color"
               letterSpacing={-0.5}
             >
               Settings
             </Text>
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color8"
+              color="color8 hover:color"
               letterSpacing={0.5}
               cursor="pointer"
-              hoverStyle={{ color: '$color' }}
               onPress={navigateHome}
             >
               Back to Home
@@ -222,46 +217,45 @@ export function SettingsScreen() {
                 {visibleCount >= 1 &&
                   (!isAuthenticated ? (
                     <YStack
-                      key="section-1"
-                      transition="designEnter"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      opacity={1}
-                      y={0}
-                      gap="$3"
-                    >
+                    key="section-1"
+                    transition="designEnter"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="3"
+                  >
                       <Text
-                        fontFamily="$journal"
-                        fontSize={24}
-                        color="$color"
-                      >
+                      fontFamily="journal"
+                      fontSize={24}
+                      color="color"
+                    >
                         Secure Your Words
                       </Text>
                       <Text
-                        fontFamily="$body"
-                        fontSize={14}
-                        color="$color8"
-                        lineHeight={22}
-                        maxWidth={512}
-                      >
+                      fontFamily="body"
+                      fontSize={14}
+                      color="color8"
+                      lineHeight="22px"
+                      maxWidth={512}
+                    >
                         Create an account or log in to enable end-to-end encrypted backup and sync
                         your journal across all your devices.
                       </Text>
                       <Text
-                        fontFamily="$body"
-                        fontSize={11}
-                        letterSpacing={3}
-                        fontWeight="500"
-                        textTransform="uppercase"
-                        color="$color"
-                        borderBottomWidth={2}
-                        borderColor="$color10"
-                        paddingBottom={6}
-                        alignSelf="flex-start"
-                        marginTop="$2"
-                        cursor="pointer"
-                        hoverStyle={{ opacity: 0.7 }}
-                        onPress={() => router.push('/auth')}
-                      >
+                      fontFamily="body"
+                      fontSize={11}
+                      letterSpacing={3}
+                      fontWeight="500"
+                      textTransform="uppercase"
+                      color="color"
+                      borderBottomWidth={2}
+                      borderColor="color10"
+                      paddingBottom={6}
+                      alignSelf="flex-start"
+                      marginTop="2"
+                      cursor="pointer"
+                      opacity="hover:0.7"
+                      onPress={() => router.push('/auth')}
+                    >
                         Log In / Create Account
                       </Text>
                     </YStack>
@@ -269,10 +263,9 @@ export function SettingsScreen() {
                     <YStack
                       key="section-1"
                       transition="designEnter"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      opacity={1}
-                      y={0}
-                      gap="$4"
+                      opacity="1 enter:0"
+                      y="0 enter:10px"
+                      gap="4"
                     >
                       <SectionHeader>Privacy Tier</SectionHeader>
                       <PrivacyTierList activeTier={activeTier} />
@@ -287,10 +280,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-app-lock"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <SectionHeader>App Lock</SectionHeader>
                     <AppLockSettings />
@@ -301,13 +293,12 @@ export function SettingsScreen() {
                 {visibleCount >= 2 &&
                   (isAuthenticated ? (
                     <YStack
-                      key="section-2"
-                      transition="designEnter"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      opacity={1}
-                      y={0}
-                      gap="$4"
-                    >
+                    key="section-2"
+                    transition="designEnter"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
+                  >
                       <SectionHeader>Data & Sync</SectionHeader>
                       <SyncToggle />
                       {localOnlyCount > 0 && (
@@ -317,10 +308,10 @@ export function SettingsScreen() {
                           testID="settings-local-only-row"
                         >
                           <Text
-                            fontFamily="$body"
-                            fontSize="$4"
-                            color="$color"
-                          >
+                          fontFamily="body"
+                          fontSize="4"
+                          color="color"
+                        >
                             Local-only entries ({localOnlyCount})
                           </Text>
                           <ExpandingLineButton
@@ -337,31 +328,29 @@ export function SettingsScreen() {
                     <YStack
                       key="section-2"
                       transition="designEnter"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      opacity={1}
-                      y={0}
-                      gap="$4"
+                      opacity="1 enter:0"
+                      y="0 enter:10px"
+                      gap="4"
                     >
                       <SectionHeader>Data & Sync</SectionHeader>
-                      <YStack gap="$2">
+                      <YStack gap="2">
                         <Text
-                          fontFamily="$journal"
+                          fontFamily="journal"
                           fontSize={20}
-                          color="$color8"
+                          color="color8 hover:color"
                           borderBottomWidth={1}
-                          borderColor="$color5"
+                          borderColor="color5"
                           paddingBottom={4}
                           alignSelf="flex-start"
                           cursor="pointer"
-                          hoverStyle={{ color: '$color' }}
                           onPress={() => router.push('/auth')}
                         >
                           Enable Cloud Sync
                         </Text>
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={13}
-                          color="$color8"
+                          color="color8"
                         >
                           Entries remain on this device only.
                         </Text>
@@ -378,10 +367,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-3b"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <SectionHeader>Trusted Browsers</SectionHeader>
                     <TrustedBrowsersList userId={userId} />
@@ -393,10 +381,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-4"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <SectionHeader>Theme</SectionHeader>
                     <ThemePicker />
@@ -413,10 +400,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-5"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <SectionHeader>Keyboard Shortcuts</SectionHeader>
                     <KeyboardShortcutsSection />
@@ -428,26 +414,24 @@ export function SettingsScreen() {
                   <YStack
                     key="section-6"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <LinkedProviders />
 
                     {/* Log Out */}
                     <Text
-                      fontFamily="$body"
+                      fontFamily="body"
                       fontSize={11}
                       letterSpacing={2}
                       textTransform="uppercase"
-                      color="$color8"
+                      color="color8 hover:color"
                       cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
-                      onPress={handleLogout}
                       alignSelf="flex-start"
-                      marginTop="$2"
+                      marginTop="2"
                       opacity={isLoggingOut ? 0.4 : 1}
+                      onPress={handleLogout}
                     >
                       {isLoggingOut ? 'Logging out...' : 'Log Out'}
                     </Text>
@@ -459,10 +443,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-7"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <SectionHeader>Editor</SectionHeader>
                     <XStack
@@ -470,9 +453,9 @@ export function SettingsScreen() {
                       alignItems="center"
                     >
                       <Text
-                        fontFamily="$body"
-                        fontSize="$4"
-                        color="$color"
+                        fontFamily="body"
+                        fontSize="4"
+                        color="color"
                       >
                         Focus mode
                       </Text>
@@ -491,14 +474,14 @@ export function SettingsScreen() {
                       alignItems="center"
                     >
                       <Text
-                        fontFamily="$body"
-                        fontSize="$4"
-                        color="$color"
+                        fontFamily="body"
+                        fontSize="4"
+                        color="color"
                       >
                         Focus granularity
                       </Text>
                       <XStack
-                        gap="$5"
+                        gap="5"
                         alignItems="center"
                       >
                         <View opacity={focusGranularity === 'paragraph' ? 1 : 0.4}>
@@ -529,10 +512,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-8"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <SectionHeader>Collective</SectionHeader>
                     <XStack
@@ -541,9 +523,9 @@ export function SettingsScreen() {
                       testID="settings-blocked-users-row"
                     >
                       <Text
-                        fontFamily="$body"
-                        fontSize="$4"
-                        color="$color"
+                        fontFamily="body"
+                        fontSize="4"
+                        color="color"
                       >
                         Blocked users
                       </Text>
@@ -564,10 +546,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-9"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <SectionHeader>Notifications</SectionHeader>
                     <ReminderSettings />
@@ -581,10 +562,9 @@ export function SettingsScreen() {
                   <YStack
                     key="section-10"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
-                    gap="$4"
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
+                    gap="4"
                   >
                     <BillingSection />
                   </YStack>
@@ -595,35 +575,33 @@ export function SettingsScreen() {
                   <XStack
                     key="section-12"
                     transition="designEnter"
-                    enterStyle={{ opacity: 0, y: 10 }}
-                    opacity={1}
-                    y={0}
+                    opacity="1 enter:0"
+                    y="0 enter:10px"
                     justifyContent="space-between"
                     alignItems="center"
                     marginTop={16}
                   >
                     <Text
-                      fontFamily="$journal"
+                      fontFamily="journal"
                       fontSize={13}
-                      color="$color"
+                      color="color"
                       opacity={0.6}
                       letterSpacing={0.5}
                     >
                       River Journal{'  '}
                       <Text
-                        fontFamily="$body"
+                        fontFamily="body"
                         fontSize={13}
-                        color="$color8"
+                        color="color8"
                       >
                         · v1.0.0
                       </Text>
                     </Text>
                     <Text
-                      fontFamily="$body"
+                      fontFamily="body"
                       fontSize={12}
-                      color="$color7"
+                      color="color7 hover:color"
                       cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
                       onPress={() => router.push('/privacy')}
                     >
                       Privacy Center

@@ -102,9 +102,9 @@ function NodeByline({
   const name = isDeleted ? '[deleted]' : mine ? 'You' : (post.user_id?.slice(0, 8) ?? '[deleted]')
   return (
     <Text
-      fontFamily="$body"
-      fontSize="$1"
-      color="$color9"
+      fontFamily="body"
+      fontSize="1"
+      color="color9"
       textTransform="uppercase"
       letterSpacing={1}
     >
@@ -128,12 +128,11 @@ function SkeletonRows() {
           data-testid={`skeleton-row-${i}`}
           height={14}
           borderRadius={0}
-          backgroundColor="$color3"
-          opacity={0.6}
-          marginVertical="$2"
+          backgroundColor="color3"
+          opacity="0.6 enter:0"
+          marginVertical="2"
           width={width as string}
           animation="quick"
-          enterStyle={{ opacity: 0 }}
         />
       ))}
     </YStack>
@@ -251,10 +250,10 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         return (
           <View key={post.id}>
             <Text
-              fontSize="$3"
-              color="$color9"
+              fontSize="3"
+              color="color9"
               textAlign="center"
-              paddingVertical="$4"
+              paddingVertical="4"
             >
               This thread was removed.
             </Text>
@@ -296,23 +295,23 @@ export default function ThreadView({ postId }: ThreadViewProps) {
       // ─── The letter / reply content ────────────────────────────────────────
       const nodeContent = selfDeleted ? (
         <Text
-          fontFamily="$journal"
-          fontSize={isRoot ? '$6' : '$5'}
-          color="$color8"
+          fontFamily="journal"
+          fontSize={`${isRoot ? "6" : "5"}`}
+          color="color8"
           fontStyle="italic"
         >
           {isRoot ? 'This letter was withdrawn.' : 'This reply was withdrawn.'}
         </Text>
       ) : (
-        <YStack gap="$3">
+        <YStack gap="3">
           {isRoot && post.title ? (
             <Text
-              tag="h1"
-              fontFamily="$journal"
-              fontSize="$9"
-              lineHeight="$9"
-              color="$color12"
-            >
+                tag="h1"
+                fontFamily="journal"
+                fontSize="9"
+                lineHeight="9"
+                color="color12"
+              >
               {post.title}
             </Text>
           ) : null}
@@ -321,21 +320,21 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             currentUserId={currentUserId}
           />
           <Text
-            fontFamily="$journal"
-            fontSize={isRoot ? '$6' : '$5'}
-            color="$color12"
-            whiteSpace="pre-wrap"
-          >
+              fontFamily="journal"
+              fontSize={`${isRoot ? "6" : "5"}`}
+              color="color12"
+              whiteSpace="pre-wrap"
+            >
             {post.body}
           </Text>
           {/* Action row: reactions on the left, reply + moderation on the right */}
           <XStack
-            justifyContent="space-between"
-            alignItems="center"
-            gap="$5"
-            flexWrap="wrap"
-            marginTop="$1"
-          >
+              justifyContent="space-between"
+              alignItems="center"
+              gap="5"
+              flexWrap="wrap"
+              marginTop="1"
+            >
             {currentUserId !== undefined ? (
               <ReactionStrip
                 postId={post.id}
@@ -346,9 +345,9 @@ export default function ThreadView({ postId }: ThreadViewProps) {
               <View />
             )}
             <XStack
-              alignItems="center"
-              gap="$4"
-            >
+                alignItems="center"
+                gap="4"
+              >
               {canReply ? (
                 <View
                   role="button"
@@ -357,20 +356,20 @@ export default function ThreadView({ postId }: ThreadViewProps) {
                   cursor="pointer"
                 >
                   <XStack
-                    alignItems="center"
-                    gap="$1.5"
-                  >
-                    <CornerUpLeft
-                      size={14}
-                      color="$color9"
-                    />
-                    <Text
-                      fontSize="$1"
-                      color="$color9"
-                      fontFamily="$body"
-                      textTransform="uppercase"
-                      letterSpacing={1}
+                      alignItems="center"
+                      gap="1-5"
                     >
+                    <CornerUpLeft
+                        size={14}
+                        color="color9"
+                      />
+                    <Text
+                        fontSize="1"
+                        color="color9"
+                        fontFamily="body"
+                        textTransform="uppercase"
+                        letterSpacing={1}
+                      >
                       Reply
                     </Text>
                   </XStack>
@@ -410,13 +409,13 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           {/* Reply-count label — shown under the root only, mirrors the design. */}
           {isRoot ? (
             <Text
-              fontFamily="$body"
-              fontSize="$1"
-              color="$color9"
+              fontFamily="body"
+              fontSize="1"
+              color="color9"
               textTransform="uppercase"
               letterSpacing={1}
-              marginTop="$8"
-              marginBottom="$2"
+              marginTop="8"
+              marginBottom="2"
             >
               {(post.descendant_count ?? 0) === 0
                 ? 'No replies yet'
@@ -451,16 +450,16 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             /* Depth cap: route to a focused subthread */
             <View
               onPress={() => {
-                const rootId = focusedFromRoot ?? postId
-                router.push(threadHref(post.id, { focusedFromRoot: rootId }))
-              }}
+                            const rootId = focusedFromRoot ?? postId
+                            router.push(threadHref(post.id, { focusedFromRoot: rootId }))
+                          }}
               cursor="pointer"
-              marginTop="$4"
+              marginTop="4"
             >
               <Text
-                fontSize="$1"
-                color="$color9"
-                fontFamily="$body"
+                fontSize="1"
+                color="color9"
+                fontFamily="body"
                 textTransform="uppercase"
                 letterSpacing={1}
               >
@@ -470,23 +469,23 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           ) : isCollapsed && hasDescendants ? (
             /* Collapsed via rail tap — re-expand */
             <View
-              onPress={() =>
-                setCollapsedIds((prev) => {
-                  const next = new Set(prev)
-                  next.delete(post.id)
-                  return next
-                })
-              }
-              cursor="pointer"
-              marginTop="$4"
-            >
-              <Text
-                fontSize="$1"
-                color="$color9"
-                fontFamily="$body"
-                textTransform="uppercase"
-                letterSpacing={1}
+                onPress={() =>
+                              setCollapsedIds((prev) => {
+                                const next = new Set(prev)
+                                next.delete(post.id)
+                                return next
+                              })
+                            }
+                cursor="pointer"
+                marginTop="4"
               >
+              <Text
+                  fontSize="1"
+                  color="color9"
+                  fontFamily="body"
+                  textTransform="uppercase"
+                  letterSpacing={1}
+                >
                 {post.descendant_count === 1
                   ? 'View 1 more reply'
                   : `View ${post.descendant_count} more replies`}
@@ -495,40 +494,40 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           ) : isExpanded && hasUnloaded ? (
             /* User-triggered expansion is active — allow collapsing */
             <View
-              onPress={() =>
-                setExpandedSubtreeIds((prev) => {
-                  const next = new Set(prev)
-                  next.delete(post.id)
-                  return next
-                })
-              }
-              cursor="pointer"
-              marginTop="$4"
-            >
+                  onPress={() =>
+                                setExpandedSubtreeIds((prev) => {
+                                  const next = new Set(prev)
+                                  next.delete(post.id)
+                                  return next
+                                })
+                              }
+                  cursor="pointer"
+                  marginTop="4"
+                >
               <Text
-                fontSize="$1"
-                color="$color9"
-                fontFamily="$body"
-                textTransform="uppercase"
-                letterSpacing={1}
-              >
+                    fontSize="1"
+                    color="color9"
+                    fontFamily="body"
+                    textTransform="uppercase"
+                    letterSpacing={1}
+                  >
                 Hide replies
               </Text>
             </View>
           ) : !isExpanded && hasUnloaded && !atCap ? (
             /* Unloaded descendants exist — offer to load via ThreadExpansion */
             <View
-              onPress={() => setExpandedSubtreeIds((prev) => new Set(prev).add(post.id))}
-              cursor="pointer"
-              marginTop="$4"
-            >
+                    onPress={() => setExpandedSubtreeIds((prev) => new Set(prev).add(post.id))}
+                    cursor="pointer"
+                    marginTop="4"
+                  >
               <Text
-                fontSize="$1"
-                color="$color9"
-                fontFamily="$body"
-                textTransform="uppercase"
-                letterSpacing={1}
-              >
+                      fontSize="1"
+                      color="color9"
+                      fontFamily="body"
+                      textTransform="uppercase"
+                      letterSpacing={1}
+                    >
                 {post.descendant_count === 1
                   ? 'View 1 more reply'
                   : `View ${post.descendant_count} more replies`}
@@ -541,7 +540,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             <View
               tag="ul"
               role="group"
-              marginTop="$6"
+              marginTop="6"
             >
               {/* Inline render when all descendants are loaded (allLoaded) */}
               {allLoaded
@@ -574,7 +573,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
             tag="li"
             role="treeitem"
             aria-level={depth + 1}
-            marginTop="$8"
+            marginTop="8"
             {...(ariaExpanded !== undefined ? { 'aria-expanded': ariaExpanded } : {})}
           >
             <XStack>
@@ -585,25 +584,25 @@ export default function ThreadView({ postId }: ThreadViewProps) {
                 data-depth={depth}
                 width={20}
                 borderLeftWidth={1}
-                borderLeftColor="$color4"
+                borderLeftColor="color4"
                 role="button"
                 aria-label={isCollapsed ? 'Expand subtree' : 'Collapse subtree'}
                 onPress={() =>
-                  setCollapsedIds((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(post.id)) {
-                      next.delete(post.id)
-                    } else {
-                      next.add(post.id)
-                    }
-                    return next
-                  })
-                }
+                                setCollapsedIds((prev) => {
+                                  const next = new Set(prev)
+                                  if (next.has(post.id)) {
+                                    next.delete(post.id)
+                                  } else {
+                                    next.add(post.id)
+                                  }
+                                  return next
+                                })
+                              }
               />
               {/* Post content — sibling to the rail, not a child, so clicks don't bubble up to rail */}
               <View
                 flex={1}
-                paddingLeft="$3"
+                paddingLeft="3"
               >
                 {innerContent}
               </View>
@@ -651,7 +650,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         maxWidth={720}
         marginHorizontal="auto"
         width="100%"
-        padding="$5"
+        padding="5"
       >
         <SkeletonRows />
       </View>
@@ -667,13 +666,13 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         maxWidth={720}
         marginHorizontal="auto"
         width="100%"
-        padding="$5"
+        padding="5"
       >
         <Text
-          fontSize="$2"
-          color="$color9"
+          fontSize="2"
+          color="color9"
           textAlign="center"
-          paddingVertical="$4"
+          paddingVertical="4"
         >
           Couldn&apos;t load this thread.
         </Text>
@@ -693,13 +692,13 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         maxWidth={720}
         marginHorizontal="auto"
         width="100%"
-        padding="$5"
+        padding="5"
       >
         <Text
-          fontSize="$3"
-          color="$color9"
+          fontSize="3"
+          color="color9"
           textAlign="center"
-          paddingVertical="$4"
+          paddingVertical="4"
         >
           This thread was removed.
         </Text>
@@ -715,45 +714,44 @@ export default function ThreadView({ postId }: ThreadViewProps) {
         <YStack
           key="collective-thread-body"
           transition="designEnter"
-          enterStyle={{ opacity: 0, y: 10 }}
-          opacity={1}
-          y={0}
+          opacity="1 enter:0"
+          y="0 enter:10px"
           maxWidth={720}
           marginHorizontal="auto"
           width="100%"
-          paddingHorizontal="$5"
-          paddingVertical="$8"
+          paddingHorizontal="5"
+          paddingVertical="8"
         >
           {/* Back to the room (or to the full thread when focused on a subthread) */}
           <View
             role="button"
             aria-label={
-              focusedFromRoot && focusedFromRoot !== postId
-                ? 'Back to full thread'
-                : 'Back to the room'
-            }
+                        focusedFromRoot && focusedFromRoot !== postId
+                          ? 'Back to full thread'
+                          : 'Back to the room'
+                      }
             onPress={() =>
-              router.push(
-                focusedFromRoot && focusedFromRoot !== postId
-                  ? threadHref(focusedFromRoot)
-                  : '/collective/dev'
-              )
-            }
+                        router.push(
+                          focusedFromRoot && focusedFromRoot !== postId
+                            ? threadHref(focusedFromRoot)
+                            : '/collective/dev'
+                        )
+                      }
             cursor="pointer"
-            marginBottom="$9"
+            marginBottom="9"
           >
             <XStack
               alignItems="center"
-              gap="$2"
+              gap="2"
             >
               <ArrowLeft
                 size={16}
-                color="$color9"
+                color="color9"
               />
               <Text
-                fontSize="$2"
-                color="$color9"
-                fontFamily="$body"
+                fontSize="2"
+                color="color9"
+                fontFamily="body"
               >
                 {focusedFromRoot && focusedFromRoot !== postId
                   ? 'Back to full thread'

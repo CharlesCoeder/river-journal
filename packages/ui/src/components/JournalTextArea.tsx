@@ -8,39 +8,23 @@ import type { GetProps } from 'tamagui'
 // 1. Create a base styled component for the text area.
 // This is where you define the core, reusable styles and variants.
 const StyledJournalArea = styled(TextArea, {
-  name: 'JournalTextArea', // Giving it a name allows for component-specific sub-themes.
+  name: 'JournalTextArea',
   flex: 1,
-
   // Default styles are defined here.
-  fontSize: '$5',
-  lineHeight: 32,
-  padding: '$3',
-  borderRadius: '$4',
-  borderWidth: 0,
-
-  // Ensure text starts at the top on both iOS and Android
-  textAlignVertical: 'top',
-
-  // Default theme-aware styles. These will automatically update with the theme.
-  backgroundColor: '$backgroundHover',
-  placeholderTextColor: '$color',
-
+// Example of adding a responsive style directly to the definition.
+fontSize: "5 sm:4 md:5",
+  lineHeight: "32px",
+  padding: "3 sm:4 md:4",
+  borderRadius: "4",
   // Focus state - remove borders and outline
-  focusStyle: {
-    borderWidth: 0,
-    outlineWidth: 0,
-    outlineStyle: 'none',
-  },
-
-  // Example of adding a responsive style directly to the definition.
-  $sm: {
-    fontSize: '$4',
-    padding: '$4',
-  },
-  $md: {
-    fontSize: '$5',
-    padding: '$4',
-  },
+borderWidth: "0px focus:0px",
+  // Default theme-aware styles. These will automatically update with the theme.
+backgroundColor: "background-hover",
+  placeholderTextColor: "color",
+  outlineWidth: "focus:0px",
+  outlineStyle: "focus:none",
+  // Ensure text starts at the top on both iOS and Android
+  textAlignVertical: 'top'
 })
 
 // 2. Define the props for the final component.

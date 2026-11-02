@@ -29,10 +29,9 @@ export function LapsedPrompt() {
 
   return (
     <Text
-      fontFamily="$journal"
-      fontSize={20}
-      $sm={{ fontSize: 18 }}
-      color="$color"
+      fontFamily="journal"
+      fontSize="20px sm:18px"
+      color="color"
       cursor="pointer"
       onPress={dismiss}
       role="button"

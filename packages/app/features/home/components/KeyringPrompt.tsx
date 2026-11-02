@@ -59,26 +59,26 @@ export function KeyringPrompt() {
 
   return (
     <Card
-      padding="$4"
-      backgroundColor="$color2"
-      borderRadius="$4"
+      padding="4"
+      backgroundColor="color2"
+      borderRadius="4"
       borderWidth={1}
-      borderColor="$color4"
+      borderColor="color4"
       width="100%"
     >
-      <YStack gap="$3">
-        <YStack gap="$1.5">
+      <YStack gap="3">
+        <YStack gap="1-5">
           <Text
-            fontSize="$4"
-            fontFamily="$body"
+            fontSize="4"
+            fontFamily="body"
             fontWeight="700"
           >
             Store encryption key in keychain?
           </Text>
           <Text
-            fontSize="$3"
-            fontFamily="$body"
-            color="$color11"
+            fontSize="3"
+            fontFamily="body"
+            color="color11"
           >
             Save your encryption key so you don't have to enter your password every time you open
             the app on this device.
@@ -89,41 +89,41 @@ export function KeyringPrompt() {
 
         {isPersisting && (
           <Text
-            fontSize="$3"
-            fontFamily="$body"
-            color="$color11"
+            fontSize="3"
+            fontFamily="body"
+            color="color11"
           >
             Storing your key — please keep the app open until this completes…
           </Text>
         )}
 
         {persistError && (
-          <YStack gap="$2">
+          <YStack gap="2">
             <Text
-              fontSize="$3"
-              fontFamily="$body"
-              color="$red10"
+              fontSize="3"
+              fontFamily="body"
+              color="red10"
             >
               {persistError.message}
             </Text>
             <XStack
-              gap="$3"
+              gap="3"
               justifyContent="flex-end"
             >
               <Button
                 testID="keyring-dismiss"
                 variant="outlined"
-                size="$3"
+                size="3"
+                fontFamily="body"
                 onPress={handleDismiss}
-                fontFamily="$body"
               >
                 Dismiss
               </Button>
               <Button
                 testID="keyring-retry"
-                size="$3"
+                size="3"
+                fontFamily="body"
                 onPress={handleAccept}
-                fontFamily="$body"
               >
                 Retry
               </Button>
@@ -133,23 +133,23 @@ export function KeyringPrompt() {
 
         {!isPersisting && !persistError && (
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
           >
             <Button
               testID="keyring-decline"
               variant="outlined"
-              size="$3"
+              size="3"
+              fontFamily="body"
               onPress={handleDecline}
-              fontFamily="$body"
             >
               Not now
             </Button>
             <Button
               testID="keyring-accept"
-              size="$3"
+              size="3"
+              fontFamily="body"
               onPress={handleAccept}
-              fontFamily="$body"
             >
               Save to keychain
             </Button>

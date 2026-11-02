@@ -208,8 +208,8 @@ export function FlagAffordance({
             role="button"
             aria-label={triggerAriaLabel}
             aria-haspopup="menu"
-            width="$4"
-            height="$4"
+            width="4"
+            height="4"
             alignItems="center"
             justifyContent="center"
             opacity={menuOpen ? 1 : 0.6}
@@ -219,9 +219,9 @@ export function FlagAffordance({
           </View>
         </Popover.Trigger>
         <Popover.Content
-          padding="$2"
-          backgroundColor="$background"
-          borderColor="$color3"
+          padding="2"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           elevate
         >
@@ -231,8 +231,8 @@ export function FlagAffordance({
                 tag="button"
                 role="menuitem"
                 onPress={handleFocus}
-                paddingHorizontal="$3"
-                paddingVertical="$2"
+                paddingHorizontal="3"
+                paddingVertical="2"
               >
                 <Text>Focus</Text>
               </View>
@@ -242,8 +242,8 @@ export function FlagAffordance({
                 tag="button"
                 role="menuitem"
                 onPress={openReportDialog}
-                paddingHorizontal="$3"
-                paddingVertical="$2"
+                paddingHorizontal="3"
+                paddingVertical="2"
               >
                 <Text>Report</Text>
               </View>
@@ -253,8 +253,8 @@ export function FlagAffordance({
                 tag="button"
                 role="menuitem"
                 onPress={openBlockDialog}
-                paddingHorizontal="$3"
-                paddingVertical="$2"
+                paddingHorizontal="3"
+                paddingVertical="2"
               >
                 <Text>Block this user</Text>
               </View>
@@ -264,8 +264,8 @@ export function FlagAffordance({
                 tag="button"
                 role="menuitem"
                 onPress={openDeleteDialog}
-                paddingHorizontal="$3"
-                paddingVertical="$2"
+                paddingHorizontal="3"
+                paddingVertical="2"
               >
                 <Text>Delete</Text>
               </View>
@@ -282,31 +282,30 @@ export function FlagAffordance({
         <Dialog.Portal>
           <Dialog.Overlay
             key="overlay"
-            backgroundColor="$shadow6"
+            backgroundColor="shadow6"
             animation={animationToken}
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
+            opacity="enter:0 exit:0"
           />
           <Dialog.Content
             key="content"
-            gap="$3"
-            padding="$4"
+            gap="3"
+            padding="4"
             maxWidth={420}
             width="90%"
-            backgroundColor="$background"
-            borderColor="$color3"
+            backgroundColor="background"
+            borderColor="color3"
             borderWidth={1}
             animation={animationToken}
           >
             <Dialog.Title
-              fontSize="$5"
-              fontFamily="$body"
+              fontSize="5"
+              fontFamily="body"
             >
               Report this post
             </Dialog.Title>
             <Dialog.Description
-              fontSize="$2"
-              color="$color11"
+              fontSize="2"
+              color="color11"
             >
               Reports are confidential. Reported posts disappear from your feed.
             </Dialog.Description>
@@ -316,12 +315,12 @@ export function FlagAffordance({
               onValueChange={(v) => setSelectedReason(v as ReasonCode)}
               required
             >
-              <YStack gap="$2">
+              <YStack gap="2">
                 {REPORT_REASONS.map(({ code, label }) => (
                   <XStack
                     key={code}
                     alignItems="center"
-                    gap="$2"
+                    gap="2"
                   >
                     <RadioGroup.Item
                       value={code}
@@ -329,7 +328,7 @@ export function FlagAffordance({
                     />
                     <Label
                       htmlFor={`reason-${code}`}
-                      fontSize="$3"
+                      fontSize="3"
                     >
                       {label}
                     </Label>
@@ -341,8 +340,8 @@ export function FlagAffordance({
             {/* Disclosure microcopy — placeholder route; link deferred */}
             {/* TODO(post-3-12): link to /about/guidelines once that route lands */}
             <Text
-              fontSize="$1"
-              color="$color9"
+              fontSize="1"
+              color="color9"
             >
               Confirm this post violates the community guidelines.
             </Text>
@@ -354,14 +353,14 @@ export function FlagAffordance({
               maxLength={500}
               multiline
               numberOfLines={3}
-              fontSize="$2"
-              borderColor="$color3"
+              fontSize="2"
+              borderColor="color3"
             />
 
             <XStack
-              gap="$3"
+              gap="3"
               justifyContent="flex-end"
-              marginTop="$3"
+              marginTop="3"
             >
               <ExpandingLineButton onPress={handleCancel}>Cancel</ExpandingLineButton>
               <ExpandingLineButton
@@ -382,39 +381,38 @@ export function FlagAffordance({
         <Dialog.Portal>
           <Dialog.Overlay
             key="delete-overlay"
-            backgroundColor="$shadow6"
+            backgroundColor="shadow6"
             animation={animationToken}
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
+            opacity="enter:0 exit:0"
           />
           <Dialog.Content
             key="delete-content"
-            gap="$3"
-            padding="$4"
+            gap="3"
+            padding="4"
             maxWidth={420}
             width="90%"
-            backgroundColor="$background"
-            borderColor="$color3"
+            backgroundColor="background"
+            borderColor="color3"
             borderWidth={1}
             animation={animationToken}
           >
             <Dialog.Title
-              fontSize="$5"
-              fontFamily="$body"
+              fontSize="5"
+              fontFamily="body"
             >
               Delete this post?
             </Dialog.Title>
             <Dialog.Description
-              fontSize="$2"
-              color="$color11"
+              fontSize="2"
+              color="color11"
             >
               {"The text will be replaced with '[deleted]'. Replies under it will remain visible."}
             </Dialog.Description>
 
             <XStack
-              gap="$3"
+              gap="3"
               justifyContent="flex-end"
-              marginTop="$3"
+              marginTop="3"
             >
               <ExpandingLineButton onPress={handleDeleteCancel}>Cancel</ExpandingLineButton>
               <ExpandingLineButton onPress={handleDeleteConfirm}>Delete</ExpandingLineButton>

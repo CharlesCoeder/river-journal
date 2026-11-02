@@ -85,10 +85,10 @@ export default function YourPostsScreen() {
       <YStack>
         <View onPress={() => yourPosts.refetch()}>
           <Text
-            fontSize="$2"
-            color="$color9"
+            fontSize="2"
+            color="color9"
             textAlign="center"
-            paddingVertical="$4"
+            paddingVertical="4"
           >
             Couldn&apos;t load your posts. Pull to retry.
           </Text>
@@ -117,9 +117,8 @@ export default function YourPostsScreen() {
         <YStack
           key="collective-your-posts-body"
           transition="designEnter"
-          enterStyle={{ opacity: 0, y: 10 }}
-          opacity={1}
-          y={0}
+          opacity="1 enter:0"
+          y="0 enter:10px"
           width="100%"
           maxWidth={720}
           marginHorizontal="auto"
@@ -127,10 +126,10 @@ export default function YourPostsScreen() {
           {/* Error with cached data — show refresh error strip (highest precedence) */}
           {showErrorStrip ? (
             <Text
-              fontSize="$1"
-              color="$color9"
+              fontSize="1"
+              color="color9"
               textAlign="center"
-              paddingVertical="$2"
+              paddingVertical="2"
             >
               Couldn&apos;t refresh. Showing cached posts.
             </Text>
@@ -142,9 +141,9 @@ export default function YourPostsScreen() {
           The phrase "last synced" uniquely identifies this strip. */}
           {showOfflineStrip ? (
             <Text
-              fontSize="$1"
-              color="$color9"
-              paddingVertical="$2"
+              fontSize="1"
+              color="color9"
+              paddingVertical="2"
               textAlign="center"
             >
               Last synced {formatTimeAgo(yourPosts.dataUpdatedAt)}
@@ -155,19 +154,19 @@ export default function YourPostsScreen() {
           {showEmptyState ? (
             <YStack>
               <Text
-                fontFamily="$journal"
-                fontSize="$5"
-                color="$color11"
+                fontFamily="journal"
+                fontSize="5"
+                color="color11"
                 textAlign="center"
-                marginTop="$8"
+                marginTop="8"
               >
                 You haven&apos;t posted yet.
               </Text>
               <Text
-                fontSize="$2"
-                color="$color9"
+                fontSize="2"
+                color="color9"
                 textAlign="center"
-                marginTop="$2"
+                marginTop="2"
               >
                 Cross 500 today and share something with the Collective.
               </Text>
@@ -192,7 +191,7 @@ export default function YourPostsScreen() {
               />
               {index < allPosts.length - 1 ? (
                 <Separator
-                  borderColor="$color3"
+                  borderColor="color3"
                   borderBottomWidth={1}
                 />
               ) : null}

@@ -26,8 +26,8 @@ function StaleTabNotice() {
       flex={1}
       alignItems="center"
       justifyContent="center"
-      gap="$3"
-      padding="$4"
+      gap="3"
+      padding="4"
     >
       <Text
         fontWeight="600"
@@ -53,8 +53,8 @@ function BlockedByOtherTabNotice() {
       flex={1}
       alignItems="center"
       justifyContent="center"
-      gap="$3"
-      padding="$4"
+      gap="3"
+      padding="4"
     >
       <Text
         fontWeight="600"

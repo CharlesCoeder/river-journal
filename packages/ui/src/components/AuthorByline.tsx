@@ -82,9 +82,9 @@ export function AuthorByline({
     >
       <Text
         numberOfLines={1}
-        fontSize="$1"
-        color="$color9"
-        fontFamily="$body"
+        fontSize="1"
+        color="color9"
+        fontFamily="body"
       >
         {nameSlot}
         {' · '}
@@ -92,9 +92,9 @@ export function AuthorByline({
         {tenureLabel ? ' · ' : null}
         {tenureLabel ? (
           <Text
-            fontSize="$1"
-            color="$color9"
-            fontFamily="$body"
+            fontSize="1"
+            color="color9"
+            fontFamily="body"
             fontStyle="italic"
           >
             {tenureLabel}

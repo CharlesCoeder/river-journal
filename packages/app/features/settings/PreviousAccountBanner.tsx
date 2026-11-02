@@ -89,33 +89,33 @@ export function PreviousAccountBanner() {
   return (
     <YStack
       testID="previous-account-banner"
-      gap="$3"
-      padding="$4"
+      gap="3"
+      padding="4"
       borderWidth={1}
-      borderColor="$color5"
-      borderRadius="$4"
-      backgroundColor="$color2"
+      borderColor="color5"
+      borderRadius="4"
+      backgroundColor="color2"
     >
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={11}
         textTransform="uppercase"
         letterSpacing={2}
-        color="$color8"
+        color="color8"
       >
         Previous Account on This Device
       </Text>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={14}
-        color="$color"
-        lineHeight={20}
+        color="color"
+        lineHeight="20px"
       >
         We found {summary} from a different account still stored on this device. Choose what you
         want to do:
       </Text>
       <YStack
-        gap="$2"
+        gap="2"
         alignItems="flex-start"
       >
         <ExpandingLineButton
@@ -152,50 +152,46 @@ export function PreviousAccountBanner() {
           <AlertDialog.Overlay
             key="overlay"
             transition="quick"
-            opacity={0.4}
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
+            opacity="0.4 enter:0 exit:0"
           />
           <AlertDialog.Content
             key="content"
             testID="previous-account-delete-confirm"
-            transition={['medium', { opacity: { overshootClamping: true } }]}
-            enterStyle={{ y: -10, opacity: 0 }}
-            exitStyle={{ y: 10, opacity: 0 }}
-            y={0}
-            opacity={1}
-            backgroundColor="$background"
-            borderRadius="$6"
+            transition={{ preset: 'medium', opacity: { preset: 'medium', spring: { overshootClamping: true } } }}
+            y="0 enter:-10px exit:10px"
+            opacity="1 enter:0 exit:0"
+            backgroundColor="background"
+            borderRadius="6"
             borderWidth={1}
-            borderColor="$color5"
-            padding="$5"
+            borderColor="color5"
+            padding="5"
             maxWidth={440}
             width="90%"
           >
-            <YStack gap="$4">
+            <YStack gap="4">
               <AlertDialog.Title
-                fontFamily="$body"
-                fontSize="$6"
+                fontFamily="body"
+                fontSize="6"
                 fontWeight="700"
               >
                 Delete previous account&apos;s data?
               </AlertDialog.Title>
               <AlertDialog.Description
-                fontFamily="$body"
-                fontSize="$4"
-                color="$color"
+                fontFamily="body"
+                fontSize="4"
+                color="color"
               >
                 This will permanently remove {summary} from this device. The data will not be
                 uploaded or transferred. This cannot be undone.
               </AlertDialog.Description>
               <XStack
-                gap="$3"
+                gap="3"
                 justifyContent="flex-end"
               >
                 <AlertDialog.Cancel asChild>
                   <Button
                     variant="outlined"
-                    fontFamily="$body"
+                    fontFamily="body"
                   >
                     Cancel
                   </Button>
@@ -203,7 +199,7 @@ export function PreviousAccountBanner() {
                 <AlertDialog.Action asChild>
                   <Button
                     onPress={handleConfirmDelete}
-                    fontFamily="$body"
+                    fontFamily="body"
                     testID="previous-account-confirm-delete"
                   >
                     Delete

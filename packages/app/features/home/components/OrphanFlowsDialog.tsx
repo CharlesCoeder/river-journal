@@ -47,53 +47,49 @@ export function OrphanFlowsDialog() {
         <AlertDialog.Overlay
           key="overlay"
           transition="quick"
-          opacity={0.4}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="0.4 enter:0 exit:0"
         />
         <AlertDialog.Content
           key="content"
-          transition={['medium', { opacity: { overshootClamping: true } }]}
-          enterStyle={{ y: -10, opacity: 0 }}
-          exitStyle={{ y: 10, opacity: 0 }}
-          y={0}
-          opacity={1}
-          backgroundColor="$background"
-          borderRadius="$6"
+          transition={{ preset: 'medium', opacity: { preset: 'medium', spring: { overshootClamping: true } } }}
+          y="0 enter:-10px exit:10px"
+          opacity="1 enter:0 exit:0"
+          backgroundColor="background"
+          borderRadius="6"
           borderWidth={1}
-          borderColor="$color5"
-          padding="$5"
+          borderColor="color5"
+          padding="5"
           maxWidth={400}
           width="90%"
         >
-          <YStack gap="$4">
+          <YStack gap="4">
             <AlertDialog.Title
-              fontFamily="$body"
-              fontSize="$6"
+              fontFamily="body"
+              fontSize="6"
               fontWeight="700"
             >
               Sync local writing?
             </AlertDialog.Title>
 
             <AlertDialog.Description
-              fontFamily="$body"
-              fontSize="$4"
-              color="$color"
+              fontFamily="body"
+              fontSize="4"
+              color="color"
             >
               You have {flowCount} local writing session{flowCount !== 1 ? 's' : ''}. Would you like
               to sync {flowCount !== 1 ? 'them' : 'it'} to your account?
             </AlertDialog.Description>
 
             <Text
-              fontFamily="$body"
-              fontSize="$3"
-              color="$color11"
+              fontFamily="body"
+              fontSize="3"
+              color="color11"
             >
               Local-only sessions stay on this device and are never uploaded.
             </Text>
 
             <XStack
-              gap="$3"
+              gap="3"
               justifyContent="flex-end"
             >
               <AlertDialog.Cancel asChild>
@@ -101,7 +97,7 @@ export function OrphanFlowsDialog() {
                   variant="outlined"
                   onPress={() => handleResolve(false)}
                   disabled={isResolving}
-                  fontFamily="$body"
+                  fontFamily="body"
                 >
                   Keep local only
                 </Button>
@@ -111,7 +107,7 @@ export function OrphanFlowsDialog() {
                 <Button
                   onPress={() => handleResolve(true)}
                   disabled={isResolving}
-                  fontFamily="$body"
+                  fontFamily="body"
                 >
                   Sync them
                 </Button>

@@ -122,9 +122,9 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
       marginBottom={variant === 'browse' ? '$8' : 0}
     >
       <XStack
-        gap="$4"
+        columnGap="4"
+        rowGap="2"
         flexWrap="wrap"
-        rowGap="$2"
       >
         {WORD_LINK_ITEMS.map((item) => {
           const active = isActive(item)
@@ -143,12 +143,14 @@ export function WordLinkNav({ variant, currentRoute }: WordLinkNavProps) {
               aria-current={active ? 'page' : undefined}
               data-active={active ? 'true' : undefined}
               cursor="pointer"
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={fontSize}
               letterSpacing={0.5}
               color={color}
               hoverStyle={reduceMotion ? undefined : { color: '$color' }}
-              focusVisibleStyle={{ outlineWidth: 2, outlineStyle: 'solid', outlineColor: '$color' }}
+              outlineWidth="focus-visible:2px"
+              outlineStyle="focus-visible:solid"
+              outlineColor="focus-visible:color"
               textDecorationLine="none"
               onClick={(e: any) => handlePress(e, item)}
             >

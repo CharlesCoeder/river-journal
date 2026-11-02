@@ -28,10 +28,10 @@ export function GraceDayInventory() {
       role="status"
       aria-live="polite"
     >
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$body"
-          fontSize="$3"
+          fontFamily="body"
+          fontSize="3"
           color={color}
         >
           {text}

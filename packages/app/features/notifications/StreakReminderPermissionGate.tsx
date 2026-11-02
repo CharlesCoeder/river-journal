@@ -150,42 +150,41 @@ export function StreakReminderPermissionGate() {
       <Dialog.Portal>
         <Dialog.Overlay
           key="overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={420}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             Daily reminder
           </Dialog.Title>
 
-          <YStack gap="$2">
+          <YStack gap="2">
             <Text
-              fontSize="$3"
-              color="$color12"
+              fontSize="3"
+              color="color12"
             >
               {PROMPT_COPY}
             </Text>
           </YStack>
 
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             <ExpandingLineButton
               size="cta"

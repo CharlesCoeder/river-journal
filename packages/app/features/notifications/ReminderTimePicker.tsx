@@ -48,7 +48,7 @@ export function ReminderTimePicker({ value, onChange }: ReminderTimePickerProps)
 
   return (
     <XStack
-      gap="$3"
+      gap="3"
       alignItems="center"
     >
       <ExpandingLineButton
@@ -59,9 +59,9 @@ export function ReminderTimePicker({ value, onChange }: ReminderTimePickerProps)
         {pad(hour)}
       </ExpandingLineButton>
       <Text
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={24}
-        color="$color8"
+        color="color8"
       >
         :
       </Text>

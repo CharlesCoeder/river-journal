@@ -314,7 +314,7 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
   return (
     <ScrollView
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
       contentContainerStyle={{ flexGrow: 1 }}
     >
       <AnimatePresence>
@@ -322,16 +322,13 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
           <YStack
             key="auth-content"
             transition="designModal"
-            enterStyle={{ opacity: 0, scale: 0.98 }}
-            opacity={1}
-            scale={1}
+            opacity="1 enter:0"
+            scale="1 enter:0.98"
             flex={1}
-            paddingHorizontal="$4"
-            paddingTop="$4"
+            paddingHorizontal="4 sm:6 md:12"
+            paddingTop="4 md:12"
             paddingBottom={96}
             alignItems="center"
-            $sm={{ paddingHorizontal: '$6' }}
-            $md={{ paddingHorizontal: '$12', paddingTop: '$12' }}
           >
             <WordLinkNav variant="browse" />
             {/* Cancel button — top right, wider than form */}
@@ -341,13 +338,12 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
               justifyContent="flex-end"
             >
               <Text
-                fontFamily="$body"
+                fontFamily="body"
                 fontSize={12}
                 letterSpacing={3}
                 textTransform="uppercase"
-                color="$color8"
+                color="color8 hover:color"
                 cursor="pointer"
-                hoverStyle={{ color: '$color' }}
                 onPress={handleBack}
               >
                 Cancel
@@ -357,23 +353,22 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
             {/* Header */}
             <YStack
               alignItems="center"
-              gap="$3"
+              gap="3"
               paddingTop={48}
               marginBottom={48}
             >
               <Text
-                fontFamily="$journal"
-                fontSize={30}
-                $md={{ fontSize: 36 }}
-                color="$color"
+                fontFamily="journal"
+                fontSize="30px md:36px"
+                color="color"
                 letterSpacing={-0.5}
               >
                 Your Journal
               </Text>
               <Text
-                fontFamily="$body"
+                fontFamily="body"
                 fontSize={16}
-                color="$color6"
+                color="color6"
                 textAlign="center"
               >
                 {gateContext === 'collective'
@@ -385,15 +380,15 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
             <YStack
               width="100%"
               maxWidth={384}
-              gap="$6"
+              gap="6"
               alignItems="center"
             >
               {/* Tab bar */}
               <XStack
                 width="100%"
                 borderBottomWidth={1}
-                borderColor="$color4"
-                marginBottom="$4"
+                borderColor="color4"
+                marginBottom="4"
               >
                 <TabButton
                   label="Log In"
@@ -413,14 +408,13 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                 {isSignup && (
                   <YStack
                     transition="designModal"
-                    enterStyle={{ opacity: 0 }}
-                    opacity={1}
-                    marginBottom="$5"
-                    gap="$2"
+                    opacity="1 enter:0"
+                    marginBottom="5"
+                    gap="2"
                   >
                     <XStack
                       alignItems="center"
-                      gap="$3"
+                      gap="3"
                     >
                       {/* Wrapper carries the nudge pulse so the checkbox's own
                           styling stays declarative. */}
@@ -433,18 +427,18 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                           onCheckedChange={handleAgeAttestedChange}
                           accessibilityLabel="I confirm I am 13 or older."
                           testID="age-attestation-checkbox"
-                          size="$4"
+                          size="4"
                           borderRadius={0}
                           borderWidth={1}
-                          borderColor={attestError ? '$color' : '$color6'}
-                          backgroundColor={ageAttested ? '$color' : 'transparent'}
+                          borderColor={`${attestError ? "color" : "color6"}`}
+                          backgroundColor={`${ageAttested ? "color" : "transparent"}`}
                           disabled={isLoading}
                         />
                       </View>
                       <Text
-                        fontFamily="$body"
+                        fontFamily="body"
                         fontSize={13}
-                        color="$color6"
+                        color="color6"
                         cursor="pointer"
                         onPress={() => handleAgeAttestedChange(!ageAttested)}
                       >
@@ -454,8 +448,8 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                     {attestError && (
                       <Text
                         fontSize={12}
-                        color="$color"
-                        fontFamily="$body"
+                        color="color"
+                        fontFamily="body"
                       >
                         Please confirm you're 13 or older to continue.
                       </Text>
@@ -477,9 +471,9 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                   {errors.email && (
                     <Text
                       fontSize={12}
-                      color="$color"
-                      fontFamily="$body"
-                      marginTop="$1"
+                      color="color"
+                      fontFamily="body"
+                      marginTop="1"
                     >
                       {errors.email}
                     </Text>
@@ -487,7 +481,7 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                 </YStack>
 
                 {/* Password */}
-                <YStack marginTop="$5">
+                <YStack marginTop="5">
                   <DesignInput
                     value={password}
                     onChangeText={handlePasswordChange}
@@ -503,9 +497,9 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                   {errors.password && (
                     <Text
                       fontSize={12}
-                      color="$color"
-                      fontFamily="$body"
-                      marginTop="$1"
+                      color="color"
+                      fontFamily="body"
+                      marginTop="1"
                     >
                       {errors.password}
                     </Text>
@@ -537,9 +531,9 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                     {errors.confirmPassword && (
                       <Text
                         fontSize={12}
-                        color="$color"
-                        fontFamily="$body"
-                        marginTop="$1"
+                        color="color"
+                        fontFamily="body"
+                        marginTop="1"
                       >
                         {errors.confirmPassword}
                       </Text>
@@ -551,10 +545,10 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                 {errors.general && (
                   <Text
                     fontSize={12}
-                    color="$color"
-                    fontFamily="$body"
+                    color="color"
+                    fontFamily="body"
                     textAlign="center"
-                    marginTop="$5"
+                    marginTop="5"
                   >
                     {errors.general}
                   </Text>
@@ -564,25 +558,25 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                 <XStack
                   onPress={handleSubmitPress}
                   borderWidth={1}
-                  borderColor={canSubmit ? '$color' : '$color3'}
-                  paddingVertical="$3"
+                  borderColor={`${canSubmit ? "color" : "color3"}`}
+                  paddingVertical="3"
                   justifyContent="center"
                   cursor={canSubmit ? 'pointer' : 'not-allowed'}
                   hoverStyle={canSubmit ? { backgroundColor: '$color' } : {}}
-                  marginTop="$5"
+                  marginTop="5"
                   group={'submitBtn' as never}
                 >
                   {isLoading ? (
                     <Spinner />
                   ) : (
                     <Text
-                      fontFamily="$body"
-                      fontSize={12}
-                      letterSpacing={3}
-                      textTransform="uppercase"
-                      color={canSubmit ? '$color' : '$color7'}
-                      {...(canSubmit ? { '$group-submitBtn-hover': { color: '$background' } } : {})}
-                    >
+                        fontFamily="body"
+                        fontSize={12}
+                        letterSpacing={3}
+                        textTransform="uppercase"
+                        color={`${canSubmit ? "color" : "color7"}`}
+                        {...(canSubmit ? { '$group-submitBtn-hover': { color: '$background' } } : {})}
+                      >
                       {isSignup ? 'Create Account' : 'Log In'}
                     </Text>
                   )}
@@ -591,34 +585,34 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                 {/* "or" divider */}
                 <XStack
                   alignItems="center"
-                  gap="$3"
+                  gap="3"
                   width="100%"
-                  marginTop="$5"
+                  marginTop="5"
                 >
                   <View
                     flex={1}
                     height={1}
-                    backgroundColor="$color3"
+                    backgroundColor="color3"
                   />
                   <Text
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={10}
                     letterSpacing={3}
                     textTransform="uppercase"
-                    color="$color7"
+                    color="color7"
                   >
                     or
                   </Text>
                   <View
                     flex={1}
                     height={1}
-                    backgroundColor="$color3"
+                    backgroundColor="color3"
                   />
                 </XStack>
 
                 {/* Google OAuth */}
                 <YStack
-                  marginTop="$5"
+                  marginTop="5"
                   width="100%"
                 >
                   <GoogleSignInButton
@@ -644,22 +638,21 @@ function TabButton({
   return (
     <XStack
       flex={1}
-      paddingBottom="$2"
+      paddingBottom="2"
       justifyContent="center"
       alignItems="center"
       borderBottomWidth={isActive ? 2 : 0}
-      borderColor="$color"
+      borderColor="color"
       cursor="pointer"
       onPress={onPress}
     >
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={12}
         letterSpacing={3}
         textTransform="uppercase"
         fontWeight={isActive ? '500' : '400'}
-        color={isActive ? '$color' : '$color8'}
-        hoverStyle={{ color: '$color' }}
+        color={`${isActive ? "color" : "color8"} hover:color`}
       >
         {label}
       </Text>

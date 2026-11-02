@@ -232,7 +232,7 @@ export function CelebrationScreen() {
   return (
     <ScrollView
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
       contentContainerStyle={{ flexGrow: 1 }}
       onLayout={onScrollViewLayout}
     >
@@ -241,20 +241,18 @@ export function CelebrationScreen() {
         {mounted && (
           <YStack
             key="celebration-content"
-            // dialog semantics on the outer variant-wrapping stack
             tag="div"
             role="dialog"
             aria-modal={true}
             {...(effectiveVariant === 'handoff'
-              ? { 'aria-labelledby': 'celebration-wordcount' }
-              : { 'aria-label': 'Celebration' })}
+                        ? { 'aria-labelledby': 'celebration-wordcount' }
+                        : { 'aria-label': 'Celebration' })}
             transition={outerTransition as any}
-            enterStyle={{ opacity: 0 }}
-            opacity={1}
+            opacity="1 enter:0"
             width="100%"
             maxWidth={672}
             alignSelf="center"
-            paddingHorizontal="$4"
+            paddingHorizontal="4"
             minHeight={heroMinHeight}
             justifyContent="center"
             alignItems="center"
@@ -266,33 +264,32 @@ export function CelebrationScreen() {
                 <YStack
                   key="celebration-center"
                   transition={innerTransition as any}
-                  enterStyle={{ opacity: 0, y: 30 }}
-                  opacity={1}
-                  y={0}
+                  opacity="1 enter:0"
+                  y="0 enter:30px"
                   alignItems="center"
-                  gap="$6"
+                  gap="6"
                 >
                   {/* This flow's word count — serif $8; id for aria-labelledby.
                       The optional line beneath is the DAY's running total, a
                       different number, and is labelled as such. */}
                   <YStack
                     alignItems="center"
-                    gap="$2"
+                    gap="2"
                   >
                     <Text
                       id="celebration-wordcount"
-                      fontFamily="$journal"
-                      fontSize="$8"
-                      color="$color"
+                      fontFamily="journal"
+                      fontSize="8"
+                      color="color"
                       letterSpacing={-0.5}
                     >
                       {wordCount} words.
                     </Text>
                     {showDayTotal && (
                       <Text
-                        fontFamily="$body"
+                        fontFamily="body"
                         fontSize={13}
-                        color="$color8"
+                        color="color8"
                         letterSpacing={0.5}
                       >
                         {dayTotalWords} words today.
@@ -302,22 +299,22 @@ export function CelebrationScreen() {
 
                   {/* Streak day — Outfit sans $4 */}
                   <Text
-                    fontFamily="$body"
-                    fontSize="$4"
-                    color="$color"
+                    fontFamily="body"
+                    fontSize="4"
+                    color="color"
                   >
                     Day {currentStreak}.
                   </Text>
 
                   {/* Collective microcopy + Visit CTA */}
                   <XStack
-                    gap="$3"
+                    gap="3"
                     alignItems="center"
                   >
                     <Text
-                      fontFamily="$body"
+                      fontFamily="body"
                       fontSize={14}
-                      color="$color8"
+                      color="color8"
                       letterSpacing={0.5}
                     >
                       The Collective is open.
@@ -366,48 +363,47 @@ export function CelebrationScreen() {
                       <YStack
                         onLayout={onNudgeLayout}
                         borderWidth={1}
-                        borderColor="$color3"
-                        borderRadius="$2"
-                        padding="$5"
+                        borderColor="color3"
+                        borderRadius="2"
+                        padding="5"
                         alignItems="center"
-                        gap="$3"
+                        gap="3"
                       >
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={12}
-                          color="$color8"
+                          color="color8"
                           textAlign="center"
-                          lineHeight={20}
+                          lineHeight="20px"
                         >
                           Your writing is saved on this device. Create an account to sync across
                           devices and keep it safe.
                         </Text>
                         <XStack
-                          gap="$5"
-                          paddingTop="$2"
+                          gap="5"
+                          paddingTop="2"
                         >
                           <Text
-                            fontFamily="$body"
+                            fontFamily="body"
                             fontSize={9}
                             letterSpacing={2.5}
                             textTransform="uppercase"
-                            color="$color7"
+                            color="color7 hover:color8"
                             cursor="pointer"
-                            hoverStyle={{ color: '$color8' }}
                             onPress={() => setNudgeDismissed(true)}
                           >
                             Dismiss
                           </Text>
                           <Text
-                            fontFamily="$body"
+                            fontFamily="body"
                             fontSize={9}
                             letterSpacing={2.5}
                             textTransform="uppercase"
-                            color="$color"
+                            color="color"
                             cursor="pointer"
-                            hoverStyle={{ opacity: 0.7 }}
+                            opacity="hover:0.7"
                             borderBottomWidth={1}
-                            borderColor="$color5"
+                            borderColor="color5"
                             paddingBottom={1}
                             onPress={handleCreateAccount}
                           >
@@ -428,11 +424,10 @@ export function CelebrationScreen() {
                 <YStack
                   key="celebration-center-quieter"
                   transition={innerTransition as any}
-                  enterStyle={{ opacity: 0, y: 30 }}
-                  opacity={1}
-                  y={0}
+                  opacity="1 enter:0"
+                  y="0 enter:30px"
                   alignItems="center"
-                  gap="$6"
+                  gap="6"
                 >
                   {/* Tap-to-dismiss is deliberately gone: the saved flow now sits
                       below the fold, and a screen-sized dismiss target next to a
@@ -440,13 +435,13 @@ export function CelebrationScreen() {
                       Done below is the way out. */}
                   <YStack
                     alignItems="center"
-                    gap="$2"
+                    gap="2"
                   >
                     {/* THIS flow's word count — body sans; aria-live announces it */}
                     <Text
-                      fontFamily="$body"
+                      fontFamily="body"
                       fontSize={18}
-                      color="$color"
+                      color="color"
                       letterSpacing={0.5}
                       aria-live="polite"
                       role="status"
@@ -456,9 +451,9 @@ export function CelebrationScreen() {
                     {/* The day's running total — a different number, said plainly */}
                     {showDayTotal && (
                       <Text
-                        fontFamily="$body"
+                        fontFamily="body"
                         fontSize={13}
-                        color="$color8"
+                        color="color8"
                         letterSpacing={0.5}
                       >
                         {dayTotalWords} words today.
@@ -488,22 +483,22 @@ export function CelebrationScreen() {
                 left={0}
                 right={0}
                 alignItems="center"
-                gap="$1"
+                gap="1"
                 opacity={0.3}
               >
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={10}
                   letterSpacing={2}
                   textTransform="uppercase"
-                  color="$color8"
+                  color="color8"
                 >
                   Your words
                 </Text>
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={14}
-                  color="$color8"
+                  color="color8"
                 >
                   {'↓'}
                 </Text>
@@ -519,13 +514,13 @@ export function CelebrationScreen() {
           width="100%"
           maxWidth={672}
           alignSelf="center"
-          paddingHorizontal="$4"
+          paddingHorizontal="4"
           paddingBottom={96}
         >
           <YStack
             borderTopWidth={1}
-            borderColor="$color2"
-            paddingTop="$6"
+            borderColor="color2"
+            paddingTop="6"
           >
             <Editor
               readOnly

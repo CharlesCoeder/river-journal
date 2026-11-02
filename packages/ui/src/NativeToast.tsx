@@ -13,18 +13,16 @@ export const NativeToast = () => {
       key={currentToast.id}
       duration={currentToast.duration}
       viewportName={currentToast.viewportName}
-      enterStyle={{ opacity: 0, scale: 0.5, y: -25 }}
-      exitStyle={{ opacity: 0, scale: 1, y: -20 }}
-      y={0}
-      opacity={1}
-      scale={1}
+      y="0 enter:-25px exit:-20px"
+      opacity="1 enter:0 exit:0"
+      scale="1 enter:0.5 exit:1"
       transition="quick"
     >
       <YStack
-        paddingVertical="$1.5"
-        paddingHorizontal="$2"
+        paddingVertical="1-5"
+        paddingHorizontal="2"
       >
-        <Toast.Title lineHeight={20}>{currentToast.title}</Toast.Title>
+        <Toast.Title lineHeight="20px">{currentToast.title}</Toast.Title>
         {!!currentToast.message && <Toast.Description>{currentToast.message}</Toast.Description>}
       </YStack>
     </Toast>

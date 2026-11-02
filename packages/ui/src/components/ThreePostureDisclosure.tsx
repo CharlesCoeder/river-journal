@@ -162,40 +162,38 @@ function BoundaryADialog({
         <Dialog.Overlay
           key="overlay"
           transition="quick"
-          opacity={0.5}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="0.5 enter:0 exit:0"
         />
         <Dialog.Content
           key="content"
           aria-labelledby={TITLE_ID}
           animateOnly={['transform', 'opacity']}
           transition={reduceMotion ? '100ms' : 'designModal'}
-          enterStyle={{ y: -10, opacity: 0 }}
-          exitStyle={{ y: 10, opacity: 0 }}
-          backgroundColor="$background"
+          y="enter:-10px exit:10px"
+          opacity="enter:0 exit:0"
+          backgroundColor="background"
           maxWidth={720}
           width="100%"
-          padding="$5"
-          gap="$4"
+          padding="5"
+          gap="4"
           borderWidth={1}
-          borderColor="$color4"
+          borderColor="color4"
         >
           {/* Heading */}
           <Dialog.Title
             id={TITLE_ID}
-            fontFamily="$journal"
-            fontSize="$6"
-            color="$color12"
+            fontFamily="journal"
+            fontSize="6"
+            color="color12"
           >
             Posts are public
           </Dialog.Title>
 
           {/* Body copy — verbatim, regression-asserted in tests */}
           <Text
-            fontFamily="$journal"
-            fontSize="$4"
-            color="$color"
+            fontFamily="journal"
+            fontSize="4"
+            color="color"
           >
             {BODY_COPY}
           </Text>
@@ -209,25 +207,24 @@ function BoundaryADialog({
             role="link"
             tabIndex={0}
             onKeyDown={(e: any) => {
-              if (e.key === 'Enter') {
-                e.preventDefault?.()
-                onViewGuidelines?.()
-              }
-            }}
-            fontFamily="$body"
-            fontSize="$3"
-            color="$stone"
+                        if (e.key === 'Enter') {
+                          e.preventDefault?.()
+                          onViewGuidelines?.()
+                        }
+                      }}
+            fontFamily="body"
+            fontSize="3"
+            color="stone"
             textDecorationLine="underline"
             cursor="pointer"
             onPress={onViewGuidelines}
-            // onClick for web environments where onPress may not fire via click events
             onClick={onViewGuidelines}
           >
             View community guidelines
           </TextAny>
 
           {/* Acknowledge / close button */}
-          <YStack marginTop="$4">
+          <YStack marginTop="4">
             <ExpandingLineButton
               size="cta"
               onPress={handleButtonPress}

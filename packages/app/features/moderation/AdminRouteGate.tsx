@@ -38,12 +38,12 @@ export function NotAuthorized() {
       flex={1}
       alignItems="center"
       justifyContent="center"
-      gap="$4"
-      padding="$6"
+      gap="4"
+      padding="6"
       data-testid="admin-route-gate-not-authorized"
     >
       <Text
-        fontSize="$6"
+        fontSize="6"
         fontWeight="600"
       >
         Not authorized

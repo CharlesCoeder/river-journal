@@ -69,9 +69,9 @@ function CategoryToggle({
       alignItems="center"
     >
       <Text
-        fontFamily="$body"
-        fontSize="$4"
-        color="$color"
+        fontFamily="body"
+        fontSize="4"
+        color="color"
       >
         {CATEGORY_LABELS[category]}
       </Text>
@@ -133,7 +133,7 @@ export function ReminderSettings() {
   const settingsWord = Platform.OS === 'android' ? 'Android' : 'iOS'
 
   return (
-    <YStack gap="$4">
+    <YStack gap="4">
       <CategoryToggle
         category="streak"
         enabled={streakEnabled}
@@ -160,18 +160,18 @@ export function ReminderSettings() {
       />
 
       {Platform.OS === 'web' && (
-        <YStack gap="$1">
+        <YStack gap="1">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             {MOBILE_ONLY_HEADLINE}
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             {MOBILE_ONLY_DETAIL}
           </Text>
@@ -180,9 +180,9 @@ export function ReminderSettings() {
 
       {isNativePlatform() && !syncEnabled && (
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           {SYNC_OFF_NOTE}
         </Text>
@@ -190,9 +190,9 @@ export function ReminderSettings() {
 
       {isNativePlatform() && permissionDenied && (
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Notifications are off at the OS level. You can re-enable in {settingsWord} Settings.
         </Text>

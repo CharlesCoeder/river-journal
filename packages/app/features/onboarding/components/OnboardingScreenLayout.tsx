@@ -40,43 +40,36 @@ export function OnboardingScreenLayout({
       tag="section"
       aria-labelledby={headlineId}
       transition={transition}
-      enterStyle={{ opacity: 0, y: 15 }}
-      opacity={1}
-      y={0}
+      opacity="1 enter:0"
+      y="0 enter:15px"
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
       width="100%"
       maxWidth={1024}
       alignSelf="center"
       justifyContent="center"
       alignItems="flex-start"
-      paddingHorizontal="$4"
-      $sm={{ paddingHorizontal: '$6' }}
-      $md={{ paddingHorizontal: '$8' }}
-      $lg={{ paddingHorizontal: '$12' }}
+      paddingHorizontal="4 sm:6 md:8 lg:12"
     >
       <YStack
-        gap="$5"
+        gap="5"
         width="100%"
       >
         <Text
           tag="h1"
           id={headlineId}
-          // tabIndex={-1} makes the headline programmatically focusable so the
-          // container can move focus here on each transition (screen-reader nav).
           tabIndex={-1}
-          fontFamily="$journal"
-          fontSize="$8"
-          color="$color"
+          fontFamily="journal"
+          fontSize="8 sm:7"
+          color="color"
           letterSpacing={-1}
-          $sm={{ fontSize: '$7' }}
         >
           {headline}
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
           letterSpacing={0.5}
           maxWidth={520}
         >
@@ -120,21 +113,16 @@ export function OnboardingSkipButton({ onPress, label = 'Skip' }: OnboardingSkip
   return (
     <Text
       tag="button"
-      // Bare Tamagui Text primitive: pass web-native `aria-label` (like the
-      // section's `aria-labelledby` above) rather than RN `accessibilityLabel`,
-      // which Text does not map and would leak to the DOM as an unknown prop.
-      // Tamagui normalizes `aria-label` → accessibilityLabel on native.
       aria-label={label}
       onPress={onPress}
-      fontFamily="$body"
-      fontSize="$4"
-      color="$stone"
+      fontFamily="body"
+      fontSize="4"
+      color="stone hover:color"
       letterSpacing={0.5}
       borderBottomWidth={1}
-      borderBottomColor="$color6"
+      borderBottomColor="color6"
       cursor="pointer"
-      hoverStyle={{ color: '$color' }}
-      pressStyle={{ opacity: 0.6 }}
+      opacity="press:0.6"
     >
       {label}
     </Text>

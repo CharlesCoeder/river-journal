@@ -121,9 +121,9 @@ export function MenuSurface() {
       tag="ul"
       aria-label="Main menu"
       role="menu"
-      paddingVertical="$4"
-      paddingHorizontal="$6"
-      gap="$2"
+      paddingVertical="4"
+      paddingHorizontal="6"
+      gap="2"
     >
       {MENU_ITEMS.map((item, index) => {
         const isVisible = index <= revealedIndex
@@ -187,11 +187,11 @@ function MenuRow({ label, icon, isVisible, reduceMotion, onPress }: MenuRowProps
         role="button"
         cursor="pointer"
         minHeight={44}
-        paddingVertical="$3"
-        paddingHorizontal="$2"
+        paddingVertical="3"
+        paddingHorizontal="2"
         alignItems="center"
         flexDirection="row"
-        gap="$3"
+        gap="3"
         backgroundColor="transparent"
         borderWidth={0}
         onPressIn={() => setIsPressed(true)}
@@ -201,9 +201,9 @@ function MenuRow({ label, icon, isVisible, reduceMotion, onPress }: MenuRowProps
         {icon}
         <YStack>
           <Text
-            fontFamily="$body"
-            fontSize="$4"
-            color="$color"
+            fontFamily="body"
+            fontSize="4"
+            color="color"
             letterSpacing={0.5}
             textTransform="uppercase"
           >
@@ -213,7 +213,7 @@ function MenuRow({ label, icon, isVisible, reduceMotion, onPress }: MenuRowProps
           <View
             width={lineWidth}
             height={1}
-            backgroundColor="$color"
+            backgroundColor="color"
             transition={reduceMotion ? undefined : 'smoothCollapse'}
           />
         </YStack>

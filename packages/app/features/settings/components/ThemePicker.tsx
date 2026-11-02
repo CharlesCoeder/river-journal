@@ -40,24 +40,22 @@ function ThemeRow({
     <XStack
       testID={`theme-option-${name}${isSelected ? '-selected' : ''}`}
       alignItems="center"
-      gap="$3"
+      gap="3"
       cursor="pointer"
+      opacity={`${isLocked ? 0.4 : 1} hover:0.8 press:0.7`}
       onPress={isLocked ? onLockedTap : onSelect}
-      hoverStyle={{ opacity: 0.8 }}
-      pressStyle={{ opacity: 0.7 }}
-      opacity={isLocked ? 0.4 : 1}
     >
       <Circle
         size={12}
         borderWidth={1}
-        borderColor="$color5"
+        borderColor="color5"
         backgroundColor={def?.bg ?? 'transparent'}
       />
       <YStack flex={1}>
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color={isSelected ? '$color' : '$color8'}
+          color={`${isSelected ? "color" : "color8"}`}
           {...(isWeb && { hoverStyle: { color: '$color' } })}
         >
           {THEME_LABELS[name]}
@@ -65,9 +63,9 @@ function ThemeRow({
         {isLocked && lockedAffordance && (
           <Text
             testID={`lock-affordance-${name}`}
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             {lockedAffordance}
           </Text>
@@ -143,18 +141,18 @@ export function ThemePicker() {
             <YStack
               role="group"
               aria-label={`Unlock ${THEME_LABELS[name]}?`}
-              paddingLeft="$6"
-              gap="$2"
-              paddingTop="$2"
+              paddingLeft="6"
+              gap="2"
+              paddingTop="2"
             >
               <Text
-                fontFamily="$body"
+                fontFamily="body"
                 fontSize={13}
-                color="$color8"
+                color="color8"
               >
                 Unlock {THEME_LABELS[name]}?
               </Text>
-              <XStack gap="$3">
+              <XStack gap="3">
                 <ExpandingLineButton
                   onPress={() => {
                     spendUnlockToken(name)
@@ -178,7 +176,7 @@ export function ThemePicker() {
     })
 
   return (
-    <YStack gap="$3">
+    <YStack gap="3">
       {/* "Unlock everything now" — free tier only. Routes to the purchase surface. */}
       {tier === 'free' && (
         <ExpandingLineButton
@@ -203,22 +201,21 @@ export function ThemePicker() {
         <XStack
           testID={`theme-option-custom${isCustomSelected ? '-selected' : ''}`}
           alignItems="center"
-          gap="$3"
+          gap="3"
           cursor="pointer"
+          opacity="hover:0.8 press:0.7"
           onPress={() => setTheme('custom')}
-          hoverStyle={{ opacity: 0.8 }}
-          pressStyle={{ opacity: 0.7 }}
         >
           <Circle
             size={12}
             borderWidth={1}
-            borderColor="$color5"
+            borderColor="color5"
             backgroundColor={customTheme.bg}
           />
           <Text
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color={isCustomSelected ? '$color' : '$color8'}
+            color={`${isCustomSelected ? "color" : "color8"}`}
             {...(isWeb && { hoverStyle: { color: '$color' } })}
             flex={1}
           >
@@ -226,41 +223,40 @@ export function ThemePicker() {
           </Text>
           <Text
             testID="edit-custom-theme"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
             cursor="pointer"
-            onPress={(e: any) => {
-              e.stopPropagation?.()
-              setEditorOpen(true)
-            }}
             {...(isWeb ? { hoverStyle: { color: '$color' } } : { pressStyle: { opacity: 0.7 } })}
+            onPress={(e: any) => {
+                        e.stopPropagation?.()
+                        setEditorOpen(true)
+                      }}
           >
             Edit
           </Text>
         </XStack>
       ) : (
         <XStack
-          testID="create-custom-theme"
-          alignItems="center"
-          gap="$3"
-          cursor="pointer"
-          onPress={() => setEditorOpen(true)}
-          hoverStyle={{ opacity: 0.8 }}
-          pressStyle={{ opacity: 0.7 }}
-        >
-          <Circle
-            size={12}
-            borderWidth={1}
-            borderColor="$color5"
-            borderStyle="dashed"
-          />
-          <Text
-            fontFamily="$journal"
-            fontSize={20}
-            color="$color8"
-            {...(isWeb && { hoverStyle: { color: '$color' } })}
+            testID="create-custom-theme"
+            alignItems="center"
+            gap="3"
+            cursor="pointer"
+            opacity="hover:0.8 press:0.7"
+            onPress={() => setEditorOpen(true)}
           >
+          <Circle
+              size={12}
+              borderWidth={1}
+              borderColor="color5"
+              borderStyle="dashed"
+            />
+          <Text
+              fontFamily="journal"
+              fontSize={20}
+              color="color8"
+              {...(isWeb && { hoverStyle: { color: '$color' } })}
+            >
             Create Custom Theme
           </Text>
         </XStack>

@@ -50,44 +50,43 @@ function ModeCard({
   return (
     <YStack
       testID={`privacy-tier-${mode}`}
-      padding="$5"
+      padding="5"
       width="100%"
       borderWidth={1}
-      borderColor={selected ? '$color8' : '$color3'}
-      backgroundColor={selected ? '$color1' : 'transparent'}
+      borderColor={`${selected ? "color8" : "color3"} hover:color6`}
+      backgroundColor={`${selected ? "color1" : "transparent"}`}
       cursor="pointer"
-      hoverStyle={{ borderColor: '$color6' }}
+      gap="3"
       onPress={() => onSelect(mode)}
-      gap="$3"
     >
       <Text
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={20}
-        color="$color"
+        color="color"
       >
         {card.title}
       </Text>
       <YStack
-        gap="$2"
-        paddingLeft="$1"
+        gap="2"
+        paddingLeft="1"
       >
         {card.bullets.map((bullet) => (
           <XStack
             key={bullet}
-            gap="$2"
+            gap="2"
             alignItems="flex-start"
           >
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color8"
+              color="color8"
             >
               {'\u2022'}
             </Text>
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color8"
+              color="color8"
               flexShrink={1}
             >
               {bullet}
@@ -133,12 +132,10 @@ export function EncryptionModeDialog() {
           left={0}
           right={0}
           bottom={0}
-          backgroundColor="$background"
+          backgroundColor="background"
           zIndex={100}
           transition="quick"
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
-          opacity={1}
+          opacity="1 enter:0 exit:0"
         >
           <ScrollView
             flex={1}
@@ -149,15 +146,11 @@ export function EncryptionModeDialog() {
               width="100%"
               maxWidth={860}
               alignSelf="center"
-              paddingHorizontal="$5"
-              paddingTop="$5"
+              paddingHorizontal="5 sm:8 md:10 lg:12"
+              paddingTop="5 md:8 lg:12"
               paddingBottom={96}
-              $sm={{ paddingHorizontal: '$8' }}
-              $md={{ paddingHorizontal: '$10', paddingTop: '$8' }}
-              $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
               transition="designEnter"
-              enterStyle={{ opacity: 0 }}
-              opacity={1}
+              opacity="1 enter:0"
             >
               {/* Cancel button — top right */}
               <XStack
@@ -165,13 +158,12 @@ export function EncryptionModeDialog() {
                 marginBottom={64}
               >
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={11}
                   letterSpacing={2}
                   textTransform="uppercase"
-                  color="$color8"
+                  color="color8 hover:color"
                   cursor="pointer"
-                  hoverStyle={{ color: '$color' }}
                   onPress={cancelEncryptionSetup}
                 >
                   Cancel
@@ -188,36 +180,34 @@ export function EncryptionModeDialog() {
                     <YStack
                       key="step-mode"
                       transition="quick"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      exitStyle={{ opacity: 0, y: -10 }}
-                      opacity={1}
-                      y={0}
+                      opacity="1 enter:0 exit:0"
+                      y="0 enter:10px exit:-10px"
                       gap={48}
                       position="absolute"
                       top={0}
                       left={0}
                       right={0}
                     >
-                      <YStack gap="$3">
+                      <YStack gap="3">
                         <Text
-                          fontFamily="$journal"
+                          fontFamily="journal"
                           fontSize={30}
-                          color="$color"
+                          color="color"
                           letterSpacing={-0.5}
                         >
                           Cloud Sync Setup
                         </Text>
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={14}
-                          color="$color8"
-                          lineHeight={22}
+                          color="color8"
+                          lineHeight="22px"
                         >
                           Choose how your data is protected. This choice cannot be changed later.
                         </Text>
                       </YStack>
 
-                      <YStack gap="$4">
+                      <YStack gap="4">
                         <ModeCard
                           mode="e2e"
                           selected={selectedMode === 'e2e'}
@@ -232,28 +222,28 @@ export function EncryptionModeDialog() {
 
                       {error && (
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={13}
-                          color="$red10"
+                          color="red10"
                         >
                           {error.message}
                         </Text>
                       )}
 
-                      <YStack paddingTop="$4">
+                      <YStack paddingTop="4">
                         <Text
                           testID="confirm-encryption-mode"
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={11}
                           letterSpacing={2}
                           textTransform="uppercase"
-                          color={selectedMode ? '$color' : '$color8'}
+                          color={`${selectedMode ? "color" : "color8"}`}
                           opacity={selectedMode ? 1 : 0.5}
                           cursor={selectedMode ? 'pointer' : 'default'}
                           hoverStyle={selectedMode ? { opacity: 0.7 } : {}}
                           onPress={
-                            selectedMode ? () => void confirmEncryptionModeSelection() : undefined
-                          }
+                                                    selectedMode ? () => void confirmEncryptionModeSelection() : undefined
+                                                  }
                         >
                           Continue
                         </Text>
@@ -266,10 +256,8 @@ export function EncryptionModeDialog() {
                     <YStack
                       key="step-password"
                       transition="quick"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      exitStyle={{ opacity: 0, y: -10 }}
-                      opacity={1}
-                      y={0}
+                      opacity="1 enter:0 exit:0"
+                      y="0 enter:10px exit:-10px"
                       position="absolute"
                       top={0}
                       left={0}
@@ -320,10 +308,8 @@ export function EncryptionModeDialog() {
                     <YStack
                       key="step-trust"
                       transition="quick"
-                      enterStyle={{ opacity: 0, y: 10 }}
-                      exitStyle={{ opacity: 0, y: -10 }}
-                      opacity={1}
-                      y={0}
+                      opacity="1 enter:0 exit:0"
+                      y="0 enter:10px exit:-10px"
                       gap={48}
                       alignItems="center"
                       justifyContent="center"
@@ -334,33 +320,33 @@ export function EncryptionModeDialog() {
                       bottom={0}
                     >
                       <YStack
-                        gap="$3"
+                        gap="3"
                         maxWidth={448}
                         alignItems="center"
                       >
                         <Text
-                          fontFamily="$journal"
+                          fontFamily="journal"
                           fontSize={30}
-                          color="$color"
+                          color="color"
                           letterSpacing={-0.5}
                           textAlign="center"
                         >
                           Trust this Browser?
                         </Text>
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={14}
-                          color="$color8"
-                          lineHeight={22}
+                          color="color8"
+                          lineHeight="22px"
                           textAlign="center"
                         >
                           We can securely save your key in this browser. You won't need to re-enter
                           your password every time you open the app here.
                         </Text>
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={11}
-                          color="$color7"
+                          color="color7"
                           textAlign="center"
                         >
                           If browser data is cleared, you'll need your password again. You can
@@ -370,39 +356,38 @@ export function EncryptionModeDialog() {
 
                       {trustError && (
                         <YStack
-                          gap="$3"
+                          gap="3"
                           alignItems="center"
                         >
                           <Text
-                            fontFamily="$body"
+                            fontFamily="body"
                             fontSize={13}
-                            color="$red10"
+                            color="red10"
                           >
                             {trustError.message}
                           </Text>
-                          <XStack gap="$6">
+                          <XStack gap="6">
                             <Text
                               testID="trust-browser-dismiss"
-                              fontFamily="$body"
+                              fontFamily="body"
                               fontSize={11}
                               letterSpacing={2}
                               textTransform="uppercase"
-                              color="$color8"
+                              color="color8 hover:color"
                               cursor="pointer"
-                              hoverStyle={{ color: '$color' }}
                               onPress={dismissTrustBrowserPrompt}
                             >
                               Dismiss
                             </Text>
                             <Text
                               testID="trust-browser-retry"
-                              fontFamily="$body"
+                              fontFamily="body"
                               fontSize={11}
                               letterSpacing={2}
                               textTransform="uppercase"
-                              color="$color"
+                              color="color"
                               cursor="pointer"
-                              hoverStyle={{ opacity: 0.7 }}
+                              opacity="hover:0.7"
                               onPress={handleAcceptTrust}
                             >
                               Retry
@@ -413,17 +398,17 @@ export function EncryptionModeDialog() {
 
                       {!trustError && (
                         <XStack
-                          gap="$6"
-                          paddingTop="$4"
+                          gap="6"
+                          paddingTop="4"
                           opacity={isTrusting ? 0.4 : 1}
                         >
                           <Text
                             testID="trust-browser-decline"
-                            fontFamily="$body"
+                            fontFamily="body"
                             fontSize={11}
                             letterSpacing={2}
                             textTransform="uppercase"
-                            color="$color8"
+                            color="color8"
                             cursor={isTrusting ? 'default' : 'pointer'}
                             hoverStyle={isTrusting ? {} : { color: '$color' }}
                             onPress={isTrusting ? undefined : declineBrowserTrust}
@@ -432,13 +417,13 @@ export function EncryptionModeDialog() {
                           </Text>
                           <Text
                             testID="trust-browser-accept"
-                            fontFamily="$body"
+                            fontFamily="body"
                             fontSize={11}
                             letterSpacing={2}
                             textTransform="uppercase"
-                            color="$color"
+                            color="color"
                             borderBottomWidth={1}
-                            borderColor="$color5"
+                            borderColor="color5"
                             paddingBottom={2}
                             cursor={isTrusting ? 'default' : 'pointer'}
                             hoverStyle={isTrusting ? {} : { opacity: 0.7 }}

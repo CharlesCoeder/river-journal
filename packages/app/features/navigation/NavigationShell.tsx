@@ -64,39 +64,38 @@ function SidebarLayout({
       {/* Sidebar */}
       <YStack
         width={showLabels ? 200 : 64}
-        backgroundColor="$background"
+        backgroundColor="background"
         borderRightWidth={1}
-        borderRightColor="$color4"
-        paddingVertical="$4"
-        paddingHorizontal={showLabels ? '$3' : '$0'}
+        borderRightColor="color4"
+        paddingVertical="4"
+        paddingHorizontal={`${showLabels ? "3" : "0"}`}
         justifyContent="space-between"
         transition="quick"
       >
-        <YStack gap="$1">
+        <YStack gap="1">
           {/* Collapse toggle */}
           {defaultShowLabels && (
             <XStack
-              paddingHorizontal={showLabels ? '$3' : '$0'}
-              paddingBottom="$4"
+              paddingHorizontal={`${showLabels ? "3" : "0"}`}
+              paddingBottom="4"
               justifyContent={showLabels ? 'flex-end' : 'center'}
             >
               <YStack
                 cursor="pointer"
+                opacity="0.4 hover:0.8"
+                padding="2"
                 onPress={() => setCollapsed(!collapsed)}
-                opacity={0.4}
-                hoverStyle={{ opacity: 0.8 }}
-                padding="$2"
               >
                 {collapsed ? (
                   <PanelLeft
                     size={18}
-                    color="$color9"
+                    color="color9"
                   />
                 ) : (
                   <PanelLeftClose
-                    size={18}
-                    color="$color9"
-                  />
+                      size={18}
+                      color="color9"
+                    />
                 )}
               </YStack>
             </XStack>
@@ -110,14 +109,13 @@ function SidebarLayout({
               <XStack
                 key={item.key}
                 alignItems="center"
-                gap="$3"
-                paddingVertical="$3"
-                paddingHorizontal="$3"
-                borderRadius="$4"
+                gap="3"
+                paddingVertical="3"
+                paddingHorizontal="3"
+                borderRadius="4"
                 cursor="pointer"
                 justifyContent={showLabels ? 'flex-start' : 'center'}
-                backgroundColor={isActive ? '$color3' : 'transparent'}
-                hoverStyle={{ backgroundColor: isActive ? '$color3' : '$color2' }}
+                backgroundColor={`${isActive ? "color3" : "transparent"} hover:${isActive ? "color3" : "color2"}`}
                 onPress={() => router.push(item.route)}
               >
                 <Icon
@@ -126,10 +124,10 @@ function SidebarLayout({
                 />
                 {showLabels && (
                   <Text
-                    fontSize="$3"
-                    fontFamily="$body"
+                    fontSize="3"
+                    fontFamily="body"
                     fontWeight={isActive ? '600' : '400'}
-                    color={isActive ? '$color' : '$color9'}
+                    color={`${isActive ? "color" : "color9"}`}
                   >
                     {item.label}
                   </Text>
@@ -143,7 +141,7 @@ function SidebarLayout({
       {/* Content */}
       <YStack
         flex={1}
-        backgroundColor="$background"
+        backgroundColor="background"
       >
         {children}
       </YStack>
@@ -172,11 +170,11 @@ function BottomTabLayout({
 
       {/* Bottom tab bar */}
       <XStack
-        backgroundColor="$background"
+        backgroundColor="background"
         borderTopWidth={1}
-        borderTopColor="$color4"
-        paddingVertical="$2"
-        paddingBottom="$4"
+        borderTopColor="color4"
+        paddingTop="2"
+        paddingBottom="4"
         justifyContent="space-around"
         alignItems="center"
       >
@@ -188,13 +186,12 @@ function BottomTabLayout({
             <YStack
               key={item.key}
               alignItems="center"
-              gap="$1"
+              gap="1"
               cursor="pointer"
+              opacity={`${isActive ? 1 : 0.5} hover:${isActive ? 1 : 0.8}`}
+              paddingHorizontal="3"
+              paddingVertical="1"
               onPress={() => router.push(item.route)}
-              opacity={isActive ? 1 : 0.5}
-              hoverStyle={{ opacity: isActive ? 1 : 0.8 }}
-              paddingHorizontal="$3"
-              paddingVertical="$1"
             >
               <Icon
                 size={20}
@@ -202,8 +199,8 @@ function BottomTabLayout({
               />
               <Text
                 fontSize={11}
-                fontFamily="$body"
-                color={isActive ? '$color' : '$color9'}
+                fontFamily="body"
+                color={`${isActive ? "color" : "color9"}`}
                 fontWeight={isActive ? '600' : '400'}
               >
                 {item.label}

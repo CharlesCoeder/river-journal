@@ -35,7 +35,7 @@ export function ConsentScreen({ headlineId, transition, onComplete }: ConsentScr
     >
       <XStack
         alignItems="center"
-        gap="$6"
+        gap="6"
         flexWrap="wrap"
       >
         <ExpandingLineButton

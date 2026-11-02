@@ -26,7 +26,7 @@ export function ProgressionScreen({
     >
       <XStack
         alignItems="center"
-        gap="$6"
+        gap="6"
         flexWrap="wrap"
       >
         <ExpandingLineButton

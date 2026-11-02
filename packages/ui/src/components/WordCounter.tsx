@@ -9,7 +9,7 @@ export function WordCounter({ count }: WordCounterProps) {
 
   return (
     <Text
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={14}
       color={color}
       letterSpacing={0.5}

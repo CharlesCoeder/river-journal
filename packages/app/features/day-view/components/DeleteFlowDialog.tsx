@@ -26,59 +26,53 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
         <AlertDialog.Overlay
           key="overlay"
           transition="quick"
-          opacity={0.4}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="0.4 enter:0 exit:0"
         />
         <AlertDialog.Content
           key="content"
-          transition={['medium', { opacity: { overshootClamping: true } }]}
-          enterStyle={{ y: -10, opacity: 0 }}
-          exitStyle={{ y: 10, opacity: 0 }}
-          y={0}
-          opacity={1}
-          backgroundColor="$background"
-          borderRadius="$6"
+          transition={{ preset: 'medium', opacity: { preset: 'medium', spring: { overshootClamping: true } } }}
+          y="0 enter:-10px exit:10px"
+          opacity="1 enter:0 exit:0"
+          backgroundColor="background"
+          borderRadius="6"
           borderWidth={1}
-          borderColor="$color5"
-          padding="$5"
-          gap="$4"
+          borderColor="color5"
+          padding="5"
+          gap="4"
           maxWidth={400}
         >
           <AlertDialog.Title
-            fontFamily="$body"
+            fontFamily="body"
             fontWeight="700"
           >
             Delete Flow?
           </AlertDialog.Title>
           <AlertDialog.Description
-            fontFamily="$body"
-            color="$color10"
+            fontFamily="body"
+            color="color10"
           >
             {flow && getFlowPreview(flow.content)}
           </AlertDialog.Description>
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
           >
             <AlertDialog.Cancel asChild>
               <Button
                 chromeless
                 borderWidth={1}
-                borderColor="$borderColor"
+                borderColor="border-color"
               >
-                <Text fontFamily="$body">Cancel</Text>
+                <Text fontFamily="body">Cancel</Text>
               </Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
               <Button
-                backgroundColor="$red10"
+                backgroundColor="red10 hover:red11 press:red11"
                 onPress={onConfirm}
-                hoverStyle={{ backgroundColor: '$red11' }}
-                pressStyle={{ backgroundColor: '$red11' }}
               >
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontWeight="600"
                   color="white"
                 >

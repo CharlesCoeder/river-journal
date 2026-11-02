@@ -43,22 +43,18 @@ export function FlowSessionBottomBar({
         <XStack
           key="bottom-bar"
           transition="designEnter"
-          enterStyle={{ opacity: 0, y: 10 }}
-          exitStyle={{ opacity: 0, y: 10 }}
-          opacity={1}
-          y={0}
+          opacity="1 enter:0 exit:0"
+          y="0 enter:10px exit:10px"
           position={isWeb ? ('fixed' as any) : 'absolute'}
           bottom={0}
           left={0}
           right={0}
-          paddingHorizontal="$4"
-          paddingVertical="$5"
-          $md={{ paddingHorizontal: '$8' }}
-          onLayout={onLayout}
-          $lg={{ paddingHorizontal: '$12' }}
-          paddingBottom="$6"
+          paddingHorizontal="4 md:8 lg:12"
+          paddingTop="5"
+          paddingBottom="6"
           justifyContent="center"
           zIndex={100}
+          onLayout={onLayout}
         >
           <XStack
             width="100%"
@@ -68,7 +64,7 @@ export function FlowSessionBottomBar({
           >
             <XStack
               alignItems="center"
-              gap="$3"
+              gap="3"
             >
               <ExpandingLineButton
                 size="default"
@@ -118,45 +114,42 @@ export function FlowExitConfirmDialog({
         <Dialog.Overlay
           key="overlay"
           transition="quick"
-          opacity={0.4}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="0.4 enter:0 exit:0"
         />
         <Dialog.Content
           key="content"
           animateOnly={['transform', 'opacity']}
           transition={reduceMotion ? '100ms' : 'designModal'}
-          enterStyle={{ y: -10, opacity: 0 }}
-          exitStyle={{ y: 10, opacity: 0 }}
-          backgroundColor="$background"
+          y="enter:-10px exit:10px"
+          opacity="enter:0 exit:0"
+          backgroundColor="background"
           borderRadius={2}
-          padding="$6"
-          gap="$4"
-          maxWidth="90%"
+          padding="6"
+          gap="4"
+          maxWidth="90% sm:400px"
           width="100%"
-          $sm={{ maxWidth: 400 }}
           borderWidth={1}
-          borderColor="$color4"
+          borderColor="color4"
         >
           <Dialog.Title
-            fontFamily="$journal"
-            fontSize="$6"
-            color="$color"
+            fontFamily="journal"
+            fontSize="6"
+            color="color"
           >
             You've barely written
           </Dialog.Title>
           <Dialog.Description
-            fontFamily="$body"
-            fontSize="$3"
-            color="$color8"
+            fontFamily="body"
+            fontSize="3"
+            color="color8"
           >
             Exit without saving? Your words won't be kept.
           </Dialog.Description>
 
           <XStack
-            gap="$4"
+            gap="4"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             <ExpandingLineButton
               size="default"

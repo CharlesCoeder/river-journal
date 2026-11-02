@@ -111,18 +111,18 @@ function CollectivePulse({ reducedMotion }: { reducedMotion: boolean }) {
 
   return (
     <YStack
-      marginTop="$6"
+      marginTop="6"
       width="100%"
     >
       <XStack
         alignItems="center"
-        gap="$2"
+        gap="2"
       >
         <PulseDot reducedMotion={reducedMotion} />
         <Text
-          fontFamily="$body"
-          fontSize="$2"
-          color="$color5"
+          fontFamily="body"
+          fontSize="2"
+          color="color5"
           textTransform="uppercase"
           letterSpacing={1.1}
         >
@@ -131,9 +131,9 @@ function CollectivePulse({ reducedMotion }: { reducedMotion: boolean }) {
       </XStack>
 
       <XStack
-        marginTop="$4"
+        marginTop="4"
         alignItems="stretch"
-        gap="$8"
+        gap="8"
       >
         <PulseStat
           value={writers}
@@ -142,7 +142,7 @@ function CollectivePulse({ reducedMotion }: { reducedMotion: boolean }) {
         />
         <View
           width={1}
-          backgroundColor="$color2"
+          backgroundColor="color2"
         />
         <PulseStat
           value={words}
@@ -177,7 +177,7 @@ function PulseDot({ reducedMotion }: { reducedMotion: boolean }) {
           width={6}
           height={6}
           borderRadius={100}
-          backgroundColor="$color12"
+          backgroundColor="color12"
           opacity={expanded ? 0 : 0.4}
           scale={expanded ? 2.6 : 1}
           animation="slow"
@@ -187,7 +187,7 @@ function PulseDot({ reducedMotion }: { reducedMotion: boolean }) {
         width={6}
         height={6}
         borderRadius={100}
-        backgroundColor="$color12"
+        backgroundColor="color12"
       />
     </View>
   )
@@ -204,20 +204,19 @@ function PulseStat({
 }) {
   const display = useCountUp(value, reducedMotion)
   return (
-    <YStack gap="$2">
+    <YStack gap="2">
       <Text
-        fontFamily="$journal"
-        // Design: serif text-4xl / leading-none (36 / 36) — was $9 (30).
+        fontFamily="journal"
         fontSize={36}
-        lineHeight={40}
-        color="$color12"
+        lineHeight="40px"
+        color="color12"
       >
         {display.toLocaleString('en-US')}
       </Text>
       <Text
-        fontFamily="$body"
-        fontSize="$2"
-        color="$color7"
+        fontFamily="body"
+        fontSize="2"
+        color="color7"
         textTransform="uppercase"
         letterSpacing={1.1}
       >
@@ -280,8 +279,8 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
   return (
     <XStack
       alignItems="center"
-      gap="$3"
-      marginTop="$6"
+      gap="3"
+      marginTop="6"
       flexWrap="wrap"
     >
       {steps.map((step, i) => {
@@ -290,11 +289,11 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
           <XStack
             key={step.key}
             alignItems="center"
-            gap="$3"
+            gap="3"
           >
             <XStack
               alignItems="center"
-              gap="$2"
+              gap="2"
             >
               <View
                 width={28}
@@ -303,13 +302,13 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
                 borderWidth={1}
                 alignItems="center"
                 justifyContent="center"
-                borderColor={step.done ? '$color12' : active ? '$color12' : '$color3'}
-                backgroundColor={step.done ? '$color12' : 'transparent'}
+                borderColor={`${step.done ? "color12" : active ? "color12" : "color3"}`}
+                backgroundColor={`${step.done ? "color12" : "transparent"}`}
               >
                 {step.done ? (
                   <Check
                     size={14}
-                    color="$color1"
+                    color="color1"
                   />
                 ) : (
                   <step.Icon
@@ -319,11 +318,11 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
                 )}
               </View>
               <Text
-                fontFamily="$body"
-                fontSize="$2"
+                fontFamily="body"
+                fontSize="2"
                 textTransform="uppercase"
                 letterSpacing={1.1}
-                color={step.done ? '$color7' : active ? '$color12' : '$color4'}
+                color={`${step.done ? "color7" : active ? "color12" : "color4"}`}
               >
                 {step.label}
               </Text>
@@ -332,7 +331,7 @@ function Stepper({ steps, current }: { steps: StepDef[]; current: CollectiveGate
               <View
                 height={1}
                 width={24}
-                backgroundColor={step.done ? '$color6' : '$color3'}
+                backgroundColor={`${step.done ? "color6" : "color3"}`}
               />
             ) : null}
           </XStack>
@@ -351,25 +350,24 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
       aria-label={label}
       onPress={onPress}
       cursor="pointer"
-      marginTop="$8"
+      marginTop="8"
       alignSelf="flex-start"
     >
       <XStack
         alignItems="center"
-        gap="$3"
+        gap="3"
       >
         <Text
-          fontFamily="$journalItalic"
+          fontFamily="journalItalic"
           fontStyle="italic"
-          // Design: italic serif text-3xl (30) — was $8 (22), too small.
-          fontSize="$9"
-          color="$color12"
+          fontSize="9"
+          color="color12"
         >
           {label}
         </Text>
         <ArrowRight
           size={22}
-          color="$color12"
+          color="color12"
         />
       </XStack>
     </View>
@@ -381,14 +379,12 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
 function GateHeadline({ children }: { children: string }) {
   return (
     <Text
-      fontFamily="$journal"
-      // Design: text-5xl / leading-tight / tracking-tight (48 / 60 / -1.2).
-      // No size token lands on 48, so these are explicit to match the reference.
+      fontFamily="journal"
       fontSize={48}
-      lineHeight={60}
+      lineHeight="60px"
       letterSpacing={-1.2}
-      color="$color12"
-      marginTop="$7"
+      color="color12"
+      marginTop="7"
     >
       {children}
     </Text>
@@ -398,12 +394,11 @@ function GateHeadline({ children }: { children: string }) {
 function GateBody({ children }: { children: string }) {
   return (
     <Text
-      fontFamily="$journal"
-      // Design: serif text-xl / leading-relaxed in stone (20 / 32.5 / color7).
-      fontSize="$7"
-      lineHeight={32}
-      color="$color7"
-      marginTop="$5"
+      fontFamily="journal"
+      fontSize="7"
+      lineHeight="32px"
+      color="color7"
+      marginTop="5"
     >
       {children}
     </Text>
@@ -427,13 +422,13 @@ function AccountGate({ onSignIn }: { onSignIn: () => void }) {
         aria-label="Already have one? Log in"
         onPress={onSignIn}
         cursor="pointer"
-        marginTop="$4.5"
+        marginTop="4-5"
         alignSelf="flex-start"
       >
         <Text
-          fontFamily="$body"
-          fontSize="$3"
-          color="$color7"
+          fontFamily="body"
+          fontSize="3"
+          color="color7"
           textTransform="uppercase"
           letterSpacing={1.2}
         >
@@ -458,10 +453,10 @@ function SyncGate({ onEnableSync }: { onEnableSync: () => void }) {
         onPress={onEnableSync}
       />
       <Text
-        fontFamily="$body"
-        fontSize="$3"
-        color="$color5"
-        marginTop="$4.5"
+        fontFamily="body"
+        fontSize="3"
+        color="color5"
+        marginTop="4-5"
         maxWidth={420}
       >
         You choose how it's encrypted — including end-to-end, where only you hold the key.
@@ -494,25 +489,25 @@ function WordsGate({
       {/* The live per-user count, drifting toward the threshold */}
       <YStack
         width="100%"
-        marginTop="$8"
-        gap="$3"
+        marginTop="8"
+        gap="3"
       >
         <XStack
           justifyContent="space-between"
           alignItems="baseline"
         >
           <Text
-            fontFamily="$body"
-            fontSize="$4"
-            color="$color12"
+            fontFamily="body"
+            fontSize="4"
+            color="color12"
           >
             {wordsToday}
-            <Text color="$color7">{` / ${goal} words today`}</Text>
+            <Text color="color7">{` / ${goal} words today`}</Text>
           </Text>
           <Text
-            fontFamily="$body"
-            fontSize="$3"
-            color="$color5"
+            fontFamily="body"
+            fontSize="3"
+            color="color5"
             textTransform="uppercase"
             letterSpacing={1.2}
           >
@@ -522,7 +517,7 @@ function WordsGate({
         <View
           height={1}
           width="100%"
-          backgroundColor="$color3"
+          backgroundColor="color3"
           position="relative"
           overflow="hidden"
         >
@@ -532,7 +527,7 @@ function WordsGate({
             bottom={0}
             left={0}
             width={`${pct}%`}
-            backgroundColor="$color12"
+            backgroundColor="color12"
             animation={reducedMotion ? undefined : 'slow'}
           />
         </View>
@@ -552,16 +547,14 @@ function RoomGlimpse({ glimpse }: { glimpse: GlimpseItem[] }) {
   if (glimpse.length === 0) return null
   return (
     <YStack
-      marginTop="$12"
-      gap="$6"
+      marginTop="12"
+      gap="6"
       aria-hidden
     >
       <Text
-        fontFamily="$body"
-        // Design: stone/50 — softer than the body's stone, the faintest label
-        // on the screen. Was $color8 (darker than stone), which read too heavy.
-        fontSize="$3"
-        color="$color4"
+        fontFamily="body"
+        fontSize="3"
+        color="color4"
         textTransform="uppercase"
         letterSpacing={1.2}
       >
@@ -569,31 +562,28 @@ function RoomGlimpse({ glimpse }: { glimpse: GlimpseItem[] }) {
       </Text>
       <View position="relative">
         <YStack
-          gap="$7"
+          gap="7"
           opacity={0.4}
           pointerEvents="none"
-          // Web-only soft veil; native ignores `filter` (acceptable divergence,
-          // mirrors the prior CollectivePreview).
           style={{ filter: 'blur(1.5px)' }}
         >
           {glimpse.map((item) => (
             <YStack
               key={item.id}
-              gap="$2"
+              gap="2"
             >
               <Text
-                fontFamily="$journal"
-                // Design: serif text-2xl / leading-snug (24 / 33).
+                fontFamily="journal"
                 fontSize={24}
-                lineHeight={33}
-                color="$color12"
+                lineHeight="33px"
+                color="color12"
               >
                 {item.title}
               </Text>
               <Text
-                fontFamily="$body"
-                fontSize="$2"
-                color="$color7"
+                fontFamily="body"
+                fontSize="2"
+                color="color7"
                 textTransform="uppercase"
                 letterSpacing={1}
               >
@@ -623,18 +613,18 @@ export interface DemoControls {
 function DemoPanel({ demo }: { demo: DemoControls }) {
   return (
     <YStack
-      marginTop="$11"
-      paddingTop="$5"
+      marginTop="11"
+      paddingTop="5"
       borderTopWidth={1}
-      borderTopColor="$color2"
+      borderTopColor="color2"
       maxWidth={420}
       width="100%"
-      gap="$4"
+      gap="4"
     >
       <Text
-        fontFamily="$body"
-        fontSize="$2"
-        color="$color4"
+        fontFamily="body"
+        fontSize="2"
+        color="color4"
         textTransform="uppercase"
         letterSpacing={1.1}
       >
@@ -678,12 +668,12 @@ function DemoToggle({
       <XStack
         alignItems="center"
         justifyContent="space-between"
-        gap="$4"
+        gap="4"
       >
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color12"
+          fontFamily="body"
+          fontSize="4"
+          color="color12"
         >
           {label}
         </Text>
@@ -691,7 +681,7 @@ function DemoToggle({
           width={40}
           height={20}
           borderRadius={100}
-          backgroundColor={checked ? '$color12' : '$color3'}
+          backgroundColor={`${checked ? "color12" : "color3"}`}
           justifyContent="center"
         >
           <View
@@ -699,7 +689,7 @@ function DemoToggle({
             width={16}
             height={16}
             borderRadius={100}
-            backgroundColor="$color1"
+            backgroundColor="color1"
             left={checked ? 22 : 2}
             animation="quick"
           />
@@ -773,7 +763,7 @@ export function CollectiveLockedScreen({
     // Settings screen's flex + ScrollView wrapper.
     <View
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       <ScrollView
         flex={1}
@@ -790,9 +780,9 @@ export function CollectiveLockedScreen({
           width="100%"
           maxWidth={720}
           marginHorizontal="auto"
-          paddingHorizontal="$5"
-          paddingVertical="$8"
-          paddingBottom="$12"
+          paddingHorizontal="5"
+          paddingTop="8"
+          paddingBottom="12"
         >
           {/* Back to Home */}
           <View
@@ -801,20 +791,20 @@ export function CollectiveLockedScreen({
             onPress={onReturnHome}
             cursor="pointer"
             alignSelf="flex-start"
-            marginBottom="$10"
+            marginBottom="10"
           >
             <XStack
               alignItems="center"
-              gap="$2"
+              gap="2"
             >
               <ArrowLeft
                 size={16}
-                color="$color7"
+                color="color7"
               />
               <Text
-                fontFamily="$body"
-                fontSize="$4"
-                color="$color7"
+                fontFamily="body"
+                fontSize="4"
+                color="color7"
                 letterSpacing={1}
               >
                 Back to Home
@@ -830,16 +820,16 @@ export function CollectiveLockedScreen({
             {/* Eyebrow */}
             <XStack
               alignItems="center"
-              gap="$2"
+              gap="2"
             >
               <Lock
                 size={14}
-                color="$color7"
+                color="color7"
               />
               <Text
-                fontFamily="$body"
-                fontSize="$3"
-                color="$color7"
+                fontFamily="body"
+                fontSize="3"
+                color="color7"
                 textTransform="uppercase"
                 letterSpacing={1.2}
               >

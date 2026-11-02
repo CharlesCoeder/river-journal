@@ -21,16 +21,16 @@ export function DeviceAppearanceToggle() {
   if (!isAuthenticated) return null
 
   return (
-    <YStack gap="$2">
+    <YStack gap="2">
       <XStack
         justifyContent="space-between"
         alignItems="center"
-        gap="$4"
+        gap="4"
       >
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color"
+          fontFamily="body"
+          fontSize="4"
+          color="color"
           flexShrink={1}
         >
           {LABEL}
@@ -46,9 +46,9 @@ export function DeviceAppearanceToggle() {
         </ExpandingLineButton>
       </XStack>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={13}
-        color="$color8"
+        color="color8"
       >
         {deviceOnly
           ? 'Theme, font and focus mode here stay on this device. Turn off to use your account’s look again.'

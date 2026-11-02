@@ -46,7 +46,7 @@ function ReactionTally({ reactions }: { reactions: { [key: string]: number } }) 
   if (shown.length === 0) return null
   return (
     <XStack
-      gap="$3"
+      gap="3"
       alignItems="center"
       role="group"
       aria-label="Reaction tally"
@@ -54,7 +54,7 @@ function ReactionTally({ reactions }: { reactions: { [key: string]: number } }) 
       {shown.map(({ kind, Icon }) => (
         <XStack
           key={kind}
-          gap="$1"
+          gap="1"
           alignItems="center"
         >
           <Icon
@@ -62,8 +62,8 @@ function ReactionTally({ reactions }: { reactions: { [key: string]: number } }) 
             color="$color9"
           />
           <Text
-            fontSize="$1"
-            color="$color9"
+            fontSize="1"
+            color="color9"
           >
             {reactions[kind]}
           </Text>
@@ -119,12 +119,12 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
         tag="article"
         role="article"
         aria-label={a11yLabel}
-        paddingVertical="$5"
+        paddingVertical="5"
       >
         <Text
-          fontFamily="$journal"
-          fontSize="$5"
-          color="$color8"
+          fontFamily="journal"
+          fontSize="5"
+          color="color8"
           fontStyle="italic"
         >
           This letter was withdrawn.
@@ -141,32 +141,31 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
       aria-label={a11yLabel}
       onPress={onOpen ? () => onOpen(post.id) : undefined}
       cursor={onOpen ? 'pointer' : undefined}
-      paddingVertical="$5"
+      paddingVertical="5"
       group
     >
       <XStack
         justifyContent="space-between"
         alignItems="flex-start"
-        gap="$4"
+        gap="4"
       >
         <Text
           tag="h2"
-          fontFamily="$journal"
-          fontSize="$8"
-          lineHeight="$8"
-          color="$color12"
+          fontFamily="journal"
+          fontSize="8"
+          lineHeight="8"
+          color="color12"
           flexShrink={1}
         >
           {post.title ?? 'Untitled'}
         </Text>
         <View
-          opacity={0}
-          $group-hover={{ opacity: 1 }}
-          marginTop="$2"
+          opacity="0 group-hover:1"
+          marginTop="2"
         >
           <ArrowRight
             size={20}
-            color="$color9"
+            color="color9"
           />
         </View>
       </XStack>
@@ -174,14 +173,14 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
       <XStack
         justifyContent="space-between"
         alignItems="center"
-        gap="$4"
-        marginTop="$3"
+        gap="4"
+        marginTop="3"
         flexWrap="wrap"
       >
         <Text
-          fontFamily="$body"
-          fontSize="$1"
-          color="$color9"
+          fontFamily="body"
+          fontSize="1"
+          color="color9"
           textTransform="uppercase"
           letterSpacing={1}
         >
