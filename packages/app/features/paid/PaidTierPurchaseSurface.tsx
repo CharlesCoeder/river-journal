@@ -129,7 +129,7 @@ export function PaidTierPurchaseSurface() {
       >
         <Text
           render="h1"
-          fontWeight="400"
+          fontWeight="web:400"
           fontFamily="journal"
           fontSize="8 sm:7"
           color="color"
@@ -162,7 +162,7 @@ export function PaidTierPurchaseSurface() {
         >
           <Text
             render="h1"
-            fontWeight="400"
+            fontWeight="web:400"
             fontFamily="journal"
             fontSize="8 sm:7"
             color="color"
@@ -201,7 +201,7 @@ export function PaidTierPurchaseSurface() {
     >
       <Text
         render="h1"
-        fontWeight="400"
+        fontWeight="web:400"
         fontFamily="journal"
         fontSize="8 sm:7"
         color="color"

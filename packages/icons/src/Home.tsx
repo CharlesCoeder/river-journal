@@ -1,5 +1,5 @@
 import { memo, type JSX } from 'react'
-import { Svg, Path, type SvgProps } from 'react-native-svg'
+import { Svg, Path, Polyline, type SvgProps } from 'react-native-svg'
 import { themed, type IconProps } from '@tamagui/helpers-icon'
 
 export const Home: (props: IconProps) => JSX.Element = themed(
@@ -20,8 +20,8 @@ export const Home: (props: IconProps) => JSX.Element = themed(
         strokeLinejoin="round"
         {...otherProps}
       >
-        <Path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" stroke={color} />
-        <Path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke={color} />
+        <Path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke={color} />
+        <Polyline points="9 22 9 12 15 12 15 22" stroke={color} />
       </Svg>
     )
   })

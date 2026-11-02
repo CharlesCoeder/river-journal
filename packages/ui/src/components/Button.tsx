@@ -10,6 +10,12 @@ const ButtonFrame = styled(TamaguiButton, {
   gap: 9,
 
   variants: {
+    // Tamagui 3 dims disabled buttons. Callers here set their own disabled look.
+    disabled: {
+      true: {
+        opacity: 1,
+      },
+    },
     // The smaller button: Tamagui 2's size 3.
     compact: {
       true: {

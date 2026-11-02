@@ -307,7 +307,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           {isRoot && post.title ? (
             <Text
                 render="h1"
-                fontWeight="400"
+                fontWeight="web:400"
                 fontFamily="journal"
                 fontSize="9"
                 lineHeight="9"

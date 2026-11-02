@@ -20,8 +20,8 @@ export const PenLine: (props: IconProps) => JSX.Element = themed(
         strokeLinejoin="round"
         {...otherProps}
       >
-        <Path d="M13 21h8" stroke={color} />
-        <Path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" stroke={color} />
+        <Path d="M12 20h9" stroke={color} />
+        <Path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z" stroke={color} />
       </Svg>
     )
   })
