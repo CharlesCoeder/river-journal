@@ -1,4 +1,4 @@
-import { createThemes, defaultComponentThemes } from '@tamagui/theme-builder'
+import { createThemes, defaultComponentThemes } from '@tamagui/config-v5/builder'
 
 // -----------------------------------------------------------------
 // Named theme palettes — 12-step gradient from bg → text

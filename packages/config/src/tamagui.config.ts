@@ -18,6 +18,9 @@ export const config = createTamagui({
   settings: {
     ...defaultConfig.settings,
     onlyAllowShorthands: false,
+    // The frozen v5 pack defaults to 'web' in Tamagui 3, which changes how flex
+    // resolves. Every layout in this app was built against 'react-native'.
+    styleCompat: 'react-native',
   },
   animations,
   fonts,
