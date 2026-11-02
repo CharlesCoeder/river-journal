@@ -1,11 +1,12 @@
 // Auth envelope for Edge Functions — two request-auth postures.
 //
-// 1. TRIGGER-CONTEXT (this epic's notify_moderation_action). The function is
-//    invoked by a Postgres pg_net trigger carrying the service-role bearer, and
-//    config sets verify_jwt = false, so the bearer compare is the ONLY inbound
-//    wall. It reads/writes the DB via createServiceRoleClient() (which bypasses
-//    RLS — required to read collective_posts.user_id for the remove_post author
-//    derivation). Gate inbound requests with requireServiceRole(req).
+// 1. TRIGGER-CONTEXT (notify_moderation_action and the other pg_net-invoked
+//    functions). The function is invoked by a Postgres trigger or cron dispatcher
+//    carrying INTERNAL_FUNCTION_SECRET as its bearer, and config sets
+//    verify_jwt = false, so the bearer compare is the ONLY inbound wall. It
+//    reads/writes the DB via createServiceRoleClient() (which bypasses RLS —
+//    required to read collective_posts.user_id for the remove_post author
+//    derivation). Gate inbound requests with requireInternalCaller(req).
 //
 // 2. ADMIN-CONTEXT (future functions, later epics). getAuthenticatedUser(req)
 //    validates the caller's JWT and requireAdmin(payload) enforces
@@ -34,7 +35,7 @@ export function createServiceRoleClient(): SupabaseClient {
 // information via early-exit timing and would wrongly accept a prefix; encoding
 // to bytes + a length gate + timingSafeEqual avoids both.
 //
-// Exported so security-critical byte compares (the service-role bearer gate
+// Exported so security-critical byte compares (the internal-caller bearer gate
 // here, the Stripe webhook HMAC compare in _shared/billing/stripe.ts) share ONE
 // vetted primitive rather than each re-deriving the length-gate + timingSafeEqual
 // shape ad-hoc. The length gate returns false on any length mismatch BEFORE
@@ -51,13 +52,19 @@ export function constantTimeEquals(a: string, b: string): boolean {
 }
 
 // Gate a trigger-invoked request. Returns a falsy value (null) when the bearer
-// matches SUPABASE_SERVICE_ROLE_KEY exactly, so callers write:
-//   const denied = requireServiceRole(req); if (denied) return denied
+// matches INTERNAL_FUNCTION_SECRET exactly, so callers write:
+//   const denied = requireInternalCaller(req); if (denied) return denied
 // Returns a 401 Response (never throws) on a missing/empty/mismatched bearer,
-// or when the expected key is itself unset (never silently authorizes). The
-// 401 body never echoes the expected key.
-export function requireServiceRole(req: Request): Response | null {
-  const expected = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+// or when the expected secret is itself unset (never silently authorizes). The
+// 401 body never echoes the expected secret.
+//
+// This is a dedicated secret, not the service-role key, for two reasons. The
+// runtime-injected SUPABASE_SERVICE_ROLE_KEY is not guaranteed to equal any key
+// the project's dashboard hands out, so the database has no reliable copy of it
+// to send. And pg_net keeps request headers in its net-schema tables, so what
+// the database sends should not be a key that bypasses RLS.
+export function requireInternalCaller(req: Request): Response | null {
+  const expected = Deno.env.get('INTERNAL_FUNCTION_SECRET')
   const header = req.headers.get('Authorization') ?? req.headers.get('authorization') ?? ''
   const prefix = 'Bearer '
   const bearer = header.startsWith(prefix) ? header.slice(prefix.length) : ''

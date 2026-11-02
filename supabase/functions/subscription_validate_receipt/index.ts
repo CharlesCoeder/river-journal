@@ -5,11 +5,11 @@
 // authenticated Edge Function in the repo. Every prior function
 // (notify_moderation_action, streak_reminder_cron, notify_reply) is
 // trigger/cron/service-role context (config verify_jwt = false +
-// requireServiceRole). This one is invoked by an authenticated USER's client
+// requireInternalCaller). This one is invoked by an authenticated USER's client
 // POSTing a receipt, so:
 //   - identity is resolved from the caller's JWT via getAuthenticatedUser(req)
 //     (any authenticated user may validate their OWN receipt — NOT requireAdmin,
-//     NOT requireServiceRole);
+//     NOT requireInternalCaller);
 //   - config.toml registers this function with verify_jwt = true, so the gateway
 //     rejects a missing/invalid JWT before this body runs;
 //   - all DB reads/writes go through createServiceRoleClient() (bypasses RLS —

@@ -1,6 +1,6 @@
 // Deno unit tests for the billing_events handler -- the repo's FIRST public
 // (signature-authed, verify_jwt = false) webhook Edge Function. Every prior
-// function is either service-role/trigger context (requireServiceRole) or
+// function is either service-role/trigger context (requireInternalCaller) or
 // user-JWT context (getAuthenticatedUser); this one has NEITHER -- the
 // Stripe-Signature HMAC over the raw body IS the authentication.
 //

@@ -10,7 +10,7 @@
 // subscription siblings:
 //   - identity is resolved from the caller's JWT via getAuthenticatedUser(req)
 //     (any authenticated user may delete their OWN account — NOT requireAdmin,
-//     NOT requireServiceRole);
+//     NOT requireInternalCaller);
 //   - config.toml registers this function with verify_jwt = true, so the
 //     gateway rejects a missing/invalid JWT before this body runs;
 //   - all DB work goes through createServiceRoleClient() (bypasses RLS — the

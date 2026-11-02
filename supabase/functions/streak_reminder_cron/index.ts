@@ -1,10 +1,10 @@
 // streak_reminder_cron — the daily streak-reminder fan-out.
 //
 // Invoked on a 15-minute pg_cron schedule (via a best-effort pg_net dispatch
-// wrapper carrying the service-role bearer), and also manually over HTTP for
+// wrapper carrying the INTERNAL_FUNCTION_SECRET bearer), and also manually over HTTP for
 // testing. It reads NO meaningful request body — the whole due-user set comes
-// from the streak_reminder_candidates RPC — so a service-role `curl -d '{}'`
-// runs a full pass. It is trigger/cron-context: gated by a service-role bearer
+// from the streak_reminder_candidates RPC — so an INTERNAL_FUNCTION_SECRET `curl -d '{}'`
+// runs a full pass. It is trigger/cron-context: gated by an INTERNAL_FUNCTION_SECRET bearer
 // (verify_jwt = false), DB access via the RLS-bypassing service-role client
 // (required to read every user's preferences + tokens).
 //
@@ -20,7 +20,7 @@
 // hour later is still reminderable today). The claim is never rolled back on an
 // Expo failure — a dropped nudge is the accepted trade against a double-notify.
 
-import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
+import { createServiceRoleClient, requireInternalCaller } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
 import {
@@ -69,7 +69,7 @@ export function composeStreakCopy(streakLen: number): { title: string; body: str
 export async function handler(req: Request, clientOverride?: SupabaseClient): Promise<Response> {
   const started = Date.now()
 
-  const denied = requireServiceRole(req)
+  const denied = requireInternalCaller(req)
   if (denied) {
     return denied
   }
