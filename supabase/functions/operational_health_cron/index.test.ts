@@ -14,7 +14,7 @@
 //     clientOverride?: SupabaseClient,
 //     now: Date = new Date(),
 //   ): Promise<Response>
-//   -- requireServiceRole(req) gates the request FIRST (401 before any
+//   -- requireInternalCaller(req) gates the request FIRST (401 before any
 //   client/RPC call); the body is read-and-discarded (an empty/absent/non-JSON
 //   body never fails the request); the client is
 //   `clientOverride ?? createServiceRoleClient()` constructed inside a
@@ -64,7 +64,7 @@ import {
   readOperatorTimezone,
 } from './index.ts'
 
-const SERVICE_ROLE_KEY = 'operational-health-cron-test-service-role-key-0123456789abcdef'
+const INTERNAL_SECRET = 'operational-health-cron-test-internal-secret-0123456789abcdef'
 const TEST_SENTRY_DSN = 'https://abc123publickey@o111222.ingest.us.sentry.io/4509999'
 
 // ---------------------------------------------------------------------------
@@ -92,8 +92,8 @@ function withEnv(key: string, value: string | undefined, fn: () => Promise<void>
   })()
 }
 
-function withServiceRoleKey(value: string | undefined, fn: () => Promise<void>): Promise<void> {
-  return withEnv('SUPABASE_SERVICE_ROLE_KEY', value, fn)
+function withInternalSecret(value: string | undefined, fn: () => Promise<void>): Promise<void> {
+  return withEnv('INTERNAL_FUNCTION_SECRET', value, fn)
 }
 
 function withSentryDsn(value: string | undefined, fn: () => Promise<void>): Promise<void> {
@@ -108,7 +108,7 @@ function cronRequest(body: unknown = {}): Request {
   return new Request('http://localhost/operational_health_cron', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      Authorization: `Bearer ${INTERNAL_SECRET}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -277,7 +277,7 @@ function withCapturedConsole(
 // ===========================================================================
 
 Deno.test('handler returns 401 for a bad bearer, before any client/RPC call', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const calls = newCalls()
     const client = buildMockClient({}, calls)
     const response = await handler(badBearerRequest(), client, NOW_OUTSIDE_WINDOW_UTC)
@@ -290,7 +290,7 @@ Deno.test('handler returns 401 for a bad bearer, before any client/RPC call', as
 })
 
 Deno.test('handler returns 401 for a missing Authorization header, before any client/RPC call', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const calls = newCalls()
     const client = buildMockClient({}, calls)
     const bareRequest = new Request('http://localhost/operational_health_cron', {
@@ -304,7 +304,7 @@ Deno.test('handler returns 401 for a missing Authorization header, before any cl
 })
 
 Deno.test('handler succeeds on an empty {} body', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = buildMockClient({ moderation: EMPTY_MODERATION }, newCalls())
     const response = await handler(cronRequest({}), client, NOW_OUTSIDE_WINDOW_UTC)
     assertEquals(response.status, 200)
@@ -312,11 +312,11 @@ Deno.test('handler succeeds on an empty {} body', async () => {
 })
 
 Deno.test('handler succeeds on an absent/non-JSON body (read-and-discard, never a failure)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = buildMockClient({ moderation: EMPTY_MODERATION }, newCalls())
     const rawRequest = new Request('http://localhost/operational_health_cron', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+      headers: { Authorization: `Bearer ${INTERNAL_SECRET}` },
     })
     const response = await handler(rawRequest, client, NOW_OUTSIDE_WINDOW_UTC)
     assertEquals(response.status, 200)
@@ -324,7 +324,7 @@ Deno.test('handler succeeds on an absent/non-JSON body (read-and-discard, never 
 })
 
 Deno.test('handler returns a minimal ok() body with NO queue/count data (enumeration-oracle guard)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = buildMockClient({ moderation: OK_MODERATION }, newCalls())
     const response = await handler(cronRequest({}), client, NOW_OUTSIDE_WINDOW_UTC)
     assertEquals(response.status, 200)
@@ -334,7 +334,7 @@ Deno.test('handler returns a minimal ok() body with NO queue/count data (enumera
 })
 
 Deno.test('handler returns a 500 err() when client construction fails and no clientOverride is given', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withEnv('SUPABASE_URL', undefined, async () => {
       const response = await handler(cronRequest({}), undefined, NOW_OUTSIDE_WINDOW_UTC)
       assertEquals(response.status, 500)
@@ -349,7 +349,7 @@ Deno.test('handler returns a 500 err() when client construction fails and no cli
 // ===========================================================================
 
 Deno.test('handler calls the moderation aggregate RPC on every tick, gate open or closed', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const calls = newCalls()
     const client = buildMockClient({ moderation: OK_MODERATION }, calls)
     await handler(cronRequest({}), client, NOW_OUTSIDE_WINDOW_UTC)
@@ -358,7 +358,7 @@ Deno.test('handler calls the moderation aggregate RPC on every tick, gate open o
 })
 
 Deno.test('handler records the moderation RPC row values verbatim in one operational_health_log insert', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const calls = newCalls()
     const client = buildMockClient({ moderation: OK_MODERATION }, calls)
     const response = await handler(cronRequest({}), client, NOW_OUTSIDE_WINDOW_UTC)
@@ -368,7 +368,7 @@ Deno.test('handler records the moderation RPC row values verbatim in one operati
 })
 
 Deno.test('handler records {0,0} on an empty queue (COALESCE zeros, never skipped)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const calls = newCalls()
     const client = buildMockClient({ moderation: EMPTY_MODERATION }, calls)
     await handler(cronRequest({}), client, NOW_OUTSIDE_WINDOW_UTC)
@@ -377,7 +377,7 @@ Deno.test('handler records {0,0} on an empty queue (COALESCE zeros, never skippe
 })
 
 Deno.test('handler does not call the moderation RPC before the bearer check', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const calls = newCalls()
     const client = buildMockClient({}, calls)
     await handler(badBearerRequest(), client, NOW_OUTSIDE_WINDOW_UTC)
@@ -390,7 +390,7 @@ Deno.test('handler does not call the moderation RPC before the bearer check', as
 // ===========================================================================
 
 Deno.test('handler fires NO Sentry alert when the queue is at/below both thresholds', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withSentryDsn(TEST_SENTRY_DSN, async () => {
       await withCapturedFetch(async (fetchCalls) => {
         const client = buildMockClient({ moderation: OK_MODERATION }, newCalls())
@@ -402,7 +402,7 @@ Deno.test('handler fires NO Sentry alert when the queue is at/below both thresho
 })
 
 Deno.test('handler fires one Sentry alert with aggregate counts when pending_count crosses the threshold', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withSentryDsn(TEST_SENTRY_DSN, async () => {
       await withCapturedFetch(async (fetchCalls) => {
         const client = buildMockClient({ moderation: BACKLOGGED_MODERATION }, newCalls())
@@ -422,7 +422,7 @@ Deno.test('handler fires one Sentry alert with aggregate counts when pending_cou
 })
 
 Deno.test('handler fires the Sentry alert when the oldest pending flag crosses the age threshold', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withSentryDsn(TEST_SENTRY_DSN, async () => {
       await withCapturedFetch(async (fetchCalls) => {
         const client = buildMockClient({ moderation: STALE_MODERATION }, newCalls())
@@ -434,7 +434,7 @@ Deno.test('handler fires the Sentry alert when the oldest pending flag crosses t
 })
 
 Deno.test('a backlogged queue is still recorded in the log table even when SENTRY_DSN is unset (no fetch)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withSentryDsn(undefined, async () => {
       await withCapturedFetch(async (fetchCalls) => {
         const calls = newCalls()
@@ -449,7 +449,7 @@ Deno.test('a backlogged queue is still recorded in the log table even when SENTR
 })
 
 Deno.test('a Sentry outage (fetch rejects) does not crash the handler -- the log write and ok() still happen', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withSentryDsn(TEST_SENTRY_DSN, async () => {
       const calls = newCalls()
       await withCapturedFetch(
@@ -572,7 +572,7 @@ Deno.test('readOperatorTimezone falls back to the documented default when OPERAT
 })
 
 Deno.test('handler never throws when OPERATOR_TIMEZONE is set to an invalid IANA zone -- gate behaves as if the default zone were configured', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('US/Pacifik', async () => {
       const calls = newCalls()
       const client = buildMockClient(
@@ -599,7 +599,7 @@ Deno.test('handler never throws when OPERATOR_TIMEZONE is set to an invalid IANA
 // ===========================================================================
 
 Deno.test('handler does NOT call the sync-opt-in RPC or record its columns when the gate is closed', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('UTC', async () => {
       const calls = newCalls()
       const client = buildMockClient({ moderation: OK_MODERATION }, calls)
@@ -612,7 +612,7 @@ Deno.test('handler does NOT call the sync-opt-in RPC or record its columns when 
 })
 
 Deno.test('handler calls the sync-opt-in RPC and records its columns in the SAME row when the gate is open', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('UTC', async () => {
       const calls = newCalls()
       const client = buildMockClient(
@@ -639,7 +639,7 @@ Deno.test('handler calls the sync-opt-in RPC and records its columns in the SAME
 // ===========================================================================
 
 Deno.test('handler logs exactly one heartbeat line with only { passes, sync_opt_in_sampled, duration_ms } fields', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withCapturedConsole(async (logs) => {
       const client = buildMockClient({ moderation: OK_MODERATION }, newCalls())
       await handler(cronRequest({}), client, NOW_OUTSIDE_WINDOW_UTC)
@@ -656,7 +656,7 @@ Deno.test('handler logs exactly one heartbeat line with only { passes, sync_opt_
 })
 
 Deno.test('handler heartbeat reports both passes and sync_opt_in_sampled=true when the daily gate opened', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('UTC', async () => {
       await withCapturedConsole(async (logs) => {
         const client = buildMockClient(
@@ -673,7 +673,7 @@ Deno.test('handler heartbeat reports both passes and sync_opt_in_sampled=true wh
 })
 
 Deno.test('the heartbeat log line never carries pending_count, oldest_pending_age_seconds, opted_in_count, total_count, or any *user*/*_id field', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('UTC', async () => {
       await withCapturedConsole(async (logs) => {
         const client = buildMockClient(
@@ -702,7 +702,7 @@ Deno.test('the heartbeat log line never carries pending_count, oldest_pending_ag
 // ===========================================================================
 
 Deno.test('a moderation RPC error does not abort the sync-opt-in pass when the gate is open, and does not throw', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('UTC', async () => {
       const calls = newCalls()
       const client = buildMockClient(
@@ -729,7 +729,7 @@ Deno.test('a moderation RPC error does not abort the sync-opt-in pass when the g
 })
 
 Deno.test('a sync-opt-in RPC error does not abort the moderation pass, and does not throw', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('UTC', async () => {
       const calls = newCalls()
       const client = buildMockClient(
@@ -754,7 +754,7 @@ Deno.test('a sync-opt-in RPC error does not abort the moderation pass, and does 
 })
 
 Deno.test('handler never throws, writes no row, and still returns ok() when BOTH RPC calls error', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withOperatorTimezone('UTC', async () => {
       const calls = newCalls()
       const client = buildMockClient(
@@ -781,7 +781,7 @@ Deno.test('handler never throws, writes no row, and still returns ok() when BOTH
 })
 
 Deno.test('an operational_health_log insert error does not crash the handler -- ok() is still returned', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const calls = newCalls()
     const client = buildMockClient(
       { moderation: OK_MODERATION, insertError: { message: 'disk full' } },

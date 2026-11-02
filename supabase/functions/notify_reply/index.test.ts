@@ -21,7 +21,7 @@
 //     replierId.slice(0, 8), never any other input.
 //   - handler(req: Request, clientOverride?: SupabaseClient): Promise<Response>
 //     -- mirrors notify_moderation_action's / streak_reminder_cron's shape:
-//     requireServiceRole(req) gates the request (401 before any client call);
+//     requireInternalCaller(req) gates the request (401 before any client call);
 //     payload `{ id, user_id?, parent_post_id, created_at? }` is parsed and
 //     `id`/`parent_post_id` UUID-shape-validated BEFORE any DB call (400 on
 //     failure); the FIRST DB write claims `reply_notification_log` via
@@ -52,7 +52,7 @@
 import { assertEquals } from 'jsr:@std/assert@1'
 import { buildReplyRecipientCandidates, composeReplyCopy, handler } from './index.ts'
 
-const SERVICE_ROLE_KEY = 'notify-reply-test-service-role-key-0123456789abcdef'
+const INTERNAL_SECRET = 'notify-reply-test-internal-secret-0123456789abcdef'
 
 const REPLY_ID = '00000000-0000-0000-0000-0000000000a1'
 const PARENT_ID = '00000000-0000-0000-0000-0000000000a2'
@@ -60,21 +60,21 @@ const REPLIER_ID = '00000000-0000-0000-0000-0000000000a3'
 const PARENT_AUTHOR_ID = '00000000-0000-0000-0000-0000000000a4'
 const ROOT_AUTHOR_ID = '00000000-0000-0000-0000-0000000000a5'
 
-function withServiceRoleKey(value: string | undefined, fn: () => Promise<void>): Promise<void> {
-  const original = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+function withInternalSecret(value: string | undefined, fn: () => Promise<void>): Promise<void> {
+  const original = Deno.env.get('INTERNAL_FUNCTION_SECRET')
   if (value === undefined) {
-    Deno.env.delete('SUPABASE_SERVICE_ROLE_KEY')
+    Deno.env.delete('INTERNAL_FUNCTION_SECRET')
   } else {
-    Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', value)
+    Deno.env.set('INTERNAL_FUNCTION_SECRET', value)
   }
   return (async () => {
     try {
       await fn()
     } finally {
       if (original === undefined) {
-        Deno.env.delete('SUPABASE_SERVICE_ROLE_KEY')
+        Deno.env.delete('INTERNAL_FUNCTION_SECRET')
       } else {
-        Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', original)
+        Deno.env.set('INTERNAL_FUNCTION_SECRET', original)
       }
     }
   })()
@@ -84,7 +84,7 @@ function replyRequest(body: unknown): Request {
   return new Request('http://localhost/notify_reply', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      Authorization: `Bearer ${INTERNAL_SECRET}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -280,7 +280,7 @@ Deno.test('composeReplyCopy body never includes anything past the 8-char pseudon
 // ---------------------------------------------------------------------------
 
 Deno.test('handler returns 401 for a bad bearer, before any client call', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       rpc(name: string) {
         throw new Error(`unexpected rpc call ("${name}") before the bearer check`)
@@ -299,7 +299,7 @@ Deno.test('handler returns 401 for a bad bearer, before any client call', async 
 })
 
 Deno.test('handler returns 400 for a non-JSON body', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         throw new Error(`unexpected table access ("${table}") for a non-JSON body`)
@@ -308,7 +308,7 @@ Deno.test('handler returns 400 for a non-JSON body', async () => {
     } as any
     const request = new Request('http://localhost/notify_reply', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+      headers: { Authorization: `Bearer ${INTERNAL_SECRET}` },
       body: 'not json',
     })
     const response = await handler(request, client)
@@ -317,7 +317,7 @@ Deno.test('handler returns 400 for a non-JSON body', async () => {
 })
 
 Deno.test('handler returns 400 for a non-UUID id, before any DB call', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         throw new Error(`unexpected table access ("${table}") before UUID validation`)
@@ -336,7 +336,7 @@ Deno.test('handler returns 400 for a non-UUID id, before any DB call', async () 
 })
 
 Deno.test('handler returns 400 for a non-UUID parent_post_id, before any DB call', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         throw new Error(`unexpected table access ("${table}") before UUID validation`)
@@ -355,7 +355,7 @@ Deno.test('handler returns 400 for a non-UUID parent_post_id, before any DB call
 })
 
 Deno.test('handler returns 400 for a non-UUID, non-null user_id, before any DB call (and never claims the ledger)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         throw new Error(`unexpected table access ("${table}") before user_id validation`)
@@ -374,7 +374,7 @@ Deno.test('handler returns 400 for a non-UUID, non-null user_id, before any DB c
 })
 
 Deno.test('handler returns ok() and does NO downstream work on a zero-row ledger claim (idempotent re-fire)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = buildMockClient({ ledger: { data: [], error: null } })
     const response = await handler(replyRequest(basePayload()), client)
     assertEquals(response.status, 200)
@@ -387,7 +387,7 @@ Deno.test('handler returns ok() and does NO downstream work on a zero-row ledger
 })
 
 Deno.test('handler returns 400 (not 500) when the ledger insert hits a foreign-key violation (well-formed but unknown reply id)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = buildMockClient({
       ledger: { data: null, error: { code: '23503', message: 'foreign key violation' } },
     })
@@ -397,7 +397,7 @@ Deno.test('handler returns 400 (not 500) when the ledger insert hits a foreign-k
 })
 
 Deno.test('handler returns 500 for a genuine ledger write failure (non-FK error)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = buildMockClient({
       ledger: { data: null, error: { code: '57P01', message: 'database is shutting down' } },
     })
@@ -407,7 +407,7 @@ Deno.test('handler returns 500 for a genuine ledger write failure (non-FK error)
 })
 
 Deno.test('handler returns ok() and does no author resolution when payload.user_id is null (already-anonymized replier)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = buildMockClient({
       ledger: { data: [{ reply_post_id: REPLY_ID }], error: null },
     })
@@ -422,7 +422,7 @@ Deno.test('handler returns ok() and does no author resolution when payload.user_
 })
 
 Deno.test('handler is fail-closed (500, zero fetch calls) when the parent-author lookup errors', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let fetchCalled = false
     globalThis.fetch = (() => {
@@ -445,7 +445,7 @@ Deno.test('handler is fail-closed (500, zero fetch calls) when the parent-author
 })
 
 Deno.test('handler is fail-closed (500, zero fetch calls) when thread_root_user_id errors', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let fetchCalled = false
     globalThis.fetch = (() => {
@@ -469,7 +469,7 @@ Deno.test('handler is fail-closed (500, zero fetch calls) when thread_root_user_
 })
 
 Deno.test('handler is fail-closed (500, zero fetch calls) when notify_reply_eligible_recipients errors -- it must NEVER fall back to the unfiltered candidate set', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let fetchCalled = false
     globalThis.fetch = (() => {
@@ -494,7 +494,7 @@ Deno.test('handler is fail-closed (500, zero fetch calls) when notify_reply_elig
 })
 
 Deno.test('handler is fail-closed (500, zero fetch calls) when notify_reply_eligible_recipients returns a non-array result', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let fetchCalled = false
     globalThis.fetch = (() => {
@@ -519,7 +519,7 @@ Deno.test('handler is fail-closed (500, zero fetch calls) when notify_reply_elig
 })
 
 Deno.test('handler is fail-closed (500, zero fetch calls) when the token lookup errors', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let fetchCalled = false
     globalThis.fetch = (() => {
@@ -545,7 +545,7 @@ Deno.test('handler is fail-closed (500, zero fetch calls) when the token lookup 
 })
 
 Deno.test('handler returns ok() with no eligibility/token/fetch work when the candidate set is empty (self-reply degenerate case)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let fetchCalled = false
     globalThis.fetch = (() => {
@@ -577,7 +577,7 @@ Deno.test('handler returns ok() with no eligibility/token/fetch work when the ca
 })
 
 Deno.test('handler returns ok() with no token/fetch work when the eligibility rpc returns zero surviving recipients', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let fetchCalled = false
     globalThis.fetch = (() => {
@@ -604,7 +604,7 @@ Deno.test('handler returns ok() with no token/fetch work when the eligibility rp
 })
 
 Deno.test("handler dispatches a single push to a surviving recipient's live token, with the documented data shape, and returns a minimal ok() (enumeration-oracle guard)", async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     let capturedBody: unknown = null
     globalThis.fetch = ((_url: string, init?: RequestInit) => {
@@ -644,7 +644,7 @@ Deno.test("handler dispatches a single push to a surviving recipient's live toke
 })
 
 Deno.test('handler returns a wrapped 500 error envelope (not an uncaught throw) when SUPABASE_URL is unset', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalUrl = Deno.env.get('SUPABASE_URL')
     Deno.env.delete('SUPABASE_URL')
     try {

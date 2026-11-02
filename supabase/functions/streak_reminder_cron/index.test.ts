@@ -22,7 +22,7 @@
 //     body with no `data` at all) returns an EMPTY array (prune nothing).
 //     A ticket with a non-DeviceNotRegistered error code is never included.
 //   - handler(req: Request, clientOverride?: SupabaseClient): Promise<Response>
-//     -- mirrors notify_moderation_action's shape: requireServiceRole(req)
+//     -- mirrors notify_moderation_action's shape: requireInternalCaller(req)
 //     gates the request (401 on a missing/wrong bearer, before any client
 //     call); a valid bearer with an empty `{}` body runs a full pass via
 //     streak_reminder_candidates() and returns a minimal ok() (no candidate
@@ -53,23 +53,23 @@ import { assertEquals } from 'jsr:@std/assert@1'
 import { composeStreakCopy, handler } from './index.ts'
 import { chunkExpoMessages, parseExpoTickets } from '../_shared/expoPush.ts'
 
-const SERVICE_ROLE_KEY = 'streak-cron-test-service-role-key-0123456789abcdef'
+const INTERNAL_SECRET = 'streak-cron-test-internal-secret-0123456789abcdef'
 
-function withServiceRoleKey(value: string | undefined, fn: () => Promise<void>): Promise<void> {
-  const original = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+function withInternalSecret(value: string | undefined, fn: () => Promise<void>): Promise<void> {
+  const original = Deno.env.get('INTERNAL_FUNCTION_SECRET')
   if (value === undefined) {
-    Deno.env.delete('SUPABASE_SERVICE_ROLE_KEY')
+    Deno.env.delete('INTERNAL_FUNCTION_SECRET')
   } else {
-    Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', value)
+    Deno.env.set('INTERNAL_FUNCTION_SECRET', value)
   }
   return (async () => {
     try {
       await fn()
     } finally {
       if (original === undefined) {
-        Deno.env.delete('SUPABASE_SERVICE_ROLE_KEY')
+        Deno.env.delete('INTERNAL_FUNCTION_SECRET')
       } else {
-        Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', original)
+        Deno.env.set('INTERNAL_FUNCTION_SECRET', original)
       }
     }
   })()
@@ -79,7 +79,7 @@ function cronRequest(body: unknown = {}): Request {
   return new Request('http://localhost/streak_reminder_cron', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      Authorization: `Bearer ${INTERNAL_SECRET}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -240,7 +240,7 @@ Deno.test('parseExpoTickets flags zero tokens when data is present but is not an
 // ---------------------------------------------------------------------------
 
 Deno.test('handler returns 401 for a bad bearer, before any client call', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       rpc(name: string) {
         throw new Error(`unexpected client access ("${name}") before the bearer check`)
@@ -259,7 +259,7 @@ Deno.test('handler returns 401 for a bad bearer, before any client call', async 
 })
 
 Deno.test('handler returns ok() for a valid bearer + empty body when there are zero due candidates', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       rpc(name: string) {
         assertEquals(name, 'streak_reminder_candidates')
@@ -279,7 +279,7 @@ Deno.test('handler returns ok() for a valid bearer + empty body when there are z
 })
 
 Deno.test('handler never echoes candidate data back in the response body (enumeration-oracle guard)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       rpc(name: string) {
         assertEquals(name, 'streak_reminder_candidates')
@@ -307,7 +307,7 @@ Deno.test('handler never echoes candidate data back in the response body (enumer
 // ---------------------------------------------------------------------------
 
 Deno.test('handler claims the ledger only for the candidate with a live token, and skips the zero-token candidate without claiming', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const claimedUserIds: string[] = []
 
     const client = {

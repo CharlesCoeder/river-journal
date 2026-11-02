@@ -6,7 +6,7 @@
 // trigger/cron/service-role context). Same posture as the validate sibling:
 //   - identity is resolved from the caller's JWT via getAuthenticatedUser(req)
 //     (any authenticated user may cancel their OWN subscription — NOT
-//     requireAdmin, NOT requireServiceRole);
+//     requireAdmin, NOT requireInternalCaller);
 //   - config.toml registers this function with verify_jwt = true, so the gateway
 //     rejects a missing/invalid JWT before this body runs;
 //   - all DB reads/writes go through createServiceRoleClient() (bypasses RLS —

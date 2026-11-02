@@ -375,8 +375,8 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
-# Trigger-invoked internal function: the Postgres pg_net trigger calls it with a
-# service-role bearer, and the function does its own requireServiceRole() check.
+# Trigger-invoked internal function: the Postgres pg_net trigger calls it with an
+# INTERNAL_FUNCTION_SECRET bearer, and the function does its own requireInternalCaller() check.
 # verify_jwt = false so it is reachable at its public URL for that bearer check
 # to be the gate (it is NOT a user-facing, JWT-authenticated function). See
 # docs/edge-functions-setup.md for the per-environment secret setup.
@@ -384,8 +384,8 @@ deno_version = 2
 verify_jwt = false
 
 # Cron-invoked internal function: a pg_cron schedule calls it every 15 minutes
-# through a pg_net dispatch wrapper carrying a service-role bearer, and the
-# function does its own requireServiceRole() check. verify_jwt = false so it is
+# through a pg_net dispatch wrapper carrying an INTERNAL_FUNCTION_SECRET bearer, and the
+# function does its own requireInternalCaller() check. verify_jwt = false so it is
 # reachable at its public URL for that bearer check to be the gate (it is NOT a
 # user-facing, JWT-authenticated function). It can also be invoked manually over
 # HTTP for testing. See docs/edge-functions-setup.md for the per-environment
@@ -394,8 +394,8 @@ verify_jwt = false
 verify_jwt = false
 
 # Trigger-invoked internal function: an AFTER INSERT trigger on collective_posts
-# (replies only) calls it with a service-role bearer through a pg_net dispatch,
-# and the function does its own requireServiceRole() check. verify_jwt = false so
+# (replies only) calls it with an INTERNAL_FUNCTION_SECRET bearer through a pg_net dispatch,
+# and the function does its own requireInternalCaller() check. verify_jwt = false so
 # it is reachable at its public URL for that bearer check to be the gate (it is
 # NOT a user-facing, JWT-authenticated function). It can also be invoked manually
 # over HTTP for testing. See docs/edge-functions-setup.md for the per-environment
@@ -405,7 +405,7 @@ verify_jwt = false
 
 # User-facing function: invoked by an AUTHENTICATED USER's client POSTing a
 # purchase receipt (NOT a trigger/cron). verify_jwt = true — a deliberate
-# departure from every function above (all verify_jwt = false service-role /
+# departure from every function above (all verify_jwt = false internal-secret /
 # trigger context) — so the Supabase gateway rejects a missing/invalid JWT at the
 # edge before the body runs. The function resolves the caller from that JWT
 # (getAuthenticatedUser) for identity and uses a service-role client only for the
@@ -446,8 +446,8 @@ verify_jwt = true
 # subscription renews or changes. verify_jwt = false so it is reachable at its
 # public URL BY DESIGN — but this is a THIRD, distinct auth posture from both
 # above: it is neither a user-JWT function (subscription_*, verify_jwt = true) nor
-# a service-role-bearer trigger/cron function (notify_* / streak_reminder_cron,
-# which do a requireServiceRole() bearer compare). Here there is NO bearer check
+# an internal-secret-bearer trigger/cron function (notify_* / streak_reminder_cron,
+# which do a requireInternalCaller() bearer compare). Here there is NO bearer check
 # and NO JWT — the Stripe-Signature HMAC over the raw body IS the authentication
 # (verified against STRIPE_WEBHOOK_SECRET with a timestamp-tolerance window). DB
 # writes use the service-role client because there is no caller identity to scope
@@ -460,8 +460,8 @@ verify_jwt = true
 verify_jwt = false
 
 # Cron-invoked internal function: a pg_cron schedule calls it every 30 minutes
-# through a pg_net dispatch wrapper carrying a service-role bearer, and the
-# function does its own requireServiceRole() check. verify_jwt = false so it is
+# through a pg_net dispatch wrapper carrying an INTERNAL_FUNCTION_SECRET bearer, and the
+# function does its own requireInternalCaller() check. verify_jwt = false so it is
 # reachable at its public URL for that bearer check to be the gate (it is NOT a
 # user-facing, JWT-authenticated function). It can also be invoked manually over
 # HTTP for testing. See docs/edge-functions-setup.md for the per-environment

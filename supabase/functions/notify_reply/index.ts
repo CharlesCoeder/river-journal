@@ -6,7 +6,7 @@
 // root's author, deduped, minus the replier — filters them through the symmetric
 // block predicate + the replies-notification preference gate (both in SQL, via
 // notify_reply_eligible_recipients), and batch-POSTs one Expo push per surviving
-// recipient's live token. It is trigger-context: gated by a service-role bearer
+// recipient's live token. It is trigger-context: gated by an INTERNAL_FUNCTION_SECRET bearer
 // (verify_jwt = false), DB access via the RLS-bypassing service-role client
 // (required to read every user's collective_posts.user_id, preferences, tokens).
 //
@@ -38,7 +38,7 @@
 // re-invoke hits the zero-row short-circuit and is a deliberate no-op, not a
 // retry. A dropped push is the accepted trade against ever double-notifying.
 
-import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
+import { createServiceRoleClient, requireInternalCaller } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
 import { type ExpoMessage, fanOutExpoPush } from '../_shared/expoPush.ts'
@@ -120,7 +120,7 @@ export function composeReplyCopy(replierId: string): { title: string; body: stri
 export async function handler(req: Request, clientOverride?: SupabaseClient): Promise<Response> {
   const started = Date.now()
 
-  const denied = requireServiceRole(req)
+  const denied = requireInternalCaller(req)
   if (denied) {
     return denied
   }

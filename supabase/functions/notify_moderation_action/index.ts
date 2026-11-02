@@ -4,7 +4,7 @@
 // pg_net) whenever a destructive moderation action is taken. It resolves the
 // affected user, checks their moderation-notification opt-in, looks up their
 // live push tokens, and dispatches one Expo push per token through the shared
-// fanOutExpoPush helper. It is trigger-context: gated by a service-role bearer
+// fanOutExpoPush helper. It is trigger-context: gated by an INTERNAL_FUNCTION_SECRET bearer
 // (verify_jwt = false), DB access via the RLS-bypassing service-role client.
 //
 // IDEMPOTENCY — resolve, then claim, at-most-once. The affected user is
@@ -33,7 +33,7 @@
 //     `data` payload carries no reason/reason_code — so no free text ever
 //     reaches the notification or any log field.
 
-import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
+import { createServiceRoleClient, requireInternalCaller } from '../_shared/auth.ts'
 import { logError, logInfo, redact } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
 import { type ExpoMessage, fanOutExpoPush } from '../_shared/expoPush.ts'
@@ -240,7 +240,7 @@ interface TokenRow {
 // it — the handler falls back to createServiceRoleClient().
 export async function handler(req: Request, clientOverride?: SupabaseClient): Promise<Response> {
   const started = Date.now()
-  const denied = requireServiceRole(req)
+  const denied = requireInternalCaller(req)
   if (denied) {
     return denied
   }

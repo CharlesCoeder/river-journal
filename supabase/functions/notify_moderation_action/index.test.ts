@@ -72,23 +72,23 @@ import {
   resolveAffectedUserId,
 } from './index.ts'
 
-const SERVICE_ROLE_KEY = 'handler-test-service-role-key-0123456789abcdef'
+const INTERNAL_SECRET = 'handler-test-internal-secret-0123456789abcdef'
 
-function withServiceRoleKey(value: string | undefined, fn: () => Promise<void>): Promise<void> {
-  const original = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+function withInternalSecret(value: string | undefined, fn: () => Promise<void>): Promise<void> {
+  const original = Deno.env.get('INTERNAL_FUNCTION_SECRET')
   if (value === undefined) {
-    Deno.env.delete('SUPABASE_SERVICE_ROLE_KEY')
+    Deno.env.delete('INTERNAL_FUNCTION_SECRET')
   } else {
-    Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', value)
+    Deno.env.set('INTERNAL_FUNCTION_SECRET', value)
   }
   return (async () => {
     try {
       await fn()
     } finally {
       if (original === undefined) {
-        Deno.env.delete('SUPABASE_SERVICE_ROLE_KEY')
+        Deno.env.delete('INTERNAL_FUNCTION_SECRET')
       } else {
-        Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', original)
+        Deno.env.set('INTERNAL_FUNCTION_SECRET', original)
       }
     }
   })()
@@ -98,7 +98,7 @@ function moderationRequest(body: unknown): Request {
   return new Request('http://localhost/notify_moderation_action', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      Authorization: `Bearer ${INTERNAL_SECRET}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -300,7 +300,7 @@ Deno.test('redactForLog keeps the documented safe flat fields (action_type, reso
 // ---------------------------------------------------------------------------
 
 Deno.test('handler short-circuits on ledger conflict (dedupe): returns ok without composing or logging a notification', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         if (table === 'moderation_notification_log') {
@@ -348,7 +348,7 @@ Deno.test('handler short-circuits on ledger conflict (dedupe): returns ok withou
 })
 
 Deno.test('handler returns 500 BEFORE claiming the ledger when the author lookup itself errors (retryable, never swallowed as no_target)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     let ledgerTouched = false
     const client = {
       from(table: string) {
@@ -396,7 +396,7 @@ Deno.test('handler returns 500 BEFORE claiming the ledger when the author lookup
 })
 
 Deno.test('handler returns ok without claiming the ledger when the target post has no resolvable author (hard-deleted): nobody to notify, nothing to retry', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     let ledgerTouched = false
     const posts = fakeServiceRoleClient({ 'post-gone': null })
     const client = {
@@ -425,7 +425,7 @@ Deno.test('handler returns ok without claiming the ledger when the target post h
 })
 
 Deno.test('handler returns 400 for a non-UUID id, before any DB call', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         throw new Error(`unexpected DB access for table "${table}" before UUID validation`)
@@ -444,7 +444,7 @@ Deno.test('handler returns 400 for a non-UUID id, before any DB call', async () 
 })
 
 Deno.test('handler returns 400 (not 500) when the ledger insert hits a foreign-key violation (well-formed but unknown action id)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         assertEquals(table, 'moderation_notification_log')
@@ -479,7 +479,7 @@ Deno.test('handler returns 400 (not 500) when the ledger insert hits a foreign-k
 })
 
 Deno.test('handler returns 500 for a genuine ledger write failure (non-FK error)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const client = {
       from(table: string) {
         assertEquals(table, 'moderation_notification_log')
@@ -514,7 +514,7 @@ Deno.test('handler returns 500 for a genuine ledger write failure (non-FK error)
 })
 
 Deno.test('handler returns a wrapped 500 error envelope (not an uncaught throw) when SUPABASE_URL is unset', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalUrl = Deno.env.get('SUPABASE_URL')
     Deno.env.delete('SUPABASE_URL')
     try {
@@ -771,7 +771,7 @@ function withFetchCapture(
 }
 
 Deno.test('handler dispatches an Expo push when moderation.enabled is true, with the exact documented data shape and no reason/reason_code leak', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withFetchCapture(async (getFetch) => {
       const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
         ledger: {
@@ -824,7 +824,7 @@ Deno.test('handler dispatches an Expo push when moderation.enabled is true, with
 })
 
 Deno.test('handler does NOT send (no fetch call) when reminders.moderation.enabled is entirely absent from preferences', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withFetchCapture(async (getFetch) => {
       const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
         ledger: {
@@ -844,7 +844,7 @@ Deno.test('handler does NOT send (no fetch call) when reminders.moderation.enabl
 })
 
 Deno.test('handler does NOT send when reminders.moderation.enabled is explicitly false', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withFetchCapture(async (getFetch) => {
       const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
         ledger: {
@@ -865,7 +865,7 @@ Deno.test('handler does NOT send when reminders.moderation.enabled is explicitly
 })
 
 Deno.test('handler does NOT send when the affected user has a null preferences row', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withFetchCapture(async (getFetch) => {
       const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
         ledger: {
@@ -883,7 +883,7 @@ Deno.test('handler does NOT send when the affected user has a null preferences r
 })
 
 Deno.test('handler fails CLOSED (still ok(), no send) when the preference SELECT itself errors', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withFetchCapture(async (getFetch) => {
       const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
         ledger: {
@@ -903,7 +903,7 @@ Deno.test('handler fails CLOSED (still ok(), no send) when the preference SELECT
 })
 
 Deno.test('handler returns ok() with no send when the enabled recipient has zero live tokens (not an error)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     await withFetchCapture(async (getFetch) => {
       const client = buildFullMockClient('00000000-0000-0000-0000-0000000000b1', {
         ledger: {
@@ -927,7 +927,7 @@ Deno.test('handler returns ok() with no send when the enabled recipient has zero
 })
 
 Deno.test('handler soft-deletes a DeviceNotRegistered token through the reused fanOutExpoPush (integration seam, not a re-test of expoPush.ts itself)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     const prunedTokens: string[] = []
     globalThis.fetch = (() => {
@@ -968,7 +968,7 @@ Deno.test('handler soft-deletes a DeviceNotRegistered token through the reused f
 })
 
 Deno.test('the seeded reason free-text marker appears in NO captured console.log/console.error line across a full enabled-and-sent run (defense in depth beyond body/data)', async () => {
-  await withServiceRoleKey(SERVICE_ROLE_KEY, async () => {
+  await withInternalSecret(INTERNAL_SECRET, async () => {
     const originalFetch = globalThis.fetch
     globalThis.fetch = (() => {
       return Promise.resolve(

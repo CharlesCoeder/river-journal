@@ -1,10 +1,10 @@
 // operational_health_cron — the recurring operational-health sampler.
 //
 // Invoked on a 30-minute pg_cron schedule (via a best-effort pg_net dispatch
-// wrapper carrying the service-role bearer), and also manually over HTTP for
+// wrapper carrying the INTERNAL_FUNCTION_SECRET bearer), and also manually over HTTP for
 // testing. It reads NO meaningful request body — every count comes from a
-// pair of aggregate SECURITY DEFINER RPCs — so a service-role `curl -d '{}'`
-// runs a full pass. It is trigger/cron-context: gated by a service-role bearer
+// pair of aggregate SECURITY DEFINER RPCs — so an INTERNAL_FUNCTION_SECRET `curl -d '{}'`
+// runs a full pass. It is trigger/cron-context: gated by an INTERNAL_FUNCTION_SECRET bearer
 // (verify_jwt = false), DB access via the RLS-bypassing service-role client
 // (the aggregate RPCs read across every user's rows).
 //
@@ -37,7 +37,7 @@
 // aggregate counts land exclusively in operational_health_log (service-role
 // only) and, past a threshold, in the Sentry alert's aggregate extra.
 
-import { createServiceRoleClient, requireServiceRole } from '../_shared/auth.ts'
+import { createServiceRoleClient, requireInternalCaller } from '../_shared/auth.ts'
 import { logError, logInfo } from '../_shared/logging.ts'
 import { err, ok } from '../_shared/responses.ts'
 import { captureServerAlert } from '../_shared/sentry.ts'
@@ -141,7 +141,7 @@ export async function handler(
 ): Promise<Response> {
   const started = Date.now()
 
-  const denied = requireServiceRole(req)
+  const denied = requireInternalCaller(req)
   if (denied) {
     return denied
   }

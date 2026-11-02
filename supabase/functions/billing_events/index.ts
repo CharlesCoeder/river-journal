@@ -5,7 +5,7 @@
 // (subscription_validate_receipt / subscription_cancel, verify_jwt = true,
 // getAuthenticatedUser for identity); (2) service-role-bearer trigger/cron
 // (notify_* / streak_reminder_cron, verify_jwt = false gated by
-// requireServiceRole). This function is the THIRD: a public webhook registered
+// requireInternalCaller). This function is the THIRD: a public webhook registered
 // with verify_jwt = false so it is reachable at its public URL BY DESIGN — but
 // there is NO bearer check and NO JWT. The Stripe-Signature HMAC over the raw
 // body IS the authentication (verifyStripeWebhookSignature). DB writes use the
