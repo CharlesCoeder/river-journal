@@ -1,3 +1,4 @@
+/// <reference path="./config-v5.d.ts" />
 import { defaultConfig } from '@tamagui/config/v5'
 import { createTamagui, type TamaguiInternalConfig } from 'tamagui'
 import { fonts } from './fonts'

@@ -2,7 +2,7 @@
 // mounts, so padding springs from its mobile value to its desktop one. Elements with
 // clauses like `md:8` on layout props need `properties: 'transform, opacity'`.
 import { createAnimations } from '@tamagui/animations-motion'
-import { animationsMotion } from '@tamagui/config/v5-motion'
+import { animationsMotion } from '@tamagui/config/animations-motion'
 
 export const animations = createAnimations({
   ...animationsMotion.animations,
