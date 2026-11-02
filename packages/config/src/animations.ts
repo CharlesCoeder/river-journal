@@ -7,7 +7,7 @@ import { animationsMotion } from '@tamagui/config/animations-motion'
 export const animations = createAnimations({
   ...animationsMotion.animations,
   '100ms': {
-    type: 'tween',
+    type: 'timing',
     duration: 0.1,
   },
   bouncy: {
