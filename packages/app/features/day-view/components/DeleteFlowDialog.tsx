@@ -61,7 +61,7 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
               <Button
                 variant="quiet"
                 borderWidth={1}
-                borderColor="border-color"
+                borderColor="border-color hover:transparent press:border-color-hover"
               >
                 <Text className="font-body text-color">Cancel</Text>
               </Button>

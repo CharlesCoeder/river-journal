@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Button as TamaguiButton, Text, createStyledHOC, styled } from 'tamagui'
+import { Button as TamaguiButton, Text, Theme, createStyledHOC, isWeb, styled } from 'tamagui'
 
 const ButtonFrame = styled(TamaguiButton, {
   height: 44,
@@ -8,8 +8,24 @@ const ButtonFrame = styled(TamaguiButton, {
   paddingVertical: 0,
   borderRadius: '4',
   gap: 9,
+  // Tamagui 3 fades pressed buttons and keeps the border transparent on hover and
+  // press. Screens here were designed around a border that appears and no fade. On
+  // native the fade cannot be overridden from here, so it still shows.
+  borderColor: 'transparent hover:border-color-hover press:border-color-hover',
+  opacity: 1,
 
   variants: {
+    // Tamagui 3's outlined and quiet buttons have no hover or press colors.
+    variant: {
+      outlined: {
+        backgroundColor: 'transparent',
+        borderColor: 'border-color hover:border-color-hover press:border-color-press',
+      },
+      quiet: {
+        backgroundColor: 'transparent hover:background-hover press:background-press',
+        borderColor: 'transparent press:border-color-hover',
+      },
+    },
     // Tamagui 3 dims disabled buttons. Callers here set their own disabled look.
     disabled: {
       true: {
@@ -29,12 +45,14 @@ const ButtonFrame = styled(TamaguiButton, {
     unstyled: {
       true: {
         backgroundColor: 'transparent',
+        borderColor: 'transparent',
         borderWidth: 0,
         height: 'auto',
         paddingHorizontal: 0,
         borderRadius: 0,
         gap: 0,
         cursor: 'auto',
+        flexDirection: 'column',
         justifyContent: 'flex-start',
         alignItems: 'stretch',
       },
@@ -48,11 +66,12 @@ const isPlainText = (children: ReactNode) =>
 
 // App skin over Tamagui's Button, keeping the geometry and label type every screen
 // here was designed around. Tamagui 3 draws plain-text labels semibold on a smaller
-// size ladder. Exported from the package barrel, where it takes precedence over
-// `export * from 'tamagui'`.
+// size ladder, and no longer applies the Button theme that gives buttons their fill
+// and border on native. Exported from the package barrel, where it takes precedence
+// over `export * from 'tamagui'`.
 export const Button = createStyledHOC(ButtonFrame, function Button(props, ref) {
   const { children, compact } = props as { children?: ReactNode; compact?: boolean }
-  return (
+  const button = (
     <ButtonFrame
       ref={ref}
       size={false}
@@ -60,9 +79,10 @@ export const Button = createStyledHOC(ButtonFrame, function Button(props, ref) {
     >
       {isPlainText(children) ? (
         <Text
-          fontSize={compact ? 12 : 16}
+          fontFamily={compact && !isWeb ? 'body' : undefined}
+          fontSize={compact ? 12 : 'web:16'}
           lineHeight={compact ? '23px' : 'web:normal'}
-          fontWeight="400"
+          fontWeight={compact ? '400' : 'web:400'}
           color="color"
           userSelect="none"
           flexShrink={1}
@@ -74,4 +94,5 @@ export const Button = createStyledHOC(ButtonFrame, function Button(props, ref) {
       )}
     </ButtonFrame>
   )
+  return isWeb ? button : <Theme name="Button">{button}</Theme>
 })
