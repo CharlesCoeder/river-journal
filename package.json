@@ -41,17 +41,16 @@
     "vercel": "vercel"
   },
   "resolutions": {
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "@types/react": "19.2.14",
     "react-refresh": "^0.14.0",
-    "react-native": "0.83.10",
-    "react-native-svg": "15.15.3",
+    "react-native": "0.85.3",
+    "react-native-svg": "15.15.4",
     "react-native-web": "0.21.2",
     "@tamagui/core": "3.1.10",
     "@tamagui/web": "3.1.10",
-    "tamagui": "3.1.10",
-    "@react-navigation/native": "7.1.28"
+    "tamagui": "3.1.10"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.6",

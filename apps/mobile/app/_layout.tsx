@@ -12,9 +12,8 @@ import 'app/state/collective/mutations'
 // app/utils/telemetry/consent.ts — no restart.
 
 import { useEffect } from 'react'
-import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
-import { SplashScreen, Stack } from 'expo-router'
+import { DefaultTheme, SplashScreen, Stack, ThemeProvider } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'

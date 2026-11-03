@@ -53,7 +53,21 @@ function nestedNodeModulesFor(originModulePath) {
   return candidates
 }
 
-config.resolver.resolveRequest = (context, moduleName, platform) => {
+// 3c. Solito's native hooks read React Navigation's contexts, but expo-router now
+// provides those contexts from its own fork. Importing the real package would
+// read empty contexts, and router.push would parse routes with no linking config
+// and fail silently, so point Solito at the fork. Web never gets here: Next
+// resolves Solito's .web files, which do not import React Navigation.
+const SOLITO_PATH = `${path.sep}node_modules${path.sep}solito${path.sep}`
+function forSolito(context, moduleName) {
+  return moduleName.startsWith('@react-navigation/') &&
+    context.originModulePath.includes(SOLITO_PATH)
+    ? 'expo-router/react-navigation'
+    : moduleName
+}
+
+config.resolver.resolveRequest = (context, requested, platform) => {
+  const moduleName = forSolito(context, requested)
   try {
     return context.resolveRequest(context, moduleName, platform)
   } catch (error) {
