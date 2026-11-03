@@ -1,3 +1,4 @@
+import { webItalic } from 'app/utils/webItalic'
 import { Text, XStack, YStack } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { useHotkeyRecorder } from '@tanstack/react-hotkeys'
@@ -68,7 +69,7 @@ export function KeyboardShortcutsSection() {
                   fontFamily="body"
                   fontSize={13}
                   color="color7"
-                  fontStyle="italic"
+                  fontStyle={webItalic}
                 >
                   Press a key…
                 </Text>

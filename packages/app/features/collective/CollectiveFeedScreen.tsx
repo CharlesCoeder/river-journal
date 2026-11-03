@@ -12,6 +12,7 @@
 // Boundary rule (D7): no Legend-State imports in this file.
 // features/collective/** MUST NOT import Legend-State or app/state/store.
 
+import { webItalic } from 'app/utils/webItalic'
 import { useEffect, useMemo, useState } from 'react'
 import {
   AnimatePresence,
@@ -208,7 +209,7 @@ export default function CollectiveFeedScreen() {
                 </Text>
                 <Text
                   fontFamily="journalItalic"
-                  fontStyle="italic"
+                  fontStyle={webItalic}
                   fontSize="10"
                   lineHeight="10"
                   color="color12"
@@ -254,7 +255,7 @@ export default function CollectiveFeedScreen() {
                   />
                   <Text
                     fontFamily="journalItalic"
-                    fontStyle="italic"
+                    fontStyle={webItalic}
                     fontSize="7"
                     color="color12"
                     numberOfLines={1}
@@ -359,7 +360,7 @@ export default function CollectiveFeedScreen() {
                     fontFamily="journal"
                     fontSize="7"
                     color="color10"
-                    fontStyle="italic"
+                    fontStyle={webItalic}
                   >
                     Quiet here. Be the first.
                   </Text>

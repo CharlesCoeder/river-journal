@@ -18,6 +18,7 @@
 //
 // This absorbs the former CollectivePreview.tsx.
 
+import { webItalic } from 'app/utils/webItalic'
 import { useEffect, useRef, useState } from 'react'
 import { YStack, XStack, View, Text, ScrollView, useReducedMotion } from '@my/ui'
 import {
@@ -359,7 +360,7 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
       >
         <Text
           fontFamily="journalItalic"
-          fontStyle="italic"
+          fontStyle={webItalic}
           fontSize="9"
           color="color12"
         >

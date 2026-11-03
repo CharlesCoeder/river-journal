@@ -13,6 +13,7 @@
  * the toast viewport (siblings of <HubGestureHost>), so it covers every route.
  */
 
+import { webItalic } from 'app/utils/webItalic'
 import { useCallback, useEffect, useState } from 'react'
 import { BackHandler } from 'react-native'
 import { Text, View, ExpandingLineButton, useTheme } from '@my/ui'
@@ -73,7 +74,7 @@ export function AppLockOverlay() {
     >
       <Text
         fontFamily="journalItalic"
-        fontStyle="italic"
+        fontStyle={webItalic}
         fontSize={24}
         color="color"
       >

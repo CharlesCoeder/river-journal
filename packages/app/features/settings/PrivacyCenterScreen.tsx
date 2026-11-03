@@ -1,3 +1,4 @@
+import { webItalic } from 'app/utils/webItalic'
 import {
   AnimatePresence,
   ScrollView,
@@ -69,7 +70,7 @@ function PrivacyModeCard({
         fontFamily="body"
         fontSize={12}
         color="color8"
-        fontStyle="italic"
+        fontStyle={webItalic}
         marginBottom="4"
       >
         {quote}

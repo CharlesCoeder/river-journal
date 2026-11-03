@@ -1,3 +1,4 @@
+import { webItalic } from 'app/utils/webItalic'
 import {
   AnimatePresence,
   ScrollView,
@@ -178,7 +179,7 @@ export function SettingsScreen() {
           >
             <Text
               fontFamily="journalItalic"
-              fontStyle="italic"
+              fontStyle={webItalic}
               fontSize={30}
               color="color"
               letterSpacing={-0.5}

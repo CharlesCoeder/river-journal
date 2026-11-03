@@ -1,3 +1,4 @@
+import { webItalic } from 'app/utils/webItalic'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Text, XStack, YStack } from '@my/ui'
 import type { ViewLayoutEvent } from '@my/ui'
@@ -216,7 +217,7 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
                     {isCurrentBrowser && (
                       <Text
                         fontFamily="journalItalic"
-                        fontStyle="italic"
+                        fontStyle={webItalic}
                         fontSize={14}
                         color="color8"
                       >

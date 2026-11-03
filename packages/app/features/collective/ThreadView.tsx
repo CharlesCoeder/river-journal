@@ -19,6 +19,7 @@
 // Boundary rule (D7): no Legend-State imports in this file.
 // This file does NOT touch PersistentEditor or ephemeral$.persistentEditor.* (D14).
 
+import { webItalic } from 'app/utils/webItalic'
 import React, { useState, useCallback, useEffect, type ReactNode } from 'react'
 import { Platform } from 'react-native'
 
@@ -298,7 +299,7 @@ export default function ThreadView({ postId }: ThreadViewProps) {
           fontFamily="journal"
           fontSize={isRoot ? '6' : '5'}
           color="color8"
-          fontStyle="italic"
+          fontStyle={webItalic}
         >
           {isRoot ? 'This letter was withdrawn.' : 'This reply was withdrawn.'}
         </Text>

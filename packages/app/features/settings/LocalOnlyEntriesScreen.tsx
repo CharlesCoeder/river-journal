@@ -1,3 +1,4 @@
+import { webItalic } from 'app/utils/webItalic'
 import { useCallback, useState } from 'react'
 import {
   AlertDialog,
@@ -110,7 +111,7 @@ export function LocalOnlyEntriesScreen() {
           >
             <Text
               fontFamily="journalItalic"
-              fontStyle="italic"
+              fontStyle={webItalic}
               fontSize={30}
               color="color"
               letterSpacing={-0.5}

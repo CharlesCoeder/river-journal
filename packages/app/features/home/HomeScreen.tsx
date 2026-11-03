@@ -1,3 +1,4 @@
+import { webItalic } from 'app/utils/webItalic'
 import {
   AnimatePresence,
   YStack,
@@ -256,7 +257,7 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
   return (
     <Text
       fontFamily="journalItalic"
-      fontStyle="italic"
+      fontStyle={webItalic}
       fontSize="36px sm:30px"
       color="color"
       cursor="pointer"

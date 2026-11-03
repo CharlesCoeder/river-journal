@@ -1,3 +1,4 @@
+import { webItalic } from 'app/utils/webItalic'
 import {
   AnimatePresence,
   ExpandingLineButton,
@@ -91,7 +92,7 @@ export function DayViewScreen() {
         >
           <Text
             fontFamily="journalItalic"
-            fontStyle="italic"
+            fontStyle={webItalic}
             fontSize={30}
             color="color"
           >
@@ -157,7 +158,7 @@ export function DayViewScreen() {
                 fontFamily="journal"
                 fontSize={20}
                 color="color8"
-                fontStyle="italic"
+                fontStyle={webItalic}
               >
                   No journals yet. The river is dry.
                 </Text>
