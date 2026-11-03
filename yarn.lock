@@ -17882,6 +17882,7 @@ __metadata:
     "@react-native-async-storage/async-storage": "npm:2.2.0"
     "@react-native-community/netinfo": "npm:12.0.1"
     "@sentry/react-native": "npm:8.18.0"
+    "@tamagui/metro-plugin": "npm:3.1.10"
     "@tamagui/native": "npm:3.1.10"
     "@types/react": "npm:~19.2.0"
     app: "npm:0.0.0"

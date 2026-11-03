@@ -4,6 +4,7 @@
  * @type {import('expo/metro-config')}
  */
 const { getDefaultConfig } = require('@expo/metro-config')
+const { withTamagui } = require('@tamagui/metro-plugin')
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -90,4 +91,9 @@ config.resolver.unstable_conditionNames = ['require', 'react-native', 'import']
 config.transformer = { ...config.transformer, unstable_allowRequireContext: true }
 config.transformer.minifierPath = require.resolve('metro-minify-terser')
 
-module.exports = wrapWithReanimatedMetroConfig(config)
+module.exports = wrapWithReanimatedMetroConfig(
+  withTamagui(config, {
+    components: ['tamagui', '@my/ui', '@tamagui/tailwind'],
+    config: path.join(workspaceRoot, 'packages/config/src/tamagui.config.ts'),
+  })
+)
