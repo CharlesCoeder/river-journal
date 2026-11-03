@@ -1,6 +1,13 @@
+import { Platform } from 'react-native'
+
 /**
- * Expo DOM components default to @expo/dom-webview. The editors stay on
- * react-native-webview, the host their keyboard, inset and hub-drag behavior was
- * built and verified against. Moving to the new host deserves its own testing.
+ * Which WebView hosts the Expo DOM editors.
+ *
+ * iOS stays on react-native-webview, the host its keyboard, inset and hub-drag
+ * behavior was built and verified against. Expo's new default deserves its own
+ * testing there.
+ *
+ * Android uses Expo's DOM WebView. On SDK 58, react-native-webview there never
+ * receives the host OS the DOM runtime needs, so the editor stays blank.
  */
-export const EDITOR_WEBVIEW = { useExpoDOMWebView: false } as const
+export const EDITOR_WEBVIEW = { useExpoDOMWebView: Platform.OS === 'android' } as const
