@@ -25,6 +25,7 @@
  * `open`/`onOpenChange` in the prop contract.
  */
 
+import { loadLinking } from 'app/utils/loadLinking'
 import { Dialog, Text, XStack, YStack, ExpandingLineButton, useReducedMotion } from '@my/ui'
 import { reasonLabel, COMMUNITY_GUIDELINES_URL } from './reasonLabels'
 
@@ -46,9 +47,9 @@ let linkingWarmPromise: Promise<typeof import('react-native').Linking | null> | 
 function warmLinking(): Promise<typeof import('react-native').Linking | null> {
   if (cachedLinking !== null) return Promise.resolve(cachedLinking)
   if (linkingWarmPromise === null) {
-    linkingWarmPromise = import('react-native')
-      .then((rn) => {
-        cachedLinking = rn.Linking
+    linkingWarmPromise = loadLinking()
+      .then((linking) => {
+        cachedLinking = linking
         return cachedLinking
       })
       .catch((error) => {
