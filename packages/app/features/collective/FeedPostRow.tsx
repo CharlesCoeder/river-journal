@@ -22,7 +22,7 @@
 //   - is_removed       → caller filters these; render nothing for safety
 //   - normal           → title + author byline + reaction tally
 
-import { webItalic } from 'app/utils/webItalic'
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import { View, Text, XStack } from '@my/ui'
 import { Heart, Sparkles, Flame, Leaf, Waves, ArrowRight } from '@my/icons'
 import type { Post } from 'app/state/collective/feed'
@@ -126,7 +126,7 @@ export function FeedPostRow({ post, currentUserId, onOpen }: FeedPostRowProps) {
           fontFamily="journal"
           fontSize="5"
           color="color8"
-          fontStyle={webItalic}
+          fontStyle={italicExceptIOS}
         >
           This letter was withdrawn.
         </Text>

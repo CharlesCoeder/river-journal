@@ -1,4 +1,4 @@
-import { webItalic } from 'app/utils/webItalic'
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import { useState, useMemo } from 'react'
 import { Button, Circle, Input, Text, XStack, YStack, View } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
@@ -222,7 +222,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
             fontFamily="body"
             fontSize={13}
             color="color8"
-            fontStyle={webItalic}
+            fontStyle={italicExceptIOS}
           >
             This combination may be hard to read.
           </Text>

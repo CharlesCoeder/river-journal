@@ -1,2 +1,2 @@
-// See webItalic.ts.
-export const webItalic = undefined
+// See italicExceptIOS.ts.
+export const italicExceptIOS = undefined
