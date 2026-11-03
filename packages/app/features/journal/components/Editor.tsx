@@ -5,6 +5,7 @@ import { isWeb } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { store$, showPersistentEditor, hidePersistentEditor } from '../../../state/store'
 import { DEFAULT_FONT_PAIRING, FONT_PAIRING_FAMILIES } from '../../../state/types'
+import { EDITOR_WEBVIEW } from './Lexical/editorWebView'
 import LexicalEditor from './Lexical/LexicalEditor'
 import { LexicalSync } from './Lexical/LexicalSync'
 import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
@@ -90,7 +91,7 @@ export const Editor = ({
           fontFamilies={fontFamilies}
           readOnly
           initialContent={initialContent}
-          dom={{ matchContents: true, scrollEnabled: false }}
+          dom={{ ...EDITOR_WEBVIEW, matchContents: true, scrollEnabled: false }}
         />
       </View>
     )

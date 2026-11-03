@@ -34,6 +34,11 @@ import { supabase, syncUserId$ } from 'app/state/syncConfig'
 import { generateUUID } from 'app/utils/uuid'
 import type { PushToken } from 'app/state/types'
 
+// expo-notifications shows notifications that arrive in the foreground unless it
+// is told otherwise. The app has its own in-app reminder, so a system banner would
+// repeat it.
+Notifications.setNotificationHandler(null)
+
 /** Outcome of a push-token registration attempt (mirrors the web stub). */
 export type PushRegistrationOutcome =
   | { outcome: 'granted' } // token issued/reused and upserted

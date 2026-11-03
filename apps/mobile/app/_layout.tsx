@@ -28,7 +28,7 @@ import { AppLockOverlay } from 'app/features/settings/AppLockOverlay.native'
 import { AppLockPrivacyCover } from 'app/features/settings/AppLockPrivacyCover.native'
 
 export const unstable_settings = {
-  initialRouteName: 'index',
+  anchor: 'index',
 }
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.

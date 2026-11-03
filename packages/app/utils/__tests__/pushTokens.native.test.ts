@@ -42,10 +42,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ─── expo-notifications mock ────────────────────────────────────────────────
+const setNotificationHandlerMock = vi.fn()
 const requestPermissionsAsyncMock = vi.fn()
 const getPermissionsAsyncMock = vi.fn()
 const getExpoPushTokenAsyncMock = vi.fn()
 vi.mock('expo-notifications', () => ({
+  setNotificationHandler: (...args: unknown[]) => setNotificationHandlerMock(...args),
   requestPermissionsAsync: (...args: unknown[]) => requestPermissionsAsyncMock(...args),
   getPermissionsAsync: (...args: unknown[]) => getPermissionsAsyncMock(...args),
   getExpoPushTokenAsync: (...args: unknown[]) => getExpoPushTokenAsyncMock(...args),
@@ -405,5 +407,14 @@ describe('boundary — expo-notifications / expo-device usage is confined to thi
     const path = await import('node:path')
     const src = readFileSync(path.resolve(__dirname, '../pushTokens.native.ts'), 'utf8')
     expect(src).toMatch(/expo-notifications/)
+  })
+})
+
+describe('foreground notifications', () => {
+  it('stops expo-notifications from repeating the in-app reminder as a system banner', async () => {
+    vi.resetModules()
+    setNotificationHandlerMock.mockClear()
+    await import('../pushTokens.native')
+    expect(setNotificationHandlerMock).toHaveBeenCalledWith(null)
   })
 })

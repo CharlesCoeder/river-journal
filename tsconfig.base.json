@@ -27,6 +27,11 @@
     "noUncheckedIndexedAccess": true,
     "target": "es2020",
     "types": ["node"],
+    // React Native publishes its types only through package exports, which
+    // moduleResolution "node" ignores, so it would silently resolve to `any`.
+    "paths": {
+      "react-native": ["./node_modules/react-native/types_generated/index.d.ts"]
+    },
     "lib": ["dom", "esnext"]
   },
   "exclude": ["_"],

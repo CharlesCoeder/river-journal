@@ -10,6 +10,7 @@
     "composite": true,
     "jsx": "react-jsx",
     "paths": {
+      "react-native": ["./node_modules/react-native/types_generated/index.d.ts"],
       "app/*": ["./packages/app/*"],
       "@my/ui/*": ["./packages/ui/*"]
     }

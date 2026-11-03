@@ -21,7 +21,7 @@ export async function downloadExport(
   const file = new File(Paths.cache, filename)
   // overwrite so re-exporting the same filename doesn't throw on an existing file.
   file.create({ overwrite: true })
-  file.write(bytes)
+  await file.write(bytes)
 
   try {
     // shareAsync resolves when the share sheet is dismissed (shared or cancelled).
