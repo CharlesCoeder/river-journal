@@ -124,15 +124,15 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
             outlineStyle="focus-visible:solid"
             onPress={disabled ? undefined : () => handlePress(kind)}
             onKeyDown={
-                        disabled
-                          ? undefined
-                          : (e: any) => {
-                              if (e.key === ' ' || e.key === 'Enter') {
-                                e.preventDefault()
-                                handlePress(kind)
-                              }
-                            }
-                      }
+              disabled
+                ? undefined
+                : (e: any) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault()
+                      handlePress(kind)
+                    }
+                  }
+            }
           >
             <Icon
               size={16}

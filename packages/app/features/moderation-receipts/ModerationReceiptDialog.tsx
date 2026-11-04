@@ -183,18 +183,18 @@ export function ModerationReceiptDialog({ receipt, onAcknowledge }: ModerationRe
             ) : (
               <>
                 <Text
-                    fontSize="3"
-                    color="color12"
-                  >
+                  fontSize="3"
+                  color="color12"
+                >
                   {`Your ability to post and react has been paused until ${humanDate(
                     receipt.ends_at
                   )}. You can still write and read.`}
                 </Text>
                 {suspensionReason !== null ? (
                   <Text
-                      fontSize="3"
-                      color="color11"
-                    >
+                    fontSize="3"
+                    color="color11"
+                  >
                     {`Reason: ${suspensionReason}`}
                   </Text>
                 ) : null}

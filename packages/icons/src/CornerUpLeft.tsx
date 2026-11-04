@@ -4,7 +4,11 @@ import { themed, type IconProps } from '@tamagui/helpers-icon'
 
 export const CornerUpLeft: (props: IconProps) => JSX.Element = themed(
   memo(function CornerUpLeft(props: IconProps) {
-    const { color = 'black', size = 24, ...otherProps } = props as SvgProps & {
+    const {
+      color = 'black',
+      size = 24,
+      ...otherProps
+    } = props as SvgProps & {
       color?: string
       size?: number
     }
@@ -20,8 +24,14 @@ export const CornerUpLeft: (props: IconProps) => JSX.Element = themed(
         strokeLinejoin="round"
         {...otherProps}
       >
-        <Path d="M20 20v-7a4 4 0 0 0-4-4H4" stroke={color} />
-        <Path d="M9 14 4 9l5-5" stroke={color} />
+        <Path
+          d="M20 20v-7a4 4 0 0 0-4-4H4"
+          stroke={color}
+        />
+        <Path
+          d="M9 14 4 9l5-5"
+          stroke={color}
+        />
       </Svg>
     )
   })

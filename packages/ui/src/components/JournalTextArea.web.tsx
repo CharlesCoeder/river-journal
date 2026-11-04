@@ -8,19 +8,19 @@ const StyledJournalArea = styled(TextArea, {
   name: 'JournalTextArea',
   flex: 1,
   // Default styles are defined here.
-fontSize: "5 sm:4 md:5",
-  lineHeight: "6",
-  padding: "3 sm:4 md:4",
-  borderRadius: "4",
+  fontSize: '5 sm:4 md:5',
+  lineHeight: '6',
+  padding: '3 sm:4 md:4',
+  borderRadius: '4',
   // Focus state - remove borders and outline
-borderWidth: "0px focus:0px",
+  borderWidth: '0px focus:0px',
   // Default theme-aware styles. These will automatically update with the theme.
-backgroundColor: "background-hover",
-  placeholderTextColor: "color",
-  outlineWidth: "focus:0px",
-  outlineStyle: "focus:none",
+  backgroundColor: 'background-hover',
+  placeholderTextColor: 'color',
+  outlineWidth: 'focus:0px',
+  outlineStyle: 'focus:none',
   // Example of adding a responsive style directly to the definition.
-minHeight: "sm:120px md:150px"
+  minHeight: 'sm:120px md:150px',
 })
 
 // 2. Define the props for the final component.

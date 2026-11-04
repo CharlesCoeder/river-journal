@@ -74,10 +74,10 @@ export function BillingSection() {
       ) : isCanceled ? (
         <YStack gap="2">
           <Text
-              fontFamily="body"
-              fontSize="4"
-              color="color"
-            >
+            fontFamily="body"
+            fontSize="4"
+            color="color"
+          >
             {formattedPeriodEnd
               ? `Your access continues until ${formattedPeriodEnd}`
               : 'Your access continues until the end of your current billing period'}
@@ -86,18 +86,18 @@ export function BillingSection() {
       ) : (
         <YStack gap="2">
           <Text
-                fontFamily="body"
-                fontSize="4"
-                color="color"
-              >
+            fontFamily="body"
+            fontSize="4"
+            color="color"
+          >
             {`Status: ${receipt.status}`}
           </Text>
           {formattedPeriodEnd ? (
             <Text
-                  fontFamily="body"
-                  fontSize="3"
-                  color="color8"
-                >
+              fontFamily="body"
+              fontSize="3"
+              color="color8"
+            >
               {receipt.status === 'active'
                 ? `Renews ${formattedPeriodEnd}`
                 : `Current period ends ${formattedPeriodEnd}`}

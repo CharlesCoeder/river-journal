@@ -123,23 +123,23 @@ export default function AuditLogScreen() {
 
           {hasNextPage ? (
             <View
-                render="button"
-                role="button"
-                data-testid="audit-log-load-more"
-                alignSelf="center"
-                cursor="pointer"
-                marginTop="5"
-                opacity={isFetchingNextPage ? 0.4 : 1}
-                disabled={isFetchingNextPage}
-                onPress={() => {
-                              if (!isFetchingNextPage) fetchNextPage()
-                            }}
-              >
+              render="button"
+              role="button"
+              data-testid="audit-log-load-more"
+              alignSelf="center"
+              cursor="pointer"
+              marginTop="5"
+              opacity={isFetchingNextPage ? 0.4 : 1}
+              disabled={isFetchingNextPage}
+              onPress={() => {
+                if (!isFetchingNextPage) fetchNextPage()
+              }}
+            >
               <Text
-                  fontFamily="body"
-                  fontSize="2"
-                  color="color10"
-                >
+                fontFamily="body"
+                fontSize="2"
+                color="color10"
+              >
                 {isFetchingNextPage ? 'Loading…' : 'Load more'}
               </Text>
             </View>

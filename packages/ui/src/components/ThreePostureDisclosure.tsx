@@ -209,11 +209,11 @@ function BoundaryADialog({
             role="link"
             tabIndex={0}
             onKeyDown={(e: any) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault?.()
-                          onViewGuidelines?.()
-                        }
-                      }}
+              if (e.key === 'Enter') {
+                e.preventDefault?.()
+                onViewGuidelines?.()
+              }
+            }}
             fontFamily="body"
             fontSize="3"
             color="stone"

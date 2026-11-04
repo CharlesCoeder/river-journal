@@ -571,12 +571,12 @@ export function AuthScreen({ initialTab = 'login', gateContext, returnTo }: Auth
                     <Spinner />
                   ) : (
                     <Text
-                        fontFamily="body"
-                        fontSize={12}
-                        letterSpacing={3}
-                        textTransform="uppercase"
-                        color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
-                      >
+                      fontFamily="body"
+                      fontSize={12}
+                      letterSpacing={3}
+                      textTransform="uppercase"
+                      color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
+                    >
                       {isSignup ? 'Create Account' : 'Log In'}
                     </Text>
                   )}
@@ -652,7 +652,7 @@ function TabButton({
         letterSpacing={3}
         textTransform="uppercase"
         fontWeight={isActive ? '500' : '400'}
-        color={`${isActive ? "color" : "color8"} hover:color`}
+        color={`${isActive ? 'color' : 'color8'} hover:color`}
       >
         {label}
       </Text>

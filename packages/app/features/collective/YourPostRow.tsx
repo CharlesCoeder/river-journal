@@ -86,9 +86,9 @@ export function YourPostRow({ post }: YourPostRowProps) {
         </Text>
       ) : (
         <Text
-            fontFamily="journal"
-            fontSize="4"
-          >
+          fontFamily="journal"
+          fontSize="4"
+        >
           {post.body}
         </Text>
       )}
@@ -122,15 +122,15 @@ export function YourPostRow({ post }: YourPostRowProps) {
       ) : (
         <XStack gap="2">
           <Text
-              fontSize="1"
-              color="color9"
-            >
+            fontSize="1"
+            color="color9"
+          >
             {post.reaction_count} {post.reaction_count === 1 ? 'reaction' : 'reactions'}
           </Text>
           <Text
-              fontSize="1"
-              color="color9"
-            >
+            fontSize="1"
+            color="color9"
+          >
             {post.descendant_count} {post.descendant_count === 1 ? 'reply' : 'replies'}
           </Text>
         </XStack>

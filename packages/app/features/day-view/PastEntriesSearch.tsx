@@ -63,11 +63,11 @@ function ResultRow({ row, onOpen }: ResultRowProps) {
       outlineStyle="focus:solid"
       onPress={activate}
       onKeyDown={(event: any) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault?.()
-              activate()
-            }
-          }}
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault?.()
+          activate()
+        }
+      }}
     >
       <XStack
         justifyContent="space-between"
@@ -259,16 +259,16 @@ export function PastEntriesSearch({ entries, children }: PastEntriesSearchProps)
             </YStack>
           ) : (
             <YStack
-                testID="search-empty-state"
-                paddingVertical="6"
-                alignItems="center"
-              >
+              testID="search-empty-state"
+              paddingVertical="6"
+              alignItems="center"
+            >
               <Text
-                  fontFamily="journal"
-                  fontSize={18}
-                  color="color8"
-                  fontStyle="italic"
-                >
+                fontFamily="journal"
+                fontSize={18}
+                color="color8"
+                fontStyle="italic"
+              >
                 No entries match that search yet.
               </Text>
             </YStack>

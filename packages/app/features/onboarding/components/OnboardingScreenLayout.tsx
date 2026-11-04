@@ -52,7 +52,9 @@ export function OnboardingScreenLayout({
         >
           {headline}
         </Text>
-        <Text className="font-body text-[14px] text-color8 tracking-[0.5px] max-w-[520px]">{body}</Text>
+        <Text className="font-body text-[14px] text-color8 tracking-[0.5px] max-w-[520px]">
+          {body}
+        </Text>
       </View>
 
       {/*

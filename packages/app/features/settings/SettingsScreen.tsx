@@ -217,45 +217,45 @@ export function SettingsScreen() {
                 {visibleCount >= 1 &&
                   (!isAuthenticated ? (
                     <YStack
-                    key="section-1"
-                    transition="designEnter"
-                    opacity="1 enter:0"
-                    y="0 enter:10px"
-                    gap="3"
-                  >
-                      <Text
-                      fontFamily="journal"
-                      fontSize={24}
-                      color="color"
+                      key="section-1"
+                      transition="designEnter"
+                      opacity="1 enter:0"
+                      y="0 enter:10px"
+                      gap="3"
                     >
+                      <Text
+                        fontFamily="journal"
+                        fontSize={24}
+                        color="color"
+                      >
                         Secure Your Words
                       </Text>
                       <Text
-                      fontFamily="body"
-                      fontSize={14}
-                      color="color8"
-                      lineHeight="22px"
-                      maxWidth={512}
-                    >
+                        fontFamily="body"
+                        fontSize={14}
+                        color="color8"
+                        lineHeight="22px"
+                        maxWidth={512}
+                      >
                         Create an account or log in to enable end-to-end encrypted backup and sync
                         your journal across all your devices.
                       </Text>
                       <Text
-                      fontFamily="body"
-                      fontSize={11}
-                      letterSpacing={3}
-                      fontWeight="500"
-                      textTransform="uppercase"
-                      color="color"
-                      borderBottomWidth={2}
-                      borderColor="color10"
-                      paddingBottom={6}
-                      alignSelf="flex-start"
-                      marginTop="2"
-                      cursor="pointer"
-                      opacity="hover:0.7"
-                      onPress={() => router.push('/auth')}
-                    >
+                        fontFamily="body"
+                        fontSize={11}
+                        letterSpacing={3}
+                        fontWeight="500"
+                        textTransform="uppercase"
+                        color="color"
+                        borderBottomWidth={2}
+                        borderColor="color10"
+                        paddingBottom={6}
+                        alignSelf="flex-start"
+                        marginTop="2"
+                        cursor="pointer"
+                        opacity="hover:0.7"
+                        onPress={() => router.push('/auth')}
+                      >
                         Log In / Create Account
                       </Text>
                     </YStack>
@@ -293,12 +293,12 @@ export function SettingsScreen() {
                 {visibleCount >= 2 &&
                   (isAuthenticated ? (
                     <YStack
-                    key="section-2"
-                    transition="designEnter"
-                    opacity="1 enter:0"
-                    y="0 enter:10px"
-                    gap="4"
-                  >
+                      key="section-2"
+                      transition="designEnter"
+                      opacity="1 enter:0"
+                      y="0 enter:10px"
+                      gap="4"
+                    >
                       <SectionHeader>Data & Sync</SectionHeader>
                       <SyncToggle />
                       {localOnlyCount > 0 && (
@@ -308,10 +308,10 @@ export function SettingsScreen() {
                           testID="settings-local-only-row"
                         >
                           <Text
-                          fontFamily="body"
-                          fontSize="4"
-                          color="color"
-                        >
+                            fontFamily="body"
+                            fontSize="4"
+                            color="color"
+                          >
                             Local-only entries ({localOnlyCount})
                           </Text>
                           <ExpandingLineButton

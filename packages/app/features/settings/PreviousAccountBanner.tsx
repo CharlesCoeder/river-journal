@@ -157,7 +157,10 @@ export function PreviousAccountBanner() {
           <AlertDialog.Content
             key="content"
             testID="previous-account-delete-confirm"
-            transition={{ preset: 'medium', opacity: { preset: 'medium', spring: { overshootClamping: true } } }}
+            transition={{
+              preset: 'medium',
+              opacity: { preset: 'medium', spring: { overshootClamping: true } },
+            }}
             y="0 enter:-10px exit:10px"
             opacity="1 enter:0 exit:0"
             backgroundColor="background"

@@ -4,7 +4,11 @@ import { themed, type IconProps } from '@tamagui/helpers-icon'
 
 export const ChevronRight: (props: IconProps) => JSX.Element = themed(
   memo(function ChevronRight(props: IconProps) {
-    const { color = 'black', size = 24, ...otherProps } = props as SvgProps & {
+    const {
+      color = 'black',
+      size = 24,
+      ...otherProps
+    } = props as SvgProps & {
       color?: string
       size?: number
     }
@@ -20,7 +24,10 @@ export const ChevronRight: (props: IconProps) => JSX.Element = themed(
         strokeLinejoin="round"
         {...otherProps}
       >
-        <Path d="m9 18 6-6-6-6" stroke={color} />
+        <Path
+          d="m9 18 6-6-6-6"
+          stroke={color}
+        />
       </Svg>
     )
   })

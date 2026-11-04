@@ -318,10 +318,10 @@ export function ModerationQueueRow({ item }: ModerationQueueRowProps) {
           </Text>
         ) : accountDeleted ? (
           <Text
-              fontFamily="body"
-              fontSize="1"
-              color="color9"
-            >
+            fontFamily="body"
+            fontSize="1"
+            color="color9"
+          >
             Author deleted account
           </Text>
         ) : null}

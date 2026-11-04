@@ -4,7 +4,11 @@ import { themed, type IconProps } from '@tamagui/helpers-icon'
 
 export const MoreHorizontal: (props: IconProps) => JSX.Element = themed(
   memo(function MoreHorizontal(props: IconProps) {
-    const { color = 'black', size = 24, ...otherProps } = props as SvgProps & {
+    const {
+      color = 'black',
+      size = 24,
+      ...otherProps
+    } = props as SvgProps & {
       color?: string
       size?: number
     }
@@ -20,9 +24,24 @@ export const MoreHorizontal: (props: IconProps) => JSX.Element = themed(
         strokeLinejoin="round"
         {...otherProps}
       >
-        <Circle cx="12" cy="12" r="1" stroke={color} />
-        <Circle cx="19" cy="12" r="1" stroke={color} />
-        <Circle cx="5" cy="12" r="1" stroke={color} />
+        <Circle
+          cx="12"
+          cy="12"
+          r="1"
+          stroke={color}
+        />
+        <Circle
+          cx="19"
+          cy="12"
+          r="1"
+          stroke={color}
+        />
+        <Circle
+          cx="5"
+          cy="12"
+          r="1"
+          stroke={color}
+        />
       </Svg>
     )
   })

@@ -154,11 +154,11 @@ export function DayViewScreen() {
                 paddingVertical={96}
               >
                 <Text
-                fontFamily="journal"
-                fontSize={20}
-                color="color8"
-                fontStyle="italic"
-              >
+                  fontFamily="journal"
+                  fontSize={20}
+                  color="color8"
+                  fontStyle="italic"
+                >
                   No journals yet. The river is dry.
                 </Text>
               </YStack>

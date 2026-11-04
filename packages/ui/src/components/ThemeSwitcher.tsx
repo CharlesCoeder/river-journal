@@ -27,7 +27,7 @@ export const ThemeSwitcher = function ThemeSwitcher() {
           key={name}
           fontFamily="journal"
           fontSize={20}
-          color={`${currentTheme === name ? "color" : "color8"} hover:color`}
+          color={`${currentTheme === name ? 'color' : 'color8'} hover:color`}
           cursor="pointer"
           onPress={() => setTheme(name)}
         >

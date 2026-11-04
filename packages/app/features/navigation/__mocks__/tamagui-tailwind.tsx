@@ -17,7 +17,9 @@ const make = (fallback: string) =>
         style,
         className,
         ...(testID !== undefined ? { 'data-testid': testID } : {}),
-        ...(transition !== undefined ? { 'data-transition': String(transition.preset ?? transition) } : {}),
+        ...(transition !== undefined
+          ? { 'data-transition': String(transition.preset ?? transition) }
+          : {}),
         ...(onPress ? { onClick: onPress } : {}),
       },
       children
