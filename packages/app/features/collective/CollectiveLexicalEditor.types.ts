@@ -1,8 +1,6 @@
 import type React from 'react'
 
 export interface CollectiveLexicalEditorProps {
-  /** Native only: consumed by Expo's DOM component host, never reaches the editor. */
-  dom?: Record<string, unknown>
   /** Called on every editor change with the markdown body string. */
   onContentChange: (markdown: string) => void
   /** Minimum height of the writing surface. Default 300 (full), 120 (compact). */

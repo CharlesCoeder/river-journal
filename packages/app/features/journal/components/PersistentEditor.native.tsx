@@ -30,7 +30,6 @@ import {
   INLINE_TOP_ROW_CONTROL_OVERHANG,
   INLINE_TOP_ROW_HEIGHT,
 } from '../inlineEditorLayout'
-import { EDITOR_WEBVIEW } from './Lexical/editorWebView'
 import LexicalEditor from './Lexical/LexicalEditor'
 import type { LexicalEditorUniversalProps } from './Lexical/LexicalEditor.types'
 
@@ -348,7 +347,6 @@ export const PersistentEditor = () => {
               focusMode={focusMode}
               focusGranularity={focusGranularity}
               dom={{
-                ...EDITOR_WEBVIEW,
                 hideKeyboardAccessoryView: true,
                 // The WebView reaches under the status bar in writing mode; the room
                 // for it is the document's own inset, never an iOS one.

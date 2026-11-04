@@ -30,7 +30,6 @@ import { useCreatePost, createPostWithId } from 'app/state/collective/mutations'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { store$ } from 'app/state/store'
 import { useRouter } from 'solito/navigation'
-import { EDITOR_WEBVIEW } from 'app/features/journal/components/Lexical/editorWebView'
 import CollectiveLexicalEditor from './CollectiveLexicalEditor'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -339,7 +338,6 @@ export default function PostComposer({
           */}
           <View style={{ width: '100%', height: minHeight }}>
             <CollectiveLexicalEditor
-              dom={EDITOR_WEBVIEW}
               onContentChange={setBody}
               minHeight={minHeight}
               __contextProbeRef={contextProbeRef}

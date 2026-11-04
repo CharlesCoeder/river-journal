@@ -15862,7 +15862,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"invariant@npm:2.2.4, invariant@npm:^2.2.4":
+"invariant@npm:^2.2.4":
   version: 2.2.4
   resolution: "invariant@npm:2.2.4"
   dependencies:
@@ -17814,7 +17814,6 @@ __metadata:
     react-native-screens: "npm:~4.30.1"
     react-native-svg: "npm:15.12.1"
     react-native-web: "npm:0.21.2"
-    react-native-webview: "npm:14.0.1"
     react-native-worklets: "npm:0.13.0"
     reanimated-color-picker: "npm:^4.2.0"
     typescript: "npm:~5.8.3"
@@ -19606,19 +19605,6 @@ __metadata:
     react: ^18.0.0 || ^19.0.0
     react-dom: ^18.0.0 || ^19.0.0
   checksum: 10/f8b67fdd44e2a5e6d00eaedd7182d05fab7766ccc7f075fe230464c3b05585d86e8aa05c56d067531551a2705b026921ee5a0cf298fe22da1974dbb983eea6fc
-  languageName: node
-  linkType: hard
-
-"react-native-webview@npm:14.0.1":
-  version: 14.0.1
-  resolution: "react-native-webview@npm:14.0.1"
-  dependencies:
-    escape-string-regexp: "npm:^4.0.0"
-    invariant: "npm:2.2.4"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/dc7591657aa699c843cf3af6b354748c1bca7050c30854d3832bbaced0113237bbf470c51bed50c49877941b4d8c45540cf485cb9455a6956b618c7cd63bd74e
   languageName: node
   linkType: hard
 
