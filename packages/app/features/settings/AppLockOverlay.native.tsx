@@ -14,10 +14,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { BackHandler } from 'react-native'
+import { BackHandler, Keyboard } from 'react-native'
 import { Text, View, ExpandingLineButton, useTheme } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
-import { ephemeral$ } from '../../state/store'
+import { ephemeral$, requestPersistentEditorBlur } from '../../state/store'
 import { promptAppLockAuth } from 'app/utils/appLockAuth'
 
 export function AppLockOverlay() {
@@ -36,8 +36,14 @@ export function AppLockOverlay() {
   }, [])
 
   // Prompt automatically whenever the overlay engages (cold start / re-lock).
+  // The overlay covers the editors but not the keyboard, and iOS restores the
+  // keyboard on return from background, so drop focus first: otherwise typing
+  // goes into the hidden journal behind the lock screen. The Collective
+  // composer does the same through useAppLockBlurRequest.
   useEffect(() => {
     if (isLocked) {
+      Keyboard.dismiss()
+      requestPersistentEditorBlur()
       setFailed(false)
       void attempt()
     }

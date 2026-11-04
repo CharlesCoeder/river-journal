@@ -27,6 +27,7 @@ import {
   createMobileLexicalConfig,
   injectFontCSS,
 } from 'app/features/journal/components/Lexical/utils'
+import { BlurRequestPlugin } from 'app/features/journal/components/Lexical/plugins/BlurRequestPlugin'
 import type { CollectiveLexicalEditorProps } from './CollectiveLexicalEditor.types'
 // NOTE: FocusModeParagraphPlugin is deliberately NOT imported here.
 // The composer is a short-form surface; focus mode is a journal-only behavior.
@@ -62,6 +63,7 @@ function FontInjector(): null {
 function CollectiveLexicalEditor({
   onContentChange,
   minHeight = 300,
+  blurRequest,
   __contextProbeRef,
 }: CollectiveLexicalEditorProps) {
   const initialConfig = createMobileLexicalConfig()
@@ -139,6 +141,8 @@ function CollectiveLexicalEditor({
         />
 
         <FontInjector />
+
+        {blurRequest !== undefined ? <BlurRequestPlugin request={blurRequest} /> : null}
 
         {/* Test-only probe: only activates when __contextProbeRef is set. */}
         {__contextProbeRef && <LexicalContextProbe probeRef={__contextProbeRef} />}

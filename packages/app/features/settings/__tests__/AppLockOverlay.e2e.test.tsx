@@ -59,12 +59,13 @@ vi.mock('@my/ui', async () => {
       children
     )
 
-  const Input = ({ testID, value, onChangeText, secureTextEntry }: any) =>
+  const Input = ({ testID, value, onChangeText, secureTextEntry, autoFocus }: any) =>
     ReactModule.createElement('input', {
       'data-testid': testID,
       value,
       onChange: (e: any) => onChangeText?.(e.target.value),
       type: secureTextEntry ? 'password' : 'text',
+      autoFocus,
     })
 
   return { View, Text, ExpandingLineButton, Input, useTheme: () => ({}) }
@@ -82,6 +83,7 @@ describe('mobile lock overlay: cold start → auth attempt → success/failure/r
     backHandlerCallback: { current: null as (() => boolean) | null },
     backHandlerRemove: vi.fn(),
     promptAppLockAuthMock: vi.fn(),
+    keyboardDismiss: vi.fn(),
   }))
   const backHandlerRemove = h.backHandlerRemove
   const promptAppLockAuthMock = h.promptAppLockAuthMock
@@ -98,6 +100,7 @@ describe('mobile lock overlay: cold start → auth attempt → success/failure/r
         }),
         removeEventListener: vi.fn(),
       },
+      Keyboard: { ...actual.Keyboard, dismiss: h.keyboardDismiss },
     }
   })
 
@@ -113,6 +116,7 @@ describe('mobile lock overlay: cold start → auth attempt → success/failure/r
     h.backHandlerCallback.current = null
     backHandlerRemove.mockReset()
     promptAppLockAuthMock.mockReset()
+    h.keyboardDismiss.mockReset()
 
     const overlayMod = await import('../AppLockOverlay.native')
     AppLockOverlayNative = overlayMod.AppLockOverlay
@@ -188,6 +192,22 @@ describe('mobile lock overlay: cold start → auth attempt → success/failure/r
     expect(ephemeral$.isLocked.get()).toBe(false)
   })
 
+  it('drops the keyboard and blurs the journal editor when the lock engages, so typing cannot reach it', async () => {
+    promptAppLockAuthMock.mockResolvedValue(false)
+    ephemeral$.isLocked.set(false)
+    render(React.createElement(AppLockOverlayNative))
+    const blurBefore = ephemeral$.persistentEditor.blurRequest.get()
+    expect(h.keyboardDismiss).not.toHaveBeenCalled()
+
+    await act(async () => {
+      ephemeral$.isLocked.set(true)
+      await Promise.resolve()
+    })
+
+    expect(h.keyboardDismiss).toHaveBeenCalledTimes(1)
+    expect(ephemeral$.persistentEditor.blurRequest.get()).toBe(blurBefore + 1)
+  })
+
   it('the Android hardware back button is intercepted while locked — it cannot dismiss the overlay', async () => {
     promptAppLockAuthMock.mockResolvedValue(false)
     render(React.createElement(AppLockOverlayNative))
@@ -257,6 +277,24 @@ describe('web/desktop lock overlay: passcode entry → mismatch/retry/match', ()
   it('renders a passcode entry field while locked', () => {
     render(React.createElement(AppLockOverlayWeb))
     expect(screen.getByTestId('app-lock-unlock-passcode-input')).toBeTruthy()
+  })
+
+  it('takes focus from a focused editor when the lock engages, so typing goes to the passcode field', async () => {
+    const editor = document.createElement('div')
+    editor.contentEditable = 'true'
+    editor.tabIndex = 0
+    document.body.appendChild(editor)
+    editor.focus()
+    expect(document.activeElement).toBe(editor)
+
+    ephemeral$.isLocked.set(false)
+    render(React.createElement(AppLockOverlayWeb))
+    await act(async () => {
+      ephemeral$.isLocked.set(true)
+    })
+
+    expect(document.activeElement).toBe(screen.getByTestId('app-lock-unlock-passcode-input'))
+    editor.remove()
   })
 
   it('a wrong passcode keeps the overlay with a "Try again" affordance', async () => {
