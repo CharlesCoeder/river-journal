@@ -13,11 +13,6 @@ export * from './components/StreakChip'
 export * from './components/CollectiveEntry'
 export * from './components/WordCountDisplay'
 export * from './components/WordCounter'
-export * from './components/JournalTextArea'
-// Export only the component; ThemeSwitcher re-exports a `ThemeName` type that
-// would collide with tamagui's `ThemeName` (already re-exported via `export *
-// from 'tamagui'` above), producing an ambiguous-re-export error.
-export { ThemeSwitcher } from './components/ThemeSwitcher'
 export { useReducedMotion } from './hooks/useReducedMotion'
 export * from './components/ThreePostureDisclosure'
 export * from './components/AuthorByline'

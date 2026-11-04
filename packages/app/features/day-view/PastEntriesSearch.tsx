@@ -1,3 +1,4 @@
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Platform } from 'react-native'
@@ -267,7 +268,7 @@ export function PastEntriesSearch({ entries, children }: PastEntriesSearchProps)
                 fontFamily="journal"
                 fontSize={18}
                 color="color8"
-                fontStyle="italic"
+                fontStyle={italicExceptIOS}
               >
                 No entries match that search yet.
               </Text>
@@ -285,7 +286,7 @@ export function PastEntriesSearch({ entries, children }: PastEntriesSearchProps)
               >
                 <Text
                   fontFamily="journalItalic"
-                  fontStyle="italic"
+                  fontStyle={italicExceptIOS}
                   fontSize="5"
                   color="color"
                 >

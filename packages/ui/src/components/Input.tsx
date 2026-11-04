@@ -1,3 +1,4 @@
+import { inputPlaceholderColor } from './inputPlaceholderColor'
 import {
   Input as TamaguiInput,
   TextArea as TamaguiTextArea,
@@ -34,6 +35,7 @@ export const Input = createStyledHOC(InputFrame, function Input(props, ref) {
     <InputFrame
       ref={ref}
       size={false}
+      placeholderTextColor={inputPlaceholderColor as never}
       {...props}
     />
   )

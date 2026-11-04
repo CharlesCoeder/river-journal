@@ -1,3 +1,4 @@
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import {
   AnimatePresence,
   ScrollView,
@@ -69,7 +70,7 @@ function PrivacyModeCard({
         fontFamily="body"
         fontSize={12}
         color="color8"
-        fontStyle="italic"
+        fontStyle={italicExceptIOS}
         marginBottom="4"
       >
         {quote}

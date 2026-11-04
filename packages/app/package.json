@@ -16,7 +16,6 @@
     "@my/ui": "0.0.1",
     "@noble/ciphers": "^2.1.1",
     "@noble/hashes": "^2.0.1",
-    "@react-navigation/native": "^7.1.28",
     "@supabase/supabase-js": "^2.93.1",
     "@tamagui/animations-react-native": "3.1.10",
     "@tamagui/colors": "3.1.10",
@@ -31,19 +30,18 @@
     "@tauri-apps/api": "^2.5.0",
     "@uiw/react-color-sketch": "^2.9.6",
     "burnt": "^0.12.2",
-    "expo-constants": "~18.0.13",
-    "expo-linking": "~8.0.11",
+    "expo-constants": "~58.0.14",
+    "expo-linking": "~58.0.15",
     "fflate": "^0.8.2",
     "lexical": "^0.33.1",
-    "react-native-safe-area-context": "~5.6.0",
+    "react-native-safe-area-context": "~5.10.1",
     "solito": "patch:solito@npm%3A4.4.1#~/.yarn/patches/solito-npm-4.4.1-976dc5859c.patch",
     "use-debounce": "^10.0.5",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@tanstack/react-query-devtools": "^5.62.0",
-    "@types/react": "~19.0.10",
-    "@types/react-native": "^0.73.0",
+    "@types/react": "~19.3.0",
     "@types/uuid": "^11.0.0"
   }
 }

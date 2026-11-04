@@ -41,6 +41,7 @@
  * survives `signOut()` nulling the session.
  */
 
+import { loadLinking } from 'app/utils/loadLinking'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Dialog, Input, Text, XStack, YStack, ExpandingLineButton, useReducedMotion } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
@@ -64,9 +65,9 @@ let linkingWarmPromise: Promise<typeof import('react-native').Linking | null> | 
 function warmLinking(): Promise<typeof import('react-native').Linking | null> {
   if (cachedLinking !== null) return Promise.resolve(cachedLinking)
   if (linkingWarmPromise === null) {
-    linkingWarmPromise = import('react-native')
-      .then((rn) => {
-        cachedLinking = rn.Linking
+    linkingWarmPromise = loadLinking()
+      .then((linking) => {
+        cachedLinking = linking
         return cachedLinking
       })
       .catch((error) => {

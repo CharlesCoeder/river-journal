@@ -1,3 +1,4 @@
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import {
   AnimatePresence,
   ExpandingLineButton,
@@ -91,7 +92,7 @@ export function DayViewScreen() {
         >
           <Text
             fontFamily="journalItalic"
-            fontStyle="italic"
+            fontStyle={italicExceptIOS}
             fontSize={30}
             color="color"
           >
@@ -157,7 +158,7 @@ export function DayViewScreen() {
                   fontFamily="journal"
                   fontSize={20}
                   color="color8"
-                  fontStyle="italic"
+                  fontStyle={italicExceptIOS}
                 >
                   No journals yet. The river is dry.
                 </Text>

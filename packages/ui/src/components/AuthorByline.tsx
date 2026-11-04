@@ -4,6 +4,7 @@
 // Text-only authorship primitive. No avatar, no sigil, no color-shift hooks.
 // Re-exported from packages/ui/src/index.tsx.
 
+import { italicExceptIOS } from '../italicExceptIOS'
 import { XStack, Text } from 'tamagui'
 
 // ─── Tier → label map ─────────────────────────────────────────────────────────
@@ -95,7 +96,7 @@ export function AuthorByline({
             fontSize="1"
             color="color9"
             fontFamily="body"
-            fontStyle="italic"
+            fontStyle={italicExceptIOS}
           >
             {tenureLabel}
           </Text>

@@ -32,6 +32,7 @@ const nextConfig = {
       'react-native': 'react-native-web',
       'react-native-svg': '@tamagui/react-native-svg',
       'react-native-safe-area-context': './shims/react-native-safe-area-context.js',
+      'expo-crypto': './shims/expo-crypto.js',
     },
     resolveExtensions: [
       '.web.tsx',

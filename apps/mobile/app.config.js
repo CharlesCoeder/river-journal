@@ -35,11 +35,10 @@ module.exports = {
     name: getAppName(),
     slug: 'river-journal',
     scheme: getScheme(),
-    version: '1.0.0',
+    version: '1.1.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
-    newArchEnabled: true,
     splash: {
       image: './assets/splash.png',
       resizeMode: 'contain',

@@ -1,3 +1,4 @@
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import {
   AnimatePresence,
   ScrollView,
@@ -178,7 +179,7 @@ export function SettingsScreen() {
           >
             <Text
               fontFamily="journalItalic"
-              fontStyle="italic"
+              fontStyle={italicExceptIOS}
               fontSize={30}
               color="color"
               letterSpacing={-0.5}

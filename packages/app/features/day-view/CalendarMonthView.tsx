@@ -1,3 +1,4 @@
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import type React from 'react'
 import { useMemo, useRef, useState } from 'react'
 import { Button, ExpandingLineButton, XStack, YStack, Text, View, useReducedMotion } from '@my/ui'
@@ -249,7 +250,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
 
         <Text
           fontFamily="journalItalic"
-          fontStyle="italic"
+          fontStyle={italicExceptIOS}
           fontSize="6"
           color="color"
           aria-live="polite"
@@ -367,7 +368,7 @@ export function CalendarMonthView({ initialMonth }: CalendarMonthViewProps): Rea
           >
             <Text
               fontFamily="journalItalic"
-              fontStyle="italic"
+              fontStyle={italicExceptIOS}
               fontSize="5"
               color="color"
             >

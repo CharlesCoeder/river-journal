@@ -12,9 +12,9 @@ import 'app/state/collective/mutations'
 // app/utils/telemetry/consent.ts — no restart.
 
 import { useEffect } from 'react'
-import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
-import { SplashScreen, Stack } from 'expo-router'
+import { DefaultTheme, SplashScreen, Stack, ThemeProvider, useRouter } from 'expo-router'
+import { SolitoProvider } from 'solito/build/middleware/provider'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
@@ -29,7 +29,7 @@ import { AppLockOverlay } from 'app/features/settings/AppLockOverlay.native'
 import { AppLockPrivacyCover } from 'app/features/settings/AppLockPrivacyCover.native'
 
 export const unstable_settings = {
-  initialRouteName: 'index',
+  anchor: 'index',
 }
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -73,61 +73,72 @@ export default function App() {
   return <RootLayoutNav />
 }
 
+// Solito's router calls useLinkTo. expo-router's own useLinkTo now swaps the whole
+// stack for the target route, which leaves nothing to go back to, so links go through
+// navigate: the action Solito's links have always dispatched here.
+function useLinkTo() {
+  return useRouter().navigate as (href: string) => void
+}
+
+const solitoMiddleware = { useLinkTo }
+
 function RootLayoutNav() {
   return (
-    <PersistenceGate>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <MobileKeyboardProvider>
-            <Provider>
-              <TamaguifiedReactNavigationThemeProvider>
-                <TamaguifiedSafeAreaView>
-                  {/*
-                    The moderation admin surface (features/moderation/**) is
-                    intentionally web + desktop only. Mobile must never contain an
-                    admin/ route subtree or import from features/moderation/** —
-                    it must not ship in publicly-distributed mobile binaries.
-                    Enforced by PR review until the CI grep lands.
-                  */}
-                  {/*
-                    Hub pager gesture host: home and the menu are one horizontal
-                    surface (see app/index.tsx). The pan lives here, around BOTH
-                    the Stack and the persistent editor overlay, so a drag that
-                    starts on the WebView still moves the hub. It is inert on
-                    every screen pushed above home.
-                  */}
-                  <HubGestureHost>
-                    <Stack screenOptions={{ headerShown: false }}>
-                      <Stack.Screen
-                        name="journal"
-                        options={{ animation: 'none' }}
-                      />
-                      {/* Redirects into the hub pager's menu pane — no slide of its own. */}
-                      <Stack.Screen
-                        name="menu"
-                        options={{ animation: 'none' }}
-                      />
-                      <Stack.Screen name="auth" />
-                      <Stack.Screen name="privacy" />
-                      <Stack.Screen
-                        name="google-auth"
-                        options={{ animation: 'none' }}
-                      />
-                    </Stack>
-                    <PersistentEditor />
-                  </HubGestureHost>
-                  {/* App Lock — covers all routes. The privacy cover hides
-                  content from the OS app-switcher snapshot on `inactive`; the
-                  overlay gates the UI while locked. */}
-                  <AppLockPrivacyCover />
-                  <AppLockOverlay />
-                </TamaguifiedSafeAreaView>
-              </TamaguifiedReactNavigationThemeProvider>
-            </Provider>
-          </MobileKeyboardProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </PersistenceGate>
+    <SolitoProvider middleware={solitoMiddleware}>
+      <PersistenceGate>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaProvider>
+            <MobileKeyboardProvider>
+              <Provider>
+                <TamaguifiedReactNavigationThemeProvider>
+                  <TamaguifiedSafeAreaView>
+                    {/*
+                      The moderation admin surface (features/moderation/**) is
+                      intentionally web + desktop only. Mobile must never contain an
+                      admin/ route subtree or import from features/moderation/** —
+                      it must not ship in publicly-distributed mobile binaries.
+                      Enforced by PR review until the CI grep lands.
+                    */}
+                    {/*
+                      Hub pager gesture host: home and the menu are one horizontal
+                      surface (see app/index.tsx). The pan lives here, around BOTH
+                      the Stack and the persistent editor overlay, so a drag that
+                      starts on the WebView still moves the hub. It is inert on
+                      every screen pushed above home.
+                    */}
+                    <HubGestureHost>
+                      <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen
+                          name="journal"
+                          options={{ animation: 'none' }}
+                        />
+                        {/* Redirects into the hub pager's menu pane — no slide of its own. */}
+                        <Stack.Screen
+                          name="menu"
+                          options={{ animation: 'none' }}
+                        />
+                        <Stack.Screen name="auth" />
+                        <Stack.Screen name="privacy" />
+                        <Stack.Screen
+                          name="google-auth"
+                          options={{ animation: 'none' }}
+                        />
+                      </Stack>
+                      <PersistentEditor />
+                    </HubGestureHost>
+                    {/* App Lock — covers all routes. The privacy cover hides
+                    content from the OS app-switcher snapshot on `inactive`; the
+                    overlay gates the UI while locked. */}
+                    <AppLockPrivacyCover />
+                    <AppLockOverlay />
+                  </TamaguifiedSafeAreaView>
+                </TamaguifiedReactNavigationThemeProvider>
+              </Provider>
+            </MobileKeyboardProvider>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </PersistenceGate>
+    </SolitoProvider>
   )
 }
 

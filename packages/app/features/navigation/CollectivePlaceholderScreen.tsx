@@ -1,3 +1,4 @@
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import { useEffect, useState } from 'react'
 import { AnimatePresence, YStack, XStack, Text, ScrollView } from '@my/ui'
 import { WordLinkNav } from './WordLinkNav'
@@ -44,7 +45,7 @@ export function CollectivePlaceholderScreen() {
         >
           <Text
             fontFamily="journalItalic"
-            fontStyle="italic"
+            fontStyle={italicExceptIOS}
             fontSize={30}
             color="color"
           >

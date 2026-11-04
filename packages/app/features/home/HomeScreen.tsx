@@ -1,3 +1,4 @@
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import {
   AnimatePresence,
   YStack,
@@ -256,7 +257,7 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
   return (
     <Text
       fontFamily="journalItalic"
-      fontStyle="italic"
+      fontStyle={italicExceptIOS}
       fontSize="36px sm:30px"
       color="color"
       cursor="pointer"

@@ -7,7 +7,7 @@ import { hubPagerController } from './hubPagerState'
  * hub pager to rest on home — "home" means the home pane, not whichever spoke
  * was showing when a screen was pushed above it.
  *
- * `unstable_settings.initialRouteName = 'index'` in apps/mobile/app/_layout.tsx
+ * `unstable_settings.anchor = 'index'` in apps/mobile/app/_layout.tsx
  * guarantees home is always the first route in the root stack (even on deep
  * links), so `dismissTo('/')` always pops rather than pushes. Pushing `/`
  * (the web behaviour) would leave duplicate home entries under every

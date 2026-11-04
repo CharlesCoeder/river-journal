@@ -18,6 +18,7 @@
 //
 // This absorbs the former CollectivePreview.tsx.
 
+import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import { useEffect, useRef, useState } from 'react'
 import { YStack, XStack, View, Text, ScrollView, useReducedMotion } from '@my/ui'
 import { Lock, ArrowLeft, ArrowRight, Check, UserCircle, CloudUpload, PenLine } from '@my/icons'
@@ -351,7 +352,7 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
       >
         <Text
           fontFamily="journalItalic"
-          fontStyle="italic"
+          fontStyle={italicExceptIOS}
           fontSize="9"
           color="color12"
         >

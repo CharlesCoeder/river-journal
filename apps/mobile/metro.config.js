@@ -4,6 +4,7 @@
  * @type {import('expo/metro-config')}
  */
 const { getDefaultConfig } = require('@expo/metro-config')
+const { withTamagui } = require('@tamagui/metro-plugin')
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -53,7 +54,21 @@ function nestedNodeModulesFor(originModulePath) {
   return candidates
 }
 
-config.resolver.resolveRequest = (context, moduleName, platform) => {
+// 3c. Solito's native hooks read React Navigation's contexts, but expo-router now
+// provides those contexts from its own fork, so the real package would read empty
+// ones. Point Solito at the fork. Web never gets here: Next resolves Solito's .web
+// files, which do not import React Navigation. Links are separate: see useLinkTo in
+// app/_layout.tsx.
+const SOLITO_PATH = `${path.sep}node_modules${path.sep}solito${path.sep}`
+function forSolito(context, moduleName) {
+  return moduleName.startsWith('@react-navigation/') &&
+    context.originModulePath.includes(SOLITO_PATH)
+    ? 'expo-router/react-navigation'
+    : moduleName
+}
+
+config.resolver.resolveRequest = (context, requested, platform) => {
+  const moduleName = forSolito(context, requested)
   try {
     return context.resolveRequest(context, moduleName, platform)
   } catch (error) {
@@ -76,4 +91,9 @@ config.resolver.unstable_conditionNames = ['require', 'react-native', 'import']
 config.transformer = { ...config.transformer, unstable_allowRequireContext: true }
 config.transformer.minifierPath = require.resolve('metro-minify-terser')
 
-module.exports = wrapWithReanimatedMetroConfig(config)
+module.exports = wrapWithReanimatedMetroConfig(
+  withTamagui(config, {
+    components: ['tamagui', '@my/ui', '@tamagui/tailwind'],
+    config: path.join(workspaceRoot, 'packages/config/src/tamagui.config.ts'),
+  })
+)
