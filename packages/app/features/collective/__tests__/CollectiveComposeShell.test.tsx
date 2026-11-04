@@ -60,15 +60,20 @@ vi.mock('app/state/collective/currentUser', () => ({
   useCurrentUserId: () => 'user-test-1',
 }))
 
-vi.mock('app/state/store', () => ({
-  store$: {
-    profile: {
-      preferences: {
-        collective_show_tenure_tier: { get: () => false },
+vi.mock('app/state/store', async () => {
+  const { observable } = await import('@legendapp/state')
+  return {
+    store$: {
+      profile: {
+        preferences: {
+          collective_show_tenure_tier: { get: () => false },
+        },
       },
     },
-  },
-}))
+    // PostComposer blurs its editor when App Lock engages.
+    ephemeral$: observable({ isLocked: false }),
+  }
+})
 
 vi.mock('@my/ui', async () => {
   const ReactMod = await import('react')

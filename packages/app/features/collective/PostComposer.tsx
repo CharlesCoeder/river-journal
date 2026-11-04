@@ -30,6 +30,7 @@ import { useCreatePost, createPostWithId } from 'app/state/collective/mutations'
 import { useCurrentUserId } from 'app/state/collective/currentUser'
 import { store$ } from 'app/state/store'
 import { useRouter } from 'solito/navigation'
+import { useAppLockBlurRequest } from 'app/features/settings/useAppLockBlurRequest'
 import CollectiveLexicalEditor from './CollectiveLexicalEditor'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -89,6 +90,8 @@ export default function PostComposer({
   const currentUserId = useCurrentUserId()
   const createPost = useCreatePost()
   const router = useRouter()
+  // Drops the editor's focus (and the keyboard) when App Lock engages.
+  const lockBlurRequest = useAppLockBlurRequest()
 
   // ─── Tenure-tier opt-in — one-shot read at mount ──────────────────────────
   // Sync read at mount only; no mid-session reactive update needed
@@ -340,6 +343,7 @@ export default function PostComposer({
             <CollectiveLexicalEditor
               onContentChange={setBody}
               minHeight={minHeight}
+              blurRequest={lockBlurRequest}
               __contextProbeRef={contextProbeRef}
             />
           </View>

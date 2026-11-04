@@ -65,6 +65,10 @@ export function AppLockOverlay() {
         value={passcode}
         onChangeText={setPasscode}
         onSubmitEditing={submit}
+        // Take focus from the editor behind the overlay, which the browser
+        // gives back on return to the tab; otherwise typing lands in the
+        // hidden journal instead of here.
+        autoFocus
         secureTextEntry
         placeholder="Enter passcode"
         width="100%"
