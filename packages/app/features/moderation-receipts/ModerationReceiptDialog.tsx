@@ -148,34 +148,33 @@ export function ModerationReceiptDialog({ receipt, onAcknowledge }: ModerationRe
       <Dialog.Portal>
         <Dialog.Overlay
           key="overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={420}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             {title}
           </Dialog.Title>
 
-          <YStack gap="$2">
+          <YStack gap="2">
             {receipt.kind === 'removed_post' ? (
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 {`A ${receipt.parent_post_id !== null ? 'reply' : 'post'} you made on ${humanDate(
                   receipt.created_at
@@ -184,8 +183,8 @@ export function ModerationReceiptDialog({ receipt, onAcknowledge }: ModerationRe
             ) : (
               <>
                 <Text
-                  fontSize="$3"
-                  color="$color12"
+                  fontSize="3"
+                  color="color12"
                 >
                   {`Your ability to post and react has been paused until ${humanDate(
                     receipt.ends_at
@@ -193,8 +192,8 @@ export function ModerationReceiptDialog({ receipt, onAcknowledge }: ModerationRe
                 </Text>
                 {suspensionReason !== null ? (
                   <Text
-                    fontSize="$3"
-                    color="$color11"
+                    fontSize="3"
+                    color="color11"
                   >
                     {`Reason: ${suspensionReason}`}
                   </Text>
@@ -205,20 +204,19 @@ export function ModerationReceiptDialog({ receipt, onAcknowledge }: ModerationRe
 
           {/* Constructive path back — the only outward affordance (no appeal). */}
           <Text
-            fontSize="$2"
-            color="$color11"
-            role="link"
+            fontSize="2"
+            color="color11 hover:color"
             cursor="pointer"
-            hoverStyle={{ color: '$color' }}
+            role="link"
             onPress={openCommunityGuidelines}
           >
             View community guidelines
           </Text>
 
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             <ExpandingLineButton
               size="cta"

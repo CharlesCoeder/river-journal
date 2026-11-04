@@ -190,33 +190,32 @@ export function CancelSubscriptionFlow({
       <Dialog.Portal>
         <Dialog.Overlay
           key="cancel-overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="cancel-content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={420}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             Cancel subscription
           </Dialog.Title>
 
           {(state === 'confirm' || state === 'cancelling' || state === 'error') && (
             <Text
-              fontSize="$3"
-              color="$color12"
+              fontSize="3"
+              color="color12"
             >
               {summary}
             </Text>
@@ -228,8 +227,8 @@ export function CancelSubscriptionFlow({
               aria-live="polite"
             >
               <Text
-                fontSize="$3"
-                color="$color11"
+                fontSize="3"
+                color="color11"
               >
                 Something went wrong on our end. Please try again.
               </Text>
@@ -242,8 +241,8 @@ export function CancelSubscriptionFlow({
               aria-live="polite"
             >
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 Cancelled. Thanks for being here.
               </Text>
@@ -251,21 +250,21 @@ export function CancelSubscriptionFlow({
           )}
 
           {state === 'native-action' && nativeLink && (
-            <YStack gap="$2">
+            <YStack gap="2">
               <YStack
                 role="status"
                 aria-live="polite"
               >
                 <Text
-                  fontSize="$3"
-                  color="$color12"
+                  fontSize="3"
+                  color="color12"
                 >
                   {`Cancellation requires confirming via ${nativeLink.storeName}.`}
                 </Text>
               </YStack>
               <Text
-                fontSize="$2"
-                color="$color11"
+                fontSize="2"
+                color="color11"
               >
                 {`If nothing opened, manage your subscription in the ${nativeLink.storeName} settings.`}
               </Text>
@@ -273,9 +272,9 @@ export function CancelSubscriptionFlow({
           )}
 
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             {(state === 'confirm' || state === 'cancelling') && (
               <>

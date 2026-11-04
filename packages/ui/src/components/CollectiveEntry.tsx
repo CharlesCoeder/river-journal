@@ -12,9 +12,9 @@ export function CollectiveEntry({ state = 'dim', onPress }: CollectiveEntryProps
     // TODO: lit-state styling — dot indicator? Color? Tap target?
     return (
       <Text
-        fontFamily="$body"
-        fontSize="$3"
-        color="$color8"
+        fontFamily="body"
+        fontSize="3"
+        color="color8"
         textTransform="uppercase"
         letterSpacing={2}
         cursor="pointer"
@@ -29,9 +29,9 @@ export function CollectiveEntry({ state = 'dim', onPress }: CollectiveEntryProps
 
   return (
     <Text
-      fontFamily="$body"
-      fontSize="$3"
-      color="$color8"
+      fontFamily="body"
+      fontSize="3"
+      color="color8"
       textTransform="uppercase"
       letterSpacing={2}
       cursor="pointer"

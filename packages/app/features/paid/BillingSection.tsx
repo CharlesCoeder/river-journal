@@ -53,30 +53,30 @@ export function BillingSection() {
   const formattedPeriodEnd = formatPeriodEnd(receipt?.current_period_end)
 
   return (
-    <YStack gap="$4">
+    <YStack gap="4">
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={11}
         textTransform="uppercase"
         letterSpacing={2}
-        color="$color8"
+        color="color8"
       >
         Billing
       </Text>
       {receipt === null ? (
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
         >
           Subscription details are syncing.
         </Text>
       ) : isCanceled ? (
-        <YStack gap="$2">
+        <YStack gap="2">
           <Text
-            fontFamily="$body"
-            fontSize="$4"
-            color="$color"
+            fontFamily="body"
+            fontSize="4"
+            color="color"
           >
             {formattedPeriodEnd
               ? `Your access continues until ${formattedPeriodEnd}`
@@ -84,26 +84,26 @@ export function BillingSection() {
           </Text>
         </YStack>
       ) : (
-        <YStack gap="$2">
+        <YStack gap="2">
           <Text
-            fontFamily="$body"
-            fontSize="$4"
-            color="$color"
+            fontFamily="body"
+            fontSize="4"
+            color="color"
           >
             {`Status: ${receipt.status}`}
           </Text>
           {formattedPeriodEnd ? (
             <Text
-              fontFamily="$body"
-              fontSize="$3"
-              color="$color8"
+              fontFamily="body"
+              fontSize="3"
+              color="color8"
             >
               {receipt.status === 'active'
                 ? `Renews ${formattedPeriodEnd}`
                 : `Current period ends ${formattedPeriodEnd}`}
             </Text>
           ) : null}
-          <XStack marginTop="$2">
+          <XStack marginTop="2">
             <ExpandingLineButton
               size="default"
               onPress={() => setCancelOpen(true)}

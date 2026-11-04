@@ -1,7 +1,7 @@
 import type { TamaguiBuildOptions } from 'tamagui'
 
 export default {
-  components: ['tamagui', '@my/ui'],
+  components: ['tamagui', '@my/ui', '@tamagui/tailwind'],
   config: '../../packages/config/src/tamagui.config.ts',
   outputCSS: './public/tamagui.generated.css',
 } satisfies TamaguiBuildOptions

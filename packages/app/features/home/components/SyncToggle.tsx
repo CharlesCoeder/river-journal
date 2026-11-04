@@ -84,15 +84,15 @@ export function SyncToggle() {
 
   return (
     <YStack
-      gap="$2"
+      gap="2"
       alignItems="flex-start"
     >
       {status === 'loading' && (
         <Text
           testID="sync-status-loading"
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color8"
+          color="color8"
         >
           Checking Sync...
         </Text>
@@ -102,22 +102,21 @@ export function SyncToggle() {
         <>
           <Text
             testID="sync-toggle"
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color="$color8"
+            color="color8 hover:color"
             borderBottomWidth={1}
-            borderColor="$color5"
+            borderColor="color5"
             paddingBottom={4}
             cursor="pointer"
-            hoverStyle={{ color: '$color' }}
             onPress={handleEnableSync}
           >
             Enable Cloud Sync
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             Entries remain on this device only.
           </Text>
@@ -128,22 +127,22 @@ export function SyncToggle() {
         <>
           <Text
             testID="sync-toggle"
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color="$color"
+            color="color"
             borderBottomWidth={1}
-            borderColor="$color5"
+            borderColor="color5"
             paddingBottom={4}
             cursor="pointer"
-            hoverStyle={{ opacity: 0.7 }}
+            opacity="hover:0.7"
             onPress={handleDisableSync}
           >
             Cloud Sync Active
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             Everything is securely backed up and up to date.
           </Text>
@@ -154,32 +153,32 @@ export function SyncToggle() {
         <>
           <Text
             testID="sync-status-locked"
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color="$color"
+            color="color"
           >
             Cloud Sync Locked
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             Cannot sync until your password is entered.
           </Text>
           <Text
             testID="continue-e2e-setup"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={11}
             letterSpacing={2}
             textTransform="uppercase"
-            color="$color"
+            color="color"
             borderBottomWidth={1}
-            borderColor="$color5"
+            borderColor="color5"
             paddingBottom={2}
-            marginTop="$2"
+            marginTop="2"
             cursor="pointer"
-            hoverStyle={{ opacity: 0.7 }}
+            opacity="hover:0.7"
             onPress={handleUnlockSync}
           >
             Unlock Now
@@ -191,32 +190,32 @@ export function SyncToggle() {
         <>
           <Text
             testID="sync-status-incomplete"
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color="$color"
+            color="color"
           >
             Setup Incomplete
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             Encryption setup was started but not finished.
           </Text>
           <Text
             testID="continue-e2e-setup"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={11}
             letterSpacing={2}
             textTransform="uppercase"
-            color="$color"
+            color="color"
             borderBottomWidth={1}
-            borderColor="$color5"
+            borderColor="color5"
             paddingBottom={2}
-            marginTop="$2"
+            marginTop="2"
             cursor="pointer"
-            hoverStyle={{ opacity: 0.7 }}
+            opacity="hover:0.7"
             onPress={handleResumeSetup}
           >
             Resume Setup
@@ -228,33 +227,32 @@ export function SyncToggle() {
         <>
           <Text
             testID="sync-status-unavailable"
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
-            color="$color"
+            color="color"
           >
             Sync Unavailable
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             We couldn't fetch your managed encryption key.
           </Text>
           <Text
             testID="managed-key-retry"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={11}
             letterSpacing={2}
             textTransform="uppercase"
-            color="$color"
+            color="color"
             borderBottomWidth={1}
-            borderColor="$color5"
+            borderColor="color5"
             paddingBottom={2}
-            marginTop="$2"
+            marginTop="2"
             cursor="pointer"
-            hoverStyle={{ opacity: 0.7 }}
-            opacity={isRetryingManagedKey ? 0.4 : 1}
+            opacity={`${isRetryingManagedKey ? 0.4 : 1} hover:0.7`}
             onPress={() => void handleRetrySync()}
             disabled={isRetryingManagedKey}
           >
@@ -265,10 +263,10 @@ export function SyncToggle() {
 
       {error && status !== 'managed_unavailable' && (
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$red10"
-          marginTop="$1"
+          color="red10"
+          marginTop="1"
         >
           {error.message}
         </Text>

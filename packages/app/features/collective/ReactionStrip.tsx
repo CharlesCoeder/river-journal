@@ -7,7 +7,7 @@
 // Returns null when userId is null (anonymous viewer).
 
 import { XStack, View, Text, useReducedMotion } from '@my/ui'
-import { Heart, Sparkles, Flame, Leaf, Waves } from '@tamagui/lucide-icons'
+import { Heart, Sparkles, Flame, Leaf, Waves } from '@my/icons'
 import { useToggleReaction } from 'app/state/collective/mutations'
 import { usePostReactions } from 'app/state/collective/reactions'
 import type { ReactionKind } from 'app/state/collective/types'
@@ -90,40 +90,38 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
 
   return (
     <XStack
-      gap="$2"
+      gap="2"
       role="group"
       aria-label="Reactions"
     >
       {REACTIONS.map(({ kind, Icon, label }) => {
         const isReacted = userReactions[kind] !== null
         const count = counts[kind] ?? 0
-        const iconColor = isReacted ? '$color12' : '$color9'
+        const iconColor = isReacted ? 'color12' : 'color9'
 
         return (
           <View
             key={kind}
-            tag="button"
+            render="button"
             role="button"
             aria-pressed={isReacted}
             aria-label={`${label} reaction (${count})`}
             aria-disabled={disabled || undefined}
-            width="$4"
-            height="$4"
+            width="4"
+            height="4"
             alignItems="center"
             justifyContent="center"
             flexDirection="row"
-            gap="$1"
+            gap="1"
             backgroundColor="transparent"
             borderWidth={0}
             padding={0}
             cursor={disabled ? 'not-allowed' : 'pointer'}
             opacity={disabled ? 0.4 : 1}
             transition={tintTransition as any}
-            focusVisibleStyle={{
-              outlineWidth: 1,
-              outlineColor: '$color12',
-              outlineStyle: 'solid',
-            }}
+            outlineWidth="focus-visible:1px"
+            outlineColor="focus-visible:color12"
+            outlineStyle="focus-visible:solid"
             onPress={disabled ? undefined : () => handlePress(kind)}
             onKeyDown={
               disabled
@@ -142,8 +140,8 @@ export function ReactionStrip({ postId, userId, disabled = false }: ReactionStri
             />
             {count > 0 ? (
               <Text
-                fontSize="$1"
-                color="$color9"
+                fontSize="1"
+                color="color9"
               >
                 {count}
               </Text>

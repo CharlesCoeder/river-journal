@@ -133,31 +133,31 @@ export function SuspendUserDialog({
       <Dialog.Portal>
         <Dialog.Overlay
           key="overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={420}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             Suspend author
           </Dialog.Title>
           <Dialog.Description
-            fontSize="$2"
-            color="$color11"
+            fontSize="2"
+            lineHeight="2"
+            color="color11"
           >
             {SCOPE_WARNING}
           </Dialog.Description>
@@ -167,12 +167,12 @@ export function SuspendUserDialog({
             value={preset ?? ''}
             onValueChange={(v) => setPreset(v)}
           >
-            <YStack gap="$2">
+            <YStack gap="2">
               {DURATION_PRESETS.map(({ value, label }) => (
                 <XStack
                   key={value}
                   alignItems="center"
-                  gap="$2"
+                  gap="2"
                 >
                   <RadioGroup.Item
                     value={value}
@@ -180,7 +180,7 @@ export function SuspendUserDialog({
                   />
                   <Label
                     htmlFor={`suspend-preset-${value}`}
-                    fontSize="$3"
+                    fontSize="3"
                   >
                     {label}
                   </Label>
@@ -194,8 +194,8 @@ export function SuspendUserDialog({
             onChangeText={setCustomDays}
             placeholder="Custom days"
             keyboardType="numeric"
-            fontSize="$2"
-            borderColor="$color3"
+            fontSize="2"
+            borderColor="color3"
           />
 
           {/* ─── Reason ─────────────────────────────────────────────────────── */}
@@ -204,12 +204,12 @@ export function SuspendUserDialog({
             onValueChange={(v) => setSelectedReason(v as RemovalReasonCode)}
             required
           >
-            <YStack gap="$2">
+            <YStack gap="2">
               {REMOVAL_REASONS.map(({ code, label }) => (
                 <XStack
                   key={code}
                   alignItems="center"
-                  gap="$2"
+                  gap="2"
                 >
                   <RadioGroup.Item
                     value={code}
@@ -217,7 +217,7 @@ export function SuspendUserDialog({
                   />
                   <Label
                     htmlFor={`suspend-reason-${code}`}
-                    fontSize="$3"
+                    fontSize="3"
                   >
                     {label}
                   </Label>
@@ -233,23 +233,23 @@ export function SuspendUserDialog({
             maxLength={500}
             multiline
             numberOfLines={3}
-            fontSize="$2"
-            borderColor="$color3"
+            fontSize="2"
+            borderColor="color3"
           />
 
           {mutation.error ? (
             <Text
-              fontSize="$2"
-              color="$color9"
+              fontSize="2"
+              color="color9"
             >
               {GENERIC_ERROR_COPY}
             </Text>
           ) : null}
 
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             <ExpandingLineButton onPress={() => handleOpenChange(false)}>
               Cancel

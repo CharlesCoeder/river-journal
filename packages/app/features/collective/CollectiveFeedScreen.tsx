@@ -24,7 +24,7 @@ import {
   ExpandingLineButton,
   useReducedMotion,
 } from '@my/ui'
-import { PenLine } from '@tamagui/lucide-icons'
+import { PenLine } from '@my/icons'
 import { onlineManager } from '@tanstack/react-query'
 import { useFeed } from 'app/state/collective/feed'
 import { threadHref } from 'app/features/collective/threadHref'
@@ -66,7 +66,7 @@ export default function CollectiveFeedScreen() {
 
   // Ease the room in on mount — mirrors the Settings/Preferences entrance so the
   // Collective screen fades into view rather than popping in. The `mounted` gate
-  // forces a genuine client-side mount so Tamagui replays `enterStyle` reliably.
+  // forces a genuine client-side mount so Tamagui replays `enter:` values reliably.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
@@ -96,10 +96,10 @@ export default function CollectiveFeedScreen() {
     return (
       <YStack>
         <Text
-          fontSize="$2"
-          color="$color9"
+          fontSize="2"
+          color="color9"
           textAlign="center"
-          paddingVertical="$4"
+          paddingVertical="4"
         >
           Couldn&apos;t load the feed. Pull to retry.
         </Text>
@@ -133,9 +133,8 @@ export default function CollectiveFeedScreen() {
               key="collective-preview-body"
               flex={1}
               transition="designEnter"
-              enterStyle={{ opacity: 0, y: 10 }}
-              opacity={1}
-              y={0}
+              opacity="1 enter:0"
+              y="0 enter:10px"
             >
               <CollectiveLockedScreen
                 gate="words"
@@ -188,41 +187,40 @@ export default function CollectiveFeedScreen() {
             <YStack
               key="collective-feed-body"
               transition="designEnter"
-              enterStyle={{ opacity: 0, y: 10 }}
-              opacity={1}
-              y={0}
+              opacity="1 enter:0"
+              y="0 enter:10px"
               width="100%"
               maxWidth={720}
               marginHorizontal="auto"
-              paddingHorizontal="$5"
-              paddingVertical="$8"
+              paddingHorizontal="5"
+              paddingVertical="8"
             >
               {/* ─── Room header ──────────────────────────────────────────────── */}
-              <YStack marginBottom="$9">
+              <YStack marginBottom="9">
                 <Text
-                  fontFamily="$body"
-                  fontSize="$1"
-                  color="$color9"
+                  fontFamily="body"
+                  fontSize="1"
+                  color="color9"
                   textTransform="uppercase"
                   letterSpacing={2}
                 >
                   The Collective · {todayLong()}
                 </Text>
                 <Text
-                  fontFamily="$journalItalic"
+                  fontFamily="journalItalic"
                   fontStyle="italic"
-                  fontSize="$10"
-                  lineHeight="$10"
-                  color="$color12"
-                  marginTop="$3"
+                  fontSize="10"
+                  lineHeight="10"
+                  color="color12"
+                  marginTop="3"
                 >
                   The room is open.
                 </Text>
                 <Text
-                  fontFamily="$journal"
-                  fontSize="$5"
-                  color="$color10"
-                  marginTop="$3"
+                  fontFamily="journal"
+                  fontSize="5"
+                  color="color10"
+                  marginTop="3"
                   maxWidth={460}
                 >
                   You did the work today. So did everyone here. Read slowly; write back when
@@ -235,11 +233,11 @@ export default function CollectiveFeedScreen() {
                 justifyContent="space-between"
                 alignItems="center"
                 flexWrap="wrap"
-                gap="$4"
-                paddingBottom="$4"
-                marginBottom="$7"
+                gap="4"
+                paddingBottom="4"
+                marginBottom="7"
                 borderBottomWidth={1}
-                borderBottomColor="$color4"
+                borderBottomColor="color4"
               >
                 <XStack
                   role="button"
@@ -247,18 +245,18 @@ export default function CollectiveFeedScreen() {
                   onPress={() => router.push('/collective/compose')}
                   cursor="pointer"
                   alignItems="center"
-                  gap="$3"
+                  gap="3"
                   flexShrink={0}
                 >
                   <PenLine
                     size={20}
-                    color="$color12"
+                    color="color12"
                   />
                   <Text
-                    fontFamily="$journalItalic"
+                    fontFamily="journalItalic"
                     fontStyle="italic"
-                    fontSize="$7"
-                    color="$color12"
+                    fontSize="7"
+                    color="color12"
                     numberOfLines={1}
                   >
                     Write a letter
@@ -267,13 +265,13 @@ export default function CollectiveFeedScreen() {
 
                 <XStack
                   alignItems="center"
-                  gap="$5"
+                  gap="5"
                   flexShrink={0}
                 >
                   <Text
-                    fontFamily="$body"
-                    fontSize="$1"
-                    color="$color12"
+                    fontFamily="body"
+                    fontSize="1"
+                    color="color12"
                     textTransform="uppercase"
                     letterSpacing={1}
                   >
@@ -286,9 +284,9 @@ export default function CollectiveFeedScreen() {
                     cursor="pointer"
                   >
                     <Text
-                      fontFamily="$body"
-                      fontSize="$1"
-                      color="$color9"
+                      fontFamily="body"
+                      fontSize="1"
+                      color="color9"
                       textTransform="uppercase"
                       letterSpacing={1}
                     >
@@ -301,10 +299,10 @@ export default function CollectiveFeedScreen() {
               {/* Error with cached data — show refresh error strip (highest precedence) */}
               {showErrorStrip ? (
                 <Text
-                  fontSize="$1"
-                  color="$color9"
+                  fontSize="1"
+                  color="color9"
                   textAlign="center"
-                  paddingVertical="$2"
+                  paddingVertical="2"
                 >
                   Couldn&apos;t refresh. Showing cached posts.
                 </Text>
@@ -313,9 +311,9 @@ export default function CollectiveFeedScreen() {
               {/* Offline microcopy — only when error strip is not shown and timestamp is valid */}
               {showOfflineStrip ? (
                 <Text
-                  fontSize="$1"
-                  color="$color9"
-                  paddingVertical="$2"
+                  fontSize="1"
+                  color="color9"
+                  paddingVertical="2"
                   textAlign="center"
                 >
                   Offline · last synced {formatTimeAgo(feed.dataUpdatedAt)}
@@ -327,12 +325,12 @@ export default function CollectiveFeedScreen() {
               {isSuspended === true ? (
                 <YStack
                   alignItems="center"
-                  paddingVertical="$3"
-                  gap="$1"
+                  paddingVertical="3"
+                  gap="1"
                 >
                   <Text
-                    fontSize="$2"
-                    color="$color11"
+                    fontSize="2"
+                    color="color11"
                     textAlign="center"
                   >
                     Posting and reacting are paused for this account.
@@ -341,10 +339,9 @@ export default function CollectiveFeedScreen() {
                     testID="feed-suspended-details-link"
                     role="link"
                     cursor="pointer"
-                    fontSize="$2"
-                    color="$color11"
+                    fontSize="2"
+                    color="color11 hover:color12"
                     textAlign="center"
-                    hoverStyle={{ color: '$color12' }}
                     onPress={() => router.push('/settings')}
                   >
                     View details in Settings
@@ -355,13 +352,13 @@ export default function CollectiveFeedScreen() {
               {/* Empty state */}
               {showEmptyState ? (
                 <YStack
-                  paddingVertical="$8"
-                  gap="$5"
+                  paddingVertical="8"
+                  gap="5"
                 >
                   <Text
-                    fontFamily="$journal"
-                    fontSize="$7"
-                    color="$color10"
+                    fontFamily="journal"
+                    fontSize="7"
+                    color="color10"
                     fontStyle="italic"
                   >
                     Quiet here. Be the first.
@@ -382,7 +379,7 @@ export default function CollectiveFeedScreen() {
                   />
                   {index < allPosts.length - 1 ? (
                     <Separator
-                      borderColor="$color3"
+                      borderColor="color3"
                       borderBottomWidth={1}
                     />
                   ) : null}
@@ -392,12 +389,12 @@ export default function CollectiveFeedScreen() {
               {/* Footer tally */}
               {!showEmptyState ? (
                 <Text
-                  fontFamily="$body"
-                  fontSize="$1"
-                  color="$color8"
+                  fontFamily="body"
+                  fontSize="1"
+                  color="color8"
                   textTransform="uppercase"
                   letterSpacing={2}
-                  marginTop="$9"
+                  marginTop="9"
                 >
                   {letterCount} {letterCount === 1 ? 'letter' : 'letters'} in the room · access
                   resets at midnight

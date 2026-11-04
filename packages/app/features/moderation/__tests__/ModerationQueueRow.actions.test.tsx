@@ -154,14 +154,14 @@ vi.mock('@my/ui', async () => {
   Object.assign(RadioGroupComponent, { Item: RadioGroupItem })
 
   return {
-    Text: ({ children, tag }: any) => {
+    Text: ({ children, render: tag }: any) => {
       const htmlTag = typeof tag === 'string' ? tag : 'span'
       return ReactModule.createElement(htmlTag, {}, children)
     },
 
     // forwardRef so the affordance's focus-return ref attaches to the DOM node
     // (happy-dom .focus() then sets document.activeElement, even on a div).
-    View: ReactModule.forwardRef(({ children, tag, onPress, ...props }: any, ref: any) => {
+    View: ReactModule.forwardRef(({ children, render: tag, onPress, ...props }: any, ref: any) => {
       const htmlTag = tag === 'article' ? 'article' : 'div'
       const a11y = mapA11y(props)
       if (onPress) a11y['onClick'] = onPress
@@ -204,7 +204,7 @@ vi.mock('@my/ui', async () => {
         children
       ),
     useReducedMotion: () => false,
-    useToastController: () => ({ show: toastShowSpy }),
+    toast: toastShowSpy,
   }
 })
 

@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Text, XStack, YStack, View, ExpandingLineButton, useToastController } from '@my/ui'
+import { Text, XStack, YStack, View, ExpandingLineButton, toast } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import { useRouter } from 'solito/navigation'
 import { store$, applySubscriptionTierFromServer } from 'app/state/store'
@@ -32,7 +32,7 @@ import { resolvePurchasePlatform, resolveStorefrontCountryCode } from './storefr
 type SurfaceState = 'idle' | 'purchasing' | 'purchased' | 'error'
 
 // The warm error indicator draws from the active theme (never a fixed red).
-const ERROR_DOT_COLOR = '$color9'
+const ERROR_DOT_COLOR = 'color9'
 
 /**
  * Reads the external-billing feature flag defensively (never throws). The flag
@@ -53,7 +53,6 @@ function readExternalBillingFlag(): boolean {
 
 export function PaidTierPurchaseSurface() {
   const router = useRouter()
-  const toast = useToastController()
 
   const tier = (use$(store$.profile.subscription_tier) as string | undefined) ?? 'free'
   const userId = use$(store$.session.userId) as string | null
@@ -85,8 +84,8 @@ export function PaidTierPurchaseSurface() {
 
       // Validation failure — calm, generic, no owner/account leak. The same
       // message covers every failure code (including 409 ownership conflict).
-      toast.show('That subscription could not be applied', {
-        message: 'Please try again.',
+      toast('That subscription could not be applied', {
+        description: 'Please try again.',
       })
       setState('error')
     } catch {
@@ -95,12 +94,12 @@ export function PaidTierPurchaseSurface() {
       // malformed payment-link) would otherwise leave the surface stuck in the
       // disabled `purchasing` state with an unhandled rejection. Surface the
       // same calm generic message and drop to the error state so Retry engages.
-      toast.show('That subscription could not be applied', {
-        message: 'Please try again.',
+      toast('That subscription could not be applied', {
+        description: 'Please try again.',
       })
       setState('error')
     }
-  }, [userId, toast])
+  }, [userId])
 
   // On the Stripe (web/desktop) success return leg the user lands back on the
   // surface at `?session_id=cs_...` — auto-drive the validate → purchased flow
@@ -123,17 +122,17 @@ export function PaidTierPurchaseSurface() {
   if (isSubscribed) {
     return (
       <YStack
-        gap="$5"
-        padding="$5"
+        gap="5"
+        padding="5"
         maxWidth={560}
         width="100%"
       >
         <Text
-          tag="h1"
-          fontFamily="$journal"
-          fontSize="$8"
-          $sm={{ fontSize: '$7' }}
-          color="$color"
+          render="h1"
+          fontWeight="web:400"
+          fontFamily="journal"
+          fontSize="8 sm:7"
+          color="color"
         >
           You're already subscribed.
         </Text>
@@ -151,22 +150,22 @@ export function PaidTierPurchaseSurface() {
   if (state === 'purchased') {
     return (
       <YStack
-        gap="$5"
-        padding="$5"
+        gap="5"
+        padding="5"
         maxWidth={560}
         width="100%"
       >
         <YStack
-          gap="$3"
+          gap="3"
           aria-live="polite"
           role="status"
         >
           <Text
-            tag="h1"
-            fontFamily="$journal"
-            fontSize="$8"
-            $sm={{ fontSize: '$7' }}
-            color="$color"
+            render="h1"
+            fontWeight="web:400"
+            fontFamily="journal"
+            fontSize="8 sm:7"
+            color="color"
           >
             Thanks. Everything's unlocked.
           </Text>
@@ -195,64 +194,64 @@ export function PaidTierPurchaseSurface() {
   // ── Idle / purchasing / error ───────────────────────────────────────────────
   return (
     <YStack
-      gap="$5"
-      padding="$5"
+      gap="5"
+      padding="5"
       maxWidth={560}
       width="100%"
     >
       <Text
-        tag="h1"
-        fontFamily="$journal"
-        fontSize="$8"
-        $sm={{ fontSize: '$7' }}
-        color="$color"
+        render="h1"
+        fontWeight="web:400"
+        fontFamily="journal"
+        fontSize="8 sm:7"
+        color="color"
       >
         Unlock every theme
       </Text>
 
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
         >
           Instantly unlock every cosmetic theme
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
         >
           A higher AI quota when AI features arrive
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
+          fontFamily="body"
+          fontSize="4"
+          color="color8"
         >
           Support an indie product
         </Text>
       </YStack>
 
-      <YStack gap="$1">
+      <YStack gap="1">
         <Text
-          fontFamily="$journal"
-          fontSize="$6"
-          color="$color"
+          fontFamily="journal"
+          fontSize="6"
+          color="color"
         >
           $4.99 / month
         </Text>
         <Text
-          fontFamily="$journal"
-          fontSize="$6"
-          color="$color"
+          fontFamily="journal"
+          fontSize="6"
+          color="color"
         >
           $39.99 / year
         </Text>
         <Text
-          fontFamily="$body"
-          fontSize="$3"
-          color="$color8"
+          fontFamily="body"
+          fontSize="3"
+          color="color8"
         >
           33% saving on twelve monthly payments
         </Text>
@@ -262,7 +261,7 @@ export function PaidTierPurchaseSurface() {
 
       {isError && (
         <XStack
-          gap="$2"
+          gap="2"
           alignItems="center"
           aria-live="polite"
           role="status"
@@ -275,9 +274,9 @@ export function PaidTierPurchaseSurface() {
             backgroundColor={ERROR_DOT_COLOR}
           />
           <Text
-            fontFamily="$body"
-            fontSize="$3"
-            color="$color11"
+            fontFamily="body"
+            fontSize="3"
+            color="color11"
           >
             That didn't go through.
           </Text>

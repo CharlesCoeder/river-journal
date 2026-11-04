@@ -114,12 +114,12 @@ vi.mock('solito/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
 }))
 
-// ─── @tamagui/lucide-icons mock ──────────────────────────────────────────────
+// ─── @my/icons mock ──────────────────────────────────────────────
 // FeedPostRow (Heart/Sparkles/Flame/Leaf/Waves/ArrowRight), CollectivePreview
 // (Lock/ArrowRight), the feed header (PenLine), and the REAL FlagAffordance
 // (MoreHorizontal, rendered directly in the t-3-13-e..g dialog tests) all import
 // icons. Stub them as simple spans so the real components render in happy-dom.
-vi.mock('@tamagui/lucide-icons', () => {
+vi.mock('@my/icons', () => {
   const icon =
     (name: string) =>
     ({ size, color, ...props }: any) =>
@@ -233,11 +233,11 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
-    // The feed eases in via AnimatePresence + enterStyle; in tests we render
+    // The feed eases in via AnimatePresence + `enter:` values; in tests we render
     // children straight through so assertions see the content synchronously.
     AnimatePresence: ({ children }: any) => children,
 
-    Text: ({ children, fontSize, color, textAlign, tag, ...props }: any) => {
+    Text: ({ children, fontSize, color, textAlign, render: tag, ...props }: any) => {
       // FeedPostRow renders its title as <Text tag="h2">. Honor `tag` so the
       // title is queryable as an <h2>; otherwise fall back to <span>.
       const htmlTag = typeof tag === 'string' ? tag : 'span'
@@ -246,7 +246,7 @@ vi.mock('@my/ui', async () => {
 
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       accessible,
       accessibilityRole,

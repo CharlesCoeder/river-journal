@@ -51,13 +51,13 @@ export function CollectiveEligibilityGate({
   if (status === 'loading') {
     return (
       <YStack
-        gap="$2"
-        padding={compact ? '$2' : '$4'}
+        gap="2"
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-loading"
       >
         <YStack
           height={compact ? 60 : 120}
-          backgroundColor="$color3"
+          backgroundColor="color3"
           opacity={0.6}
           borderRadius={0}
           data-testid="eligibility-gate-skeleton"
@@ -71,12 +71,12 @@ export function CollectiveEligibilityGate({
   if (status === 'unauthenticated') {
     return (
       <YStack
-        gap="$2"
-        padding={compact ? '$2' : '$4'}
+        gap="2"
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-unauthenticated"
       >
         <Text>Sign in to post.</Text>
-        <XStack gap="$2">
+        <XStack gap="2">
           <ExpandingLineButton onPress={() => router.push('/auth')}>Sign in</ExpandingLineButton>
           {cancelButton}
         </XStack>
@@ -88,8 +88,8 @@ export function CollectiveEligibilityGate({
   if (status === 'suspended') {
     return (
       <YStack
-        gap="$2"
-        padding={compact ? '$2' : '$4'}
+        gap="2"
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-suspended"
       >
         <Text>Posting and reacting are paused for this account.</Text>
@@ -99,9 +99,8 @@ export function CollectiveEligibilityGate({
           testID="eligibility-gate-suspended-details-link"
           role="link"
           cursor="pointer"
-          color="$color11"
-          fontSize="$2"
-          hoverStyle={{ color: '$color' }}
+          color="color11 hover:color"
+          fontSize="2"
           onPress={() => router.push('/settings')}
         >
           View details in Settings
@@ -115,19 +114,19 @@ export function CollectiveEligibilityGate({
   if (status === 'sync-disabled') {
     return (
       <YStack
-        gap="$2"
-        padding={compact ? '$2' : '$4'}
+        gap="2"
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-sync-disabled"
       >
-        <Text fontSize="$5">Sync needs to be on to post.</Text>
+        <Text fontSize="5">Sync needs to be on to post.</Text>
         <Text
-          fontSize="$2"
-          color="$color11"
+          fontSize="2"
+          color="color11"
         >
           The server checks your 500-word streak using only the word counts of your encrypted
           entries. Your journal content itself stays encrypted end-to-end — even we can't read it.
         </Text>
-        <XStack gap="$2">
+        <XStack gap="2">
           <ExpandingLineButton onPress={() => router.push('/settings')}>
             Open Settings
           </ExpandingLineButton>
@@ -141,18 +140,18 @@ export function CollectiveEligibilityGate({
   if (status === 'not-qualified') {
     return (
       <YStack
-        gap="$2"
-        padding={compact ? '$2' : '$4'}
+        gap="2"
+        padding={compact ? '2' : '4'}
         data-testid="eligibility-gate-not-qualified"
       >
-        <Text fontSize="$5">Write 500 words today to post to the Collective.</Text>
+        <Text fontSize="5">Write 500 words today to post to the Collective.</Text>
         <Text
-          fontSize="$2"
-          color="$color11"
+          fontSize="2"
+          color="color11"
         >
           Your streak in the Journal unlocks posting here.
         </Text>
-        <XStack gap="$2">
+        <XStack gap="2">
           <ExpandingLineButton onPress={() => router.push('/journal')}>
             Open Journal
           </ExpandingLineButton>

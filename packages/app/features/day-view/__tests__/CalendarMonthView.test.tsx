@@ -30,8 +30,8 @@ const { pushSpy, mockEntriesThisMonth, mockTodayString, mockEntriesByMonthObserv
   }
 )
 
-// ─── @tamagui/lucide-icons ───────────────────────────────────────────────────
-vi.mock('@tamagui/lucide-icons', () => ({
+// ─── @my/icons ───────────────────────────────────────────────────
+vi.mock('@my/icons', () => ({
   ChevronLeft: () => null,
   ChevronRight: () => null,
 }))

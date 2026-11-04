@@ -1,3 +1,4 @@
+/// <reference path="./config-v5.d.ts" />
 import { defaultConfig } from '@tamagui/config/v5'
 import { createTamagui, type TamaguiInternalConfig } from 'tamagui'
 import { fonts } from './fonts'
@@ -18,6 +19,9 @@ export const config = createTamagui({
   settings: {
     ...defaultConfig.settings,
     onlyAllowShorthands: false,
+    // The frozen v5 pack defaults to 'web' in Tamagui 3, which changes how flex
+    // resolves. Every layout in this app was built against 'react-native'.
+    styleCompat: 'react-native',
   },
   animations,
   fonts,
@@ -26,6 +30,6 @@ export const config = createTamagui({
 
 export type Conf = typeof config
 
-declare module 'tamagui' {
+declare module '@tamagui/web/types/types' {
   interface TamaguiCustomConfig extends Conf {}
 }

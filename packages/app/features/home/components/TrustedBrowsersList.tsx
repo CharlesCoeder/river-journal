@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Text, XStack, YStack } from '@my/ui'
-import type { LayoutChangeEvent } from 'react-native'
+import type { ViewLayoutEvent } from '@my/ui'
 import { use$ } from '@legendapp/state/react'
 import {
   fetchTrustedBrowsers,
@@ -39,7 +39,7 @@ function Collapsible({
   const [height, setHeight] = useState<number | 'auto'>(open ? 'auto' : 0)
   const hasAnimated = useRef(false)
 
-  const onLayout = useCallback((e: LayoutChangeEvent) => {
+  const onLayout = useCallback((e: ViewLayoutEvent) => {
     const h = e.nativeEvent.layout.height
     if (h > 0) measuredHeight.current = h
   }, [])
@@ -150,13 +150,13 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
   if (isLoading) {
     return (
       <YStack
-        padding="$4"
+        padding="4"
         alignItems="center"
       >
         <Text
-          fontSize="$3"
-          fontFamily="$body"
-          color="$color10"
+          fontSize="3"
+          fontFamily="body"
+          color="color10"
         >
           Loading…
         </Text>
@@ -169,7 +169,7 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
   return (
     <YStack
       testID="trusted-browsers-list"
-      gap="$3"
+      gap="3"
     >
       {browsers.map((browser) => {
         const isCurrentBrowser =
@@ -187,47 +187,47 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
             animation="smoothCollapse"
           >
             <YStack
-              paddingVertical="$3"
+              paddingVertical="3"
               borderBottomWidth={1}
-              borderColor="$color2"
+              borderColor="color2"
               opacity={isRevoking && !isRemoving ? 0.4 : 1}
-              gap="$3"
+              gap="3"
             >
               <XStack
                 justifyContent="space-between"
                 alignItems="center"
-                gap="$4"
+                gap="4"
               >
                 <YStack
                   flex={1}
-                  gap="$1"
+                  gap="1"
                 >
                   <XStack
-                    gap="$2"
+                    gap="2"
                     alignItems="center"
                   >
                     <Text
-                      fontFamily="$journal"
+                      fontFamily="journal"
                       fontSize={20}
-                      color="$color"
+                      color="color"
                     >
                       {browser.label}
                     </Text>
                     {isCurrentBrowser && (
                       <Text
-                        fontFamily="$journalItalic"
+                        fontFamily="journalItalic"
                         fontStyle="italic"
                         fontSize={14}
-                        color="$color8"
+                        color="color8"
                       >
                         (this browser)
                       </Text>
                     )}
                   </XStack>
                   <Text
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={12}
-                    color="$color8"
+                    color="color8"
                     marginTop={2}
                   >
                     Last used: {formatRelativeTime(browser.lastUsedAt)}
@@ -237,13 +237,12 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
                 {!isConfirming && (
                   <Text
                     testID={`revoke-browser-${browser.id}`}
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={11}
                     letterSpacing={2}
                     textTransform="uppercase"
-                    color="$color8"
+                    color="color8 hover:color"
                     cursor="pointer"
-                    hoverStyle={{ color: '$color' }}
                     onPress={() => setConfirmRevoke(browser)}
                   >
                     {isRevoking ? 'Revoking…' : 'Revoke'}
@@ -252,38 +251,37 @@ export function TrustedBrowsersList({ userId }: TrustedBrowsersListProps) {
               </XStack>
 
               <Collapsible open={isConfirming}>
-                <YStack gap="$3">
+                <YStack gap="3">
                   <Text
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={13}
-                    color="$color8"
-                    lineHeight={20}
+                    color="color8"
+                    lineHeight="20px"
                   >
                     {browser.label} will no longer unlock your encryption key automatically. You'll
                     need your password next time.
                   </Text>
-                  <XStack gap="$5">
+                  <XStack gap="5">
                     <Text
-                      fontFamily="$body"
+                      fontFamily="body"
                       fontSize={11}
                       letterSpacing={2}
                       textTransform="uppercase"
-                      color="$color8"
+                      color="color8 hover:color"
                       cursor="pointer"
-                      hoverStyle={{ color: '$color' }}
                       onPress={() => setConfirmRevoke(null)}
                     >
                       Cancel
                     </Text>
                     <Text
                       testID="confirm-revoke-browser"
-                      fontFamily="$body"
+                      fontFamily="body"
                       fontSize={11}
                       letterSpacing={2}
                       textTransform="uppercase"
-                      color="$color"
+                      color="color"
                       cursor="pointer"
-                      hoverStyle={{ opacity: 0.7 }}
+                      opacity="hover:0.7"
                       onPress={() => void handleRevoke()}
                     >
                       Revoke

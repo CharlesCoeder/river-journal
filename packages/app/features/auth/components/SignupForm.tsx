@@ -140,7 +140,7 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
 
   return (
     <YStack
-      gap="$5"
+      gap="5"
       width="100%"
     >
       {/* Email */}
@@ -157,9 +157,9 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
         {errors.email && (
           <Text
             fontSize={12}
-            color="$color"
-            fontFamily="$body"
-            marginTop="$1"
+            color="color"
+            fontFamily="body"
+            marginTop="1"
           >
             {errors.email}
           </Text>
@@ -183,9 +183,9 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
         {errors.password && (
           <Text
             fontSize={12}
-            color="$color"
-            fontFamily="$body"
-            marginTop="$1"
+            color="color"
+            fontFamily="body"
+            marginTop="1"
           >
             {errors.password}
           </Text>
@@ -207,9 +207,9 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
         {errors.confirmPassword && (
           <Text
             fontSize={12}
-            color="$color"
-            fontFamily="$body"
-            marginTop="$1"
+            color="color"
+            fontFamily="body"
+            marginTop="1"
           >
             {errors.confirmPassword}
           </Text>
@@ -220,8 +220,8 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
       {errors.general && (
         <Text
           fontSize={12}
-          color="$color"
-          fontFamily="$body"
+          color="color"
+          fontFamily="body"
           textAlign="center"
         >
           {errors.general}
@@ -232,24 +232,23 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
       <XStack
         onPress={canSubmit ? handleSubmit : undefined}
         borderWidth={1}
-        borderColor={canSubmit ? '$color' : '$color3'}
-        paddingVertical="$3"
+        borderColor={canSubmit ? 'color' : 'color3'}
+        paddingVertical="3"
         justifyContent="center"
         cursor={canSubmit ? 'pointer' : 'not-allowed'}
-        hoverStyle={canSubmit ? { backgroundColor: '$color' } : {}}
-        marginTop="$3"
+        backgroundColor={canSubmit ? 'hover:color' : undefined}
+        marginTop="3"
         group={'submitBtn' as never}
       >
         {isLoading ? (
           <Spinner />
         ) : (
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={12}
             letterSpacing={3}
             textTransform="uppercase"
-            color={canSubmit ? '$color' : '$color7'}
-            {...(canSubmit ? { '$group-submitBtn-hover': { color: '$background' } } : {})}
+            color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
           >
             Create Account
           </Text>
@@ -259,28 +258,28 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
       {/* "or" divider */}
       <XStack
         alignItems="center"
-        gap="$3"
+        gap="3"
         width="100%"
-        marginTop="$2"
+        marginTop="2"
       >
         <View
           flex={1}
           height={1}
-          backgroundColor="$color3"
+          backgroundColor="color3"
         />
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={10}
           letterSpacing={3}
           textTransform="uppercase"
-          color="$color7"
+          color="color7"
         >
           or
         </Text>
         <View
           flex={1}
           height={1}
-          backgroundColor="$color3"
+          backgroundColor="color3"
         />
       </XStack>
 

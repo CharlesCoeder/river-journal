@@ -57,7 +57,7 @@ vi.mock('@my/ui', async () => {
   }
 })
 
-vi.mock('@tamagui/lucide-icons', () => ({
+vi.mock('@my/icons', () => ({
   Shield: (props: any) => React.createElement('svg', { 'data-testid': 'shield-icon' }),
   Lock: (props: any) => React.createElement('svg', { 'data-testid': 'lock-icon' }),
 }))

@@ -13,13 +13,12 @@ export function StreakChip({ dayCount, state = 'pending' }: StreakChipProps) {
 
   const text = dayCount !== undefined ? `Day ${dayCount}` : 'Day —'
   const label = dayCount !== undefined ? `Day ${dayCount} streak` : 'Day — streak'
-  const color = state === 'active' ? '$color' : '$color8'
+  const color = state === 'active' ? 'color' : 'color8'
 
   const shouldAnimate =
     prevRef.current !== undefined && dayCount !== undefined && dayCount > prevRef.current
 
   const transition = shouldAnimate ? (reducedMotion ? '100ms' : 'designEnter') : undefined
-  const enterStyle = shouldAnimate ? { opacity: 0, scale: 0.92 } : undefined
 
   useEffect(() => {
     prevRef.current = dayCount
@@ -29,13 +28,14 @@ export function StreakChip({ dayCount, state = 'pending' }: StreakChipProps) {
     <AnimatePresence>
       <Text
         key={dayCount ?? 'placeholder'}
-        fontFamily="$body"
-        fontSize="$3"
+        fontFamily="body"
+        fontSize="3"
         color={color}
+        transition={transition as any}
+        opacity={shouldAnimate ? '1 enter:0' : undefined}
+        scale={shouldAnimate ? '1 enter:0.92' : undefined}
         aria-label={label}
         role={'text' as never}
-        transition={transition as any}
-        enterStyle={enterStyle as any}
       >
         {text}
       </Text>

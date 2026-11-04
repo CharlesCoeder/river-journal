@@ -50,12 +50,11 @@ export function SkeletonRows({ reducedMotion }: { reducedMotion: boolean }) {
           data-testid={`skeleton-row-${i}`}
           height={14}
           borderRadius={0}
-          backgroundColor="$color3"
-          opacity={0.6}
-          marginVertical="$2"
+          backgroundColor="color3"
+          opacity={reducedMotion ? 0.6 : '0.6 enter:0'}
+          marginVertical="2"
           width={width as string}
           animation={reducedMotion ? undefined : 'quick'}
-          enterStyle={reducedMotion ? undefined : { opacity: 0 }}
         />
       ))}
     </>

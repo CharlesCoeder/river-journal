@@ -1,3 +1,6 @@
+// Registers burnt so <Toast native> can show the OS toast.
+import '@tamagui/native/setup-burnt'
+
 // EAGER IMPORT — must run before Provider mounts so setMutationDefaults()
 // registers at module load. See: packages/app/state/collective/mutations.ts.
 import 'app/state/collective/mutations'
@@ -16,7 +19,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Provider } from 'app/provider'
 import { MobileKeyboardProvider } from 'app/provider/keyboard-provider'
 import { HubGestureHost } from 'app/features/navigation/HubGestureHost'
-import { NativeToast } from '@my/ui/src/NativeToast'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { use$ } from '@legendapp/state/react'
 import { store$ } from 'app/state/store'
@@ -114,7 +116,6 @@ function RootLayoutNav() {
                     </Stack>
                     <PersistentEditor />
                   </HubGestureHost>
-                  <NativeToast />
                   {/* App Lock — covers all routes. The privacy cover hides
                   content from the OS app-switcher snapshot on `inactive`; the
                   overlay gates the UI while locked. */}

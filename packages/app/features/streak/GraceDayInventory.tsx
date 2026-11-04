@@ -21,17 +21,17 @@ export function GraceDayInventory() {
   const count = available.length
   const text =
     count === 0 ? 'No grace days yet.' : `${count} grace ${count === 1 ? 'day' : 'days'} available.`
-  const color = count === 0 ? '$color8' : '$color'
+  const color = count === 0 ? 'color8' : 'color'
 
   return (
     <View
       role="status"
       aria-live="polite"
     >
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$body"
-          fontSize="$3"
+          fontFamily="body"
+          fontSize="3"
           color={color}
         >
           {text}

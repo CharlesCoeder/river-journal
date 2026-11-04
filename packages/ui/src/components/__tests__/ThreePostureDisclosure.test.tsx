@@ -75,7 +75,7 @@ vi.mock('tamagui', () => {
       'div',
       {
         'data-testid': 'dialog-content',
-        'data-transition': transition,
+        'data-transition': typeof transition === 'object' ? transition?.preset : transition,
         'aria-labelledby': ariaLabelledBy,
         ...rest,
       },
@@ -93,7 +93,7 @@ vi.mock('tamagui', () => {
 
   // YStack / XStack / Text / View / Button / Stack → semantic HTML pass-throughs
   const passthrough = (tagName: string) => {
-    const Component = ({ children, tag, accessibilityRole, role, ...rest }: any) =>
+    const Component = ({ children, render: tag, accessibilityRole, role, ...rest }: any) =>
       ReactModule.createElement(
         tag ?? tagName,
         {

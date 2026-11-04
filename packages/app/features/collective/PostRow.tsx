@@ -42,7 +42,7 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
 
   return (
     <View
-      tag="article"
+      render="article"
       role="article"
       aria-label={a11yLabel}
     >
@@ -80,8 +80,8 @@ export function PostRow({ post, currentUserId, disabled = false }: PostRowProps)
           '[deleted]' text nodes that confuse a11y queries. */}
       {!selfDeleted ? (
         <Text
-          fontFamily="$journal"
-          fontSize="$4"
+          fontFamily="journal"
+          fontSize="4"
         >
           {excerpt}
         </Text>

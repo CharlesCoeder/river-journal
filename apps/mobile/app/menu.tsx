@@ -15,7 +15,7 @@ export default function MenuRoute() {
   return (
     <YStack
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     />
   )
 }

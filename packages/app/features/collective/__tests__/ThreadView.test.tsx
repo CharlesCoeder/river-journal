@@ -343,7 +343,7 @@ vi.mock('app/features/collective/FlagAffordance', () => ({
 // ─── lucide icon mock — ThreadView renders ArrowLeft + CornerUpLeft inline ────
 // happy-dom has no SVG renderer for the real icons; stub them as no-op spans so
 // the affordances they decorate (back link, reply button) still render.
-vi.mock('@tamagui/lucide-icons', () => {
+vi.mock('@my/icons', () => {
   const React = require('react')
   const Stub = (_props: any) => React.createElement('span', { 'data-icon': true })
   return {
@@ -373,20 +373,20 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
-    // The thread eases in via AnimatePresence + enterStyle; in tests we render
+    // The thread eases in via AnimatePresence + `enter:` values; in tests we render
     // children straight through so assertions see the content synchronously.
     AnimatePresence: ({ children }: any) => children,
 
     // Text supports `tag` (e.g. tag="h1" for the root title) so the title-led
     // root renders a real <h1> in the DOM.
-    Text: ({ children, tag, ...props }: any) => {
+    Text: ({ children, render: tag, ...props }: any) => {
       const htmlTag = tag === 'h1' ? 'h1' : tag === 'h2' ? 'h2' : 'span'
       return ReactModule.createElement(htmlTag, mapA11y(props), children)
     },
 
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       accessible,
       accessibilityRole,

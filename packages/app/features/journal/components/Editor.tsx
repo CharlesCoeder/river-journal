@@ -101,7 +101,7 @@ export const Editor = ({
     <View
       flex={1}
       width="100%"
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       <UniversalLexicalEditor
         themeValues={themeValues}

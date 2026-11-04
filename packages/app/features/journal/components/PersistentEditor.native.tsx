@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useTheme, useReducedMotion } from '@my/ui'
-import { X } from '@tamagui/lucide-icons'
+import { X } from '@my/icons'
 import { use$ } from '@legendapp/state/react'
 import { useEffect, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

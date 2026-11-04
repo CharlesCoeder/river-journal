@@ -13,8 +13,8 @@ export function InlineColorPicker({
     <YStack
       borderRadius={12}
       borderWidth={1}
-      borderColor="$color5"
-      padding="$3"
+      borderColor="color5"
+      padding="3"
     >
       <ColorPicker
         value={color}

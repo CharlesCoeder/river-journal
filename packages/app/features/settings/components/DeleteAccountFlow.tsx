@@ -296,8 +296,8 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
   // default dismissal at the source per the Tamagui Dialog (Radix) API.
   const dismissDisabled = isDeleting || isTerminal
   const preventImplicitDismiss = useCallback(
-    (event: { preventDefault: () => void }) => {
-      if (dismissDisabled) event.preventDefault()
+    (details: { cancel: () => void }) => {
+      if (dismissDisabled) details.cancel()
     },
     [dismissDisabled]
   )
@@ -311,19 +311,18 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
       <Dialog.Portal>
         <Dialog.Overlay
           key="delete-overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="delete-content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={460}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
           onEscapeKeyDown={preventImplicitDismiss}
@@ -331,8 +330,8 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
           onInteractOutside={preventImplicitDismiss}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             Delete account
           </Dialog.Title>
@@ -341,23 +340,23 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
           {state === 'warning' && (
             <YStack
               testID="delete-account-warning"
-              gap="$2"
+              gap="2"
             >
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 Deleting your account will:
               </Text>
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 {'• Permanently delete your journal entries, reminders, themes, and account data.'}
               </Text>
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 {'• '}
                 <Text fontWeight="700">Anonymize</Text>
@@ -366,20 +365,20 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
                 }
               </Text>
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 {'• Cancel any active subscription via your billing provider.'}
               </Text>
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 This cannot be undone. Server-side cleanup will complete within 30 days.
               </Text>
               <Text
-                fontSize="$3"
-                color="$color11"
+                fontSize="3"
+                color="color11"
               >
                 {
                   "If you want a specific Collective post fully erased (text and all), delete it individually first — that replaces the text with '[deleted]'."
@@ -397,11 +396,11 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
                 testID="delete-account-error"
                 role="status"
                 aria-live="polite"
-                gap="$2"
+                gap="2"
               >
                 <Text
-                  fontSize="$3"
-                  color="$color11"
+                  fontSize="3"
+                  color="color11"
                 >
                   We couldn't confirm your account details. Nothing was deleted. Please try again
                   later.
@@ -410,11 +409,11 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
             ) : (
               <YStack
                 testID="delete-account-email-step"
-                gap="$2"
+                gap="2"
               >
                 <Text
-                  fontSize="$3"
-                  color="$color12"
+                  fontSize="3"
+                  color="color12"
                 >
                   {`To confirm, type your email address: ${expectedEmail}`}
                 </Text>
@@ -424,19 +423,19 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
                   onChangeText={setTypedEmail}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  borderColor="$color5"
-                  color="$color"
+                  borderColor="color5"
+                  color="color"
                 />
               </YStack>
             ))}
 
           {/* Conditional — active-subscription warning */}
           {state === 'subscription-warning' && receipt && (
-            <YStack gap="$2">
+            <YStack gap="2">
               <Text
                 testID="delete-account-subscription-warning"
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 {`You have an active ${providerDisplayName(receipt.provider)} subscription. Deleting your account will cancel it via ${providerDisplayName(receipt.provider)}. If your provider requires native confirmation, you'll be directed there after this step.`}
               </Text>
@@ -447,11 +446,11 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
           {(state === 'confirm' || state === 'deleting') && (
             <YStack
               testID="delete-account-confirm-step"
-              gap="$2"
+              gap="2"
             >
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 This is your last step. Deleting your account cannot be undone.
               </Text>
@@ -464,11 +463,11 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
               testID="delete-account-error"
               role="status"
               aria-live="polite"
-              gap="$2"
+              gap="2"
             >
               <Text
-                fontSize="$3"
-                color="$color11"
+                fontSize="3"
+                color="color11"
               >
                 Something went wrong and nothing was deleted. Please try again.
               </Text>
@@ -481,11 +480,11 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
               testID="delete-account-goodbye"
               role="status"
               aria-live="polite"
-              gap="$2"
+              gap="2"
             >
               <Text
-                fontSize="$3"
-                color="$color12"
+                fontSize="3"
+                color="color12"
               >
                 {GOODBYE_COPY}
               </Text>
@@ -497,8 +496,8 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
               {cleanupFailed && (
                 <Text
                   testID="delete-account-cleanup-failed"
-                  fontSize="$2"
-                  color="$color11"
+                  fontSize="2"
+                  color="color11"
                 >
                   {CLEANUP_FAILED_COPY}
                 </Text>
@@ -509,11 +508,11 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
           {state === 'native-action' && (
             <YStack
               testID="delete-account-native-action"
-              gap="$2"
+              gap="2"
             >
               <Text
-                fontSize="$2"
-                color="$color11"
+                fontSize="2"
+                color="color11"
               >
                 {nativeLink
                   ? `If nothing opened, manage your subscription in the ${nativeLink.storeName} settings.`
@@ -524,9 +523,9 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
 
           {/* Action row — step-specific affordances */}
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
             flexWrap="wrap"
           >
             {state === 'warning' && (

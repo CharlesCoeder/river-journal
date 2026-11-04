@@ -52,7 +52,7 @@ function ColorInput({
   return (
     <XStack
       alignItems="center"
-      gap="$3"
+      gap="3"
     >
       <ColorPickerSwatch
         color={value}
@@ -62,12 +62,12 @@ function ColorInput({
       />
       <YStack
         flex={1}
-        gap="$1"
+        gap="1"
       >
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           {label}
         </Text>
@@ -76,12 +76,12 @@ function ColorInput({
           value={value}
           onChangeText={onChangeText}
           placeholder="#F9F6F0"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={15}
+          borderColor={isValid || value.length === 0 ? 'color5' : 'red10'}
           maxLength={7}
           autoCapitalize="none"
           autoCorrect={false}
-          borderColor={isValid || value.length === 0 ? '$color5' : '$red10'}
         />
       </YStack>
     </XStack>
@@ -134,8 +134,8 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
 
   return (
     <YStack
-      gap="$4"
-      paddingVertical="$3"
+      gap="4"
+      paddingVertical="3"
     >
       {(['bg', 'text', 'stone'] as const).map((field) => (
         <ColorInput
@@ -150,11 +150,11 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
 
       {/* Inline color picker — appears between inputs and preview */}
       {activeField && HEX_REGEX.test(colors[activeField]) && (
-        <YStack gap="$2">
+        <YStack gap="2">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={12}
-            color="$color8"
+            color="color8"
           >
             Editing {COLOR_LABELS[activeField].toLowerCase()}
           </Text>
@@ -170,21 +170,21 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         <YStack
           testID="custom-theme-preview"
           borderRadius={12}
-          padding="$4"
-          gap="$3"
+          padding="4"
+          gap="3"
           backgroundColor={bg}
           borderWidth={1}
           borderColor={stone}
         >
           <Text
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={20}
             color={text}
           >
             The river flows quietly
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={14}
             color={stone}
           >
@@ -196,7 +196,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
             opacity={0.4}
           />
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={12}
             color={stone}
           >
@@ -210,17 +210,17 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         <XStack
           testID="contrast-warning"
           alignItems="center"
-          gap="$2"
+          gap="2"
         >
           <Circle
             testID="contrast-warning-dot"
             size={6}
-            backgroundColor="$color8"
+            backgroundColor="color8"
           />
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
             fontStyle="italic"
           >
             This combination may be hard to read.
@@ -229,13 +229,13 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
       )}
 
       <XStack
-        gap="$3"
+        gap="3"
         justifyContent="flex-end"
       >
         {customTheme && (
           <Button
             testID="delete-custom-theme"
-            size="$3"
+            compact
             variant="outlined"
             onPress={handleDelete}
           >
@@ -244,7 +244,7 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         )}
         <Button
           testID="cancel-custom-theme"
-          size="$3"
+          compact
           variant="outlined"
           onPress={onClose}
         >
@@ -252,10 +252,9 @@ export function CustomThemeEditor({ onClose }: { onClose: () => void }) {
         </Button>
         <Button
           testID="save-custom-theme"
-          size="$3"
-          // disabled is bound ONLY to hex-format validity — low contrast is a non-blocking advisory; do NOT widen.
-          disabled={!allValid}
+          compact
           opacity={allValid ? 1 : 0.5}
+          disabled={!allValid}
           onPress={handleSave}
         >
           Save

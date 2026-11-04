@@ -48,7 +48,7 @@ export function YourPostRow({ post }: YourPostRowProps) {
 
   return (
     <View
-      tag="article"
+      render="article"
       role="article"
       aria-label={a11yLabel}
       onPress={handlePress}
@@ -77,17 +77,17 @@ export function YourPostRow({ post }: YourPostRowProps) {
             Non-deleted: render the actual journal body text. */}
       {post.is_user_deleted ? (
         <Text
-          fontFamily="$journal"
-          fontSize="$4"
-          color="$color9"
+          fontFamily="journal"
+          fontSize="4"
+          color="color9"
           testID="body-deleted-placeholder"
         >
           [deleted]
         </Text>
       ) : (
         <Text
-          fontFamily="$journal"
-          fontSize="$4"
+          fontFamily="journal"
+          fontSize="4"
         >
           {post.body}
         </Text>
@@ -96,8 +96,8 @@ export function YourPostRow({ post }: YourPostRowProps) {
       {/* Self-deletion date marker: only when user_deleted_at is non-null */}
       {post.is_user_deleted && deletionDateDisplay !== null ? (
         <Text
-          fontSize="$1"
-          color="$color9"
+          fontSize="1"
+          color="color9"
         >
           you deleted this on {deletionDateDisplay}
         </Text>
@@ -111,25 +111,25 @@ export function YourPostRow({ post }: YourPostRowProps) {
               but it is invisible because this branch only renders reply count.
             - Non-deleted: show both reaction count and reply count (zeroes rendered — record view). */}
       {post.is_user_deleted ? (
-        <XStack gap="$2">
+        <XStack gap="2">
           <Text
-            fontSize="$1"
-            color="$color9"
+            fontSize="1"
+            color="color9"
           >
             {post.descendant_count} {post.descendant_count === 1 ? 'reply' : 'replies'}
           </Text>
         </XStack>
       ) : (
-        <XStack gap="$2">
+        <XStack gap="2">
           <Text
-            fontSize="$1"
-            color="$color9"
+            fontSize="1"
+            color="color9"
           >
             {post.reaction_count} {post.reaction_count === 1 ? 'reaction' : 'reactions'}
           </Text>
           <Text
-            fontSize="$1"
-            color="$color9"
+            fontSize="1"
+            color="color9"
           >
             {post.descendant_count} {post.descendant_count === 1 ? 'reply' : 'replies'}
           </Text>

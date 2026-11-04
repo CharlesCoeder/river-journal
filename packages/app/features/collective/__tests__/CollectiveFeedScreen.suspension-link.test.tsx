@@ -55,7 +55,7 @@ vi.mock('./_shared', () => ({
   formatTimeAgo: () => 'just now',
 }))
 
-vi.mock('@tamagui/lucide-icons', () => ({
+vi.mock('@my/icons', () => ({
   PenLine: () => React.createElement('span', { 'data-icon': 'PenLine' }, null),
 }))
 

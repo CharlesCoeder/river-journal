@@ -1,4 +1,5 @@
-import { AlertDialog, Button, Text, XStack } from '@my/ui'
+import { AlertDialog, Button } from '@my/ui'
+import { Text, View } from '@tamagui/tailwind'
 import type { Flow } from 'app/state/types'
 
 interface DeleteFlowDialogProps {
@@ -26,67 +27,54 @@ export function DeleteFlowDialog({ flow, onConfirm, onCancel }: DeleteFlowDialog
         <AlertDialog.Overlay
           key="overlay"
           transition="quick"
-          opacity={0.4}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="0.4 enter:0 exit:0"
         />
         <AlertDialog.Content
           key="content"
-          transition={['medium', { opacity: { overshootClamping: true } }]}
-          enterStyle={{ y: -10, opacity: 0 }}
-          exitStyle={{ y: 10, opacity: 0 }}
-          y={0}
-          opacity={1}
-          backgroundColor="$background"
-          borderRadius="$6"
+          transition={{
+            preset: 'medium',
+            opacity: { preset: 'medium', spring: { overshootClamping: true } },
+          }}
+          y="0 enter:-10px exit:10px"
+          opacity="1 enter:0 exit:0"
+          backgroundColor="background"
+          borderRadius="6"
           borderWidth={1}
-          borderColor="$color5"
-          padding="$5"
-          gap="$4"
+          borderColor="color5"
+          padding="5"
+          gap="4"
           maxWidth={400}
         >
           <AlertDialog.Title
-            fontFamily="$body"
+            fontFamily="body"
             fontWeight="700"
           >
             Delete Flow?
           </AlertDialog.Title>
           <AlertDialog.Description
-            fontFamily="$body"
-            color="$color10"
+            fontFamily="body"
+            fontSize={16}
+            lineHeight="web:normal"
+            color="color10"
           >
             {flow && getFlowPreview(flow.content)}
           </AlertDialog.Description>
-          <XStack
-            gap="$3"
-            justifyContent="flex-end"
-          >
+          <View className="flex-row gap-3 justify-end">
             <AlertDialog.Cancel asChild>
               <Button
-                chromeless
+                variant="quiet"
                 borderWidth={1}
-                borderColor="$borderColor"
+                borderColor="border-color hover:transparent press:border-color-hover"
               >
-                <Text fontFamily="$body">Cancel</Text>
+                <Text className="font-body text-color">Cancel</Text>
               </Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
-              <Button
-                backgroundColor="$red10"
-                onPress={onConfirm}
-                hoverStyle={{ backgroundColor: '$red11' }}
-                pressStyle={{ backgroundColor: '$red11' }}
-              >
-                <Text
-                  fontFamily="$body"
-                  fontWeight="600"
-                  color="white"
-                >
-                  Delete
-                </Text>
+              <Button onPress={onConfirm}>
+                <Text className="font-body font-semibold text-[#ffffff]">Delete</Text>
               </Button>
             </AlertDialog.Action>
-          </XStack>
+          </View>
         </AlertDialog.Content>
       </AlertDialog.Portal>
     </AlertDialog>

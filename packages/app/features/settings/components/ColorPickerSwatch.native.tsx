@@ -17,8 +17,8 @@ export function ColorPickerSwatch({
       height={32}
       borderRadius={6}
       borderWidth={isActive ? 2 : 1}
-      borderColor={isActive ? '$color' : '$color5'}
-      backgroundColor={isValid ? color : '$background'}
+      borderColor={isActive ? 'color' : 'color5'}
+      backgroundColor={isValid ? color : 'background'}
       onPress={onPress}
     />
   )

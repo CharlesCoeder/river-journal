@@ -75,19 +75,19 @@ export function ExportCollectivePosts() {
 
   if (state === 'exporting') {
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
         >
           Export Collective Posts
         </Text>
         <Text
           testID="export-collective-progress"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           {`Exporting your Collective posts… ${count} so far`}
         </Text>
@@ -97,30 +97,29 @@ export function ExportCollectivePosts() {
 
   if (state === 'error') {
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
         >
           Export Collective Posts
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Something went wrong while preparing your export.
         </Text>
         <Text
           testID="export-collective-retry"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={11}
           letterSpacing={2}
           textTransform="uppercase"
-          color="$color8"
+          color="color8 hover:color"
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
           onPress={runExport}
         >
           Try Again
@@ -133,30 +132,29 @@ export function ExportCollectivePosts() {
     const postWord = result.totalPosts === 1 ? 'post' : 'posts'
     const replyWord = result.totalReplies === 1 ? 'reply' : 'replies'
     return (
-      <YStack gap="$2">
+      <YStack gap="2">
         <Text
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color="$color"
+          color="color"
         >
           Export Collective Posts
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           {`Exported ${result.totalPosts} ${postWord} and ${result.totalReplies} ${replyWord}.`}
         </Text>
         <Text
           testID="export-collective-done-reset"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={11}
           letterSpacing={2}
           textTransform="uppercase"
-          color="$color8"
+          color="color8 hover:color"
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
           onPress={() => setState('idle')}
         >
           Export Again
@@ -167,22 +165,22 @@ export function ExportCollectivePosts() {
 
   // Idle — the entry point.
   return (
-    <YStack gap="$2">
+    <YStack gap="2">
       <Text
         testID="export-collective-open"
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={20}
-        color="$color"
+        color="color"
         cursor="pointer"
-        hoverStyle={{ opacity: 0.7 }}
+        opacity="hover:0.7"
         onPress={runExport}
       >
         Export Collective Posts
       </Text>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={13}
-        color="$color8"
+        color="color8"
       >
         Download your Collective posts and replies as a Markdown file.
       </Text>

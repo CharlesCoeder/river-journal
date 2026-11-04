@@ -5,11 +5,11 @@ export interface WordCounterProps {
 }
 
 export function WordCounter({ count }: WordCounterProps) {
-  const color = count < 450 ? '$color8' : '$color'
+  const color = count < 450 ? 'color8' : 'color'
 
   return (
     <Text
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={14}
       color={color}
       letterSpacing={0.5}

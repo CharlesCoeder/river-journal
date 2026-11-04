@@ -121,7 +121,7 @@ export function HomeScreen() {
   return (
     <YStack
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       <ScrollView
         flex={1}
@@ -137,20 +137,16 @@ export function HomeScreen() {
           {mounted && (
             <YStack
               key="home-content"
-              transition="designEnter"
-              enterStyle={{ opacity: 0, y: 15 }}
-              opacity={1}
-              y={0}
+              transition={{ preset: 'designEnter', properties: 'transform, opacity' }}
+              opacity="1 enter:0"
+              y="0 enter:15px"
               width="100%"
               flex={1}
               maxWidth={1024}
               alignSelf="center"
-              paddingHorizontal="$4"
+              paddingHorizontal="4 sm:6 md:8 lg:12"
               justifyContent="center"
               alignItems="flex-start"
-              $sm={{ paddingHorizontal: '$6' }}
-              $md={{ paddingHorizontal: '$8' }}
-              $lg={{ paddingHorizontal: '$12' }}
               position="relative"
             >
               {/* Menu entry (mobile only) — anchored top-left, mirroring the streak chip */}
@@ -163,23 +159,22 @@ export function HomeScreen() {
                 width="100%"
               >
                 {/* Date display */}
-                <YStack gap="$5">
+                <YStack gap="5">
                   <Text
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={14}
-                    color="$color8"
+                    color="color8"
                     letterSpacing={1}
                     textTransform="uppercase"
                   >
                     Today
                   </Text>
                   <Text
-                    fontFamily="$journal"
-                    fontSize={60}
-                    color="$color"
+                    fontFamily="journal"
+                    fontSize="60px sm:48px"
+                    color="color"
                     letterSpacing={-1}
-                    lineHeight={68}
-                    $sm={{ fontSize: 48, lineHeight: 56 }}
+                    lineHeight="68px sm:56px"
                   >
                     {today}.
                   </Text>
@@ -190,14 +185,13 @@ export function HomeScreen() {
                     <Text
                       testID="home-collective-dev-link"
                       onPress={handleCollectiveDevPress}
-                      fontFamily="$body"
+                      fontFamily="body"
                       fontSize={13}
-                      color="$color8"
+                      color="color8 hover:color"
                       letterSpacing={0.5}
                       textTransform="uppercase"
                       cursor="pointer"
-                      pressStyle={{ opacity: 0.6 }}
-                      hoverStyle={{ color: '$color' }}
+                      opacity="press:0.6"
                     >
                       Collective — dev →
                     </Text>
@@ -211,7 +205,7 @@ export function HomeScreen() {
                 <XStack
                   flexWrap="wrap"
                   alignItems="baseline"
-                  gap="$6"
+                  gap="6"
                 >
                   {/* Primary CTA — serif italic underline */}
                   <BeginWritingCTA onPress={handleBeginFlow} />
@@ -261,25 +255,20 @@ function BeginWritingCTA({ onPress }: { onPress: () => void }) {
 
   return (
     <Text
-      fontFamily="$journalItalic"
+      fontFamily="journalItalic"
       fontStyle="italic"
-      fontSize={36}
-      $sm={{ fontSize: 30 }}
-      color="$color"
+      fontSize="36px sm:30px"
+      color="color"
       cursor="pointer"
-      transition={reduceMotion ? undefined : 'ctaSpring'}
+      transition={reduceMotion ? undefined : { preset: 'ctaSpring', properties: 'transform' }}
       x={!reduceMotion && active ? 5 : 0}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={onPress}
       aria-label="Begin writing"
       role="button"
-      // onHoverIn/onHoverOut are handled at runtime by Tamagui's web component
-      // but are absent from the Text prop types (only present on Stack-based types).
-      {...({
-        onHoverIn: () => setHovered(true),
-        onHoverOut: () => setHovered(false),
-      } as object)}
     >
       Begin writing
     </Text>
@@ -292,8 +281,8 @@ function HomeMenuButtonSlot({ onPress }: { onPress: () => void }) {
     <View
       testID="home-menu-button-slot"
       position="absolute"
-      top="$4"
-      left="$4"
+      top="4"
+      left="4"
     >
       <View
         role="button"
@@ -302,18 +291,16 @@ function HomeMenuButtonSlot({ onPress }: { onPress: () => void }) {
         minHeight={44}
         minWidth={44}
         justifyContent="center"
-        // Pull the visible label back to the content edge while keeping the
-        // full 44px target (touch targets ≥ 44×44 is a locked mobile rule).
         marginTop={-12}
         marginLeft={-8}
         paddingHorizontal={8}
-        pressStyle={{ opacity: 0.6 }}
+        opacity="press:0.6"
         onPress={onPress}
       >
         <Text
-          fontFamily="$body"
-          fontSize="$3"
-          color="$color8"
+          fontFamily="body"
+          fontSize="3"
+          color="color8"
           letterSpacing={1}
           textTransform="uppercase"
         >
@@ -334,8 +321,8 @@ function HomeStreakChipSlot() {
     <View
       testID="home-streak-chip-slot"
       position="absolute"
-      top="$4"
-      right="$4"
+      top="4"
+      right="4"
     >
       <StreakChip
         dayCount={currentStreak}

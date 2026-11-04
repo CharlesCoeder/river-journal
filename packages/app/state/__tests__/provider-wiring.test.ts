@@ -3,7 +3,7 @@
  *
  * Source-level integration assertions on packages/app/provider/index.tsx that
  * cover wiring concerns we don't want to require a full React render to test:
- *   - <PersistQueryClientProvider> wraps <ToastProvider>.
+ *   - <PersistQueryClientProvider> wraps <CustomToast>.
  *   - The persister is created with `retry: removeOldestQuery`.
  *   - The persister key is `'rj-tq-cache'`.
  *   - DevTools mount is gated on process.env.NODE_ENV === 'development'.
@@ -86,26 +86,24 @@ describe('Provider PersistQueryClientProvider wiring', () => {
     expect(src).toMatch(/onSuccess\s*=\s*\{[^}]*resumePausedMutations\s*\(\s*\)/)
   })
 
-  it('PersistQueryClientProvider wraps ToastProvider (ordering)', () => {
+  it('PersistQueryClientProvider wraps the toast root (ordering)', () => {
     const src = providerSrc()
     const persistOpenIdx = src.indexOf('<PersistQueryClientProvider')
-    const toastOpenIdx = src.indexOf('<ToastProvider')
+    const toastIdx = src.indexOf('<CustomToast')
     const persistCloseIdx = src.indexOf('</PersistQueryClientProvider>')
-    const toastCloseIdx = src.indexOf('</ToastProvider>')
 
     expect(persistOpenIdx, 'PersistQueryClientProvider open tag not found').toBeGreaterThanOrEqual(
       0
     )
-    expect(toastOpenIdx, 'ToastProvider open tag not found').toBeGreaterThanOrEqual(0)
+    expect(toastIdx, 'CustomToast tag not found').toBeGreaterThanOrEqual(0)
     expect(
       persistCloseIdx,
       'PersistQueryClientProvider close tag not found'
     ).toBeGreaterThanOrEqual(0)
-    expect(toastCloseIdx, 'ToastProvider close tag not found').toBeGreaterThanOrEqual(0)
 
-    // Persist opens before Toast opens; Persist closes after Toast closes.
-    expect(persistOpenIdx).toBeLessThan(toastOpenIdx)
-    expect(toastCloseIdx).toBeLessThan(persistCloseIdx)
+    // The toast root sits inside PersistQueryClientProvider.
+    expect(persistOpenIdx).toBeLessThan(toastIdx)
+    expect(toastIdx).toBeLessThan(persistCloseIdx)
   })
 })
 

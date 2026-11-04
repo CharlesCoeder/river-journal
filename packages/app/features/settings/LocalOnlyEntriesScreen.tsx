@@ -24,11 +24,11 @@ import { collectiveEligibilityKey } from 'app/state/collective/eligibility'
 function SectionHeader({ children }: { children: string }) {
   return (
     <Text
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={11}
       textTransform="uppercase"
       letterSpacing={2}
-      color="$color8"
+      color="color8"
     >
       {children}
     </Text>
@@ -88,7 +88,7 @@ export function LocalOnlyEntriesScreen() {
   return (
     <View
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       <ScrollView
         flex={1}
@@ -99,34 +99,30 @@ export function LocalOnlyEntriesScreen() {
           width="100%"
           maxWidth={768}
           alignSelf="center"
-          paddingHorizontal="$4"
-          paddingTop="$4"
+          paddingHorizontal="4 sm:6 md:8 lg:12"
+          paddingTop="4 md:8 lg:12"
           paddingBottom={96}
-          $sm={{ paddingHorizontal: '$6' }}
-          $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
-          $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
-          gap="$6"
+          gap="6"
         >
           <XStack
             justifyContent="space-between"
             alignItems="center"
           >
             <Text
-              fontFamily="$journalItalic"
+              fontFamily="journalItalic"
               fontStyle="italic"
               fontSize={30}
-              color="$color"
+              color="color"
               letterSpacing={-0.5}
             >
               Local-only entries
             </Text>
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color8"
+              color="color8 hover:color"
               letterSpacing={0.5}
               cursor="pointer"
-              hoverStyle={{ color: '$color' }}
               onPress={() => router.push('/settings')}
             >
               Back to Settings
@@ -134,10 +130,10 @@ export function LocalOnlyEntriesScreen() {
           </XStack>
 
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={14}
-            color="$color8"
-            lineHeight={22}
+            color="color8"
+            lineHeight="22px"
             maxWidth={560}
           >
             Entries below were marked local-only when you enabled sync. You can sync them now to
@@ -147,9 +143,9 @@ export function LocalOnlyEntriesScreen() {
 
           {!canSync && (
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={13}
-              color="$color10"
+              color="color10"
               testID="local-only-entries-signed-out"
             >
               Sign in to recover entries.
@@ -158,9 +154,9 @@ export function LocalOnlyEntriesScreen() {
 
           {isEmpty && (
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color8"
+              color="color8"
               testID="local-only-entries-empty"
             >
               Nothing to sync.
@@ -184,7 +180,7 @@ export function LocalOnlyEntriesScreen() {
                 </ExpandingLineButton>
               </XStack>
 
-              <YStack gap="$4">
+              <YStack gap="4">
                 {summaries.map((s) => {
                   // Cross-user defense: rows owned by a different account must
                   // not be restorable from the current session — restoring would
@@ -199,34 +195,34 @@ export function LocalOnlyEntriesScreen() {
                       testID={`local-only-row-${s.entryId}`}
                       justifyContent="space-between"
                       alignItems="center"
-                      paddingVertical="$3"
+                      paddingVertical="3"
                       borderBottomWidth={1}
-                      borderColor="$color3"
+                      borderColor="color3"
                     >
                       <YStack
-                        gap="$1"
+                        gap="1"
                         flex={1}
-                        paddingRight="$3"
+                        paddingRight="3"
                       >
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={15}
-                          color="$color"
+                          color="color"
                         >
                           {formatEntryDate(s.entryDate)}
                         </Text>
                         <Text
-                          fontFamily="$body"
+                          fontFamily="body"
                           fontSize={12}
-                          color="$color8"
+                          color="color8"
                         >
                           {s.totalWordCount} {s.totalWordCount === 1 ? 'word' : 'words'}
                         </Text>
                         {isForeign && (
                           <Text
-                            fontFamily="$body"
+                            fontFamily="body"
                             fontSize={11}
-                            color="$color9"
+                            color="color9"
                             testID={`local-only-foreign-tooltip-${s.entryId}`}
                           >
                             This entry belongs to a different account. Sign in as that account to
@@ -263,49 +259,48 @@ export function LocalOnlyEntriesScreen() {
           <AlertDialog.Overlay
             key="overlay"
             transition="quick"
-            opacity={0.4}
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
+            opacity="0.4 enter:0 exit:0"
           />
           <AlertDialog.Content
             key="content"
             testID="local-only-confirm-dialog"
-            transition={['medium', { opacity: { overshootClamping: true } }]}
-            enterStyle={{ y: -10, opacity: 0 }}
-            exitStyle={{ y: 10, opacity: 0 }}
-            y={0}
-            opacity={1}
-            backgroundColor="$background"
-            borderRadius="$6"
+            transition={{
+              preset: 'medium',
+              opacity: { preset: 'medium', spring: { overshootClamping: true } },
+            }}
+            y="0 enter:-10px exit:10px"
+            opacity="1 enter:0 exit:0"
+            backgroundColor="background"
+            borderRadius="6"
             borderWidth={1}
-            borderColor="$color5"
-            padding="$5"
+            borderColor="color5"
+            padding="5"
             maxWidth={420}
             width="90%"
           >
-            <YStack gap="$4">
+            <YStack gap="4">
               <AlertDialog.Title
-                fontFamily="$body"
-                fontSize="$6"
+                fontFamily="body"
+                fontSize="6"
                 fontWeight="700"
               >
                 Sync {totalCount} {totalCount === 1 ? 'entry' : 'entries'}?
               </AlertDialog.Title>
               <AlertDialog.Description
-                fontFamily="$body"
-                fontSize="$4"
-                color="$color"
+                fontFamily="body"
+                fontSize="4"
+                color="color"
               >
                 Their word counts will become visible to the server. Content stays encrypted.
               </AlertDialog.Description>
               <XStack
-                gap="$3"
+                gap="3"
                 justifyContent="flex-end"
               >
                 <AlertDialog.Cancel asChild>
                   <Button
                     variant="outlined"
-                    fontFamily="$body"
+                    fontFamily="body"
                   >
                     Cancel
                   </Button>
@@ -313,7 +308,7 @@ export function LocalOnlyEntriesScreen() {
                 <AlertDialog.Action asChild>
                   <Button
                     onPress={handleRestoreAll}
-                    fontFamily="$body"
+                    fontFamily="body"
                     testID="local-only-confirm-sync-all"
                   >
                     Sync all

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Circle, Text, XStack, YStack, View, isWeb } from '@my/ui'
 import { ExpandingLineButton } from '@my/ui'
+import { Text, View } from '@tamagui/tailwind'
 import { use$ } from '@legendapp/state/react'
 import { store$, setTheme, spendUnlockToken } from 'app/state/store'
 import { LIGHT_THEMES, DARK_THEMES } from 'app/state/types'
@@ -37,43 +37,32 @@ function ThemeRow({
 }) {
   const def = THEME_DEFS[name]
   return (
-    <XStack
+    <View
       testID={`theme-option-${name}${isSelected ? '-selected' : ''}`}
-      alignItems="center"
-      gap="$3"
-      cursor="pointer"
+      className={`flex-row items-center gap-3 cursor-pointer ${isLocked ? 'opacity-40' : 'opacity-100'} hover:opacity-80 press:opacity-70`}
       onPress={isLocked ? onLockedTap : onSelect}
-      hoverStyle={{ opacity: 0.8 }}
-      pressStyle={{ opacity: 0.7 }}
-      opacity={isLocked ? 0.4 : 1}
     >
-      <Circle
-        size={12}
-        borderWidth={1}
-        borderColor="$color5"
-        backgroundColor={def?.bg ?? 'transparent'}
+      {/* A runtime color has no class name, so it stays in style. */}
+      <View
+        className="size-[12px] rounded-[9999px] border border-color5"
+        style={{ backgroundColor: def?.bg ?? 'transparent' }}
       />
-      <YStack flex={1}>
+      <View className="flex-1">
         <Text
-          fontFamily="$journal"
-          fontSize={20}
-          color={isSelected ? '$color' : '$color8'}
-          {...(isWeb && { hoverStyle: { color: '$color' } })}
+          className={`font-journal text-[20px] ${isSelected ? 'text-color' : 'text-color8'} web:hover:text-color`}
         >
           {THEME_LABELS[name]}
         </Text>
         {isLocked && lockedAffordance && (
           <Text
             testID={`lock-affordance-${name}`}
-            fontFamily="$body"
-            fontSize={13}
-            color="$color8"
+            className="font-body text-[13px] text-color8"
           >
             {lockedAffordance}
           </Text>
         )}
-      </YStack>
-    </XStack>
+      </View>
+    </View>
   )
 }
 
@@ -130,7 +119,7 @@ export function ThemePicker() {
       }
 
       return (
-        <YStack key={name}>
+        <View key={name}>
           <ThemeRow
             name={name}
             isSelected={currentTheme === name}
@@ -140,21 +129,15 @@ export function ThemePicker() {
             onLockedTap={handleLockedTap}
           />
           {confirmingTheme === name && (
-            <YStack
+            <View
               role="group"
               aria-label={`Unlock ${THEME_LABELS[name]}?`}
-              paddingLeft="$6"
-              gap="$2"
-              paddingTop="$2"
+              className="pl-6 gap-2 pt-2"
             >
-              <Text
-                fontFamily="$body"
-                fontSize={13}
-                color="$color8"
-              >
+              <Text className="font-body text-[13px] text-color8">
                 Unlock {THEME_LABELS[name]}?
               </Text>
-              <XStack gap="$3">
+              <View className="flex-row gap-3">
                 <ExpandingLineButton
                   onPress={() => {
                     spendUnlockToken(name)
@@ -170,15 +153,15 @@ export function ThemePicker() {
                 >
                   Cancel
                 </ExpandingLineButton>
-              </XStack>
-            </YStack>
+              </View>
+            </View>
           )}
-        </YStack>
+        </View>
       )
     })
 
   return (
-    <YStack gap="$3">
+    <View className="gap-3">
       {/* "Unlock everything now" — free tier only. Routes to the purchase surface. */}
       {tier === 'free' && (
         <ExpandingLineButton
@@ -192,81 +175,53 @@ export function ThemePicker() {
 
       {renderThemeRows(LIGHT_THEMES)}
 
-      <View height={16} />
+      <View className="h-[16px]" />
 
       {renderThemeRows(DARK_THEMES)}
 
-      <View height={16} />
+      <View className="h-[16px]" />
 
       {/* Custom Theme Row — unchanged; no unlock-token model applies to custom themes */}
       {customTheme ? (
-        <XStack
+        <View
           testID={`theme-option-custom${isCustomSelected ? '-selected' : ''}`}
-          alignItems="center"
-          gap="$3"
-          cursor="pointer"
+          className="flex-row items-center gap-3 cursor-pointer hover:opacity-80 press:opacity-70"
           onPress={() => setTheme('custom')}
-          hoverStyle={{ opacity: 0.8 }}
-          pressStyle={{ opacity: 0.7 }}
         >
-          <Circle
-            size={12}
-            borderWidth={1}
-            borderColor="$color5"
-            backgroundColor={customTheme.bg}
+          <View
+            className="size-[12px] rounded-[9999px] border border-color5"
+            style={{ backgroundColor: customTheme.bg }}
           />
           <Text
-            fontFamily="$journal"
-            fontSize={20}
-            color={isCustomSelected ? '$color' : '$color8'}
-            {...(isWeb && { hoverStyle: { color: '$color' } })}
-            flex={1}
+            className={`flex-1 font-journal text-[20px] ${isCustomSelected ? 'text-color' : 'text-color8'} web:hover:text-color`}
           >
             My Theme
           </Text>
           <Text
             testID="edit-custom-theme"
-            fontFamily="$body"
-            fontSize={13}
-            color="$color8"
-            cursor="pointer"
+            className="font-body text-[13px] text-color8 web:hover:text-color native:press:opacity-70 cursor-pointer"
             onPress={(e: any) => {
               e.stopPropagation?.()
               setEditorOpen(true)
             }}
-            {...(isWeb ? { hoverStyle: { color: '$color' } } : { pressStyle: { opacity: 0.7 } })}
           >
             Edit
           </Text>
-        </XStack>
+        </View>
       ) : (
-        <XStack
+        <View
           testID="create-custom-theme"
-          alignItems="center"
-          gap="$3"
-          cursor="pointer"
+          className="flex-row items-center gap-3 cursor-pointer hover:opacity-80 press:opacity-70"
           onPress={() => setEditorOpen(true)}
-          hoverStyle={{ opacity: 0.8 }}
-          pressStyle={{ opacity: 0.7 }}
         >
-          <Circle
-            size={12}
-            borderWidth={1}
-            borderColor="$color5"
-            borderStyle="dashed"
-          />
-          <Text
-            fontFamily="$journal"
-            fontSize={20}
-            color="$color8"
-            {...(isWeb && { hoverStyle: { color: '$color' } })}
-          >
+          <View className="size-[12px] rounded-[9999px] border border-dashed border-color5" />
+          <Text className="font-journal text-[20px] text-color8 web:hover:text-color">
             Create Custom Theme
           </Text>
-        </XStack>
+        </View>
       )}
 
       {editorOpen && <CustomThemeEditor onClose={() => setEditorOpen(false)} />}
-    </YStack>
+    </View>
   )
 }

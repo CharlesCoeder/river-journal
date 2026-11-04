@@ -105,9 +105,9 @@ vi.mock('@my/ui', async () => {
 })
 
 // ---------------------------------------------------------------------------
-// @tamagui/lucide-icons stubs
+// @my/icons stubs
 // ---------------------------------------------------------------------------
-vi.mock('@tamagui/lucide-icons', () => ({
+vi.mock('@my/icons', () => ({
   BookOpen: () => React.createElement('svg', { 'data-testid': 'icon-book-open' }),
   Users: () => React.createElement('svg', { 'data-testid': 'icon-users' }),
   FileText: () => React.createElement('svg', { 'data-testid': 'icon-file-text' }),

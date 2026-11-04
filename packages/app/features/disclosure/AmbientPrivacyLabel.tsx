@@ -60,11 +60,11 @@ export function AmbientPrivacyLabel({
         cursor="pointer"
       >
         <Text
-          fontFamily="$body"
-          fontSize="$2"
+          fontFamily="body"
+          fontSize="2"
           letterSpacing={0.08}
           textTransform="uppercase"
-          color="$stone"
+          color="stone"
         >
           {labelText}
         </Text>

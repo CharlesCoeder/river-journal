@@ -46,30 +46,25 @@ function FontPairingRow({
   return (
     <YStack
       testID={`font-pairing-${pairing.id}${isSelected ? '-selected' : ''}`}
-      gap="$1"
+      gap="1"
       cursor="pointer"
-      onPress={onSelect}
-      paddingVertical="$1"
+      paddingVertical="1"
       transition="designEnter"
-      enterStyle={{ opacity: 0, y: 10 }}
-      opacity={1}
-      y={0}
-      hoverStyle={{ opacity: 0.8 }}
-      pressStyle={{ opacity: 0.7 }}
+      opacity="1 hover:0.8 press:0.7 enter:0"
+      y="0 enter:10px"
+      onPress={onSelect}
     >
       <Text
         fontFamily={pairing.uiFont}
         fontSize={20}
-        color={isSelected ? '$color' : '$color8'}
-        {...(isWeb && { hoverStyle: { color: '$color' } })}
+        color={`${isSelected ? 'color' : 'color8'} web:hover:color`}
       >
         {pairing.uiLabel}
       </Text>
       <Text
         fontFamily={pairing.contentFont}
         fontSize={20}
-        color={isSelected ? '$color' : '$color8'}
-        {...(isWeb && { hoverStyle: { color: '$color' } })}
+        color={`${isSelected ? 'color' : 'color8'} web:hover:color`}
       >
         {pairing.contentLabel}
       </Text>
@@ -81,7 +76,7 @@ export function FontPicker() {
   const currentPairing = use$(store$.profile.fontPairing) ?? DEFAULT_FONT_PAIRING
 
   return (
-    <YStack gap="$3">
+    <YStack gap="3">
       {FONT_PAIRINGS.map((pairing) => (
         <FontPairingRow
           key={pairing.id}

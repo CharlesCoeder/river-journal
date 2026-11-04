@@ -18,18 +18,17 @@ export const ThemeSwitcher = function ThemeSwitcher() {
 
   return (
     <YStack
-      gap="$3"
+      gap="3"
       alignItems="flex-start"
       maxWidth="100%"
     >
       {THEME_NAMES.map((name) => (
         <Text
           key={name}
-          fontFamily="$journal"
+          fontFamily="journal"
           fontSize={20}
-          color={currentTheme === name ? '$color' : '$color8'}
+          color={`${currentTheme === name ? 'color' : 'color8'} hover:color`}
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
           onPress={() => setTheme(name)}
         >
           {THEME_LABELS[name]}

@@ -37,7 +37,7 @@ export function KeyboardShortcutsSection() {
   })
 
   return (
-    <YStack gap="$1">
+    <YStack gap="1">
       {SHORTCUT_ROWS.map((row) => {
         const isRecording = recordingId === row.id
         const currentBinding = overrides[row.id] ?? DEFAULT_HOTKEYS[row.id]
@@ -49,33 +49,33 @@ export function KeyboardShortcutsSection() {
             key={row.id}
             justifyContent="space-between"
             alignItems="center"
-            paddingVertical="$2"
+            paddingVertical="2"
           >
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={15}
-              color="$color"
+              color="color"
             >
               {row.label}
             </Text>
 
             {isRecording ? (
               <XStack
-                gap="$2"
+                gap="2"
                 alignItems="center"
               >
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={13}
-                  color="$color7"
+                  color="color7"
                   fontStyle="italic"
                 >
                   Press a key…
                 </Text>
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={16}
-                  color="$color8"
+                  color="color8"
                   cursor="pointer"
                   onPress={() => {
                     recorder.cancelRecording()
@@ -87,20 +87,19 @@ export function KeyboardShortcutsSection() {
               </XStack>
             ) : (
               <XStack
-                gap="$3"
+                gap="3"
                 alignItems="center"
               >
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={12}
-                  color="$color"
+                  color="color"
                   borderWidth={1}
-                  borderColor="$color5"
+                  borderColor="color5 hover:color8"
                   borderRadius={4}
                   paddingHorizontal={6}
                   paddingVertical={2}
                   cursor="pointer"
-                  hoverStyle={{ borderColor: '$color8' }}
                   onPress={() => {
                     recorder.startRecording()
                     setRecordingId(row.id)
@@ -110,11 +109,10 @@ export function KeyboardShortcutsSection() {
                 </Text>
                 {showReset && (
                   <Text
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={11}
-                    color="$color8"
+                    color="color8 hover:color"
                     cursor="pointer"
-                    hoverStyle={{ color: '$color' }}
                     onPress={() => resetHotkeyOverride(row.id)}
                   >
                     (reset)

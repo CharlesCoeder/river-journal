@@ -239,8 +239,8 @@ export default function PostComposer({
         maxWidth: 720,
         width: '100%',
         marginHorizontal: 'auto',
-        padding: '$4',
-        gap: '$3',
+        padding: '4',
+        gap: '3',
       }
 
   return (
@@ -261,9 +261,9 @@ export default function PostComposer({
           {/* Eyebrow — title-led composer header (top-level letters only) */}
           {isTopLevel ? (
             <Text
-              fontFamily="$body"
-              fontSize="$1"
-              color="$color9"
+              fontFamily="body"
+              fontSize="1"
+              color="color9"
               textTransform="uppercase"
               letterSpacing={2}
             >
@@ -274,7 +274,7 @@ export default function PostComposer({
           {/* AmbientPrivacyLabel + "posting as" preview */}
           <XStack
             alignItems="center"
-            gap="$2"
+            gap="2"
           >
             <AmbientPrivacyLabel
               boundary="collective_post_v1"
@@ -284,12 +284,12 @@ export default function PostComposer({
 
           <XStack
             alignItems="center"
-            gap="$2"
+            gap="2"
           >
             <Text
-              fontSize="$1"
-              color="$color9"
-              fontFamily="$body"
+              fontSize="1"
+              color="color9"
+              fontFamily="body"
             >
               posting as
             </Text>
@@ -304,16 +304,16 @@ export default function PostComposer({
               carry no title (server CHECK forbids it), so the field is hidden in
               compact/reply mode. */}
           {isTopLevel ? (
-            <YStack gap="$2">
+            <YStack gap="2">
               <TextArea
                 aria-label="Letter title"
                 placeholder="A title…"
                 value={title}
                 onChangeText={setTitle}
-                fontFamily="$journal"
-                fontSize="$8"
-                lineHeight="$8"
-                color="$color12"
+                fontFamily="journal"
+                fontSize="8"
+                lineHeight="8"
+                color="color12"
                 borderWidth={0}
                 backgroundColor="transparent"
                 paddingHorizontal={0}
@@ -322,8 +322,8 @@ export default function PostComposer({
               <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(0,0,0,0.10)' }} />
               {titleOverLimit ? (
                 <Text
-                  fontSize="$1"
-                  color="$color11"
+                  fontSize="1"
+                  color="color11"
                 >
                   {trimmedTitle.length}/200 — long titles read best under 200 characters.
                 </Text>
@@ -350,8 +350,8 @@ export default function PostComposer({
 
           {/* Word/character count micro-typography */}
           <Text
-            fontSize="$1"
-            color="$color9"
+            fontSize="1"
+            color="color9"
           >
             {wordCount} words · {charCount} chars
           </Text>
@@ -359,8 +359,8 @@ export default function PostComposer({
           {/* Submit disabled-state microcopy */}
           {createPost.isPending && (
             <Text
-              fontSize="$1"
-              color="$color9"
+              fontSize="1"
+              color="color9"
             >
               Submitting...
             </Text>
@@ -369,18 +369,18 @@ export default function PostComposer({
           {/* Error microcopy — generic, no body content logged */}
           {showError === 'generic' && (
             <Text
-              fontSize="$2"
-              color="$color11"
-              paddingTop="$2"
+              fontSize="2"
+              color="color11"
+              paddingTop="2"
             >
               Couldn't post. Try again.
             </Text>
           )}
           {showError === 'gated' && (
             <Text
-              fontSize="$2"
-              color="$color11"
-              paddingTop="$2"
+              fontSize="2"
+              color="color11"
+              paddingTop="2"
             >
               Couldn't post — the Collective opens after today's 500 words, and posting pauses while
               an account is suspended. Your draft is kept here.
@@ -389,7 +389,7 @@ export default function PostComposer({
 
           {/* Action buttons */}
           {compact ? (
-            <XStack gap="$2">
+            <XStack gap="2">
               <ExpandingLineButton
                 onPress={handleSubmitCompact}
                 disabled={isSubmitDisabled}

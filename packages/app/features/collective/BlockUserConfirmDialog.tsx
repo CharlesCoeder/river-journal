@@ -70,39 +70,39 @@ export function BlockUserConfirmDialog({
       <Dialog.Portal>
         <Dialog.Overlay
           key="block-overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="block-content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={420}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             Block this user?
           </Dialog.Title>
           <Dialog.Description
-            fontSize="$2"
-            color="$color11"
+            fontSize="2"
+            lineHeight="2"
+            color="color11"
           >
             Block {anonymizedId}? You won&apos;t see their posts and they won&apos;t see yours.
           </Dialog.Description>
 
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             <ExpandingLineButton onPress={handleCancel}>Cancel</ExpandingLineButton>
             <ExpandingLineButton onPress={handleConfirm}>Block</ExpandingLineButton>

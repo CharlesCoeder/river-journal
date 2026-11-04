@@ -1,5 +1,9 @@
 export * from 'tamagui'
-export * from '@tamagui/toast'
+export { Button } from './components/Button'
+export { AlertDialog, Dialog } from './components/Dialog'
+export { Input, TextArea } from './components/Input'
+export { Label } from './components/Label'
+export { RadioGroup } from './components/RadioGroup'
 export * from './MyComponent'
 export { config, type Conf } from '@my/config'
 export * from './CustomToast'
@@ -18,9 +22,15 @@ export { useReducedMotion } from './hooks/useReducedMotion'
 export * from './components/ThreePostureDisclosure'
 export * from './components/AuthorByline'
 
+// The part of a layout event app code reads. Tamagui types onLayout against its own
+// copy of the React Native event, which is not assignable from React Native's.
+export type ViewLayoutEvent = {
+  nativeEvent: { layout: { x: number; y: number; width: number; height: number } }
+}
+
 // type augmentation for tamagui custom config
 import type { Conf } from '@my/config'
-declare module 'tamagui' {
+declare module '@tamagui/web/types/types' {
   interface TamaguiCustomConfig extends Conf {}
 }
 
@@ -31,13 +41,11 @@ declare module 'tamagui' {
 // TamaguiCustomConfig augmentation above does.
 //
 // `ExtendBaseStackProps` / `ExtendBaseTextProps` are empty interfaces Tamagui
-// declares in `@tamagui/web` expressly as augmentation hooks; both feed into the
+// declares in `@tamagui/web`'s types module expressly as augmentation hooks; both feed into the
 // Stack and Text prop sets (including pseudo/media sub-styles). Every prop below
 // is valid at Tamagui runtime — this only aligns the static types.
-declare module '@tamagui/web' {
+declare module '@tamagui/web/types/types' {
   interface ExtendBaseStackProps {
-    // `tag` renders a component as a specific HTML element on web (ul/li/article).
-    tag?: string
     // `animation` selects an animation config key; the generic config type does
     // not surface the keys, so declare it explicitly.
     animation?: string
@@ -55,14 +63,10 @@ declare module '@tamagui/web' {
     outlineWidth?: string | number
     outlineStyle?: string
     outlineColor?: string
-    // Passthrough web data-* attributes used for test hooks / styling state.
-    [key: `data-${string}`]: string | number | boolean | undefined
   }
   interface ExtendBaseTextProps {
-    tag?: string
     animation?: string
     // `href` renders a Text as an anchor on web (used by nav links).
     href?: string
-    [key: `data-${string}`]: string | number | boolean | undefined
   }
 }

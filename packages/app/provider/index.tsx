@@ -18,7 +18,6 @@ import {
   TamaguiProvider,
   type TamaguiProviderProps,
   Theme,
-  ToastProvider,
   config,
   isWeb,
 } from '@my/ui'
@@ -38,14 +37,13 @@ import { addTheme, updateTheme } from '@tamagui/theme'
 import { PersistQueryClientProvider, removeOldestQuery } from '@tanstack/react-query-persist-client'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { ToastViewport } from './ToastViewport'
 import { use$ } from '@legendapp/state/react'
 import { store$, isDarkTheme, isDarkColor } from 'app/state/store'
 import { queryClient, dehydrateOptions, QUERY_PERSIST_KEY } from 'app/state/queryClient'
 import { queryStorage } from 'app/state/queryStorage'
 import { DEFAULT_THEME, DEFAULT_FONT_PAIRING } from 'app/state/types'
 import type { FontPairingId } from 'app/state/types'
-import { generatePalette } from '@my/config/src/themes'
+import { generatePalette, withAppThemeKeys } from '@my/config/src/themes'
 
 const FONT_VARIANT_MAP = {
   'outfit-newsreader': 'default',
@@ -54,7 +52,7 @@ const FONT_VARIANT_MAP = {
 } as const
 
 function buildCustomThemeTokens(palette: string[]) {
-  return {
+  return withAppThemeKeys({
     color1: palette[0],
     color2: palette[1],
     color3: palette[2],
@@ -81,7 +79,7 @@ function buildCustomThemeTokens(palette: string[]) {
     borderColorFocus: palette[5],
     placeholderColor: palette[6],
     shadowColor: palette[0],
-  }
+  })
 }
 
 // Track whether the custom theme has been registered via addTheme
@@ -170,15 +168,8 @@ export function Provider({
               queryClient.resumePausedMutations()
             }}
           >
-            <ToastProvider
-              swipeDirection="horizontal"
-              duration={6000}
-              native={isWeb ? [] : ['mobile']}
-            >
-              {children}
-              <CustomToast />
-              <ToastViewport />
-            </ToastProvider>
+            {children}
+            <CustomToast />
             {isWeb && process.env.NODE_ENV === 'development' && (
               <ReactQueryDevtools initialIsOpen={false} />
             )}

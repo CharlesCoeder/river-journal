@@ -143,8 +143,8 @@ export function CollectiveAccessGate() {
         maxWidth={720}
         width="100%"
         marginHorizontal="auto"
-        paddingHorizontal="$5"
-        paddingVertical="$8"
+        paddingHorizontal="5"
+        paddingVertical="8"
         data-testid="collective-access-loading"
       >
         <SkeletonRows reducedMotion={reducedMotion} />

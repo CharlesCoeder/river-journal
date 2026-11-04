@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react'
-import { Text, View, YStack } from '@my/ui'
+import { Text, View } from '@tamagui/tailwind'
 
 // ---------------------------------------------------------------------------
 // OnboardingScreenLayout — the single full-screen shape shared by all three
 // onboarding sub-screens (Practice / Community / Progression).
 //
 // Typography carries the screens: a Newsreader serif headline in the date-hero
-// register (fontFamily="$journal") over a small Outfit sans body. No imagery,
+// register (fontFamily="journal") over a small Outfit sans body. No imagery,
 // no icons — just calm type and generous whitespace.
 //
 // This layout is also the animated element for the sequence: it owns the
-// `transition` / `enterStyle` so each screen springs in when it mounts. The
+// `transition` / `enter:` values so each screen springs in when it mounts. The
 // container swaps which screen renders (one at a time) and AnimatePresence
 // drives the enter/exit.
 // ---------------------------------------------------------------------------
@@ -36,53 +36,26 @@ export function OnboardingScreenLayout({
   children,
 }: OnboardingScreenLayoutProps) {
   return (
-    <YStack
-      tag="section"
+    <View
+      render="section"
       aria-labelledby={headlineId}
-      transition={transition}
-      enterStyle={{ opacity: 0, y: 15 }}
-      opacity={1}
-      y={0}
-      flex={1}
-      backgroundColor="$background"
-      width="100%"
-      maxWidth={1024}
-      alignSelf="center"
-      justifyContent="center"
-      alignItems="flex-start"
-      paddingHorizontal="$4"
-      $sm={{ paddingHorizontal: '$6' }}
-      $md={{ paddingHorizontal: '$8' }}
-      $lg={{ paddingHorizontal: '$12' }}
+      // Works at runtime, but Tailwind components leave transition out of their types.
+      {...({ transition: { preset: transition, properties: 'transform, opacity' } } as object)}
+      className="flex-1 w-full max-w-[1024px] self-center justify-center items-start bg-background px-4 sm:px-6 md:px-8 lg:px-12 opacity-100 enter:opacity-0 translate-y-0 enter:translate-y-[15px]"
     >
-      <YStack
-        gap="$5"
-        width="100%"
-      >
+      <View className="gap-5 w-full">
         <Text
-          tag="h1"
+          render="h1"
           id={headlineId}
-          // tabIndex={-1} makes the headline programmatically focusable so the
-          // container can move focus here on each transition (screen-reader nav).
           tabIndex={-1}
-          fontFamily="$journal"
-          fontSize="$8"
-          color="$color"
-          letterSpacing={-1}
-          $sm={{ fontSize: '$7' }}
+          className="web:font-normal font-journal text-[22px] sm:text-[20px] text-color tracking-[-1px]"
         >
           {headline}
         </Text>
-        <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color8"
-          letterSpacing={0.5}
-          maxWidth={520}
-        >
+        <Text className="font-body text-[14px] text-color8 tracking-[0.5px] max-w-[520px]">
           {body}
         </Text>
-      </YStack>
+      </View>
 
       {/*
         Reserved illustration region. Intentionally empty at MVP — it holds a
@@ -90,13 +63,10 @@ export function OnboardingScreenLayout({
         illustration can slot in later without re-shaping (re-flowing) the
         screen. Do NOT collapse this; it exists to keep the layout stable.
       */}
-      <View
-        minHeight={160}
-        width="100%"
-      />
+      <View className="min-h-[160px] w-full" />
 
       {children}
-    </YStack>
+    </View>
   )
 }
 
@@ -119,22 +89,10 @@ export interface OnboardingSkipButtonProps {
 export function OnboardingSkipButton({ onPress, label = 'Skip' }: OnboardingSkipButtonProps) {
   return (
     <Text
-      tag="button"
-      // Bare Tamagui Text primitive: pass web-native `aria-label` (like the
-      // section's `aria-labelledby` above) rather than RN `accessibilityLabel`,
-      // which Text does not map and would leak to the DOM as an unknown prop.
-      // Tamagui normalizes `aria-label` → accessibilityLabel on native.
+      render="button"
       aria-label={label}
       onPress={onPress}
-      fontFamily="$body"
-      fontSize="$4"
-      color="$stone"
-      letterSpacing={0.5}
-      borderBottomWidth={1}
-      borderBottomColor="$color6"
-      cursor="pointer"
-      hoverStyle={{ color: '$color' }}
-      pressStyle={{ opacity: 0.6 }}
+      className="font-body text-[14px] hover:text-color tracking-[0.5px] border-b border-b-color6 cursor-pointer press:opacity-60"
     >
       {label}
     </Text>

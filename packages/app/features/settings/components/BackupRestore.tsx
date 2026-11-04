@@ -37,9 +37,9 @@ function readErrorCode(error: unknown): string {
 function Heading({ children }: { children: string }) {
   return (
     <Text
-      fontFamily="$journal"
+      fontFamily="journal"
       fontSize={20}
-      color="$color"
+      color="color"
     >
       {children}
     </Text>
@@ -58,10 +58,11 @@ function EntryPoint({
   return (
     <Text
       testID={testID}
-      fontFamily="$journal"
+      fontFamily="journal"
       fontSize={18}
-      color="$color"
+      color="color"
       cursor="pointer"
+      opacity="hover:0.7 focus:0.7"
       role="button"
       tabIndex={0}
       onKeyDown={(e: any) => {
@@ -70,8 +71,6 @@ function EntryPoint({
           onPress()
         }
       }}
-      hoverStyle={{ opacity: 0.7 }}
-      focusStyle={{ opacity: 0.7 }}
       onPress={onPress}
     >
       {label}
@@ -91,17 +90,18 @@ function ActionText({
   return (
     <Text
       testID={testID}
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={11}
       letterSpacing={3}
       fontWeight="500"
       textTransform="uppercase"
-      color="$color"
+      color="color"
       borderBottomWidth={2}
-      borderColor="$color10"
+      borderColor="color10"
       paddingBottom={6}
       alignSelf="flex-start"
       cursor="pointer"
+      opacity="hover:0.7 focus:0.7"
       role="button"
       tabIndex={0}
       onKeyDown={(e: any) => {
@@ -110,8 +110,6 @@ function ActionText({
           onPress()
         }
       }}
-      hoverStyle={{ opacity: 0.7 }}
-      focusStyle={{ opacity: 0.7 }}
       onPress={onPress}
     >
       {label}
@@ -206,12 +204,12 @@ export function BackupRestore() {
   }, [restoreFileText, restorePassphrase])
 
   return (
-    <YStack gap="$4">
+    <YStack gap="4">
       <Heading>Encrypted Backup</Heading>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={13}
-        color="$color8"
+        color="color8"
       >
         Save your whole journal as a single encrypted file, protected by a passphrase you choose.
         The backup is protected by that passphrase alone — if you lose it, the backup cannot be
@@ -219,7 +217,7 @@ export function BackupRestore() {
       </Text>
 
       {mode === 'home' && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <EntryPoint
             testID="backup-create-open"
             label="Create encrypted backup"
@@ -236,20 +234,20 @@ export function BackupRestore() {
       {mode === 'working' && (
         <Text
           testID="backup-working"
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
+          color="color8"
         >
           Working — this stays on your device…
         </Text>
       )}
 
       {mode === 'create' && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             Choose a passphrase (at least {MIN_PASSPHRASE_LENGTH} characters) and enter it twice.
           </Text>
@@ -259,10 +257,10 @@ export function BackupRestore() {
             onChangeText={setCreatePassphrase}
             secureTextEntry
             placeholder="Passphrase"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            borderColor="$color5"
-            color="$color"
+            borderColor="color5"
+            color="color"
           />
           <Input
             testID="backup-create-passphrase-confirm-input"
@@ -270,17 +268,17 @@ export function BackupRestore() {
             onChangeText={setCreateConfirm}
             secureTextEntry
             placeholder="Confirm passphrase"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            borderColor="$color5"
-            color="$color"
+            borderColor="color5"
+            color="color"
           />
           {createError && (
             <Text
               testID="backup-create-error"
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={12}
-              color="$color"
+              color="color"
             >
               {createError}
             </Text>
@@ -294,12 +292,12 @@ export function BackupRestore() {
       )}
 
       {mode === 'create-done' && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <Text
             testID="backup-create-summary"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             Your encrypted backup is ready. Keep the file and your passphrase somewhere safe.
           </Text>
@@ -312,11 +310,11 @@ export function BackupRestore() {
       )}
 
       {mode === 'restore-passphrase' && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             Enter the passphrase used to create this backup.
           </Text>
@@ -326,10 +324,10 @@ export function BackupRestore() {
             onChangeText={setRestorePassphrase}
             secureTextEntry
             placeholder="Passphrase"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            borderColor="$color5"
-            color="$color"
+            borderColor="color5"
+            color="color"
           />
           <ActionText
             testID="backup-restore-submit"
@@ -340,12 +338,12 @@ export function BackupRestore() {
       )}
 
       {mode === 'restore-done' && restoreSummary && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <Text
             testID="backup-restore-summary"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             {restoreSummary.entriesRestored} entries restored, {restoreSummary.entriesSkipped}{' '}
             skipped (already present). {restoreSummary.flowsRestored} passages restored,{' '}
@@ -360,12 +358,12 @@ export function BackupRestore() {
       )}
 
       {mode === 'restore-error' && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <Text
             testID="backup-restore-error"
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
+            color="color8"
           >
             That backup couldn't be restored. Check that you picked the right file and entered the
             correct passphrase, then try again. Nothing on your device was changed.

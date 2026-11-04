@@ -5,4 +5,5 @@ if (!global?.setImmediate) {
 }
 
 import './crypto-polyfill'
+import './react-native-compat'
 import 'expo-router/entry'

@@ -74,8 +74,8 @@ const {
   }
 })
 
-// ─── @tamagui/lucide-icons mock ──────────────────────────────────────────────
-vi.mock('@tamagui/lucide-icons', () => ({
+// ─── @my/icons mock ──────────────────────────────────────────────
+vi.mock('@my/icons', () => ({
   Eye: () => null,
   EyeOff: () => null,
 }))

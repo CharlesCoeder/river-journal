@@ -133,15 +133,15 @@ export function AppLockSettings() {
   }
 
   return (
-    <YStack gap="$4">
+    <YStack gap="4">
       <XStack
         justifyContent="space-between"
         alignItems="center"
       >
         <Text
-          fontFamily="$body"
-          fontSize="$4"
-          color="$color"
+          fontFamily="body"
+          fontSize="4"
+          color="color"
         >
           App Lock
         </Text>
@@ -159,10 +159,10 @@ export function AppLockSettings() {
 
       {/* Honest threat-model copy — shown on every platform. */}
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={13}
-        color="$color8"
-        lineHeight={20}
+        color="color8"
+        lineHeight="20px"
       >
         {THREAT_MODEL_COPY}
       </Text>
@@ -170,10 +170,10 @@ export function AppLockSettings() {
       {/* Native: explain why the toggle is disabled when no OS security exists. */}
       {capabilityUnavailable && (
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={13}
-          color="$color8"
-          lineHeight={20}
+          color="color8"
+          lineHeight="20px"
         >
           {NO_CAPABILITY_COPY}
         </Text>
@@ -181,12 +181,12 @@ export function AppLockSettings() {
 
       {/* Web/desktop passcode setup. */}
       {showPasscodeSetup && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
-            color="$color8"
-            lineHeight={20}
+            color="color8"
+            lineHeight="20px"
           >
             {UNRECOVERABLE_COPY}
           </Text>
@@ -207,9 +207,9 @@ export function AppLockSettings() {
           />
           {setupError && (
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={13}
-              color="$color8"
+              color="color8"
             >
               {setupError}
             </Text>
@@ -226,13 +226,13 @@ export function AppLockSettings() {
 
       {/* Auto-lock interval selector — only while App Lock is enabled. */}
       {enabled && (
-        <YStack gap="$3">
+        <YStack gap="3">
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={13}
             textTransform="uppercase"
             letterSpacing={1.5}
-            color="$color8"
+            color="color8"
           >
             Auto-lock
           </Text>

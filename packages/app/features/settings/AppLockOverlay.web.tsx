@@ -46,17 +46,17 @@ export function AppLockOverlay() {
       right={0}
       bottom={0}
       zIndex={1000}
-      backgroundColor="$background"
+      backgroundColor="background"
       alignItems="center"
       justifyContent="center"
-      gap="$5"
-      padding="$6"
+      gap="5"
+      padding="6"
     >
       <Text
-        fontFamily="$journalItalic"
+        fontFamily="journalItalic"
         fontStyle="italic"
         fontSize={24}
-        color="$color"
+        color="color"
       >
         River Journal is locked
       </Text>

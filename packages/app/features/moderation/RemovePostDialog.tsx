@@ -98,31 +98,31 @@ export function RemovePostDialog({ open, onOpenChange, postId, mutation }: Remov
       <Dialog.Portal>
         <Dialog.Overlay
           key="overlay"
-          backgroundColor="$shadow6"
+          backgroundColor="shadow6"
           animation={animationToken}
-          enterStyle={{ opacity: 0 }}
-          exitStyle={{ opacity: 0 }}
+          opacity="enter:0 exit:0"
         />
         <Dialog.Content
           key="content"
-          gap="$3"
-          padding="$4"
+          gap="3"
+          padding="4"
           maxWidth={420}
           width="90%"
-          backgroundColor="$background"
-          borderColor="$color3"
+          backgroundColor="background"
+          borderColor="color3"
           borderWidth={1}
           animation={animationToken}
         >
           <Dialog.Title
-            fontSize="$5"
-            fontFamily="$body"
+            fontSize="5"
+            fontFamily="body"
           >
             Remove this post
           </Dialog.Title>
           <Dialog.Description
-            fontSize="$2"
-            color="$color11"
+            fontSize="2"
+            lineHeight="2"
+            color="color11"
           >
             The post is removed for everyone and its open reports are resolved.
           </Dialog.Description>
@@ -132,12 +132,12 @@ export function RemovePostDialog({ open, onOpenChange, postId, mutation }: Remov
             onValueChange={(v) => setSelectedReason(v as RemovalReasonCode)}
             required
           >
-            <YStack gap="$2">
+            <YStack gap="2">
               {REMOVAL_REASONS.map(({ code, label }) => (
                 <XStack
                   key={code}
                   alignItems="center"
-                  gap="$2"
+                  gap="2"
                 >
                   <RadioGroup.Item
                     value={code}
@@ -145,7 +145,7 @@ export function RemovePostDialog({ open, onOpenChange, postId, mutation }: Remov
                   />
                   <Label
                     htmlFor={`remove-reason-${code}`}
-                    fontSize="$3"
+                    fontSize="3"
                   >
                     {label}
                   </Label>
@@ -161,14 +161,14 @@ export function RemovePostDialog({ open, onOpenChange, postId, mutation }: Remov
             maxLength={500}
             multiline
             numberOfLines={3}
-            fontSize="$2"
-            borderColor="$color3"
+            fontSize="2"
+            borderColor="color3"
           />
 
           <XStack
-            gap="$3"
+            gap="3"
             justifyContent="flex-end"
-            marginTop="$3"
+            marginTop="3"
           >
             <ExpandingLineButton onPress={() => handleOpenChange(false)}>
               Cancel

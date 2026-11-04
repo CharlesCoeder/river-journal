@@ -572,7 +572,7 @@ describe('Error handling — calm inline message + single Retry, no dark pattern
 
     await waitFor(() => expect(screen.getByTestId('btn-retry')).toBeTruthy())
     const status = screen.getByRole('status')
-    expect(status.getAttribute('data-color') ?? '').not.toMatch(/\$red/)
+    expect(status.getAttribute('data-color') ?? '').not.toMatch(/\bred/)
   })
 
   it('"Keep subscription" / dismiss remains available while in the error state', async () => {

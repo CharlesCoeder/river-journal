@@ -24,43 +24,38 @@ export function CollectivePlaceholderScreen() {
   return (
     <ScrollView
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
       contentContainerStyle={{ flexGrow: 1 }}
     >
       <YStack
         width="100%"
         maxWidth={1024}
         alignSelf="center"
-        paddingHorizontal="$4"
-        paddingTop="$4"
+        paddingHorizontal="4 sm:6 md:8 lg:12"
+        paddingTop="4 md:8 lg:12"
         paddingBottom={96}
-        $sm={{ paddingHorizontal: '$6' }}
-        $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
-        $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
         <WordLinkNav variant="browse" />
 
         <XStack
           justifyContent="space-between"
           alignItems="center"
-          marginBottom={64}
-          $md={{ marginBottom: 96 }}
+          marginBottom="64px md:96px"
         >
           <Text
-            fontFamily="$journalItalic"
+            fontFamily="journalItalic"
             fontStyle="italic"
             fontSize={30}
-            color="$color"
+            color="color"
           >
             Collective
           </Text>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={14}
-            color="$color8"
+            color="color8 hover:color"
             letterSpacing={0.5}
             cursor="pointer"
-            hoverStyle={{ color: '$color' }}
             onPress={navigateHome}
           >
             Back to Home
@@ -72,49 +67,48 @@ export function CollectivePlaceholderScreen() {
             <YStack
               key="collective-placeholder-body"
               transition="designEnter"
-              enterStyle={{ opacity: 0, y: 10 }}
-              opacity={1}
-              y={0}
+              opacity="1 enter:0"
+              y="0 enter:10px"
               width="100%"
               maxWidth={680}
-              gap="$8"
+              gap="8"
             >
-              <YStack gap="$3">
+              <YStack gap="3">
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={12}
-                  color="$color8"
+                  color="color8"
                   letterSpacing={1}
                   textTransform="uppercase"
                 >
                   A quieter place to share
                 </Text>
                 <Text
-                  fontFamily="$journal"
+                  fontFamily="journal"
                   fontSize={36}
-                  color="$color"
-                  lineHeight={44}
+                  color="color"
+                  lineHeight="44px"
                 >
                   Collective is taking shape.
                 </Text>
               </YStack>
 
-              <YStack gap="$4">
+              <YStack gap="4">
                 <Text
-                  fontFamily="$body"
-                  fontSize="$5"
-                  color="$color"
-                  lineHeight={28}
+                  fontFamily="body"
+                  fontSize="5"
+                  color="color"
+                  lineHeight="28px"
                 >
                   Your journal is private by default. Collective is a small, calm space where you
                   can choose to share a few words from your day — and read what others have chosen
                   to share, too.
                 </Text>
                 <Text
-                  fontFamily="$body"
-                  fontSize="$4"
-                  color="$color9"
-                  lineHeight={24}
+                  fontFamily="body"
+                  fontSize="4"
+                  color="color9"
+                  lineHeight="24px"
                 >
                   It’s here, working quietly behind the scenes. We’re still softening the edges
                   before opening it up. In the meantime, you can keep writing — the rest of the
@@ -122,36 +116,36 @@ export function CollectivePlaceholderScreen() {
                 </Text>
               </YStack>
 
-              <YStack gap="$3">
+              <YStack gap="3">
                 <Text
-                  fontFamily="$body"
+                  fontFamily="body"
                   fontSize={12}
-                  color="$color8"
+                  color="color8"
                   letterSpacing={1}
                   textTransform="uppercase"
                 >
                   What it’ll feel like
                 </Text>
-                <YStack gap="$3">
+                <YStack gap="3">
                   {GLIMPSES.map((line) => (
                     <XStack
                       key={line}
-                      gap="$3"
+                      gap="3"
                       alignItems="flex-start"
                     >
                       <Text
-                        fontFamily="$body"
-                        fontSize="$4"
-                        color="$color8"
+                        fontFamily="body"
+                        fontSize="4"
+                        color="color8"
                         minWidth={16}
                       >
                         •
                       </Text>
                       <Text
-                        fontFamily="$body"
-                        fontSize="$4"
-                        color="$color"
-                        lineHeight={24}
+                        fontFamily="body"
+                        fontSize="4"
+                        color="color"
+                        lineHeight="24px"
                         flex={1}
                       >
                         {line}

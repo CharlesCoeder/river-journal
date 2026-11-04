@@ -86,10 +86,10 @@ export default function BlockedUsersScreen() {
       <YStack>
         <View onPress={() => blockedUsers.refetch()}>
           <Text
-            fontSize="$2"
-            color="$color9"
+            fontSize="2"
+            color="color9"
             textAlign="center"
-            paddingVertical="$4"
+            paddingVertical="4"
           >
             Couldn&apos;t load your blocked list. Pull to retry.
           </Text>
@@ -121,9 +121,8 @@ export default function BlockedUsersScreen() {
         <YStack
           key="collective-blocked-users-body"
           transition="designEnter"
-          enterStyle={{ opacity: 0, y: 10 }}
-          opacity={1}
-          y={0}
+          opacity="1 enter:0"
+          y="0 enter:10px"
           width="100%"
           maxWidth={720}
           marginHorizontal="auto"
@@ -131,11 +130,11 @@ export default function BlockedUsersScreen() {
           {/* Empty state */}
           {isEmpty ? (
             <Text
-              fontFamily="$journal"
-              fontSize="$5"
-              color="$color11"
+              fontFamily="journal"
+              fontSize="5"
+              color="color11"
               textAlign="center"
-              marginTop="$8"
+              marginTop="8"
             >
               You haven&apos;t blocked anyone.
             </Text>
@@ -147,19 +146,19 @@ export default function BlockedUsersScreen() {
               <XStack
                 justifyContent="space-between"
                 alignItems="center"
-                paddingVertical="$3"
+                paddingVertical="3"
               >
                 <YStack>
                   <Text
-                    fontFamily="$body"
-                    fontSize="$4"
-                    color="$color"
+                    fontFamily="body"
+                    fontSize="4"
+                    color="color"
                   >
                     {row.blocked_user_id.slice(0, 8)}
                   </Text>
                   <Text
-                    fontSize="$1"
-                    color="$color9"
+                    fontSize="1"
+                    color="color9"
                   >
                     Blocked {formatBlockedAt(row.created_at)}
                   </Text>
@@ -174,7 +173,7 @@ export default function BlockedUsersScreen() {
               </XStack>
               {index < rows.length - 1 ? (
                 <Separator
-                  borderColor="$color3"
+                  borderColor="color3"
                   borderBottomWidth={1}
                 />
               ) : null}
@@ -199,40 +198,40 @@ export default function BlockedUsersScreen() {
             <Dialog.Portal>
               <Dialog.Overlay
                 key="unblock-overlay"
-                backgroundColor="$shadow6"
+                backgroundColor="shadow6"
                 animation={animationToken}
-                enterStyle={{ opacity: 0 }}
-                exitStyle={{ opacity: 0 }}
+                opacity="enter:0 exit:0"
               />
               <Dialog.Content
                 key="unblock-content"
-                gap="$3"
-                padding="$4"
+                gap="3"
+                padding="4"
                 maxWidth={420}
                 width="90%"
-                backgroundColor="$background"
-                borderColor="$color3"
+                backgroundColor="background"
+                borderColor="color3"
                 borderWidth={1}
                 animation={animationToken}
               >
                 {pendingRow ? (
                   <>
                     <Dialog.Title
-                      fontSize="$5"
-                      fontFamily="$body"
+                      fontSize="5"
+                      fontFamily="body"
                     >
                       Unblock {pendingRow.blocked_user_id.slice(0, 8)}?
                     </Dialog.Title>
                     <Dialog.Description
-                      fontSize="$2"
-                      color="$color11"
+                      fontSize="2"
+                      lineHeight="2"
+                      color="color11"
                     >
                       They&apos;ll be able to see your posts and you&apos;ll see theirs again.
                     </Dialog.Description>
                     <XStack
-                      gap="$3"
+                      gap="3"
                       justifyContent="flex-end"
-                      marginTop="$3"
+                      marginTop="3"
                     >
                       <ExpandingLineButton onPress={() => setPendingUnblockId(null)}>
                         Cancel

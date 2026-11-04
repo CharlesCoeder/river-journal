@@ -50,7 +50,17 @@ function ResultRow({ row, onOpen }: ResultRowProps) {
   return (
     <YStack
       testID="search-result-row"
-      {...({ role: 'button', tabIndex: 0 } as any)}
+      role={'button'}
+      tabIndex={0}
+      gap="1"
+      paddingVertical="3"
+      paddingHorizontal="2"
+      cursor="pointer"
+      borderRadius="2"
+      backgroundColor="hover:color2 focus:color3"
+      outlineColor="focus:color"
+      outlineWidth="focus:2px"
+      outlineStyle="focus:solid"
       onPress={activate}
       onKeyDown={(event: any) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -58,54 +68,42 @@ function ResultRow({ row, onOpen }: ResultRowProps) {
           activate()
         }
       }}
-      gap="$1"
-      paddingVertical="$3"
-      paddingHorizontal="$2"
-      cursor="pointer"
-      borderRadius="$2"
-      hoverStyle={{ backgroundColor: '$color2' }}
-      focusStyle={{
-        backgroundColor: '$color3',
-        outlineColor: '$color',
-        outlineWidth: 2,
-        outlineStyle: 'solid',
-      }}
     >
       <XStack
         justifyContent="space-between"
         alignItems="baseline"
-        gap="$3"
+        gap="3"
       >
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={14}
-          color="$color8"
+          color="color8"
           letterSpacing={0.5}
         >
           {formatReaderDate(row.entryDate)}
         </Text>
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={12}
-          color="$color7"
+          color="color7"
         >
           {flowLabel}
         </Text>
       </XStack>
       <Text
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={18}
-        color="$color"
-        lineHeight={28}
+        color="color"
+        lineHeight="28px"
       >
-        <Text color="$color">{pre}</Text>
+        <Text color="color">{pre}</Text>
         <Text
           fontWeight="700"
-          color="$color"
+          color="color"
         >
           {match}
         </Text>
-        <Text color="$color">{post}</Text>
+        <Text color="color">{post}</Text>
       </Text>
     </YStack>
   )
@@ -209,7 +207,7 @@ export function PastEntriesSearch({ entries, children }: PastEntriesSearchProps)
   const showInput = isWeb || revealed
 
   return (
-    <YStack gap="$4">
+    <YStack gap="4">
       {!isWeb && (
         <XStack>
           <ExpandingLineButton
@@ -231,24 +229,23 @@ export function PastEntriesSearch({ entries, children }: PastEntriesSearchProps)
           placeholder={SEARCH_LABEL}
           autoCapitalize="none"
           autoCorrect={false}
-          {...({ 'aria-label': SEARCH_LABEL } as any)}
-          fontFamily="$journal"
+          aria-label={SEARCH_LABEL}
+          fontFamily="journal"
           fontSize={18}
-          color="$color"
-          placeholderTextColor="$color6"
+          color="color"
+          placeholderTextColor="color6"
           backgroundColor="transparent"
           borderWidth={0}
           borderBottomWidth={1}
-          borderColor="$color3"
+          borderColor="color3 focus:color"
           borderRadius={0}
           paddingHorizontal={0}
-          paddingVertical="$2"
-          focusStyle={{ borderColor: '$color' }}
+          paddingVertical="2"
         />
       )}
 
       {active ? (
-        <YStack gap="$4">
+        <YStack gap="4">
           {results.length > 0 ? (
             <YStack testID="search-results">
               {results.map((row) => (
@@ -263,13 +260,13 @@ export function PastEntriesSearch({ entries, children }: PastEntriesSearchProps)
           ) : (
             <YStack
               testID="search-empty-state"
-              paddingVertical="$6"
+              paddingVertical="6"
               alignItems="center"
             >
               <Text
-                fontFamily="$journal"
+                fontFamily="journal"
                 fontSize={18}
-                color="$color8"
+                color="color8"
                 fontStyle="italic"
               >
                 No entries match that search yet.
@@ -279,18 +276,18 @@ export function PastEntriesSearch({ entries, children }: PastEntriesSearchProps)
 
           {openEntry && (
             <YStack
-              marginTop="$2"
-              gap="$3"
+              marginTop="2"
+              gap="3"
             >
               <XStack
                 justifyContent="space-between"
                 alignItems="center"
               >
                 <Text
-                  fontFamily="$journalItalic"
+                  fontFamily="journalItalic"
                   fontStyle="italic"
-                  fontSize="$5"
-                  color="$color"
+                  fontSize="5"
+                  color="color"
                 >
                   {formatReaderDate(openEntry.entryDate)}
                 </Text>

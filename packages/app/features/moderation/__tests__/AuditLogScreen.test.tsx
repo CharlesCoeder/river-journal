@@ -90,14 +90,14 @@ vi.mock('@my/ui', async () => {
   }
 
   return {
-    Text: ({ children, tag, ...props }: any) => {
+    Text: ({ children, render: tag, ...props }: any) => {
       const htmlTag = typeof tag === 'string' ? tag : 'span'
       return ReactModule.createElement(htmlTag, mapA11y(props), children)
     },
 
     View: ({
       children,
-      tag,
+      render: tag,
       onPress,
       accessible,
       accessibilityRole,

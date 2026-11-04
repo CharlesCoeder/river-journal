@@ -17,12 +17,11 @@ export function ColorPickerSwatch({
       height={32}
       borderRadius={6}
       borderWidth={isActive ? 2 : 1}
-      borderColor={isActive ? '$color' : '$color5'}
-      backgroundColor={isValid ? color : '$background'}
+      borderColor={isActive ? 'color' : 'color5'}
+      backgroundColor={isValid ? color : 'background'}
       cursor="pointer"
+      opacity="hover:0.85 press:0.7"
       onPress={onPress}
-      hoverStyle={{ opacity: 0.85 }}
-      pressStyle={{ opacity: 0.7 }}
     />
   )
 }

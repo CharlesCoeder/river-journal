@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BackHandler, useWindowDimensions } from 'react-native'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
-import type { LayoutChangeEvent } from 'react-native'
+import type { ViewLayoutEvent } from '@my/ui'
 import { useFocusEffect } from '@react-navigation/native'
 import { YStack, XStack, Text, View, StreakChip, CollectiveEntry, useReducedMotion } from '@my/ui'
 import { useRouter } from 'solito/navigation'
@@ -177,18 +177,18 @@ export function InlineHomeScreen() {
   // ── Geometry reports → PersistentEditor ──────────────────────────────────
   // All y values are relative to this screen's root, which sits at the
   // safe-area top; PersistentEditor adds insets.top itself.
-  const handleTopRowLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleTopRowLayout = useCallback((e: ViewLayoutEvent) => {
     const { y, height } = e.nativeEvent.layout
     setInlineEditorGeometry({ expandedTop: y + height + INLINE_EXPANDED_TOP_GAP })
   }, [])
-  const handleHeaderLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleHeaderLayout = useCallback((e: ViewLayoutEvent) => {
     const { y, height } = e.nativeEvent.layout
     setInlineEditorGeometry({ inlineTop: y + height })
   }, [])
-  const handleHeroLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleHeroLayout = useCallback((e: ViewLayoutEvent) => {
     setInlineEditorGeometry({ insetX: e.nativeEvent.layout.x })
   }, [])
-  const handleBottomBarLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleBottomBarLayout = useCallback((e: ViewLayoutEvent) => {
     const { height } = e.nativeEvent.layout
     bottomBarHeightRef.current = height
     updatePersistentEditorBottomBarHeight(height)
@@ -271,7 +271,7 @@ export function InlineHomeScreen() {
   return (
     <YStack
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       {/* Header block — everything above the writing area. Its height is the
           collapsed editor's anchor, so the hero keeps its layout while faded. */}
@@ -279,7 +279,7 @@ export function InlineHomeScreen() {
         testID="inline-home-header"
         onLayout={handleHeaderLayout}
         width="100%"
-        paddingHorizontal="$6"
+        paddingHorizontal="6"
       >
         {/* Top row: streak chip ⟷ Menu. The menu link sits on the right, the
             side its pane slides in from; in writing mode the overlay draws
@@ -289,7 +289,7 @@ export function InlineHomeScreen() {
           minHeight={INLINE_TOP_ROW_HEIGHT}
           alignItems="center"
           justifyContent="space-between"
-          paddingTop="$2"
+          paddingTop="2"
         >
           <View
             opacity={chromeHidden ? 0 : 1}
@@ -321,28 +321,28 @@ export function InlineHomeScreen() {
         {/* Hero — fades and lifts away when writing begins; keeps its layout. */}
         <YStack
           onLayout={handleHeroLayout}
-          gap="$5"
-          paddingTop="$6"
-          paddingBottom="$6"
+          gap="5"
+          paddingTop="6"
+          paddingBottom="6"
           opacity={chromeHidden ? 0 : 1}
           y={chromeHidden ? -8 : 0}
           transition={chromeTransition}
           pointerEvents={chromeHidden ? 'none' : 'auto'}
         >
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={14}
-            color="$color8"
+            color="color8"
             letterSpacing={1}
             textTransform="uppercase"
           >
             Today
           </Text>
           <Text
-            fontFamily="$journal"
+            fontFamily="journal"
             fontSize={48}
-            lineHeight={56}
-            color="$color"
+            lineHeight="56px"
+            color="color"
             letterSpacing={-1}
           >
             {today}.
@@ -354,13 +354,13 @@ export function InlineHomeScreen() {
             <Text
               testID="home-collective-dev-link"
               onPress={handleCollectiveDevPress}
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={13}
-              color="$color8"
+              color="color8"
               letterSpacing={0.5}
               textTransform="uppercase"
               cursor="pointer"
-              pressStyle={{ opacity: 0.6 }}
+              opacity="press:0.6"
             >
               Collective — dev →
             </Text>
@@ -419,13 +419,13 @@ function MenuWordLink({ onPress }: { onPress: () => void }) {
       alignItems="flex-end"
       marginRight={-8}
       paddingHorizontal={8}
-      pressStyle={{ opacity: 0.6 }}
+      opacity="press:0.6"
       onPress={onPress}
     >
       <Text
-        fontFamily="$body"
-        fontSize="$3"
-        color="$color8"
+        fontFamily="body"
+        fontSize="3"
+        color="color8"
         letterSpacing={1}
         textTransform="uppercase"
       >

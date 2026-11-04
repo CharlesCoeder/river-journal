@@ -21,9 +21,9 @@ export function BillingDisclosure() {
   const copy = resolveBillingDisclosureCopy(resolvePlatform())
   return (
     <Text
-      fontFamily="$body"
-      fontSize="$3"
-      color="$color8"
+      fontFamily="body"
+      fontSize="3"
+      color="color8"
       letterSpacing={0.5}
     >
       {copy}

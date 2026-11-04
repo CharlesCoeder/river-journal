@@ -23,11 +23,11 @@ import { ThreePostureDisclosure } from 'app/features/disclosure/ThreePostureDisc
 function SectionHeader({ children }: { children: string }) {
   return (
     <Text
-      fontFamily="$body"
+      fontFamily="body"
       fontSize={12}
       textTransform="uppercase"
       letterSpacing={2}
-      color="$color8"
+      color="color8"
     >
       {children}
     </Text>
@@ -48,50 +48,50 @@ function PrivacyModeCard({
   return (
     <YStack
       flex={1}
-      padding="$6"
+      padding="6"
       borderWidth={1}
-      borderColor={isActive ? '$color' : '$color2'}
-      backgroundColor={isActive ? '$color1' : 'transparent'}
-      borderRadius="$2"
+      borderColor={isActive ? 'color' : 'color2'}
+      backgroundColor={isActive ? 'color1' : 'transparent'}
+      borderRadius="2"
     >
       <Text
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={20}
-        color="$color"
+        color="color"
         borderBottomWidth={1}
-        borderColor="$color2"
-        paddingBottom="$3"
-        marginBottom="$4"
+        borderColor="color2"
+        paddingBottom="3"
+        marginBottom="4"
       >
         {title}
       </Text>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={12}
-        color="$color8"
+        color="color8"
         fontStyle="italic"
-        marginBottom="$4"
+        marginBottom="4"
       >
         {quote}
       </Text>
-      <YStack gap="$3">
+      <YStack gap="3">
         {bullets.map((bullet, i) => (
           <XStack
             key={i}
-            gap="$2"
+            gap="2"
             alignItems="flex-start"
           >
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color7"
+              color="color7"
             >
               {'\u2022'}
             </Text>
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color8"
+              color="color8"
               flex={1}
             >
               {bullet}
@@ -114,28 +114,27 @@ function AccessRow({
 }) {
   return (
     <XStack
-      flexDirection="column"
-      gap="$2"
-      $md={{ flexDirection: 'row', gap: '$6' }}
+      flexDirection="column md:row"
+      gap="2 md:6"
       borderBottomWidth={showBorder ? 1 : 0}
-      borderColor="$color2"
+      borderColor="color2"
       paddingBottom={showBorder ? 24 : 0}
     >
       <Text
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={18}
-        color="$color"
-        $md={{ width: '33%' }}
+        color="color"
+        width="md:33%"
         flexShrink={0}
       >
         {term}
       </Text>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={14}
-        color="$color8"
-        lineHeight={22}
-        $md={{ width: '67%' }}
+        color="color8"
+        lineHeight="22px"
+        width="md:67%"
         flex={1}
       >
         {definition}
@@ -148,23 +147,23 @@ function RetentionCard({ title, body }: { title: string; body: string }) {
   return (
     <YStack
       flex={1}
-      gap="$2"
+      gap="2"
     >
       <Text
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={18}
-        color="$color"
+        color="color"
         borderBottomWidth={1}
-        borderColor="$color2"
-        paddingBottom="$2"
+        borderColor="color2"
+        paddingBottom="2"
       >
         {title}
       </Text>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={14}
-        color="$color8"
-        lineHeight={22}
+        color="color8"
+        lineHeight="22px"
       >
         {body}
       </Text>
@@ -192,7 +191,7 @@ function PostureLine({
   return (
     <YStack
       testID={testID}
-      gap="$2"
+      gap="2"
       {...(interactive
         ? {
             onPress,
@@ -205,22 +204,22 @@ function PostureLine({
               }
             },
             cursor: 'pointer',
-            hoverStyle: { opacity: 0.8 },
+            opacity: 'hover:0.8',
           }
         : {})}
     >
       <Text
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={18}
-        color="$color"
+        color="color"
       >
         {title}
       </Text>
       <Text
-        fontFamily="$body"
+        fontFamily="body"
         fontSize={14}
-        color="$color8"
-        lineHeight={22}
+        color="color8"
+        lineHeight="22px"
       >
         {body}
       </Text>
@@ -265,7 +264,7 @@ export function PrivacyCenterScreen() {
   return (
     <ScrollView
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
       contentContainerStyle={{ flexGrow: 1 }}
     >
       <YStack
@@ -273,47 +272,41 @@ export function PrivacyCenterScreen() {
         width="100%"
         maxWidth={768}
         alignSelf="center"
-        paddingHorizontal="$4"
-        paddingTop="$4"
+        paddingHorizontal="4 sm:6 md:8 lg:12"
+        paddingTop="4 md:8 lg:12"
         paddingBottom={128}
-        $sm={{ paddingHorizontal: '$6' }}
-        $md={{ paddingHorizontal: '$8', paddingTop: '$8' }}
-        $lg={{ paddingHorizontal: '$12', paddingTop: '$12' }}
       >
         {/* Header */}
         <XStack
           justifyContent="space-between"
-          alignItems="flex-start"
-          marginBottom={64}
-          flexDirection="column"
-          gap="$4"
-          $md={{ marginBottom: 96, alignItems: 'center', flexDirection: 'row' }}
+          alignItems="flex-start md:center"
+          marginBottom="64px md:96px"
+          flexDirection="column md:row"
+          gap="4"
         >
-          <YStack gap="$2">
+          <YStack gap="2">
             <Text
-              fontFamily="$journal"
-              fontSize={30}
-              $md={{ fontSize: 36 }}
-              color="$color"
+              fontFamily="journal"
+              fontSize="30px md:36px"
+              color="color"
               letterSpacing={-0.5}
             >
               Privacy Center
             </Text>
             <Text
-              fontFamily="$body"
+              fontFamily="body"
               fontSize={14}
-              color="$color8"
+              color="color8"
             >
               How River Journal handles your data and encryption.
             </Text>
           </YStack>
           <Text
-            fontFamily="$body"
+            fontFamily="body"
             fontSize={14}
-            color="$color8"
+            color="color8 hover:color"
             letterSpacing={0.5}
             cursor="pointer"
-            hoverStyle={{ color: '$color' }}
             onPress={() => router.back()}
           >
             Back
@@ -328,16 +321,14 @@ export function PrivacyCenterScreen() {
               <YStack
                 key="privacy-modes"
                 transition="designEnter"
-                enterStyle={{ opacity: 0, y: 10 }}
-                opacity={1}
-                y={0}
-                gap="$6"
+                opacity="1 enter:0"
+                y="0 enter:10px"
+                gap="6"
               >
                 <SectionHeader>Privacy Modes</SectionHeader>
                 <XStack
-                  flexDirection="column"
-                  gap="$6"
-                  $md={{ flexDirection: 'row' }}
+                  flexDirection="column md:row"
+                  gap="6"
                 >
                   <PrivacyModeCard
                     title="Strict Privacy Mode"
@@ -372,13 +363,12 @@ export function PrivacyCenterScreen() {
               <YStack
                 key="postures"
                 transition="designEnter"
-                enterStyle={{ opacity: 0, y: 10 }}
-                opacity={1}
-                y={0}
-                gap="$6"
+                opacity="1 enter:0"
+                y="0 enter:10px"
+                gap="6"
               >
                 <SectionHeader>Privacy Postures</SectionHeader>
-                <YStack gap="$5">
+                <YStack gap="5">
                   <PostureLine
                     testID="posture-encrypted-journal"
                     title="Encrypted journal"
@@ -413,13 +403,12 @@ export function PrivacyCenterScreen() {
               <YStack
                 key="access-info"
                 transition="designEnter"
-                enterStyle={{ opacity: 0, y: 10 }}
-                opacity={1}
-                y={0}
-                gap="$6"
+                opacity="1 enter:0"
+                y="0 enter:10px"
+                gap="6"
               >
                 <SectionHeader>What We Can & Cannot Access</SectionHeader>
-                <YStack gap="$5">
+                <YStack gap="5">
                   <AccessRow
                     term="Local Only (No Sync)"
                     definition="Your journal stays entirely on this device. Nothing is ever sent to our servers."
@@ -446,16 +435,14 @@ export function PrivacyCenterScreen() {
               <YStack
                 key="retention"
                 transition="designEnter"
-                enterStyle={{ opacity: 0, y: 10 }}
-                opacity={1}
-                y={0}
-                gap="$6"
+                opacity="1 enter:0"
+                y="0 enter:10px"
+                gap="6"
               >
                 <SectionHeader>Data Retention & Deletion</SectionHeader>
                 <XStack
-                  flexDirection="column"
-                  gap="$6"
-                  $md={{ flexDirection: 'row' }}
+                  flexDirection="column md:row"
+                  gap="6"
                 >
                   <RetentionCard
                     title="Cloud Data"
@@ -476,15 +463,14 @@ export function PrivacyCenterScreen() {
                 {isAuthenticated && (
                   <Text
                     testID="delete-account-entry"
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={11}
                     letterSpacing={2}
                     textTransform="uppercase"
-                    color="$color8"
+                    color="color8 hover:color"
                     cursor="pointer"
-                    hoverStyle={{ color: '$color' }}
-                    onPress={() => setDeleteOpen(true)}
                     alignSelf="flex-start"
+                    onPress={() => setDeleteOpen(true)}
                   >
                     Delete account
                   </Text>
@@ -499,13 +485,12 @@ export function PrivacyCenterScreen() {
               <YStack
                 key="data-rights"
                 transition="designEnter"
-                enterStyle={{ opacity: 0, y: 10 }}
-                opacity={1}
-                y={0}
-                gap="$6"
+                opacity="1 enter:0"
+                y="0 enter:10px"
+                gap="6"
               >
                 <SectionHeader>Your Data</SectionHeader>
-                <YStack gap="$8">
+                <YStack gap="8">
                   <ExportJournal />
                   {isAuthenticated && <ExportCollectivePosts />}
                 </YStack>
@@ -520,10 +505,9 @@ export function PrivacyCenterScreen() {
               <YStack
                 key="encrypted-backup"
                 transition="designEnter"
-                enterStyle={{ opacity: 0, y: 10 }}
-                opacity={1}
-                y={0}
-                gap="$6"
+                opacity="1 enter:0"
+                y="0 enter:10px"
+                gap="6"
               >
                 <SectionHeader>Encrypted Backup</SectionHeader>
                 <BackupRestore />
@@ -539,21 +523,20 @@ export function PrivacyCenterScreen() {
               <YStack
                 key="usage-crash-reports"
                 transition="designEnter"
-                enterStyle={{ opacity: 0, y: 10 }}
-                opacity={1}
-                y={0}
-                gap="$6"
+                opacity="1 enter:0"
+                y="0 enter:10px"
+                gap="6"
               >
                 <SectionHeader>Usage & Crash Reports</SectionHeader>
-                <YStack gap="$4">
+                <YStack gap="4">
                   <XStack
                     justifyContent="space-between"
                     alignItems="center"
                   >
                     <Text
-                      fontFamily="$body"
-                      fontSize="$4"
-                      color="$color"
+                      fontFamily="body"
+                      fontSize="4"
+                      color="color"
                     >
                       Share usage & crash reports
                     </Text>
@@ -569,10 +552,10 @@ export function PrivacyCenterScreen() {
                     </ExpandingLineButton>
                   </XStack>
                   <Text
-                    fontFamily="$body"
+                    fontFamily="body"
                     fontSize={13}
-                    color="$color8"
-                    lineHeight={20}
+                    color="color8"
+                    lineHeight="20px"
                   >
                     {TELEMETRY_CONSENT_COPY}
                   </Text>

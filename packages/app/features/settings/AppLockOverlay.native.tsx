@@ -10,7 +10,7 @@
  * dismiss the overlay or navigate out from under it.
  *
  * Mounted in apps/mobile/app/_layout.tsx beside <PersistentEditor /> /
- * <NativeToast /> (siblings of <HubGestureHost>), so it covers every route.
+ * the toast viewport (siblings of <HubGestureHost>), so it covers every route.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -74,14 +74,14 @@ export function AppLockOverlay() {
       backgroundColor={backgroundColor}
       alignItems="center"
       justifyContent="center"
-      gap="$6"
-      padding="$6"
+      gap="6"
+      padding="6"
     >
       <Text
-        fontFamily="$journalItalic"
+        fontFamily="journalItalic"
         fontStyle="italic"
         fontSize={24}
-        color="$color"
+        color="color"
       >
         River Journal is locked
       </Text>

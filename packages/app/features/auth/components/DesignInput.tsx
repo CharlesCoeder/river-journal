@@ -48,47 +48,36 @@ export function DesignInput({
         autoComplete={autoComplete as any}
         keyboardType={keyboardType}
         onSubmitEditing={onSubmitEditing}
-        // On web, secureTextEntry doesn't always produce type="password".
-        // Explicitly set it so the browser masks input and respects password manager autofill.
         {...(isWeb && secureTextEntry ? ({ type: 'password' } as any) : {})}
         {...(isWeb && keyboardType === 'email-address' ? ({ type: 'email' } as any) : {})}
         flex={1}
-        fontFamily="$journal"
+        fontFamily="journal"
         fontSize={20}
-        color="$color"
-        placeholderTextColor="$color6"
+        color="color"
+        placeholderTextColor="color6"
         backgroundColor="transparent"
-        borderWidth={0}
-        borderBottomWidth={1}
-        borderColor="$color3"
+        borderTopWidth="0px hover:0px focus:0px"
+        borderRightWidth="0px hover:0px focus:0px"
+        borderLeftWidth="0px hover:0px focus:0px"
+        borderBottomWidth="1px hover:1px focus:1px"
+        borderColor="color3 hover:color5 focus:color"
         borderRadius={0}
         paddingHorizontal={0}
-        paddingVertical="$2"
-        focusStyle={{
-          borderColor: '$color',
-          borderWidth: 0,
-          borderBottomWidth: 1,
-          outlineWidth: 0,
-          outlineStyle: 'none' as any,
-        }}
-        hoverStyle={{
-          borderWidth: 0,
-          borderBottomWidth: 1,
-          borderColor: '$color5',
-        }}
+        paddingVertical="2"
+        outlineWidth="focus:0px"
+        outlineStyle="focus:none"
       />
       {showToggle && onToggleShow && (
         <Text
-          fontFamily="$body"
+          fontFamily="body"
           fontSize={10}
           letterSpacing={3}
           textTransform="uppercase"
-          color="$color8"
+          color="color8 hover:color"
           cursor="pointer"
-          hoverStyle={{ color: '$color' }}
-          onPress={onToggleShow}
-          marginLeft="$2"
+          marginLeft="2"
           flexShrink={0}
+          onPress={onToggleShow}
         >
           {secureTextEntry ? 'Show' : 'Hide'}
         </Text>

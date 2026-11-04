@@ -1,7 +1,7 @@
 import { AnimatePresence, YStack, View, isWeb } from '@my/ui'
 import { useRouter } from 'solito/navigation'
 import { useState, useCallback, useEffect } from 'react'
-import type { LayoutChangeEvent } from 'react-native'
+import type { ViewLayoutEvent } from '@my/ui'
 import { useNavigateHome } from 'app/features/navigation/useNavigateHome'
 import { Editor } from './components/Editor'
 import { FlowSessionBottomBar, FlowExitConfirmDialog } from './components/FlowSessionChrome'
@@ -71,13 +71,13 @@ export function JournalScreen() {
     handleSaveFlow()
   }
 
-  const handleHeaderLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleHeaderLayout = useCallback((e: ViewLayoutEvent) => {
     if (!isWeb) {
       updatePersistentEditorHeaderHeight(e.nativeEvent.layout.height)
     }
   }, [])
 
-  const handleBottomBarLayout = useCallback((e: LayoutChangeEvent) => {
+  const handleBottomBarLayout = useCallback((e: ViewLayoutEvent) => {
     if (!isWeb) {
       updatePersistentEditorBottomBarHeight(e.nativeEvent.layout.height)
     }
@@ -95,29 +95,24 @@ export function JournalScreen() {
   return (
     <YStack
       flex={1}
-      backgroundColor="$background"
+      backgroundColor="background"
     >
       {/* Writing surface — maximized, full-screen feel */}
       <AnimatePresence>
         {mounted && (
           <YStack
             key="journal-content"
-            transition="designEnterSlow"
-            enterStyle={{ opacity: 0 }}
-            opacity={1}
+            transition={{ preset: 'designEnterSlow', properties: 'transform, opacity' }}
+            opacity="1 enter:0"
             flex={1}
             width="100%"
             maxWidth={896}
             alignSelf="center"
-            paddingHorizontal="$4"
-            $md={{ paddingHorizontal: '$8' }}
-            $lg={{ paddingHorizontal: '$12' }}
+            paddingHorizontal="4 md:8 lg:12"
           >
             {/* Top spacer — measured for persistent editor positioning on native */}
             <View
-              height="$4"
-              $md={{ height: '$8' }}
-              $lg={{ height: '$12' }}
+              height="4 md:8 lg:12"
               onLayout={handleHeaderLayout}
             />
             <Editor

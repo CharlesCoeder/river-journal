@@ -32,8 +32,8 @@ export default function ModerationQueueScreen() {
         width="100%"
         maxWidth={720}
         marginHorizontal="auto"
-        paddingHorizontal="$5"
-        paddingVertical="$8"
+        paddingHorizontal="5"
+        paddingVertical="8"
       >
         <SkeletonRows reducedMotion={reducedMotion} />
       </YStack>
@@ -48,14 +48,14 @@ export default function ModerationQueueScreen() {
         width="100%"
         maxWidth={720}
         marginHorizontal="auto"
-        paddingHorizontal="$5"
-        paddingVertical="$8"
+        paddingHorizontal="5"
+        paddingVertical="8"
       >
         <Text
-          fontSize="$2"
-          color="$color9"
+          fontSize="2"
+          color="color9"
           textAlign="center"
-          paddingVertical="$4"
+          paddingVertical="4"
         >
           Couldn&apos;t load the queue. Try again shortly.
         </Text>
@@ -77,15 +77,15 @@ export default function ModerationQueueScreen() {
       width="100%"
       maxWidth={720}
       marginHorizontal="auto"
-      paddingHorizontal="$5"
-      paddingVertical="$8"
+      paddingHorizontal="5"
+      paddingVertical="8"
     >
       {showErrorStrip ? (
         <Text
-          fontSize="$1"
-          color="$color9"
+          fontSize="1"
+          color="color9"
           textAlign="center"
-          paddingVertical="$2"
+          paddingVertical="2"
         >
           Couldn&apos;t refresh. Showing the last update.
         </Text>
@@ -94,35 +94,35 @@ export default function ModerationQueueScreen() {
       {isEmpty ? (
         hasLastAction ? (
           <YStack
-            paddingVertical="$8"
-            gap="$2"
+            paddingVertical="8"
+            gap="2"
             alignItems="center"
           >
             <Text
-              fontFamily="$journal"
-              fontSize="$6"
-              color="$color10"
+              fontFamily="journal"
+              fontSize="6"
+              color="color10"
               fontStyle="italic"
             >
               Queue clear.
             </Text>
             <Text
-              fontFamily="$body"
-              fontSize="$1"
-              color="$color9"
+              fontFamily="body"
+              fontSize="1"
+              color="color9"
             >
               Last action {timeAgoCasual(lastActionAt as string)}
             </Text>
           </YStack>
         ) : (
           <YStack
-            paddingVertical="$8"
+            paddingVertical="8"
             alignItems="center"
           >
             <Text
-              fontFamily="$journal"
-              fontSize="$6"
-              color="$color10"
+              fontFamily="journal"
+              fontSize="6"
+              color="color10"
               fontStyle="italic"
             >
               No pending flags.
@@ -135,7 +135,7 @@ export default function ModerationQueueScreen() {
             <ModerationQueueRow item={item} />
             {index < items.length - 1 ? (
               <Separator
-                borderColor="$color3"
+                borderColor="color3"
                 borderBottomWidth={1}
               />
             ) : null}

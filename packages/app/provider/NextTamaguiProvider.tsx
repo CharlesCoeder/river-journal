@@ -17,10 +17,6 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
     const rnwStyle = StyleSheet.getSheet()
     return (
       <>
-        <link
-          rel="stylesheet"
-          href="/tamagui.generated.css"
-        />
         <style
           dangerouslySetInnerHTML={{ __html: rnwStyle.textContent }}
           id={rnwStyle.id}
@@ -36,12 +32,6 @@ export const NextTamaguiProvider = ({ children }: { children: ReactNode }) => {
             __html: config.getCSS({
               exclude: process.env.NODE_ENV === 'production' ? 'design-system' : null,
             }),
-          }}
-        />
-
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `document.documentElement.classList.add('t_unmounted')`,
           }}
         />
       </>
