@@ -10,7 +10,9 @@ module.exports = (api) => {
           alias: {
             // define aliases to shorten the import paths
             app: '../../packages/app',
-            '@my/ui': '../../packages/ui',
+            // No alias for '@my/ui': Metro resolves it through the workspace link, and
+            // the Tamagui compiler only recognizes components imported by package name.
+            // A relative path here hides every @my/ui element from it.
           },
           extensions: ['.js', '.jsx', '.tsx', '.ios.js', '.android.js'],
         },
