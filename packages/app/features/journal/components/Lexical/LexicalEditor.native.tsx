@@ -22,6 +22,7 @@ import type { LexicalEditorNativeProps } from './LexicalEditor.types'
 import { FocusModeParagraphPlugin } from './plugins/FocusModeParagraphPlugin'
 import { SentenceWrapPlugin } from './plugins/SentenceWrapPlugin'
 import { SentenceFocusPlugin } from './plugins/SentenceFocusPlugin'
+import { BlurRequestPlugin } from './plugins/BlurRequestPlugin'
 
 /**
  * Plugin to set editor to read-only mode
@@ -120,22 +121,6 @@ const FocusReportPlugin: React.FC<{
       unregisterBlur()
     }
   }, [editor])
-  return null
-}
-
-/**
- * Blurs the editor whenever the `request` counter changes (not on mount).
- * Blurring the contenteditable is what dismisses the soft keyboard inside a
- * WebView — RN's Keyboard.dismiss() only knows about native TextInputs.
- */
-const BlurRequestPlugin: React.FC<{ request: number }> = ({ request }) => {
-  const [editor] = useLexicalComposerContext()
-  const lastRequest = useRef(request)
-  useEffect(() => {
-    if (request === lastRequest.current) return
-    lastRequest.current = request
-    editor.blur()
-  }, [editor, request])
   return null
 }
 

@@ -5,6 +5,8 @@ export interface CollectiveLexicalEditorProps {
   onContentChange: (markdown: string) => void
   /** Minimum height of the writing surface. Default 300 (full), 120 (compact). */
   minHeight?: number
+  /** Native: blurs the editor (dropping the keyboard) each time this changes. */
+  blurRequest?: number
   /** Test-only: captures the LexicalEditor instance for isolation regression tests. */
   __contextProbeRef?: React.MutableRefObject<unknown>
 }
