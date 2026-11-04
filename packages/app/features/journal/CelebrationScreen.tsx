@@ -245,8 +245,8 @@ export function CelebrationScreen() {
             role="dialog"
             aria-modal={true}
             {...(effectiveVariant === 'handoff'
-                        ? { 'aria-labelledby': 'celebration-wordcount' }
-                        : { 'aria-label': 'Celebration' })}
+              ? { 'aria-labelledby': 'celebration-wordcount' }
+              : { 'aria-label': 'Celebration' })}
             transition={outerTransition as any}
             opacity="1 enter:0"
             width="100%"

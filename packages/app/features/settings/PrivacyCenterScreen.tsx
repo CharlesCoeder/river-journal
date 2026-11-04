@@ -194,20 +194,20 @@ function PostureLine({
       testID={testID}
       gap="2"
       {...(interactive
-            ? {
-                onPress,
-                role: 'button' as const,
-                tabIndex: 0,
-                onKeyDown: (e: any) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault?.()
-                    onPress?.()
-                  }
-                },
-                cursor: 'pointer',
-                opacity: 'hover:0.8',
+        ? {
+            onPress,
+            role: 'button' as const,
+            tabIndex: 0,
+            onKeyDown: (e: any) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault?.()
+                onPress?.()
               }
-            : {})}
+            },
+            cursor: 'pointer',
+            opacity: 'hover:0.8',
+          }
+        : {})}
     >
       <Text
         fontFamily="journal"

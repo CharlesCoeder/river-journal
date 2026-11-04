@@ -21,7 +21,6 @@ export function KeyringPrompt() {
   const persistSuccess = use$(keyringPersistResult$.success)
   const persistResultError = use$(keyringPersistResult$.error)
 
-
   useEffect(() => {
     if (persistSuccess) {
       toast('Encryption key saved', {

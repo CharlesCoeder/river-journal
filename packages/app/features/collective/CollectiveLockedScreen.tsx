@@ -21,15 +21,7 @@
 import { italicExceptIOS } from 'app/utils/italicExceptIOS'
 import { useEffect, useRef, useState } from 'react'
 import { YStack, XStack, View, Text, ScrollView, useReducedMotion } from '@my/ui'
-import {
-  Lock,
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  UserCircle,
-  CloudUpload,
-  PenLine,
-} from '@my/icons'
+import { Lock, ArrowLeft, ArrowRight, Check, UserCircle, CloudUpload, PenLine } from '@my/icons'
 import type { Post } from 'app/state/collective/feed'
 import { timeAgoCasual } from './_shared'
 

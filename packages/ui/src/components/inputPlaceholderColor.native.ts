@@ -5,4 +5,5 @@ import { Platform, PlatformColor } from 'react-native'
 // Native's code did not change. Multi-line fields set placeholderText explicitly
 // and were unaffected. Naming the color keeps every input as it was. iOS only:
 // Android has no color by this name.
-export const inputPlaceholderColor = Platform.OS === 'ios' ? PlatformColor('placeholderText') : undefined
+export const inputPlaceholderColor =
+  Platform.OS === 'ios' ? PlatformColor('placeholderText') : undefined

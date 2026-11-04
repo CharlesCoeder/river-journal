@@ -213,81 +213,81 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
               </Text>
             ) : detailError ? (
               <Text
-                  fontFamily="body"
-                  fontSize="2"
-                  color="color9"
-                >
+                fontFamily="body"
+                fontSize="2"
+                color="color9"
+              >
                 Couldn&apos;t load the post. Try again shortly.
               </Text>
             ) : detail == null ? (
               <Text
-                    fontFamily="body"
-                    fontSize="2"
-                    color="color9"
-                  >
+                fontFamily="body"
+                fontSize="2"
+                color="color9"
+              >
                 Post no longer available.
               </Text>
             ) : (
               <YStack gap="2">
                 {detail.title != null ? (
                   <Text
-                          render="h4"
-                          fontWeight="web:400"
-                          fontFamily="journal"
-                          fontSize="5"
-                          color="color12"
-                          textDecorationLine={detail.is_removed ? 'line-through' : 'none'}
-                          opacity={detail.is_removed ? 0.5 : 1}
-                        >
+                    render="h4"
+                    fontWeight="web:400"
+                    fontFamily="journal"
+                    fontSize="5"
+                    color="color12"
+                    textDecorationLine={detail.is_removed ? 'line-through' : 'none'}
+                    opacity={detail.is_removed ? 0.5 : 1}
+                  >
                     {detail.title}
                   </Text>
                 ) : null}
                 <Text
-                        fontFamily="body"
-                        fontSize="3"
-                        color="color11"
-                        textDecorationLine={detail.is_removed ? 'line-through' : 'none'}
-                        opacity={detail.is_removed ? 0.5 : 1}
-                      >
+                  fontFamily="body"
+                  fontSize="3"
+                  color="color11"
+                  textDecorationLine={detail.is_removed ? 'line-through' : 'none'}
+                  opacity={detail.is_removed ? 0.5 : 1}
+                >
                   {bodyText}
                 </Text>
                 <XStack
-                        alignItems="center"
-                        gap="3"
-                        flexWrap="wrap"
-                      >
+                  alignItems="center"
+                  gap="3"
+                  flexWrap="wrap"
+                >
                   <Text
-                          fontFamily="body"
-                          fontSize="1"
-                          color="color9"
-                          textTransform="uppercase"
-                          letterSpacing={1}
-                        >
+                    fontFamily="body"
+                    fontSize="1"
+                    color="color9"
+                    textTransform="uppercase"
+                    letterSpacing={1}
+                  >
                     {detailAuthor}
                   </Text>
                   {detail.is_removed ? (
                     <Text
-                            fontFamily="body"
-                            fontSize="1"
-                            color="color9"
-                          >
+                      fontFamily="body"
+                      fontSize="1"
+                      color="color9"
+                    >
                       Removed
                     </Text>
                   ) : null}
                   {selfDeleted ? (
                     <Text
-                            fontFamily="body"
-                            fontSize="1"
-                            color="color9"
-                          >
+                      fontFamily="body"
+                      fontSize="1"
+                      color="color9"
+                    >
                       Author self-deleted
                     </Text>
                   ) : accountDeleted ? (
                     <Text
-                              fontFamily="body"
-                              fontSize="1"
-                              color="color9"
-                            >
+                      fontFamily="body"
+                      fontSize="1"
+                      color="color9"
+                    >
                       Author deleted account
                     </Text>
                   ) : null}
@@ -317,10 +317,10 @@ export function AuditLogRow({ item, currentUserId }: AuditLogRowProps) {
               </Text>
             ) : historyError ? (
               <Text
-                  fontFamily="body"
-                  fontSize="2"
-                  color="color9"
-                >
+                fontFamily="body"
+                fontSize="2"
+                color="color9"
+              >
                 Couldn&apos;t load the history. Try again shortly.
               </Text>
             ) : (

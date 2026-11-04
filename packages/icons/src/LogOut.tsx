@@ -4,7 +4,11 @@ import { themed, type IconProps } from '@tamagui/helpers-icon'
 
 export const LogOut: (props: IconProps) => JSX.Element = themed(
   memo(function LogOut(props: IconProps) {
-    const { color = 'black', size = 24, ...otherProps } = props as SvgProps & {
+    const {
+      color = 'black',
+      size = 24,
+      ...otherProps
+    } = props as SvgProps & {
       color?: string
       size?: number
     }
@@ -20,9 +24,18 @@ export const LogOut: (props: IconProps) => JSX.Element = themed(
         strokeLinejoin="round"
         {...otherProps}
       >
-        <Path d="m16 17 5-5-5-5" stroke={color} />
-        <Path d="M21 12H9" stroke={color} />
-        <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke={color} />
+        <Path
+          d="m16 17 5-5-5-5"
+          stroke={color}
+        />
+        <Path
+          d="M21 12H9"
+          stroke={color}
+        />
+        <Path
+          d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+          stroke={color}
+        />
       </Svg>
     )
   })

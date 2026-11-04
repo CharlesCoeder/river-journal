@@ -93,9 +93,9 @@ function SidebarLayout({
                   />
                 ) : (
                   <PanelLeftClose
-                      size={18}
-                      color="color9"
-                    />
+                    size={18}
+                    color="color9"
+                  />
                 )}
               </YStack>
             </XStack>
@@ -115,7 +115,7 @@ function SidebarLayout({
                 borderRadius="4"
                 cursor="pointer"
                 justifyContent={showLabels ? 'flex-start' : 'center'}
-                backgroundColor={`${isActive ? "color3" : "transparent"} hover:${isActive ? "color3" : "color2"}`}
+                backgroundColor={`${isActive ? 'color3' : 'transparent'} hover:${isActive ? 'color3' : 'color2'}`}
                 onPress={() => router.push(item.route)}
               >
                 <Icon

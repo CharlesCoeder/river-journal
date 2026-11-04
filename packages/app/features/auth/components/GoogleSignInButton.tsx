@@ -102,12 +102,12 @@ export function GoogleSignInButton({ canStart, onAuthStart }: GoogleSignInButton
           <>
             <GoogleLogo size={16} />
             <Text
-                fontFamily="body"
-                fontSize={12}
-                letterSpacing={3}
-                textTransform="uppercase"
-                color="color"
-              >
+              fontFamily="body"
+              fontSize={12}
+              letterSpacing={3}
+              textTransform="uppercase"
+              color="color"
+            >
               Continue with Google
             </Text>
           </>

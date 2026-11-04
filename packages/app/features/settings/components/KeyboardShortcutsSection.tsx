@@ -79,43 +79,43 @@ export function KeyboardShortcutsSection() {
                   color="color8"
                   cursor="pointer"
                   onPress={() => {
-                                    recorder.cancelRecording()
-                                    setRecordingId(null)
-                                  }}
+                    recorder.cancelRecording()
+                    setRecordingId(null)
+                  }}
                 >
                   ×
                 </Text>
               </XStack>
             ) : (
               <XStack
-                  gap="3"
-                  alignItems="center"
-                >
+                gap="3"
+                alignItems="center"
+              >
                 <Text
-                    fontFamily="body"
-                    fontSize={12}
-                    color="color"
-                    borderWidth={1}
-                    borderColor="color5 hover:color8"
-                    borderRadius={4}
-                    paddingHorizontal={6}
-                    paddingVertical={2}
-                    cursor="pointer"
-                    onPress={() => {
-                                      recorder.startRecording()
-                                      setRecordingId(row.id)
-                                    }}
-                  >
+                  fontFamily="body"
+                  fontSize={12}
+                  color="color"
+                  borderWidth={1}
+                  borderColor="color5 hover:color8"
+                  borderRadius={4}
+                  paddingHorizontal={6}
+                  paddingVertical={2}
+                  cursor="pointer"
+                  onPress={() => {
+                    recorder.startRecording()
+                    setRecordingId(row.id)
+                  }}
+                >
                   {formatHotkeyDisplay(currentBinding)}
                 </Text>
                 {showReset && (
                   <Text
-                      fontFamily="body"
-                      fontSize={11}
-                      color="color8 hover:color"
-                      cursor="pointer"
-                      onPress={() => resetHotkeyOverride(row.id)}
-                    >
+                    fontFamily="body"
+                    fontSize={11}
+                    color="color8 hover:color"
+                    cursor="pointer"
+                    onPress={() => resetHotkeyOverride(row.id)}
+                  >
                     (reset)
                   </Text>
                 )}

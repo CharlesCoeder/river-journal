@@ -53,7 +53,7 @@ function ModeCard({
       padding="5"
       width="100%"
       borderWidth={1}
-      borderColor={`${selected ? "color8" : "color3"} hover:color6`}
+      borderColor={`${selected ? 'color8' : 'color3'} hover:color6`}
       backgroundColor={selected ? 'color1' : 'transparent'}
       cursor="pointer"
       gap="3"
@@ -241,8 +241,8 @@ export function EncryptionModeDialog() {
                           opacity={selectedMode ? '1 hover:0.7' : 0.5}
                           cursor={selectedMode ? 'pointer' : 'default'}
                           onPress={
-                                                    selectedMode ? () => void confirmEncryptionModeSelection() : undefined
-                                                  }
+                            selectedMode ? () => void confirmEncryptionModeSelection() : undefined
+                          }
                         >
                           Continue
                         </Text>

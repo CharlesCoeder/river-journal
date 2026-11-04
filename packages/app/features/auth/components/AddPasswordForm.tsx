@@ -263,10 +263,10 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
           </Text>
         ) : (
           <Text
-              fontSize="2"
-              color="color10"
-              fontFamily="body"
-            >
+            fontSize="2"
+            color="color10"
+            fontFamily="body"
+          >
             Must be at least {MIN_PASSWORD_LENGTH} characters
           </Text>
         )}
@@ -362,10 +362,10 @@ export function AddPasswordForm({ mode, onSuccess, onCancel }: AddPasswordFormPr
             />
           ) : (
             <Text
-                fontFamily="body"
-                fontWeight="600"
-                color="color1"
-              >
+              fontFamily="body"
+              fontWeight="600"
+              color="color1"
+            >
               {title}
             </Text>
           )}

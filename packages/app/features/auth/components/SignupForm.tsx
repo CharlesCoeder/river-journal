@@ -244,12 +244,12 @@ export function SignupForm({ authForm$, actions, onSuccess, onSwitchToLogin }: S
           <Spinner />
         ) : (
           <Text
-              fontFamily="body"
-              fontSize={12}
-              letterSpacing={3}
-              textTransform="uppercase"
-              color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
-            >
+            fontFamily="body"
+            fontSize={12}
+            letterSpacing={3}
+            textTransform="uppercase"
+            color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
+          >
             Create Account
           </Text>
         )}

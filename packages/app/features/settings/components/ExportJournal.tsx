@@ -89,7 +89,7 @@ function CheckboxRow({
       testID={testID}
       fontFamily="body"
       fontSize={13}
-      color={`${checked ? "color" : "color8"} hover:color`}
+      color={`${checked ? 'color' : 'color8'} hover:color`}
       cursor="pointer"
       onPress={onPress}
     >
@@ -376,7 +376,7 @@ export function ExportJournal() {
           testID="export-select-all"
           fontFamily="body"
           fontSize={13}
-          color={`${allSelected ? "color" : "color8"} hover:color`}
+          color={`${allSelected ? 'color' : 'color8'} hover:color`}
           cursor="pointer"
           onPress={toggleAll}
         >
@@ -392,7 +392,7 @@ export function ExportJournal() {
                 testID={`export-month-${m.key}`}
                 fontFamily="body"
                 fontSize={13}
-                color={`${isSelected ? "color" : "color8"} hover:color`}
+                color={`${isSelected ? 'color' : 'color8'} hover:color`}
                 cursor="pointer"
                 onPress={() => toggleMonth(m.key)}
               >

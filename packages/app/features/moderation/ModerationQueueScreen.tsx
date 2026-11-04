@@ -116,15 +116,15 @@ export default function ModerationQueueScreen() {
           </YStack>
         ) : (
           <YStack
-              paddingVertical="8"
-              alignItems="center"
-            >
+            paddingVertical="8"
+            alignItems="center"
+          >
             <Text
-                fontFamily="journal"
-                fontSize="6"
-                color="color10"
-                fontStyle="italic"
-              >
+              fontFamily="journal"
+              fontSize="6"
+              color="color10"
+              fontStyle="italic"
+            >
               No pending flags.
             </Text>
           </YStack>

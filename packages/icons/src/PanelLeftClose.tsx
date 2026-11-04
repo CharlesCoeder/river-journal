@@ -4,7 +4,11 @@ import { themed, type IconProps } from '@tamagui/helpers-icon'
 
 export const PanelLeftClose: (props: IconProps) => JSX.Element = themed(
   memo(function PanelLeftClose(props: IconProps) {
-    const { color = 'black', size = 24, ...otherProps } = props as SvgProps & {
+    const {
+      color = 'black',
+      size = 24,
+      ...otherProps
+    } = props as SvgProps & {
       color?: string
       size?: number
     }
@@ -20,9 +24,22 @@ export const PanelLeftClose: (props: IconProps) => JSX.Element = themed(
         strokeLinejoin="round"
         {...otherProps}
       >
-        <Rect width="18" height="18" x="3" y="3" rx="2" stroke={color} />
-        <Path d="M9 3v18" stroke={color} />
-        <Path d="m16 15-3-3 3-3" stroke={color} />
+        <Rect
+          width="18"
+          height="18"
+          x="3"
+          y="3"
+          rx="2"
+          stroke={color}
+        />
+        <Path
+          d="M9 3v18"
+          stroke={color}
+        />
+        <Path
+          d="m16 15-3-3 3-3"
+          stroke={color}
+        />
       </Svg>
     )
   })

@@ -166,12 +166,12 @@ export function LoginForm({ authForm$, actions, onSuccess, onSwitchToSignup }: L
           <Spinner />
         ) : (
           <Text
-              fontFamily="body"
-              fontSize={12}
-              letterSpacing={3}
-              textTransform="uppercase"
-              color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
-            >
+            fontFamily="body"
+            fontSize={12}
+            letterSpacing={3}
+            textTransform="uppercase"
+            color={canSubmit ? 'color group-hover/submitBtn:background' : 'color7'}
+          >
             Log In
           </Text>
         )}

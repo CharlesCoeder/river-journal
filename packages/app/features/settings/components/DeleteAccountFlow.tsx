@@ -394,15 +394,15 @@ export function DeleteAccountFlow({ open, onOpenChange }: DeleteAccountFlowProps
           {state === 'email' &&
             (!hasValidExpectedEmail ? (
               <YStack
-              testID="delete-account-error"
-              role="status"
-              aria-live="polite"
-              gap="2"
-            >
-                <Text
-                fontSize="3"
-                color="color11"
+                testID="delete-account-error"
+                role="status"
+                aria-live="polite"
+                gap="2"
               >
+                <Text
+                  fontSize="3"
+                  color="color11"
+                >
                   We couldn't confirm your account details. Nothing was deleted. Please try again
                   later.
                 </Text>
